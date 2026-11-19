@@ -1416,6 +1416,182 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","displayName":"Teacher Example","correspondenceLocale":"ar","requestedSubjects":["Fiqh"],"state":"approved","revision":2,"submittedAt":"2026-11-19T19:00:00.000Z","decidedAt":"2026-11-19T20:00:00.000Z","applicantMessage":null}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/staff:
+    get:
+      operationId: listSchoolStaff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"query","in":"query","schema":{"type":"string"}}
+        - {"name":"cursor","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"limit","in":"query","schema":{"type":"integer","minimum":1,"maximum":100}}
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"displayName":{"type":"string"},"role":{"type":"string","enum":["teacher","principal","deputy","office"]},"titleAr":{"type":"string"},"titleDe":{"type":"string"},"workEmail":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}]},"workPhone":{"anyOf":[{"type":"string"},{"type":"null"}]},"accountId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"activeFrom":{"type":"string","format":"date"},"activeUntil":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"disabled":{"type":"boolean"}},"required":["displayName","role","titleAr","titleDe","workEmail","workPhone","accountId","activeFrom","activeUntil","id","revision","disabled"]}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string","format":"uuid"}},"required":[]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createSchoolStaff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"displayName":{"type":"string"},"role":{"type":"string","enum":["teacher","principal","deputy","office"]},"titleAr":{"type":"string"},"titleDe":{"type":"string"},"workEmail":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}]},"workPhone":{"anyOf":[{"type":"string"},{"type":"null"}]},"accountId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"activeFrom":{"type":"string","format":"date"},"activeUntil":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]}},"required":["displayName","role","titleAr","titleDe","workEmail","workPhone","accountId","activeFrom","activeUntil"]}
+      responses:
+        '201':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"displayName":{"type":"string"},"role":{"type":"string","enum":["teacher","principal","deputy","office"]},"titleAr":{"type":"string"},"titleDe":{"type":"string"},"workEmail":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}]},"workPhone":{"anyOf":[{"type":"string"},{"type":"null"}]},"accountId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"activeFrom":{"type":"string","format":"date"},"activeUntil":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"disabled":{"type":"boolean"}},"required":["displayName","role","titleAr","titleDe","workEmail","workPhone","accountId","activeFrom","activeUntil","id","revision","disabled"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/staff/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: readSchoolStaff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"displayName":{"type":"string"},"role":{"type":"string","enum":["teacher","principal","deputy","office"]},"titleAr":{"type":"string"},"titleDe":{"type":"string"},"workEmail":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}]},"workPhone":{"anyOf":[{"type":"string"},{"type":"null"}]},"accountId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"activeFrom":{"type":"string","format":"date"},"activeUntil":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"disabled":{"type":"boolean"}},"required":["displayName","role","titleAr","titleDe","workEmail","workPhone","accountId","activeFrom","activeUntil","id","revision","disabled"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateSchoolStaff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"displayName":{"type":"string"},"role":{"type":"string","enum":["teacher","principal","deputy","office"]},"titleAr":{"type":"string"},"titleDe":{"type":"string"},"workEmail":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}]},"workPhone":{"anyOf":[{"type":"string"},{"type":"null"}]},"accountId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"activeFrom":{"type":"string","format":"date"},"activeUntil":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"revision":{"type":"integer","minimum":1}},"required":["displayName","role","titleAr","titleDe","workEmail","workPhone","accountId","activeFrom","activeUntil","revision"]}
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"displayName":{"type":"string"},"role":{"type":"string","enum":["teacher","principal","deputy","office"]},"titleAr":{"type":"string"},"titleDe":{"type":"string"},"workEmail":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}]},"workPhone":{"anyOf":[{"type":"string"},{"type":"null"}]},"accountId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"activeFrom":{"type":"string","format":"date"},"activeUntil":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"disabled":{"type":"boolean"}},"required":["displayName","role","titleAr","titleDe","workEmail","workPhone","accountId","activeFrom","activeUntil","id","revision","disabled"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/staff/accounts:
+    get:
+      operationId: listStaffLinkableAccounts
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"accountId":{"type":"string","format":"uuid"},"displayName":{"type":"string"},"roles":{"type":"array","items":{"type":"string"}}},"required":["accountId","displayName","roles"]}}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/subjects:
+    get:
+      operationId: listSchoolSubjects
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}},"required":["id","code","nameAr","nameDe"]}}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/classes/{id}/assignments:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listClassAssignments
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"substitutes":{"type":"array","items":{"type":"object","properties":{"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"staffId":{"type":"string","format":"uuid"},"assignmentId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"}},"required":["from","untilExclusive","capabilities","id","staffId","assignmentId","revision","staffName","revoked"]}}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe","substitutes"]}}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createTeachingAssignment
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities"]}
+      responses:
+        '201':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/assignments/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updateTeachingAssignment
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"revision":{"type":"integer","minimum":1},"untilExclusive":{"type":"string","format":"date"},"replacement":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"from":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true}},"required":["staffId","from","capabilities"]},"revoke":{"type":"boolean"}},"required":["revision"]}
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"assignment":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe"]},"replacement":{"anyOf":[{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe"]},{"type":"null"}]}},"required":["assignment","replacement"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/assignments/{id}/substitutes:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: assignSubstitute
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"staffId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}},"required":["from","untilExclusive","capabilities","staffId","revision"]}
+      responses:
+        '201':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"staffId":{"type":"string","format":"uuid"},"assignmentId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"}},"required":["from","untilExclusive","capabilities","id","staffId","assignmentId","revision","staffName","revoked"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /me/teaching:
+    get:
+      operationId: viewOwnTeachingAssignments
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped school staffing result
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"substitute":{"type":"boolean"}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe","substitute"]}}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:

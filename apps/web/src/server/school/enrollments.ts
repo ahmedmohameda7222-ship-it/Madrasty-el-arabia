@@ -17,7 +17,7 @@ const manageEnrollment = (ctx: ActorContext) => (tx: Transaction) => requireCapa
 export async function classOffice(tx: Transaction, actor: ActorContext) {
   if (actor.persona !== "admin") throw new ApiError("forbidden");
   const [access] = await tx<{ allowed: boolean }[]>`
-    select app.has_capability('school.manage') or app.has_capability('students.manage') as allowed
+    select app.has_capability('school.manage') or app.has_capability('students.manage') or app.has_capability('academics.supervise') as allowed
   `;
   if (!access.allowed) throw new ApiError("forbidden");
 }
