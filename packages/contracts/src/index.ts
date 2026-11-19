@@ -9,3 +9,4 @@ export * from "./school/families";
 export * from "./school/enrollments";
 export * from "./school/imports";
 export * from "./invitations";
+export * from "./teacherApplications";

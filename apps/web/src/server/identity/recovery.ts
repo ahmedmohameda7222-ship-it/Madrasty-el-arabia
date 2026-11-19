@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Locale, Persona } from "@madrasty/contracts";
 import { ApiError } from "@/server/http";
 import { withRuntime } from "@/server/db/scoped";
+import { allowAuthMail } from "./authMail";
 import { providerRequest, requireFreshFactor } from "./assurance";
 import { authProvider, providerFailure, verifiedClaims } from "./provider";
 import { providerSignOut } from "./session";
@@ -13,6 +14,7 @@ function schoolUrl(path: string) {
 }
 
 export async function requestRecovery(email: string, locale: Locale) {
+  if (!allowAuthMail(email)) return;
   const { error } = await authProvider().resetPasswordForEmail(email, {
     redirectTo: schoolUrl(`/${locale}/account/security/recover`),
   });
@@ -37,6 +39,7 @@ export async function requestEmailChange(
 ) {
   if (persona === "admin") await requireFreshFactor(access);
   const user = z.object({ id: z.uuid(), email: z.email() }).parse(await providerRequest("/user", access));
+  if (!allowAuthMail(email) || !allowAuthMail(user.email)) throw new ApiError("forbidden");
   const auth = await authProvider().signInWithPassword({ email: user.email, password: reauthPassword });
   if (auth.error) providerFailure(auth.error);
   if (!auth.data.session || auth.data.user?.id !== user.id) throw new ApiError("unauthenticated");

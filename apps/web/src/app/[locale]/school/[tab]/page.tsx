@@ -29,10 +29,12 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
       {tab === "home" && <p>{text[session.activePersona]}</p>}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} /></>}
       {tab === "children" && <Children locale={locale} />}
+      {invites && <Link className="plain-button" href={`/${locale}/staff/applications`}>{locale === "ar" ? "طلبات المدرسين" : "Bewerbungen von Lehrkräften"}</Link>}
       {(placement || invites) && <Link className="plain-button" href={`/${locale}/staff/invitations`}>{locale === "ar" ? "الدعوات" : "Einladungen"}</Link>}
       {(calendar || placement) && <Link className="plain-button" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
       {calendar && <Link className="plain-button" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
       {access && <Link className="plain-button" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
+      {tab === "more" && session.activePersona === "guardian" && <Link className="plain-button" href={`/${locale}/apply`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
       {tab === "more" && <><Link className="plain-button" href={`/${locale}/account/security`}>{locale === "ar" ? "أمان الحساب" : "Kontosicherheit"}</Link><SessionControls locale={locale} session={session} /></>}
     </>
   );

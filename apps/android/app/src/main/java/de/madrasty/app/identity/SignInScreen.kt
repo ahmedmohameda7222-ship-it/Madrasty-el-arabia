@@ -100,6 +100,10 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    suspend fun applicantRegistration(email: String, locale: String) = repository.requestApplicant(email,locale)
+    suspend fun applicantSignIn(email: String, password: String) = repository.applicantSignIn(email,password)
+    suspend fun applicantCall(path: String, data: JSONObject? = null) = repository.applicantRequest(path,data)
+    fun endApplicantSession() { viewModelScope.launch { repository.closeApplicant() } }
     suspend fun acceptInvite(existing: Boolean, body: JSONObject, idempotencyKey: String) =
         repository.acceptInvite(existing, body, idempotencyKey)
 
@@ -205,7 +209,11 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             capabilities = try { model.capabilities() } catch (error: CancellationException) { throw error } catch (_: Exception) { emptySet() }
         }
     }
-    if (session == null) SignInScreen(model)
+    var application by remember(session?.actor) { mutableStateOf(false) }
+    var applicationReview by remember(session?.actor) { mutableStateOf(false) }
+    if (application) ApplicantScreen(model) { model.endApplicantSession(); application = false }
+    else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) { applicationReview = false }
+    else if (session == null) SignInScreen(model) { application = true }
     else if (security || session.actor.persona == Persona.Admin && session.assurance != "aal2") {
         SecurityScreen(model, session) { security = false }
     } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
@@ -231,13 +239,15 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
             if ("students.manage" in capabilities || "applications.manage" in capabilities)
                 TextButton(onClick = { invitations = true }) { Text(stringResource(R.string.invite_title)) }
+            if ("applications.manage" in capabilities) TextButton(onClick={applicationReview=true}) { Text(stringResource(R.string.teacher_apps)) }
+            if (session.actor.persona == Persona.Guardian) TextButton(onClick={application=true}) { Text(stringResource(R.string.teacher_apply)) }
             AccountActions(model, session)
         }
     }
 }
 
 @Composable
-private fun SignInScreen(model: IdentityViewModel) {
+private fun SignInScreen(model: IdentityViewModel, apply: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
@@ -265,6 +275,7 @@ private fun SignInScreen(model: IdentityViewModel) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(if (model.pending) R.string.loading else R.string.sign_in)) }
         RecoveryLink()
+        TextButton(onClick=apply) { Text(stringResource(R.string.teacher_apply)) }
     }
 }
 
