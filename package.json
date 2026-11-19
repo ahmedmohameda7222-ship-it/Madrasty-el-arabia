@@ -1,0 +1,14 @@
+{
+  "name": "madrasty-el-arabia",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @madrasty/web dev",
+    "check:types": "pnpm -r check:types",
+    "build:web": "pnpm --filter @madrasty/web build",
+    "build:android": "node scripts/build-android.mjs"
+  }
+}

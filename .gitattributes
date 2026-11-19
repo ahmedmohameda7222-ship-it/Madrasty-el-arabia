@@ -7,3 +7,7 @@ docs/**/*.svg text eol=lf
 /AGENTS.md text eol=lf
 /PROGRESS.md text eol=lf
 /PLANS.md text eol=lf
+
+# Wrapper entry points must preserve their platform line endings.
+/apps/android/gradlew text eol=lf
+/apps/android/gradlew.bat text eol=crlf

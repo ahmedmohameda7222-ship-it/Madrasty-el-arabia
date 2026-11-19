@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Madrasty El Arabia</string>
+    <string name="nav_home">Start</string>
+    <string name="nav_students">Schüler</string>
+    <string name="nav_attendance">Anwesenheit</string>
+    <string name="nav_children">Kinder</string>
+    <string name="nav_messages">Nachrichten</string>
+    <string name="nav_more">Mehr</string>
+    <string name="choose_scope">Auswahl ändern</string>
+    <string name="choose">Auswählen</string>
+    <string name="close">Schließen</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="loading">Wird geladen</string>
+    <string name="still_loading">Daten werden weiterhin geladen</string>
+    <string name="refreshing">Wird aktualisiert</string>
+    <string name="confirmed_at">Zuletzt bestätigt</string>
+    <string name="empty">Es gibt noch keine Einträge</string>
+    <string name="filtered_empty">Keine Treffer für diese Suche</string>
+    <string name="clear_filter">Suche zurücksetzen</string>
+    <string name="generic_error">Daten konnten nicht geladen werden</string>
+    <string name="offline">Keine Verbindung</string>
+    <string name="offline_draft">Entwurf auf diesem Gerät</string>
+    <string name="conflict">Der Eintrag wurde geändert. Prüfen Sie die Werte vor dem Speichern.</string>
+    <string name="forbidden">Dieser Inhalt ist für Ihr Konto nicht mehr verfügbar.</string>
+    <string name="read_only">Schreibgeschützt</string>
+    <string name="copy">Kopieren</string>
+    <string name="copied">Kopiert</string>
+    <string name="pending">Wird gespeichert</string>
+    <string name="saved">Gespeichert</string>
+    <string name="back">Zurück</string>
+    <string name="copy_value">Kopieren %1$s</string>
+    <string name="copied_value">Kopiert · %1$s</string>
+</resources>

@@ -1,0 +1,20 @@
+<resources>
+    <string name="sign_in">تسجيل الدخول</string>
+    <string name="email">البريد الإلكتروني</string>
+    <string name="password">كلمة السر</string>
+    <string name="show_password">إظهار كلمة السر</string>
+    <string name="hide_password">إخفاء كلمة السر</string>
+    <string name="sign_in_failed">تعذّر تسجيل الدخول. راجع البريد وكلمة السر.</string>
+    <string name="auth_unavailable">تعذّر الاتصال بخدمة تسجيل الدخول.</string>
+    <string name="sign_out">تسجيل الخروج</string>
+    <string name="sign_out_all">تسجيل الخروج من كل الأجهزة</string>
+    <string name="sign_out_confirm">قد تُحذف المسودات غير المرسلة. هل تريد تسجيل الخروج؟</string>
+    <string name="sign_out_pending">تم تسجيل الخروج من التطبيق. إغلاق الجلسة على الخادم في انتظار الاتصال.</string>
+    <string name="cancel">إلغاء</string>
+    <string name="persona_admin">الإدارة</string>
+    <string name="persona_teacher">المدرس</string>
+    <string name="persona_guardian">ولي الأمر</string>
+    <string name="change_persona">تغيير الدور</string>
+    <string name="switch_notice">قد تُحذف المسودات المرتبطة بالدور الحالي.</string>
+    <string name="confirm">متابعة</string>
+</resources>

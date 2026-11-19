@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">مدرستي العربية</string>
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_students">الطلبة</string>
+    <string name="nav_attendance">الحضور</string>
+    <string name="nav_children">أبنائي</string>
+    <string name="nav_messages">الرسائل</string>
+    <string name="nav_more">المزيد</string>
+    <string name="choose_scope">تغيير الاختيار</string>
+    <string name="choose">اختر</string>
+    <string name="close">إغلاق</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="loading">جارٍ التحميل</string>
+    <string name="still_loading">البيانات لسه بتتحمّل</string>
+    <string name="refreshing">جارٍ التحديث</string>
+    <string name="confirmed_at">آخر تحديث مؤكد</string>
+    <string name="empty">لا توجد سجلات بعد</string>
+    <string name="filtered_empty">لا توجد نتائج لهذا البحث</string>
+    <string name="clear_filter">مسح البحث</string>
+    <string name="generic_error">تعذّر تحميل البيانات</string>
+    <string name="offline">الاتصال غير متاح</string>
+    <string name="offline_draft">مسودة على هذا الجهاز</string>
+    <string name="conflict">السجل اتغيّر. راجع القيم قبل الحفظ.</string>
+    <string name="forbidden">لم يعد هذا المحتوى متاحًا لحسابك.</string>
+    <string name="read_only">للقراءة فقط</string>
+    <string name="copy">نسخ</string>
+    <string name="copied">تم النسخ</string>
+    <string name="pending">جارٍ الحفظ</string>
+    <string name="saved">تم الحفظ</string>
+    <string name="back">رجوع</string>
+    <string name="copy_value">نسخ %1$s</string>
+    <string name="copied_value">تم النسخ · %1$s</string>
+</resources>

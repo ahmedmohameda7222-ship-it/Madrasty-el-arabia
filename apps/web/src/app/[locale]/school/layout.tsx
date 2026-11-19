@@ -1,0 +1,18 @@
+import type { ReactNode } from "react";
+import { notFound, redirect } from "next/navigation";
+import { localeSchema } from "@madrasty/contracts";
+import { webSchoolSession } from "@/server/identity/web-session";
+import { SchoolShell } from "@/ui/Shell";
+
+export default async function SchoolLayout({ children, params }: {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const [route, session] = await Promise.all([params, webSchoolSession()]);
+  const parsed = localeSchema.safeParse(route.locale);
+  if (!parsed.success) notFound();
+  const locale = parsed.data;
+  if (!session) redirect(`/${locale}/account/sign-in`);
+  const actor = { accountId: session.accountId, sessionId: session.sessionId, persona: session.activePersona };
+  return <SchoolShell actor={actor} locale={locale}>{children}</SchoolShell>;
+}

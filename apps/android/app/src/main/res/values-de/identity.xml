@@ -1,0 +1,20 @@
+<resources>
+    <string name="sign_in">Anmelden</string>
+    <string name="email">E-Mail-Adresse</string>
+    <string name="password">Passwort</string>
+    <string name="show_password">Passwort anzeigen</string>
+    <string name="hide_password">Passwort verbergen</string>
+    <string name="sign_in_failed">Die Anmeldung ist fehlgeschlagen. Prüfen Sie E-Mail-Adresse und Passwort.</string>
+    <string name="auth_unavailable">Der Anmeldedienst ist vorübergehend nicht erreichbar.</string>
+    <string name="sign_out">Abmelden</string>
+    <string name="sign_out_all">Von allen Geräten abmelden</string>
+    <string name="sign_out_confirm">Ungesendete Entwürfe können verloren gehen. Möchten Sie sich abmelden?</string>
+    <string name="sign_out_pending">Die lokale Abmeldung ist erfolgt. Der Server wartet auf eine Verbindung.</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="persona_admin">Verwaltung</string>
+    <string name="persona_teacher">Lehrkraft</string>
+    <string name="persona_guardian">Sorgeberechtigte</string>
+    <string name="change_persona">Rolle wechseln</string>
+    <string name="switch_notice">Entwürfe für die aktuelle Rolle können verloren gehen.</string>
+    <string name="confirm">Fortfahren</string>
+</resources>
