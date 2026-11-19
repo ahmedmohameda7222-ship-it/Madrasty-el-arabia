@@ -768,6 +768,238 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example"}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/classes:
+    get:
+      operationId: listSchoolClasses
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - { name: yearId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createSchoolClass
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["capacity","nameAr","nameDe","yearId","code"],"properties":{"capacity":{"type":["integer","null"],"minimum":1,"maximum":1000},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"yearId":{"type":"string","format":"uuid"},"code":{"type":"string"}}}
+      responses:
+        '201':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1}}
+        '200':
+          description: Replayed authorized command
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/classes/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getSchoolClass
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateSchoolClass
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["capacity","nameAr","nameDe","revision"],"properties":{"capacity":{"type":["integer","null"],"minimum":1,"maximum":1000},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/classes/{id}/roster:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getClassRoster
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"schoolClass":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1},"date":"2026-11-19","teachingDay":true,"rows":[{"displayName":"Salma Example","studentNumber":"MA-000001","enrollment":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1}}]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/classes/{id}/enrollments:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: placeStudents
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["studentIds","from","revision"],"properties":{"studentIds":{"type":"array","items":{"type":"string","format":"uuid"}},"from":{"type":"string","format":"date"},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '201':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"schoolClass":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1},"enrollments":[{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1}]}}
+        '200':
+          description: Replayed authorized command
+          content:
+            application/json:
+              example: {"data":{"schoolClass":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","code":"A-1","nameAr":"الفصل أ","nameDe":"Klasse A","capacity":24,"revision":1},"enrollments":[{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1}]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/enrollments/{id}/transfer:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: transferEnrollment
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["effectiveDate","reason","revision","toClassId"],"properties":{"effectiveDate":{"type":"string","format":"date"},"reason":{"type":"string"},"revision":{"type":"integer","minimum":1},"toClassId":{"type":"string","format":"uuid"}}}
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"ended":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1},"next":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/enrollments/{id}/withdraw:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: withdrawEnrollment
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["effectiveDate","reason","revision"],"properties":{"effectiveDate":{"type":"string","format":"date"},"reason":{"type":"string"},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"ended":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1},"next":null}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/students/{id}/enrollments:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getEnrollmentHistory
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":[{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","classId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentId":"93ce0584-3a95-4cfa-8f4a-3819981dd778","yearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","effectiveFrom":"2026-11-19","effectiveUntil":"2027-08-01","endingReason":null,"voided":false,"revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/years/{id}/rollovers/preview:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: previewYearRollover
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["targetYearId","classMap","exceptions"],"properties":{"targetYearId":{"type":"string","format":"uuid"},"classMap":{"type":"array","items":{"type":"object","required":["fromClassId","toClassId"],"properties":{"fromClassId":{"type":"string","format":"uuid"},"toClassId":{"type":"string","format":"uuid"}}}},"exceptions":{"type":"array","items":{"type":"object","required":["studentId","action"],"properties":{"studentId":{"type":"string","format":"uuid"},"action":{"type":"string","enum":["repeat","withdraw","skip","target"]},"toClassId":{"type":"string","format":"uuid"}}}}}}
+      responses:
+        '201':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","sourceYearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","targetYearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":1,"confirmed":false,"counts":{"changes":1,"conflicts":0,"noPlacement":0},"rows":[]}}
+        '200':
+          description: Replayed authorized command
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","sourceYearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","targetYearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":1,"confirmed":false,"counts":{"changes":1,"conflicts":0,"noPlacement":0},"rows":[]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/rollovers/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getYearRollover
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","sourceYearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","targetYearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":1,"confirmed":false,"counts":{"changes":1,"conflicts":0,"noPlacement":0},"rows":[]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/rollovers/{id}/confirm:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: confirmYearRollover
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision"],"properties":{"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Authorized placement record
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","sourceYearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","targetYearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":2,"confirmed":true,"counts":{"changes":1,"conflicts":0,"noPlacement":0},"rows":[]}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:

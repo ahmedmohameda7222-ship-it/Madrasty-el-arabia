@@ -6,3 +6,4 @@ export * from "./security";
 export * from "./capabilities";
 export * from "./school/calendar";
 export * from "./school/families";
+export * from "./school/enrollments";

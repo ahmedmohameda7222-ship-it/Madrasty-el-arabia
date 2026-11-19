@@ -283,7 +283,7 @@ export function Children({ locale }: { locale: Locale }) {
     : { kind: "ready", content: (
       <section className="auth-card">
         <ScopeSheet locale={locale} selectedId={selected?.id} choices={available.data.map((item) =>
-          ({ id: item.id, label: item.displayName, detail: item.studentNumber }))} select={setChosen} />
+          ({ id: item.id, label: item.displayName, detail: item.currentClass?.code ?? item.studentNumber }))} select={setChosen} />
         {selected && <ChildDetail key={selected.id} locale={locale} id={selected.id} />}
       </section>
     ) }} />;
@@ -297,5 +297,6 @@ function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
     : record.data ? { kind: "ready", content: <>
       <h2><bdi>{record.data.displayName}</bdi></h2>
       <p>{copy[locale].number} <bdi dir="ltr">{record.data.studentNumber}</bdi></p>
+      {record.data.currentClass && <p><bdi dir="ltr">{record.data.currentClass.code}</bdi> · <bdi>{locale === "ar" ? record.data.currentClass.nameAr : record.data.currentClass.nameDe}</bdi></p>}
     </> } : { kind: "initialLoading" }} />;
 }

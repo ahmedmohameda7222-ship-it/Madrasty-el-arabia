@@ -6,6 +6,7 @@ import { ApiError } from "@/server/http";
 import { withActor, type ActorContext, type Transaction } from "@/server/db/scoped";
 import { commitCommand, hashCommand, requireRevision } from "@/server/db/commands";
 import { appendAudit } from "@/server/db/outbox";
+import { classOffice, classRecord } from "./enrollments";
 import { requireCapability } from "@/server/access/policies";
 
 const settingsId = "b084ff88-7242-4ff0-8cee-d0ad1e04e5f6";
@@ -63,7 +64,7 @@ async function selectYear(tx: Transaction, id: string) {
 
 export function readYears(ctx: ActorContext) {
   return withActor(ctx, async (tx) => {
-    await permitsCalendar(ctx)(tx);
+    await classOffice(tx, ctx);
     const rows = await tx`
       select id, starts_on::text as "startsOn", ends_exclusive::text as "endsExclusive",
         teaching_weekdays as "teachingWeekdays", state, revision::integer
@@ -125,16 +126,16 @@ export function putDay(ctx: ActorContext, yearId: string, date: string, key: str
   return commitCommand(ctx, "school.day.put", key, hashCommand({ ...input, date, yearId }), {
     authorize: async (tx) => { await permitsCalendar(ctx)(tx); await selectYear(tx, yearId); },
     mutate: async (tx) => {
-      if (input.classId) throw new ApiError("validation", { classId: "error.validation" });
+      if (input.classId && (await classRecord(tx, input.classId)).yearId !== yearId) throw new ApiError("validation", { classId: "error.validation" });
       await tx`select app.lock_school_calendar()`;
       const [current] = await tx<{ revision: number }[]>`
         select revision::integer from app.day_exception
-        where year_id = ${yearId} and school_date = ${date}::date and class_id is null
+        where year_id = ${yearId} and school_date = ${date}::date and class_id is not distinct from ${input.classId ?? null}::uuid
       `;
       requireRevision(current?.revision ?? 0, input.revision);
       const [saved] = await tx`
-        insert into app.day_exception as day (year_id, school_date, teaching, reason)
-        values (${yearId}, ${date}::date, ${input.teaching}, ${input.reason})
+        insert into app.day_exception as day (year_id, class_id, school_date, teaching, reason)
+        values (${yearId}, ${input.classId ?? null}, ${date}::date, ${input.teaching}, ${input.reason})
         on conflict on constraint day_exception_scope do update
         set teaching = excluded.teaching, reason = excluded.reason, revision = day.revision + 1
         returning id, year_id as "yearId", class_id as "classId", school_date::text as "schoolDate",

@@ -45,6 +45,7 @@ import de.madrasty.app.R
 import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.school.ChildrenScreen
 import de.madrasty.app.school.FamiliesScreen
+import de.madrasty.app.school.EnrollmentScreen
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
@@ -185,6 +186,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     var staffAccess by remember(session?.actor) { mutableStateOf(false) }
     var capabilities by remember(session?.actor) { mutableStateOf(emptySet<String>()) }
     var calendar by remember(session?.actor) { mutableStateOf(false) }
+    var enrollment by remember(session?.actor) { mutableStateOf(false) }
     LaunchedEffect(session?.actor, session?.assurance) {
         if (session?.actor?.persona == Persona.Admin && session.assurance == "aal2") {
             capabilities = try { model.capabilities() } catch (error: CancellationException) { throw error } catch (_: Exception) { emptySet() }
@@ -195,6 +197,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         SecurityScreen(model, session) { security = false }
     } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
     else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
+    else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
+        EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
     else SchoolShell(session.actor) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
@@ -203,6 +207,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         if (tab == SchoolTab.More) {
             TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
             if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }
+            if ("school.manage" in capabilities || "students.manage" in capabilities)
+                TextButton(onClick = { enrollment = true }) { Text(stringResource(R.string.enrollments)) }
             if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
             AccountActions(model, session)
         }

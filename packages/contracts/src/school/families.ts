@@ -35,7 +35,9 @@ export const familyQuerySchema = pageQuerySchema.extend({
   query: z.string().trim().max(120).optional(),
   cursor: z.uuid().optional(),
 });
-export const childSummarySchema = studentSchema.pick({ id: true, studentNumber: true, displayName: true });
+export const childSummarySchema = studentSchema.pick({ id: true, studentNumber: true, displayName: true }).extend({
+  currentClass: z.object({ id: z.uuid(), code: z.string(), nameAr: z.string(), nameDe: z.string() }).nullable().optional(),
+});
 
 export type Student = z.infer<typeof studentSchema>;
 export type Guardian = z.infer<typeof guardianSchema>;

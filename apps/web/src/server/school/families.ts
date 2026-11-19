@@ -221,7 +221,7 @@ export function listChildren(ctx: ActorContext, query: Pick<Query, "cursor" | "l
   if (ctx.persona !== "guardian") throw new ApiError("forbidden");
   return withActor(ctx, async (tx) => {
     const rows = await tx`
-      select id, student_number as "studentNumber", display_name as "displayName"
+      select id, student_number as "studentNumber", display_name as "displayName", app.child_current_class(id) as "currentClass"
       from app.student where app.has_child_link(id)
         and (${query.cursor ?? null}::uuid is null or id > ${query.cursor ?? null}::uuid)
       order by id limit ${query.limit + 1}
@@ -234,7 +234,7 @@ export function readChild(ctx: ActorContext, id: string) {
   if (ctx.persona !== "guardian") throw new ApiError("forbidden");
   return withActor(ctx, async (tx) => {
     const [row] = await tx`
-      select id, student_number as "studentNumber", display_name as "displayName"
+      select id, student_number as "studentNumber", display_name as "displayName", app.child_current_class(id) as "currentClass"
       from app.student where id = ${id} and app.has_child_link(id)
     `;
     if (!row) throw accessError();

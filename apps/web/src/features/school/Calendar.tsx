@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { z } from "zod";
 import {
-  dayExceptionSchema, daysSchema, settingsInput, settingsSchema, yearChangeInput, yearInput, yearSchema,
+  dayExceptionSchema, daysSchema, settingsInput, settingsSchema, schoolClassSchema, yearChangeInput, yearInput, yearSchema,
   type Locale, type SchoolYear, type Settings,
 } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
@@ -19,7 +19,7 @@ const copies = {
     years: "السنوات الدراسية", newYear: "إضافة سنة دراسية", start: "تاريخ البداية", end: "أول يوم بعد نهاية السنة",
     weekdays: "أيام الدراسة الأسبوعية", state: "حالة السنة", draft: "مسودة", active: "نشطة", closed: "مغلقة",
     choose: "اختر سنة", exceptions: "استثناءات أيام الدراسة", date: "التاريخ", reason: "السبب",
-    teaching: "يوم دراسة", closedDay: "يوم ملغى", save: "حفظ", dates: ["الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"],
+    teaching: "يوم دراسة", closedDay: "يوم ملغى", schoolWide: "المدرسة كلها", classScope: "الفصل", save: "حفظ", dates: ["الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"],
   },
   de: {
     title: "Schuljahr und Kalender", settings: "Schuleinstellungen", ar: "Schulname auf Arabisch", de: "Schulname auf Deutsch",
@@ -27,7 +27,7 @@ const copies = {
     years: "Schuljahre", newYear: "Schuljahr hinzufügen", start: "Erster Tag", end: "Erster Tag nach Schuljahresende",
     weekdays: "Reguläre Unterrichtstage", state: "Status", draft: "Entwurf", active: "Aktiv", closed: "Abgeschlossen",
     choose: "Jahr auswählen", exceptions: "Abweichende Unterrichtstage", date: "Datum", reason: "Grund",
-    teaching: "Unterricht", closedDay: "Unterricht fällt aus", save: "Speichern", dates: ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"],
+    teaching: "Unterricht", closedDay: "Unterricht fällt aus", schoolWide: "Ganze Schule", classScope: "Klasse", save: "Speichern", dates: ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"],
   },
 } as const;
 
@@ -181,14 +181,18 @@ function DaysEditor({ locale, year }: { locale: Locale; year: SchoolYear }) {
   const [failure, setFailure] = useState<unknown>();
   const [retry, setRetry] = useState(0);
   const [date, setDate] = useState("");
+  const [classId, setClassId] = useState("");
+  const [classes, setClasses] = useState<z.infer<typeof schoolClassSchema>[]>([]);
   const { state, save } = useSave(locale);
   const command = useAdminCommand();
-  const current = rows?.find((day) => day.schoolDate === date && !day.classId);
+  const current = rows?.find((day) => day.schoolDate === date && (day.classId ?? "") === classId);
 
   useEffect(() => {
     const abort = new AbortController();
-    requestApi(`/school/years/${year.id}/days`, daysSchema, { signal: abort.signal })
-      .then(({ data }) => setRows(data))
+    Promise.all([
+      requestApi(`/school/years/${year.id}/days`, daysSchema, { signal: abort.signal }),
+      requestApi(`/school/classes?yearId=${year.id}&limit=100`, schoolClassSchema.array(), { signal: abort.signal }),
+    ]).then(([dayResponse, classResponse]) => { setRows(dayResponse.data); setClasses(classResponse.data); })
       .catch((error) => { if (!abort.signal.aborted) setFailure(error); });
     return () => abort.abort();
   }, [year.id, retry]);
@@ -198,7 +202,7 @@ function DaysEditor({ locale, year }: { locale: Locale; year: SchoolYear }) {
     const form = new FormData(event.currentTarget);
     await save(async () => {
       const saved = await command(`/school/years/${year.id}/days/${date}`, "PUT", {
-        revision: current?.revision ?? 0, teaching: form.get("teaching") === "yes", reason: form.get("reason"),
+        classId: classId || null, revision: current?.revision ?? 0, teaching: form.get("teaching") === "yes", reason: form.get("reason"),
       }, dayExceptionSchema);
       setRows((previous) => [saved, ...(previous ?? []).filter(({ id }) => id !== saved.id)]
         .sort((a, b) => a.schoolDate.localeCompare(b.schoolDate)));
@@ -208,9 +212,9 @@ function DaysEditor({ locale, year }: { locale: Locale; year: SchoolYear }) {
   const records: ReactNode = rows?.length ? (
     <ul className="group-list">
       {rows.map((record) => <li key={record.id}>
-        <button className="group-row" onClick={() => setDate(record.schoolDate)}>
+        <button className="group-row" onClick={() => { setDate(record.schoolDate); setClassId(record.classId ?? ""); }}>
           {formatSchoolDate(record.schoolDate, locale)} · {record.teaching ? text.teaching : text.closedDay}
-          <small><bdi>{record.reason}</bdi></small>
+          <small>{classes.find((entry) => entry.id === record.classId)?.code ?? text.schoolWide} · <bdi>{record.reason}</bdi></small>
         </button>
       </li>)}
     </ul>
@@ -223,7 +227,12 @@ function DaysEditor({ locale, year }: { locale: Locale; year: SchoolYear }) {
     {year.state !== "closed" && rows && <form className="auth-form" onSubmit={submit} aria-busy={state.pending}>
       <label>{text.date}<input type="date" value={date} onChange={(event) => setDate(event.target.value)}
         min={year.startsOn} required disabled={state.pending} /></label>
-      <div className="auth-form" key={date + (current?.revision ?? 0)}>
+      <label>{text.classScope}<select value={classId} disabled={state.pending} onChange={(event) => setClassId(event.target.value)}>
+        <option value="">{text.schoolWide}</option>{classes.map((item) => <option value={item.id} key={item.id}>
+          {item.code} · {locale === "ar" ? item.nameAr : item.nameDe}
+        </option>)}
+      </select></label>
+      <div className="auth-form" key={date + classId + (current?.revision ?? 0)}>
         <label>{text.state}<select name="teaching" defaultValue={current?.teaching ? "yes" : "no"}>
           <option value="yes">{text.teaching}</option><option value="no">{text.closedDay}</option>
         </select></label>

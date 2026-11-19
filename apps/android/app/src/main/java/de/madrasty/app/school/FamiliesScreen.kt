@@ -276,6 +276,8 @@ fun ChildrenScreen(model: IdentityViewModel) {
             HorizontalDivider()
             AsyncSurface(selected) { child ->
                 Text(isolate(child.getString("displayName")), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                val language = LocalConfiguration.current.locales[0].language
+                child.optJSONObject("currentClass")?.let { Text(classLabel(it, language)) }
                 Text("${stringResource(R.string.student_number)} · \u2066${child.getString("studentNumber")}\u2069")
             }
         }

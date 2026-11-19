@@ -207,9 +207,13 @@ private fun DayForm(model: IdentityViewModel, year: Period, attempts: MutableMap
     var date by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
     var teaching by remember { mutableStateOf(false) }
+    var classId by remember { mutableStateOf("") }
+    var classes by remember { mutableStateOf(emptyList<JSONObject>()) }
+    val locale = LocalConfiguration.current.locales[0].language
     val path = "/school/years/${year.id}/days"
     LaunchedEffect(reload) {
         rows = try {
+            classes = model.records("/school/classes?yearId=${year.id}&limit=100")
             val result = decodeData(model.schoolRequest(path)) { body ->
                 val list = body as JSONArray
                 List(list.length()) { list.getJSONObject(it) }
@@ -225,6 +229,7 @@ private fun DayForm(model: IdentityViewModel, year: Period, attempts: MutableMap
             val day = value.getString("schoolDate")
             TextButton(onClick = {
                 date = day
+                classId = if (value.isNull("classId")) "" else value.getString("classId")
                 reason = value.getString("reason")
                 teaching = value.getBoolean("teaching")
             }) {
@@ -236,15 +241,20 @@ private fun DayForm(model: IdentityViewModel, year: Period, attempts: MutableMap
         }
         if (year.state != "closed") {
             Field(R.string.school_day, date) { date = it }
+            FilterChip(classId.isEmpty(), { classId = "" }, label = { Text(stringResource(R.string.whole_school)) })
+            classes.forEach { item ->
+                val id = item.getString("id")
+                FilterChip(classId == id, { classId = id }, label = { Text(classLabel(item, locale)) })
+            }
             Field(R.string.school_reason, reason) { reason = it }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(teaching, { teaching = it })
                 Text(stringResource(if (teaching) R.string.school_teaching else R.string.school_cancelled))
             }
             Submit(enabled = validDate(date) && date >= year.start && date < year.end && reason.isNotBlank()) {
-                val revision = saved.find { it.getString("schoolDate") == date && it.isNull("classId") }?.getInt("revision") ?: 0
+                val revision = saved.find { it.getString("schoolDate") == date && (if (it.isNull("classId")) "" else it.getString("classId")) == classId }?.getInt("revision") ?: 0
                 val change = model.schoolCommand(attempts, "$path/$date", "PUT", JSONObject().put("teaching", teaching)
-                    .put("reason", reason.trim()).put("revision", revision))
+                    .put("reason", reason.trim()).put("revision", revision).put("classId", classId.ifEmpty { null } ?: JSONObject.NULL))
                 rows = AsyncState.Ready((saved.filter { it.getString("id") != change.getString("id") } + change)
                     .sortedBy { it.getString("schoolDate") })
             }
@@ -261,7 +271,7 @@ internal fun Field(label: Int, value: String, editable: Boolean = true, edit: (S
 }
 
 @Composable
-internal fun Submit(enabled: Boolean, action: suspend () -> Unit) {
+internal fun Submit(enabled: Boolean, label: Int = R.string.school_save, action: suspend () -> Unit) {
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Int?>(null) }
@@ -274,7 +284,7 @@ internal fun Submit(enabled: Boolean, action: suspend () -> Unit) {
         catch (_: Exception) { status = R.string.generic_error }
         finally { pending = false }
     } }) {
-        Text(stringResource(if (pending) R.string.pending else R.string.school_save))
+        Text(stringResource(if (pending) R.string.pending else label))
     }
     status?.let { Text(stringResource(it), Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
 }

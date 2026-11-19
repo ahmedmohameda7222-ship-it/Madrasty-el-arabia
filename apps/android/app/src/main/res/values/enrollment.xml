@@ -1,0 +1,30 @@
+<resources>
+    <string name="enrollments">الفصول وقيد الطلبة</string>
+    <string name="choose_year">اختر السنة</string>
+    <string name="choose_class">اختر الفصل</string>
+    <string name="new_class">إضافة فصل</string>
+    <string name="class_code">كود الفصل</string>
+    <string name="class_cap">عدد المقاعد</string>
+    <string name="class_roster">كشف القيد</string>
+    <string name="open_roster">فتح الكشف</string>
+    <string name="place_students">تسكين الطلبة</string>
+    <string name="enrollment_from">تاريخ السريان (YYYY-MM-DD)</string>
+    <string name="transfer_student">نقل</string>
+    <string name="withdraw_student">إنهاء القيد</string>
+    <string name="destination_class">الفصل الجديد</string>
+    <string name="enrollment_history">سجل القيد</string>
+    <string name="year_rollover">ترحيل السنة</string>
+    <string name="rollover_target">السنة المستهدفة</string>
+    <string name="rollover_preview">معاينة الترحيل</string>
+    <string name="rollover_confirm">اعتماد الترحيل وإغلاق السنة</string>
+    <string name="rollover_place">حسب الفصل</string>
+    <string name="rollover_repeat">إعادة السنة</string>
+    <string name="rollover_skip">تخطي</string>
+    <string name="rollover_override">اختيار فصل مختلف</string>
+    <string name="rollover_count">تسكين: %1$d · تعارضات: %2$d · بدون تسكين: %3$d</string>
+    <string name="enrollment_conflict">له قيد في السنة المستهدفة</string>
+    <string name="enrollment_inactive">الطالب غير نشط</string>
+    <string name="enrollment_no_target">الفصل المستهدف غير محدد</string>
+    <string name="enrollment_class_full">الفصل ممتلئ</string>
+    <string name="whole_school">المدرسة كلها</string>
+</resources>
