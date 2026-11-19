@@ -11,6 +11,7 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useAdminCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { AsyncSurface } from "@/ui/AsyncSurface";
+import { InviteGuardianButton } from "@/features/identity/Invitations";
 import { ScopeSheet } from "@/ui/Shell";
 
 const copy = {
@@ -243,6 +244,8 @@ function Relationships({ locale, record, changed }: { locale: Locale; record: z.
   }
   return <section className="auth-form">
     <h3>{text.links}</h3>
+    {!record.linkedAccount && record.contactEmail && record.links.some((link) => link.state === "approved") &&
+      <InviteGuardianButton locale={locale} id={record.id} correspondenceLocale={record.correspondenceLocale} />}
     {record.links.length === 0 && <p>{dictionary(locale).empty}</p>}
     <ul className="group-list">
       {record.links.map((link) => <li key={link.id} className="group-row">

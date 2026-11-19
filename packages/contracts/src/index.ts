@@ -8,3 +8,4 @@ export * from "./school/calendar";
 export * from "./school/families";
 export * from "./school/enrollments";
 export * from "./school/imports";
+export * from "./invitations";

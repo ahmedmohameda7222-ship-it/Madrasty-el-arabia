@@ -43,6 +43,13 @@ class AuthRepository(context: Context) {
     private val http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
         .connectTimeout(8, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build()
 
+    suspend fun acceptInvite(existing: Boolean, body: JSONObject, idempotencyKey: String) = io {
+        val operation = if (existing) "existing" else "activate"
+        exchange("$apiOrigin/api/v1/invitations/$operation", body,
+            mapOf("Idempotency-Key" to idempotencyKey), decodeApiError = true)
+        Unit
+    }
+
     suspend fun signIn(email: String, password: String): SchoolSession = io {
         flushPending()
         val response = providerToken("password", JSONObject().put("email", email.trim()).put("password", password))

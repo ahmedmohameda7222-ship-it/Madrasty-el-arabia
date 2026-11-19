@@ -18,9 +18,9 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const [access, calendar, placement] = tab === "more"
-    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage")])
-    : [false, false, false];
+  const [access, calendar, placement, invites] = tab === "more"
+    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage")])
+    : [false, false, false, false];
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
   return (
@@ -29,6 +29,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
       {tab === "home" && <p>{text[session.activePersona]}</p>}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} /></>}
       {tab === "children" && <Children locale={locale} />}
+      {(placement || invites) && <Link className="plain-button" href={`/${locale}/staff/invitations`}>{locale === "ar" ? "الدعوات" : "Einladungen"}</Link>}
       {(calendar || placement) && <Link className="plain-button" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
       {calendar && <Link className="plain-button" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
       {access && <Link className="plain-button" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}

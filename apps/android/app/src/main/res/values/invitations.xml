@@ -1,0 +1,28 @@
+<resources>
+    <string name="invite_title">الدعوات</string>
+    <string name="invite_landing">دعوة إلى مدرستي العربية</string>
+    <string name="invite_continue">متابعة الدعوة</string>
+    <string name="invite_new_password">كلمة سر جديدة</string>
+    <string name="invite_repeat_password">تأكيد كلمة السر</string>
+    <string name="invite_activate">تفعيل الحساب</string>
+    <string name="invite_have_account">عندي حساب بالفعل</string>
+    <string name="invite_confirm">تأكيد الدعوة</string>
+    <string name="invite_invalid">الدعوة غير متاحة. تواصل مع المدرسة لطلب رابط جديد.</string>
+    <string name="invite_success">تم تفعيل الدعوة. سجّل الدخول للمتابعة.</string>
+    <string name="invite_teacher">دعوة مدرس</string>
+    <string name="invite_queue">جدولة إرسال الدعوة</string>
+    <string name="invite_batch">دعوات ملف الأسر</string>
+    <string name="invite_reissue">إعادة إصدار</string>
+    <string name="invite_correct">عنوان مصحح (اختياري)</string>
+    <string name="invite_ready">جاهزة</string>
+    <string name="invite_queued">في قائمة الإرسال</string>
+    <string name="invite_sent">قبلها مزود البريد</string>
+    <string name="invite_bounced">ارتدت</string>
+    <string name="invite_pending">صالحة للتفعيل</string>
+    <string name="invite_expired">منتهية</string>
+    <string name="invite_replaced">مستبدلة</string>
+    <string name="invite_revoked">ملغاة</string>
+    <string name="invite_activated">مفعّلة</string>
+    <string name="invite_any">الكل</string>
+    <string name="invite_count">دعوات جديدة: %1$d · دعوات قائمة: %2$d</string>
+</resources>

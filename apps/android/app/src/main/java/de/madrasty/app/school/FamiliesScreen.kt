@@ -186,6 +186,12 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
 
     Text(stringResource(R.string.family_links), style = MaterialTheme.typography.titleLarge)
     val records = record.getJSONArray("links").objects()
+    if (!record.getBoolean("linkedAccount") && !record.isNull("contactEmail") && records.any { it.getString("state") == "approved" }) {
+        Submit(true, R.string.invite_queue) {
+            model.schoolCommand(requests, "/invitations", "POST", JSONObject().put("kind", "guardian")
+                .put("recipientId", record.getString("id")).put("locale", record.getString("correspondenceLocale")))
+        }
+    }
     if (records.isEmpty()) Text(stringResource(R.string.empty))
     records.forEach { value ->
         val state = value.getString("state")

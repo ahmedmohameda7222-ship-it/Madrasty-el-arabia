@@ -100,6 +100,9 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    suspend fun acceptInvite(existing: Boolean, body: JSONObject, idempotencyKey: String) =
+        repository.acceptInvite(existing, body, idempotencyKey)
+
     fun signIn(email: String, password: String) = run(R.string.sign_in_failed) {
         session = repository.signIn(email, password)
     }
@@ -178,9 +181,15 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
 
 @Composable
 fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Unit) {
+    val invite = callback?.takeIf(::isSchoolInvitation)
     LaunchedEffect(callback) {
+        if (invite != null) return@LaunchedEffect
         model.open(callback)
         if (callback != null) consumed()
+    }
+    if (invite != null) {
+        InvitationLanding(model, invite, consumed)
+        return
     }
     val session = model.session
     var security by remember(session?.actor) { mutableStateOf(false) }
@@ -189,6 +198,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     var calendar by remember(session?.actor) { mutableStateOf(false) }
     var enrollment by remember(session?.actor) { mutableStateOf(false) }
     var importing by remember(session?.actor) { mutableStateOf(false) }
+    var invitations by remember(session?.actor) { mutableStateOf(false) }
+    var inviteBatch by remember(session?.actor) { mutableStateOf<String?>(null) }
     LaunchedEffect(session?.actor, session?.assurance) {
         if (session?.actor?.persona == Persona.Admin && session.assurance == "aal2") {
             capabilities = try { model.capabilities() } catch (error: CancellationException) { throw error } catch (_: Exception) { emptySet() }
@@ -201,7 +212,9 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
     else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
         EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
-    else if (importing && "students.manage" in capabilities) ImportScreen(model) { importing = false }
+    else if (invitations && ("students.manage" in capabilities || "applications.manage" in capabilities))
+        StaffInvitationsScreen(model, "applications.manage" in capabilities, inviteBatch) { invitations = false; inviteBatch = null }
+    else if (importing && "students.manage" in capabilities) ImportScreen(model, { id -> inviteBatch = id; invitations = true }) { importing = false }
     else SchoolShell(session.actor) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
@@ -216,6 +229,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             if ("school.manage" in capabilities || "students.manage" in capabilities)
                 TextButton(onClick = { enrollment = true }) { Text(stringResource(R.string.enrollments)) }
             if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
+            if ("students.manage" in capabilities || "applications.manage" in capabilities)
+                TextButton(onClick = { invitations = true }) { Text(stringResource(R.string.invite_title)) }
             AccountActions(model, session)
         }
     }

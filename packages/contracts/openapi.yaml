@@ -1118,6 +1118,187 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":3,"rowsCommitted":1,"linksCreated":1,"eligibleGuardians":1}}
         default:
           $ref: '#/components/responses/AuthError'
+  /invitations:
+    get:
+      operationId: listInvitations
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - { name: batchId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string, enum: [pending, expired, replaced, revoked, activated] } }
+      responses:
+        '200':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"guardian","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: issueInvitation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["recipientId","kind","locale"],"properties":{"recipientId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["guardian","teacher"]},"locale":{"type":"string","enum":["ar","de"]}}}
+      responses:
+        '201':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"guardian","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
+        '200':
+          description: Replayed authorized request
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"guardian","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/teachers:
+    post:
+      operationId: issueTeacherInvitation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["name","email","locale"],"properties":{"name":{"type":"string"},"email":{"type":"string","format":"email"},"locale":{"type":"string","enum":["ar","de"]}}}
+      responses:
+        '201':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"teacher","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
+        '200':
+          description: Replayed authorized request
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"teacher","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/batches:
+    post:
+      operationId: issueInvitationBatch
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["committedBatchId","recipientIds"],"properties":{"committedBatchId":{"type":"string","format":"uuid"},"recipientIds":{"type":"array","minItems":1,"maxItems":100,"items":{"type":"string","format":"uuid"}}}}
+      responses:
+        '202':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"operationId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","issued":2,"alreadyPending":1}}
+        '200':
+          description: Replayed authorized request
+          content:
+            application/json:
+              example: {"data":{"operationId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","issued":2,"alreadyPending":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/batches/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getInvitationBatchRecipients
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":[{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","name":"Family Example","email":"family@example.invalid","locale":"ar"}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/{id}/reissue:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: reissueInvitation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision"],"properties":{"revision":{"type":"integer","minimum":1},"correctedEmail":{"type":"string","format":"email"}}}
+      responses:
+        '200':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":2,"kind":"guardian","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/redeem:
+    post:
+      operationId: redeemVerifiedInvitation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["token"],"properties":{"token":{"type":"string"}}}
+      responses:
+        '200':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"accountId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","persona":"guardian"}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/existing:
+    post:
+      operationId: redeemInvitationWithPassword
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["token","email","password"],"properties":{"token":{"type":"string"},"email":{"type":"string","format":"email"},"password":{"type":"string"}}}
+      responses:
+        '200':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"accountId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","persona":"guardian"}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /invitations/activate:
+    post:
+      operationId: activateNewInvitee
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["token","proof","password"],"properties":{"token":{"type":"string"},"proof":{"type":"string"},"password":{"type":"string","minLength":12,"maxLength":128}}}
+      responses:
+        '200':
+          description: Scoped invitation result
+          content:
+            application/json:
+              example: {"data":{"accountId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","persona":"guardian"}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:

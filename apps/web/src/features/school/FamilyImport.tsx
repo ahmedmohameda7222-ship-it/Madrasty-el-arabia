@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
@@ -214,6 +215,7 @@ export function FamilyImport({ locale }: { locale: Locale }) {
         <dt>{text.links}</dt><dd>{receipt.linksCreated}</dd>
         <dt>{text.eligible}</dt><dd>{receipt.eligibleGuardians}</dd></dl>
       <p>{text.sendNotice}</p>
+      {receipt.eligibleGuardians > 0 && <Link className="plain-button" href={`/${locale}/staff/invitations?batchId=${receipt.id}`}>{text.eligible}</Link>}
     </section>}
     {pending && <p role="status">{translated.pending}</p>}
     {error && <p role="alert" className="notice">{error}</p>}

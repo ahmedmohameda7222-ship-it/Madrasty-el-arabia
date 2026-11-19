@@ -59,7 +59,7 @@ private val dispositions = mapOf("new" to R.string.import_new, "existing" to R.s
 private typealias Commands = MutableMap<String, Pair<String, String>>
 
 @Composable
-fun ImportScreen(model: IdentityViewModel, close: () -> Unit) {
+fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, close: () -> Unit) {
     val context = LocalContext.current
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
     var file by remember { mutableStateOf<Uri?>(null) }
@@ -206,6 +206,9 @@ fun ImportScreen(model: IdentityViewModel, close: () -> Unit) {
             Text(stringResource(R.string.import_links, it.getInt("linksCreated")))
             Text(stringResource(R.string.import_eligible, it.getInt("eligibleGuardians")))
             Text(stringResource(R.string.import_invite_later))
+            if (it.getInt("eligibleGuardians") > 0) TextButton(onClick = { invitations(it.getString("id")) }) {
+                Text(stringResource(R.string.invite_batch))
+            }
         }
     }
 }
