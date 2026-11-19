@@ -1,0 +1,14 @@
+<resources>
+    <string name="security">Kontosicherheit</string>
+    <string name="recovery">Passwort zurücksetzen</string>
+    <string name="mfa_title">Zwei-Faktor-Verifizierung</string>
+    <string name="mfa_setup">Authenticator einrichten</string>
+    <string name="mfa_hint">Fügen Sie den Schlüssel in Ihrer Authenticator-App hinzu und geben Sie den sechsstelligen Code ein.</string>
+    <string name="mfa_code">Authenticator-Code</string>
+    <string name="verified">Verifiziert</string>
+    <string name="mfa_required">Bestätigen Sie den zweiten Faktor für den Verwaltungszugriff.</string>
+    <string name="email_change">E-Mail-Adresse ändern</string>
+    <string name="new_email">Neue E-Mail-Adresse</string>
+    <string name="email_sent">Prüfen Sie Ihre E-Mail auf den Bestätigungslink.</string>
+    <string name="send_link">Link senden</string>
+</resources>

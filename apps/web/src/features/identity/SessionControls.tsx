@@ -13,7 +13,7 @@ const labels = {
     signOut: "Abmelden", all: "Von allen Geräten abmelden", switch: "Rolle wechseln", unsent: "Beim Abmelden können ungesendete Entwürfe verloren gehen. Möchten Sie fortfahren?", revoked: "Die Abmeldung wartet auf eine Verbindung zum Server." },
 } as const;
 
-function webHeaders(persona?: Persona) {
+export function webHeaders(persona?: Persona) {
   const csrf = document.cookie.split(";").map((value) => value.trim()).find((value) =>
     value.startsWith("__Host-madrasty-csrf=") || value.startsWith("madrasty-csrf="))?.split("=")[1];
   return {

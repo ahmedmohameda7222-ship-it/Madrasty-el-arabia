@@ -14,7 +14,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.IOException
-import java.net.HttpURLConnection
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 import java.net.URI
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -36,6 +40,8 @@ class AuthRepository(context: Context) {
     private var active: SchoolSession? = null
     private val apiOrigin = BuildConfig.API_ORIGIN
     private var authConfig: ProviderConfig? = null
+    private val http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
+        .connectTimeout(8, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build()
 
     suspend fun signIn(email: String, password: String): SchoolSession = io {
         flushPending()
@@ -96,9 +102,9 @@ class AuthRepository(context: Context) {
         }
     }
 
-    suspend fun request(path: String, body: JSONObject? = null, idempotencyKey: String? = null): String = io {
+    suspend fun request(path: String, body: JSONObject? = null, idempotencyKey: String? = null, method: String = if (body == null) "GET" else "POST"): String = io {
         val current = active ?: throw HttpFailure(401, "unauthenticated")
-        authenticated(path, body, current.actor.persona, idempotencyKey)
+        authenticated(path, body, current.actor.persona, idempotencyKey, method)
     }
 
     suspend fun prepareLink(): PkceLink = io {
@@ -125,6 +131,42 @@ class AuthRepository(context: Context) {
         adopt(response)
     }
 
+    data class Enrollment(val id: String, val secret: String)
+
+    suspend fun verifiedFactor() = io {
+        val raw = authenticated("/auth/mfa/factors", null, requireNotNull(active).actor.persona)
+        decodeData(raw) { payload ->
+            val factors = payload as org.json.JSONArray
+            (0 until factors.length()).asSequence().map(factors::getJSONObject)
+                .firstOrNull { it.getString("status") == "verified" }?.getString("id")
+        }.data
+    }
+
+    suspend fun enrollFactor(): Enrollment = io {
+        val registered = authUser("/factors", JSONObject().put("factor_type", "totp").put("issuer", "Madrasty El Arabia"))
+        Enrollment(registered.getString("id"), registered.getJSONObject("totp").getString("secret"))
+    }
+
+    suspend fun verifyFactor(id: String, code: String): SchoolSession = io {
+        val factorId = java.util.UUID.fromString(id).toString()
+        val challenge = authUser("/factors/$factorId/challenge", JSONObject())
+        val next = authUser("/factors/$factorId/verify", JSONObject().put("challenge_id", challenge.getString("id")).put("code", code))
+        adopt(next)
+    }
+
+    suspend fun requestEmailChange(email: String, password: String) = io {
+        val current = requireNotNull(active)
+        authenticated("/auth/email-change", JSONObject().put("newEmail", email.trim()).put("reauthProof", password),
+            current.actor.persona)
+        Unit
+    }
+
+    private fun authUser(path: String, body: JSONObject): JSONObject {
+        val config = getProviderConfig()
+        val token = access ?: throw HttpFailure(401, "unauthenticated")
+        return JSONObject(exchange("${config.origin}/auth/v1$path", body,
+            mapOf("apikey" to config.key, "Authorization" to "Bearer $token"), decodeApiError = false))
+    }
     private fun adopt(response: JSONObject): SchoolSession {
         val nextAccess = response.getString("access_token")
         val nextRefresh = response.getString("refresh_token")
@@ -139,27 +181,27 @@ class AuthRepository(context: Context) {
         return session
     }
 
-    private fun authenticated(path: String, body: JSONObject?, persona: Persona, idempotencyKey: String? = null): String {
+    private fun authenticated(path: String, body: JSONObject?, persona: Persona, idempotencyKey: String? = null, method: String = if (body == null) "GET" else "POST"): String {
         val token = access ?: throw HttpFailure(401, "unauthenticated")
         return try {
-            api(path, token, body, persona, idempotencyKey)
+            api(path, token, body, persona, idempotencyKey, method)
         } catch (error: HttpFailure) {
             if (error.status != 401) throw error
             val refresh = store.read("refresh") ?: throw error
             val session = adopt(providerToken("refresh_token", JSONObject().put("refresh_token", refresh)))
             if (session.actor.persona != persona) throw HttpFailure(403, "forbidden")
-            api(path, checkNotNull(access), body, persona, idempotencyKey)
+            api(path, checkNotNull(access), body, persona, idempotencyKey, method)
         }
     }
 
-    private fun api(path: String, token: String, body: JSONObject? = null, persona: Persona? = null, key: String? = null): String {
+    private fun api(path: String, token: String, body: JSONObject? = null, persona: Persona? = null, key: String? = null, method: String = if (body == null) "GET" else "POST"): String {
         require(path.startsWith("/") && !path.startsWith("//") && !path.contains(".."))
         val headers = buildMap {
             put("Authorization", "Bearer $token")
             persona?.let { put("X-School-Persona", it.name.lowercase()) }
             key?.let { put("Idempotency-Key", it) }
         }
-        return exchange("$apiOrigin/api/v1$path", body, headers, decodeApiError = true)
+        return exchange("$apiOrigin/api/v1$path", body, headers, decodeApiError = true, method = method)
     }
 
     private data class ProviderConfig(val origin: String, val key: String)
@@ -184,31 +226,21 @@ class AuthRepository(context: Context) {
             mapOf("apikey" to config.key), decodeApiError = false))
     }
 
-    private fun exchange(url: String, body: JSONObject?, headers: Map<String, String>, decodeApiError: Boolean): String {
-        val connection = URI(url).toURL().openConnection() as HttpURLConnection
-        try {
-            connection.instanceFollowRedirects = false
-            connection.connectTimeout = 8_000
-            connection.readTimeout = 12_000
-            connection.requestMethod = if (body == null) "GET" else "POST"
-            connection.setRequestProperty("Accept", "application/json")
-            headers.forEach { (name, value) -> connection.setRequestProperty(name, value) }
-            if (body != null) {
-                connection.setRequestProperty("Content-Type", "application/json")
-                connection.doOutput = true
-                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            }
-            val status = connection.responseCode
-            if (status == 204) return ""
-            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-            val raw = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-            if (status !in 200..299) {
+    private fun exchange(
+        url: String, body: JSONObject?, headers: Map<String, String>, decodeApiError: Boolean,
+        method: String = if (body == null) "GET" else "POST",
+    ): String {
+        val request = Request.Builder().url(url).header("Accept", "application/json")
+            .method(method, body?.toString()?.toRequestBody("application/json; charset=utf-8".toMediaType()))
+            .apply { headers.forEach { (name, value) -> header(name, value) } }.build()
+        return http.newCall(request).execute().use { response ->
+            if (response.code == 204) return@use ""
+            val raw = response.body.string()
+            if (!response.isSuccessful) {
                 val code = if (decodeApiError) runCatching { decodeError(raw).code }.getOrNull() else null
-                throw HttpFailure(status, code)
+                throw HttpFailure(response.code, code)
             }
-            return raw
-        } finally {
-            connection.disconnect()
+            raw
         }
     }
 
@@ -218,6 +250,7 @@ class AuthRepository(context: Context) {
         store.remove("refresh")
         store.remove("logout_ticket")
         store.remove("pkce")
+        authConfig = null
     }
 
     private fun randomText() = Base64.encodeToString(ByteArray(32).also(random::nextBytes), pkceFlags)

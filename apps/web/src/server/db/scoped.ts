@@ -64,6 +64,11 @@ export function withActor<T>(ctx: ActorContext, work: (tx: Transaction) => Promi
     `;
     const [guard] = await tx<{ allowed: boolean }[]>`select app.guard_actor() as allowed`;
     if (!guard.allowed) throw new ApiError("forbidden");
+    if (ctx.persona === "admin") {
+      if (ctx.assurance !== "aal2") throw new ApiError("forbidden");
+      const [factor] = await tx<{ verified: boolean }[]>`select app.has_verified_factor(${ctx.accountId}) as verified`;
+      if (!factor.verified) throw new ApiError("forbidden");
+    }
     return work(tx);
   });
 }

@@ -42,11 +42,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import de.madrasty.app.R
+import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import org.json.JSONArray
+import de.madrasty.app.api.decodeData
 
 class IdentityViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AuthRepository(application)
@@ -97,10 +101,55 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun switch(persona: Persona) = run(R.string.auth_unavailable) {
+        clearSecurity()
         session = repository.switchPersona(persona)
     }
 
+    var verifiedFactor by mutableStateOf<String?>(null)
+        private set
+    var enrollment by mutableStateOf<AuthRepository.Enrollment?>(null)
+        private set
+    var factorsLoaded by mutableStateOf(false)
+        private set
+    var sentEmail by mutableStateOf(false)
+        private set
+
+    suspend fun schoolRequest(path: String, body: JSONObject? = null, method: String = "GET", idempotencyKey: String? = null) =
+        repository.request(path, body, idempotencyKey, method)
+
+    suspend fun capabilities(): Set<String> {
+        val raw = schoolRequest("/auth/capabilities")
+        return decodeData(raw) { value ->
+            val keys = value as JSONArray
+            (0 until keys.length()).map(keys::getString).toSet()
+        }.data
+    }
+    fun loadFactors() = run(R.string.auth_unavailable) {
+        verifiedFactor = repository.verifiedFactor()
+        factorsLoaded = true
+    }
+
+    fun enrollFactor() = run(R.string.auth_unavailable) { enrollment = repository.enrollFactor() }
+
+    fun verifyFactor(id: String, code: String) = run(R.string.sign_in_failed) {
+        session = repository.verifyFactor(id, code)
+        verifiedFactor = id
+        enrollment = null
+    }
+
+    fun requestEmailChange(email: String, password: String) = run(R.string.auth_unavailable) {
+        repository.requestEmailChange(email, password)
+        sentEmail = true
+    }
+
+    private fun clearSecurity() {
+        verifiedFactor = null
+        enrollment = null
+        factorsLoaded = false
+        sentEmail = false
+    }
     fun signOut(all: Boolean) {
+        clearSecurity()
         session = null
         run(R.string.sign_out_pending) { repository.signOut(all) }
     }
@@ -130,10 +179,29 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         if (callback != null) consumed()
     }
     val session = model.session
-    if (session == null) SignInScreen(model) else SchoolShell(session.actor) { tab ->
+    var security by remember(session?.actor) { mutableStateOf(false) }
+    var staffAccess by remember(session?.actor) { mutableStateOf(false) }
+    var capabilities by remember(session?.actor) { mutableStateOf(emptySet<String>()) }
+    var calendar by remember(session?.actor) { mutableStateOf(false) }
+    LaunchedEffect(session?.actor, session?.assurance) {
+        if (session?.actor?.persona == Persona.Admin && session.assurance == "aal2") {
+            capabilities = try { model.capabilities() } catch (error: CancellationException) { throw error } catch (_: Exception) { emptySet() }
+        }
+    }
+    if (session == null) SignInScreen(model)
+    else if (security || session.actor.persona == Persona.Admin && session.assurance != "aal2") {
+        SecurityScreen(model, session) { security = false }
+    } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
+    else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
+    else SchoolShell(session.actor) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
-        if (tab == SchoolTab.More) AccountActions(model, session)
+        if (tab == SchoolTab.More) {
+            TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
+            if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }
+            if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
+            AccountActions(model, session)
+        }
     }
 }
 
@@ -165,6 +233,7 @@ private fun SignInScreen(model: IdentityViewModel) {
             enabled = !model.pending && email.isNotBlank() && password.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(if (model.pending) R.string.loading else R.string.sign_in)) }
+        RecoveryLink()
     }
 }
 

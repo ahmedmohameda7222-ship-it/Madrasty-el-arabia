@@ -204,6 +204,333 @@ paths:
           description: School session access revoked
         default:
           $ref: '#/components/responses/AuthError'
+  /auth/recovery/request:
+    post:
+      operationId: requestRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["email","locale"],"properties":{"email":{"type":"string","format":"email"},"locale":{"type":"string","enum":["ar","de"]}}}
+      responses:
+        '202':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"accepted":true}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/recovery/complete:
+    post:
+      operationId: completeRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["challenge","newPassword"],"properties":{"challenge":{"type":"string"},"newPassword":{"type":"string","minLength":12,"maxLength":128}}}
+      responses:
+        '204':
+          description: Completed
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/bootstrap/complete:
+    post:
+      operationId: completeInitialActivation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["challenge","newPassword"],"properties":{"challenge":{"type":"string"},"newPassword":{"type":"string","minLength":12,"maxLength":128}}}
+      responses:
+        '204':
+          description: Completed
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/email-change:
+    post:
+      operationId: requestEmailChange
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["newEmail","reauthProof"],"properties":{"newEmail":{"type":"string","format":"email"},"reauthProof":{"type":"string"}}}
+      responses:
+        '202':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"accepted":true}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/email-change/confirm:
+    post:
+      operationId: confirmEmailChange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["challenge"],"properties":{"challenge":{"type":"string"}}}
+      responses:
+        '204':
+          description: Completed
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/mfa/factors:
+    get:
+      operationId: listMfaFactors
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":[{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","factor_type":"totp","status":"verified","friendly_name":"Authenticator"}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/mfa/enroll:
+    post:
+      operationId: enrollMfa
+      security: [{ webSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{}}
+      responses:
+        '201':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","totp":{"secret":"EXAMPLE","uri":"otpauth://totp/example"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/mfa/challenge:
+    post:
+      operationId: createMfaChallenge
+      security: [{ webSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["factorId"],"properties":{"factorId":{"type":"string","format":"uuid"}}}
+      responses:
+        '201':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"challengeId":"2d71a427-2ffa-4740-bfa4-308f34973fd0"}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/mfa/verify:
+    post:
+      operationId: verifyMfa
+      security: [{ webSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["challengeId","code"],"properties":{"challengeId":{"type":"string","format":"uuid"},"code":{"type":"string","pattern":"^[0-9]{6}$"}}}
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        default:
+          $ref: '#/components/responses/AuthError'
+  /auth/capabilities:
+    get:
+      operationId: listCurrentCapabilities
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":["school.manage"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /staff/access-targets:
+    get:
+      operationId: listAccessTargets
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":[{"accountId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","email":"teacher@example.invalid"}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /staff/{id}/grants:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getStaffGrants
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"accountId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","email":"teacher@example.invalid","verifiedMfa":false,"revision":1,"personas":["teacher"],"capabilities":[],"inboxAssignments":[]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: replaceStaffGrants
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","personas","capabilities","inboxAssignments"],"properties":{"revision":{"type":"integer","minimum":1},"personas":{"type":"array","items":{"type":"string","enum":["admin","teacher","guardian"]}},"capabilities":{"type":"array","items":{"type":"object","required":["key","validFrom","validUntil"],"properties":{"key":{"type":"string","enum":["access.manage","school.manage","students.manage","applications.manage","attendance.supervise","academics.supervise","comms.publish","finance.read","finance.issue","finance.post","finance.export","bank.configure","audit.read"]},"validFrom":{"type":"string","format":"date-time"},"validUntil":{"type":["string","null"],"format":"date-time"}}}},"inboxAssignments":{"type":"array","items":{"type":"object","required":["key","validFrom","validUntil"],"properties":{"key":{"type":"string","enum":["student_affairs","accounts"]},"validFrom":{"type":"string","format":"date-time"},"validUntil":{"type":["string","null"],"format":"date-time"}}}}}}
+      responses:
+        '200':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"accountId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","email":"teacher@example.invalid","verifiedMfa":false,"revision":2,"personas":["teacher"],"capabilities":[],"inboxAssignments":[]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /staff/{id}/deactivate:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: deactivateStaff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["scope","reason","revision"],"properties":{"scope":{"type":"string","enum":["staff","account"]},"reason":{"type":"string","minLength":4,"maxLength":400},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Accepted and scoped response
+          content:
+            application/json:
+              example: {"data":{"revision":3}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/settings:
+    get:
+      operationId: getSchoolSettings
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":{"timezone":"Europe/Berlin","nameAr":"مدرسة تجريبية","nameDe":"Beispielschule","currency":"EUR","dueDay":1,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: putSchoolSettings
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["timezone","nameAr","nameDe","currency","dueDay","revision"],"properties":{"timezone":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"dueDay":{"type":"integer","minimum":1,"maximum":31},"revision":{"type":"integer","minimum":0}}}
+      responses:
+        '200':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":{"timezone":"Europe/Berlin","nameAr":"مدرسة تجريبية","nameDe":"Beispielschule","currency":"EUR","dueDay":1,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/years:
+    get:
+      operationId: getSchoolYears
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","startsOn":"2026-08-01","endsExclusive":"2027-08-01","state":"active","teachingWeekdays":[1,2,3,4,5],"revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createSchoolYear
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["startsOn","endsExclusive","state","teachingWeekdays"],"properties":{"startsOn":{"type":"string","format":"date"},"endsExclusive":{"type":"string","format":"date"},"state":{"type":"string","enum":["draft","active","closed"]},"teachingWeekdays":{"type":"array","minItems":1,"maxItems":7,"uniqueItems":true,"items":{"type":"integer","minimum":1,"maximum":7}}}}
+      responses:
+        '201':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","startsOn":"2026-08-01","endsExclusive":"2027-08-01","state":"active","teachingWeekdays":[1,2,3,4,5],"revision":1}}
+        '200':
+          description: Replayed authorized creation
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","startsOn":"2026-08-01","endsExclusive":"2027-08-01","state":"active","teachingWeekdays":[1,2,3,4,5],"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/years/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updateSchoolYear
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["startsOn","endsExclusive","state","teachingWeekdays","revision"],"properties":{"startsOn":{"type":"string","format":"date"},"endsExclusive":{"type":"string","format":"date"},"state":{"type":"string","enum":["draft","active","closed"]},"teachingWeekdays":{"type":"array","minItems":1,"maxItems":7,"uniqueItems":true,"items":{"type":"integer","minimum":1,"maximum":7}},"revision":{"type":"integer","minimum":0}}}
+      responses:
+        '200':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","startsOn":"2026-08-01","endsExclusive":"2027-08-01","state":"active","teachingWeekdays":[1,2,3,4,5],"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/years/{id}/days:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listSchoolDayExceptions
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","schoolDate":"2026-11-19","classId":null,"teaching":false,"reason":"Calendar exception","revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/years/{id}/days/{date}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: date, in: path, required: true, schema: { type: string, format: date } }
+    put:
+      operationId: upsertSchoolDayException
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["teaching","reason","revision"],"properties":{"classId":{"type":["string","null"],"format":"uuid"},"teaching":{"type":"boolean"},"reason":{"type":"string","maxLength":400},"revision":{"type":"integer","minimum":0}}}
+      responses:
+        '200':
+          description: Authorized school calendar result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","schoolDate":"2026-11-19","classId":null,"teaching":false,"reason":"Calendar exception","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:

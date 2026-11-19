@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import type { Locale } from "@madrasty/contracts";
 import { SchoolHeader } from "@/ui/Shell";
+import { RecoveryLink } from "@/features/identity/SecurityForms";
 import { SignInForm } from "@/features/identity/SessionControls";
 
 export default async function SignIn({ params, searchParams }: {
@@ -19,6 +20,7 @@ export default async function SignIn({ params, searchParams }: {
         ? "افتح رابط المتابعة في التطبيق على الجهاز اللي بدأت منه، أو سجّل الدخول هنا."
         : "Öffnen Sie den Link in der App auf dem ursprünglichen Gerät oder melden Sie sich hier an."}</p>}
       <SignInForm locale={locale} destination={destination} refreshable={refreshable} />
+      <RecoveryLink locale={locale} />
     </main>
   );
 }

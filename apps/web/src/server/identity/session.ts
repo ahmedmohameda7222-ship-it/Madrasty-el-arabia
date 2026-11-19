@@ -75,6 +75,9 @@ export async function resolveSchoolSession(access: string, initialize = false): 
     account_id: string; active_persona: Persona; personas: Persona[];
   }[]>`select * from app.resolve_session(${claims.sub}, ${claims.session_id}, ${initialize})`);
   if (!row) throw new ApiError("unauthenticated");
+  if (claims.aal === "aal2" && row.active_persona === "admin") {
+    await withRuntime((tx) => tx`select app.confirm_admin_assurance(${row.account_id})`);
+  }
   // Explicitly form the wire DTO. Provider credentials never travel in domain responses.
   return sessionSchema.parse({
     accountId: row.account_id,

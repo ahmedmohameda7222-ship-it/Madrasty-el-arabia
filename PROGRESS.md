@@ -2,13 +2,13 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** I02 account lifecycle, recovery and mandatory admin MFA. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S02 families, pupils and approved links. Foundation and I01 are in 332942e. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
 | 00 Foundation | built / QA pending | Pin environment, build shells, publish contract primitives |
-| 01 Identity and access | Active (I02) | One account, effective grants and recoverable invites |
-| 02 School operations | Planned | Import, linked families, dated staffing and clash-safe timetable |
+| 01 Identity and access | I01–I03 built / QA pending. I04/I06 depend on school records. | One account, effective grants and recoverable invites |
+| 02 School operations | Active (S02) | Import, linked families, dated staffing and clash-safe timetable |
 | 03 Attendance | Planned | Online lock, actual arrival, offline reconciliation and approval |
 | 04 Academics | Planned | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
@@ -27,6 +27,10 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-19 | F02 | built / QA pending — اتنفّذت وفي انتظار الاختبار | packages/contracts/openapi.yaml, database handlers, 20261119195638_app_foundation.sql | Type-check, Next production build and Kotlin assembly exited 0. Migration is local. Q01/Q03 pending for replay, transaction rollback and pooled isolation. | F03 platform shells. |
 | 2026-11-19 | F03 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Localized web and Compose shell primitives, approved notebook/seal assets, manifest and async states | Both builds exited 0. Q04/Q06 pending for loading, scope loss, device layout and accessibility. Feature data is wired by its owners. | I01 verified sign-in and session lifecycle. |
 | 2026-11-19 | I01 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Identity migration 20261119200552, auth routes, web cookies, native Keystore and PKCE | Type-check, web production build and Android debug build exited 0. D02 must bind the refresh-revocation hook; C05 binds push detach; D04 binds App Links. Q02/Q03/Q06 pending. | I02 recovery, MFA and succession. |
+| 2026-11-19 | I02 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119201757_identity_lifecycle.sql, recovery/MFA/email routes, security screens, pre-launch bootstrap, staff deactivation | Type-check, production web build and debug Android assembly exited 0. D02 binds SMTP, templates and bootstrap. Q02/Q03/Q07 pending. | I03 access editor and capabilities. |
+| 2026-11-19 | I03 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119202435_identity_permissions.sql, capability and inbox models, staff access/deactivation UI on web and Android | Type-check and both builds exited 0. Each feature must supply its object/date predicate. S05 binds staff assignment cleanup, C05 binds delivery cleanup, B01 binds single-use finance step-up. Q03/Q05 pending. | S01 school calendar. |
+| 2026-11-19 | S01 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119203129_school_calendar.sql, school settings/year/day APIs and editors | Type-check, web production build and Android debug assembly exited 0. S03 binds class-calendar writes with real class IDs and A01 guards approved attendance against conflicting calendar edits. Q02/Q04 pending. | S02 pupils, family contacts and approved child links. |
+| 2026-11-19 | S02, step 1 | Active | Local work starting | I04 guardian invitations wait for S02/S04. I06 directory waits for S05. | Add private student/guardian/link SQL, shared endpoints and both clients. |
 
 ## Decision and discrepancy log
 

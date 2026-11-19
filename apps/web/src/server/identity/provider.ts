@@ -11,6 +11,7 @@ const claimsSchema = z.object({
   session_id: z.uuid(),
   exp: z.number().int(),
   aal: z.enum(["aal1", "aal2"]),
+  amr: z.array(z.object({ method: z.string(), timestamp: z.number() })).optional(),
   is_anonymous: z.literal(false).optional(),
 });
 

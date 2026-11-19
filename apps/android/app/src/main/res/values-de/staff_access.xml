@@ -1,0 +1,35 @@
+<resources>
+    <string name="staff_access">Zugriff für Mitarbeitende</string>
+    <string name="choose_staff">Person auswählen</string>
+    <string name="staff_more">Weitere anzeigen</string>
+    <string name="access_roles">Rollen</string>
+    <string name="access_permissions">Berechtigungen</string>
+    <string name="access_inboxes">Offizielle Postfächer</string>
+    <string name="access_save">Berechtigungen speichern</string>
+    <string name="staff_suspend">Mitarbeitendenzugriff deaktivieren</string>
+    <string name="account_suspend">Gesamtes Konto deaktivieren</string>
+    <string name="suspend_reason">Grund der Deaktivierung</string>
+    <string name="suspendconfirm">Deaktivierung bestätigen</string>
+    <string name="access_start">Gültig ab (UTC)</string>
+    <string name="access_end">Gültig bis (UTC)</string>
+    <string name="mfa_enabled">Zweiter Faktor eingerichtet</string>
+    <string name="mfa_disabled">Zweiter Faktor fehlt</string>
+    <string name="access_reauth">Bestätigen Sie den zweiten Faktor erneut, bevor Sie speichern.</string>
+    <string name="suspendfamily">Beim Entzug des Mitarbeitendenzugriffs bleibt eine bestehende Elternrolle erhalten.</string>
+    <string name="accesschanged">Änderungen gespeichert</string>
+    <string name="permission_access_manage">Berechtigungen verwalten</string>
+    <string name="permission_school_manage">Schule und Klassen verwalten</string>
+    <string name="permission_students_manage">Schüler und Familien verwalten</string>
+    <string name="permission_applications_manage">Bewerbungen prüfen</string>
+    <string name="permission_attendance_supervise">Anwesenheit beaufsichtigen</string>
+    <string name="permission_academics_supervise">Unterricht und Ergebnisse beaufsichtigen</string>
+    <string name="permission_comms_publish">Ankündigungen veröffentlichen</string>
+    <string name="permission_finance_read">Gebührenkonten einsehen</string>
+    <string name="permission_finance_issue">Rechnungen ausstellen</string>
+    <string name="permission_finance_post">Zahlungen erfassen</string>
+    <string name="permission_finance_export">Abrechnungen exportieren</string>
+    <string name="permission_bank_configure">Zahlungskonto ändern</string>
+    <string name="permission_audit_read">Aktivitätsprotokoll einsehen</string>
+    <string name="permission_student_affairs">Postfach Schulbüro</string>
+    <string name="permission_accounts">Postfach Buchhaltung</string>
+</resources>
