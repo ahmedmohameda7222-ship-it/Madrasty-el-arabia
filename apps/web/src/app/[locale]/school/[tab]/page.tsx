@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Locale } from "@madrasty/contracts";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { mayManageAccess, mayUse } from "@/server/access/capabilities";
+import { Children, Families } from "@/features/school/Families";
 import { dictionary } from "@/i18n";
 import { SessionControls } from "@/features/identity/SessionControls";
 
@@ -20,10 +21,14 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
   const [access, calendar] = tab === "more"
     ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage")])
     : [false, false];
+  const families = tab === "students" && await mayUse(session, "students.manage");
+  if (tab === "students" && !families) notFound();
   return (
     <>
       <h1>{text[tab as Tab]}</h1>
       {tab === "home" && <p>{text[session.activePersona]}</p>}
+      {families && <Families locale={locale} />}
+      {tab === "children" && <Children locale={locale} />}
       {calendar && <Link className="plain-button" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
       {access && <Link className="plain-button" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
       {tab === "more" && <><Link className="plain-button" href={`/${locale}/account/security`}>{locale === "ar" ? "أمان الحساب" : "Kontosicherheit"}</Link><SessionControls locale={locale} session={session} /></>}

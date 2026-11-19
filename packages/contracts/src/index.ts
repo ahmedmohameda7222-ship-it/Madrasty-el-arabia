@@ -5,3 +5,4 @@ export * from "./identity";
 export * from "./security";
 export * from "./capabilities";
 export * from "./school/calendar";
+export * from "./school/families";

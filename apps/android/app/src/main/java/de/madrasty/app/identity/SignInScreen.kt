@@ -43,6 +43,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import de.madrasty.app.R
 import de.madrasty.app.school.CalendarScreen
+import de.madrasty.app.school.ChildrenScreen
+import de.madrasty.app.school.FamiliesScreen
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
@@ -196,6 +198,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     else SchoolShell(session.actor) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
+        if (tab == SchoolTab.Children) ChildrenScreen(model)
+        if (tab == SchoolTab.Students && "students.manage" in capabilities) FamiliesScreen(model)
         if (tab == SchoolTab.More) {
             TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
             if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }

@@ -531,6 +531,243 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","schoolDate":"2026-11-19","classId":null,"teaching":false,"reason":"Calendar exception","revision":1}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/students:
+    get:
+      operationId: listStudents
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - { name: query, in: query, schema: { type: string, maxLength: 120 } }
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createStudent
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["displayName"],"properties":{"displayName":{"type":"string"},"source":{"type":"object","required":["namespace","key"],"properties":{"namespace":{"type":"string"},"key":{"type":"string"}}}}}
+      responses:
+        '201':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}}
+        '200':
+          description: Replayed authorized creation
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/students/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getStudent
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateStudent
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["displayName","state","revision"],"properties":{"displayName":{"type":"string"},"state":{"type":"string","enum":["active","inactive"]},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/guardians:
+    get:
+      operationId: listGuardians
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - { name: query, in: query, schema: { type: string, maxLength: 120 } }
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":[{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","displayName":"Nora Example","contactEmail":"nora@example.invalid","contactPhone":null,"correspondenceLocale":"ar","linkedAccount":false,"revision":1}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createGuardian
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["displayName","contactEmail","contactPhone","correspondenceLocale"],"properties":{"displayName":{"type":"string"},"contactEmail":{"type":["string","null"],"format":"email"},"contactPhone":{"type":["string","null"]},"correspondenceLocale":{"type":"string","enum":["ar","de"]},"source":{"type":"object","required":["namespace","key"],"properties":{"namespace":{"type":"string"},"key":{"type":"string"}}}}}
+      responses:
+        '201':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","displayName":"Nora Example","contactEmail":"nora@example.invalid","contactPhone":null,"correspondenceLocale":"ar","linkedAccount":false,"revision":1}}
+        '200':
+          description: Replayed authorized creation
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","displayName":"Nora Example","contactEmail":"nora@example.invalid","contactPhone":null,"correspondenceLocale":"ar","linkedAccount":false,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/guardians/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getGuardian
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","displayName":"Nora Example","contactEmail":"nora@example.invalid","contactPhone":null,"correspondenceLocale":"ar","linkedAccount":false,"revision":1,"links":[{"id":"93ce0584-3a95-4cfa-8f4a-3819981dd778","guardianId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","studentId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","state":"pending","studentName":"Salma Example","studentNumber":"MA-000001","revision":1,"reason":""}]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateGuardian
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["displayName","contactEmail","contactPhone","correspondenceLocale","revision"],"properties":{"displayName":{"type":"string"},"contactEmail":{"type":["string","null"],"format":"email"},"contactPhone":{"type":["string","null"]},"correspondenceLocale":{"type":"string","enum":["ar","de"]},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","displayName":"Nora Example","contactEmail":"nora@example.invalid","contactPhone":null,"correspondenceLocale":"ar","linkedAccount":false,"revision":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/guardian-links:
+    post:
+      operationId: createGuardianLink
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["guardianId","studentId"],"properties":{"guardianId":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"approvalReason":{"type":"string"}}}
+      responses:
+        '201':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"93ce0584-3a95-4cfa-8f4a-3819981dd778","guardianId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","studentId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","state":"pending","studentName":"Salma Example","studentNumber":"MA-000001","revision":1,"reason":""}}
+        '200':
+          description: Replayed authorized creation
+          content:
+            application/json:
+              example: {"data":{"id":"93ce0584-3a95-4cfa-8f4a-3819981dd778","guardianId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","studentId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","state":"pending","studentName":"Salma Example","studentNumber":"MA-000001","revision":1,"reason":""}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/guardian-links/{id}/approve:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: approveGuardianLink
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","reason"],"properties":{"revision":{"type":"integer","minimum":1},"reason":{"type":"string"}}}
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"93ce0584-3a95-4cfa-8f4a-3819981dd778","guardianId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","studentId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","state":"approved","studentName":"Salma Example","studentNumber":"MA-000001","revision":2,"reason":"Relationship reviewed"}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/guardian-links/{id}/revoke:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: revokeGuardianLink
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","reason"],"properties":{"revision":{"type":"integer","minimum":1},"reason":{"type":"string"}}}
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"93ce0584-3a95-4cfa-8f4a-3819981dd778","guardianId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","studentId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","state":"revoked","studentName":"Salma Example","studentNumber":"MA-000001","revision":3,"reason":"Relationship ended"}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /me/children:
+    get:
+      operationId: listMyChildren
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example"}]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /me/children/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getMyChild
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Authorized family record
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example"}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:

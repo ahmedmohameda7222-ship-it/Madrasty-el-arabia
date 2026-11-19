@@ -2,13 +2,13 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S02 families, pupils and approved links. Foundation and I01 are in 332942e. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S03 effective enrollment, transfers and rollover. Foundation/I01 are in 332942e; I02/I03/S01 are in 220a592. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
 | 00 Foundation | built / QA pending | Pin environment, build shells, publish contract primitives |
 | 01 Identity and access | I01–I03 built / QA pending. I04/I06 depend on school records. | One account, effective grants and recoverable invites |
-| 02 School operations | Active (S02) | Import, linked families, dated staffing and clash-safe timetable |
+| 02 School operations | Active (S03) | Import, linked families, dated staffing and clash-safe timetable |
 | 03 Attendance | Planned | Online lock, actual arrival, offline reconciliation and approval |
 | 04 Academics | Planned | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
@@ -30,7 +30,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-19 | I02 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119201757_identity_lifecycle.sql, recovery/MFA/email routes, security screens, pre-launch bootstrap, staff deactivation | Type-check, production web build and debug Android assembly exited 0. D02 binds SMTP, templates and bootstrap. Q02/Q03/Q07 pending. | I03 access editor and capabilities. |
 | 2026-11-19 | I03 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119202435_identity_permissions.sql, capability and inbox models, staff access/deactivation UI on web and Android | Type-check and both builds exited 0. Each feature must supply its object/date predicate. S05 binds staff assignment cleanup, C05 binds delivery cleanup, B01 binds single-use finance step-up. Q03/Q05 pending. | S01 school calendar. |
 | 2026-11-19 | S01 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119203129_school_calendar.sql, school settings/year/day APIs and editors | Type-check, web production build and Android debug assembly exited 0. S03 binds class-calendar writes with real class IDs and A01 guards approved attendance against conflicting calendar edits. Q02/Q04 pending. | S02 pupils, family contacts and approved child links. |
-| 2026-11-19 | S02, step 1 | Active | Local work starting | I04 guardian invitations wait for S02/S04. I06 directory waits for S05. | Add private student/guardian/link SQL, shared endpoints and both clients. |
+| 2026-11-19 | S02 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119203840_families_links.sql; pupil/guardian CRUD, reviewable relationships, scoped child selection on web and Android | Type-check, web production build and Android debug assembly exited 0. S03 binds effective class labels, I04/S04 bind invitations/import and C07 consumes link events. Q02/Q03 pending. | S03 effective enrollment and rollovers. |
+| 2026-11-19 | S03, step 1 | Active | 20261119204640_effective_enrollment.sql and enrollment DTOs | Class/enrollment constraints and roster primitives added locally. | Wire commands, rollover previews, calendar class selection and both screens. |
 
 ## Decision and discrepancy log
 

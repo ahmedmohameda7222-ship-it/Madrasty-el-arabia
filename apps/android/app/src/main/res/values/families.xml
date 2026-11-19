@@ -1,0 +1,28 @@
+<resources>
+    <string name="families">الأسر</string>
+    <string name="student_profile">ملف الطالب</string>
+    <string name="guardian_profile">ملف ولي الأمر</string>
+    <string name="add_student">إضافة طالب</string>
+    <string name="add_guardian">إضافة ولي أمر</string>
+    <string name="family_query">بحث بالاسم أو رقم الطالب</string>
+    <string name="search_family">بحث</string>
+    <string name="student_number">رقم الطالب</string>
+    <string name="family_name">الاسم</string>
+    <string name="guardian_email">البريد الإلكتروني</string>
+    <string name="guardian_phone">رقم الهاتف</string>
+    <string name="guardian_locale">لغة المراسلات</string>
+    <string name="record_active">نشط</string>
+    <string name="record_inactive">غير نشط</string>
+    <string name="approved_link">معتمد</string>
+    <string name="pending_link">بانتظار المراجعة</string>
+    <string name="revoked_link">ملغى</string>
+    <string name="family_links">روابط الأبناء</string>
+    <string name="create_link">ربط طالب</string>
+    <string name="approve_link">اعتماد الرابط</string>
+    <string name="revoke_link">إلغاء الرابط</string>
+    <string name="link_reason">السبب</string>
+    <string name="immediate_link">اعتماد الرابط الآن</string>
+    <string name="submit_link">إرسال الرابط للمراجعة</string>
+    <string name="activated_email">تغيير بريد الحساب المفعّل من إعدادات أمان الحساب.</string>
+    <string name="selected_child">الطفل المختار</string>
+</resources>

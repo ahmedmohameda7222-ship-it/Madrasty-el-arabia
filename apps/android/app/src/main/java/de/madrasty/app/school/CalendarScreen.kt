@@ -62,7 +62,7 @@ private fun period(obj: JSONObject): Period {
         obj.getString("state"), (0 until days.length()).map(days::getInt).toSet(), obj.getInt("revision"))
 }
 
-private suspend fun IdentityViewModel.calendarCommand(
+internal suspend fun IdentityViewModel.schoolCommand(
     attempts: MutableMap<String, Pair<String, String>>, path: String, method: String, input: JSONObject,
 ): JSONObject {
     val serialized = input.toString()
@@ -112,7 +112,7 @@ fun CalendarScreen(model: IdentityViewModel, close: () -> Unit) {
         TextButton(onClick = close) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.school_calendar), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         AsyncSurface(state) { calendar ->
-            SettingsForm(calendar.settings, command = { model.calendarCommand(requests, "/school/settings", "PATCH", it) })
+            SettingsForm(calendar.settings, command = { model.schoolCommand(requests, "/school/settings", "PATCH", it) })
             HorizontalDivider()
             Text(stringResource(R.string.school_years), style = MaterialTheme.typography.titleLarge)
             TextButton(onClick = { selected = null }) { Text(stringResource(R.string.school_new_year)) }
@@ -124,7 +124,7 @@ fun CalendarScreen(model: IdentityViewModel, close: () -> Unit) {
             val year = calendar.years.find { it.id == selected }
             key(year?.id) {
                 YearForm(year, command = { input ->
-                    val saved = period(model.calendarCommand(requests, year?.let { "/school/years/${it.id}" } ?: "/school/years",
+                    val saved = period(model.schoolCommand(requests, year?.let { "/school/years/${it.id}" } ?: "/school/years",
                         if (year == null) "POST" else "PATCH", input))
                     selected = saved.id
                     state = AsyncState.Ready(calendar.copy(years = listOf(saved) + calendar.years.filter { it.id != saved.id }))
@@ -243,7 +243,7 @@ private fun DayForm(model: IdentityViewModel, year: Period, attempts: MutableMap
             }
             Submit(enabled = validDate(date) && date >= year.start && date < year.end && reason.isNotBlank()) {
                 val revision = saved.find { it.getString("schoolDate") == date && it.isNull("classId") }?.getInt("revision") ?: 0
-                val change = model.calendarCommand(attempts, "$path/$date", "PUT", JSONObject().put("teaching", teaching)
+                val change = model.schoolCommand(attempts, "$path/$date", "PUT", JSONObject().put("teaching", teaching)
                     .put("reason", reason.trim()).put("revision", revision))
                 rows = AsyncState.Ready((saved.filter { it.getString("id") != change.getString("id") } + change)
                     .sortedBy { it.getString("schoolDate") })
@@ -255,13 +255,13 @@ private fun DayForm(model: IdentityViewModel, year: Period, attempts: MutableMap
 private fun validDate(value: String) = value.length == 10 && runCatching { LocalDate.parse(value) }.isSuccess
 
 @Composable
-private fun Field(label: Int, value: String, editable: Boolean = true, edit: (String) -> Unit) {
+internal fun Field(label: Int, value: String, editable: Boolean = true, edit: (String) -> Unit) {
     OutlinedTextField(value, edit, Modifier.fillMaxWidth(), label = { Text(stringResource(label)) },
         singleLine = true, enabled = editable)
 }
 
 @Composable
-private fun Submit(enabled: Boolean, action: suspend () -> Unit) {
+internal fun Submit(enabled: Boolean, action: suspend () -> Unit) {
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Int?>(null) }
