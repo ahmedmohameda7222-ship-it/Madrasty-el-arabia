@@ -1,0 +1,33 @@
+# Independent review and residual risks
+
+**Review scope** Planning packet for owner approval, 19 November 2026. A separate reviewer read the product, integration contracts, UI, lifecycle definitions, traceability and all nine milestone documents. The reviewer checked the three-role journeys and the dependency graph, including D01 waiting for every feature card, D05 before Q01 and Q08 before D06. This is an audit of the implementation instructions; no product or infrastructure tests have run.
+
+## Findings closed in the plan
+
+| Finding from review or cross-module reconciliation | Correction and future proof |
+|---|---|
+| An APK built against a different staging hostname, package ID or test signer could require a different production build. A staging-only upgrade would not establish real update compatibility. | D03/D04 bind a school-controlled final API origin, controlled tester access and permanent package/signing identity. D06 promotes the same artifact hash. Q06 verifies an in-place upgrade and rehearses authenticated environment isolation without repacking. |
+| An idempotent replay could expose a cached command result after the actor lost access. | F02 and the shared contract check fresh session, active persona and object permission before serving a receipt. Q03 retries the prior key after unlink, revocation and role switch. |
+| The directory and correspondence language appeared to have competing API owners. The school profile tables also depended on a subject catalog introduced later. | S05 owns staff/assignment and minimal subject records, I06 owns directory and language reads/writes, C01 owns opening a thread/case, C05 owns notifications/devices, E01 extends subject records. Readable audit metadata has an explicit surface in S08. |
+| Early school-day exceptions referenced future class records; import alone could be mistaken for authority to send. | S01/S03 stage the class reference constraint. S04 emits committed recipient candidates; I04 requires distinct send authorization. A re-import cannot silently reactivate a removed link. |
+| Demo billing by parent would settle or omit the wrong sibling, and a stopped child with a partial payment could lose financial history. | B02 guards one monthly charge per child, B03 records outside receipts/allocation, B05 handles stop intervals and paid/partial review. Q05 reconciles sibling, receipt and reminder outcomes. |
+| Duplicate sends or premature absence emails were possible across unsettled attendance rows and unrelated read receipts. | A01–A04 own provisional vs approved states. C07 checks latest recipient, source revision, language and unread episode. Q04/Q05 exercise early/late corrections and UTC +48h cutoffs. |
+| An older line in the product narrative requested early platform tests, conflicting with the owner's final testing instruction. | Product, PLANS, AGENTS, task cards and Q01 now use the same cadence. Earlier checkpoints are implementation/build evidence. Final-only QA may discover cross-platform integration defects late; Q08 budgets correction, redeployment and complete rerun. |
+| Several destinations previously existed only in the author's downloads or ongoing edits. | Local checkout includes the unchanged source HTML, UI plates, role/operation inventory and all module plans. The packet link/ID check precedes delivery. |
+
+## Unresolved inputs with a decision owner
+
+| Item | Owner / binding task | Effect and safe progress before resolution |
+|---|---|---|
+| Plan approval and live authority | School owner, before F01 / separately before D06 | The packet is ready for implementation review. Neither the current approval of product design nor this audit initiates implementation or activates real notices. |
+| Existing Supabase environment classification, backups and private schema occupancy | Project owner + release operator, F01/D02 | Use an authorized isolated target or synthetic pre-launch project. Do not assume that an empty public table listing means an empty project. Compile locally while access is being bound. |
+| Vercel project/team, permanent school app hostname and email sender identity | School domain/Vercel owners, D03 | No match was returned for the repository URL in the accessible Vercel accounts during planning. Verify existing resources and ownership before configuring them. Use controlled test recipients until activation. |
+| Email provider and quotas, SMTP/DNS verification, Web Push VAPID and Android FCM | Communications operator, C06/D03 | Adapter and delivery ledger can be built first. A provider that has not accepted a controlled pre-launch message cannot be recorded as verified. Provider, timing and media size defaults in the module are implementation proposals where marked. |
+| APK signing custody, supported countries/OS and actual iPhone/Android devices | School release owner, F01/D04/Q06 | Pin supported SDK/tool versions at execution. Real installation, update, microphone, accessibility and push evidence require devices and controlled signing. |
+| Actual fee tariff, bank instructions, named payers, responsible staff, billing reminder operating hour | Finance/office owner, B01/B02/C07/D06 | Use fictitious tariff/bank/payers in pre-launch. Record real configuration with effective dates, audit and bank step-up. Never infer banking data from the preview. |
+| Sensitive records/media, backups, lawful retention, restore objectives and support contact | School owner and responsible data/operations lead, D05/Q07/D06 | Resolve applicable jurisdiction and owner-approved schedule, access and erasure/retention procedures before real child data. User-facing chat has no delete. Any authorized retention/removal workflow remains operator-managed and logged. Measure restoration on an isolated destination. |
+| Controlled pre-launch access for installation, public association and provider callbacks | Release operator, D03/D04 | Secure app data and authenticate callbacks while exposing only the endpoints that actually require public access; prove the arrangement on the device/provider final checks. |
+
+## Audit disposition
+
+The independent reviewer found an acyclic order across all 55 cards and no additional blocking product omission in the reviewed scope. The two high-priority findings above were incorporated into the owning cards and final checks. The reviewer rechecked both findings, confirmed the one-email activation workflow across I04/C06 and verified the UI plates and linked audit file. Final independent disposition: no remaining material planning blocker. Use the [traceability matrix](TRACEABILITY.md) to reconcile each approved requirement to actual release evidence at Q08. A completed planning audit is never evidence that the school software works.

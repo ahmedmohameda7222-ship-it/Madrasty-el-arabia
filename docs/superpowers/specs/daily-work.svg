@@ -1,0 +1,269 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1792" viewBox="0 0 960 1792" role="img" aria-labelledby="title desc">
+<title id="title">Attendance, invoice and chat · iPhone and Android</title>
+<desc id="desc">Six static work-screen schematics. An excused attendance row is locked; an invoice shows four independent copy controls; an official conversation keeps its composer above the keyboard. All examples use synthetic records.</desc>
+<rect x="0" y="0" width="960" height="1792" rx="0" fill="#EEF3F6" stroke="none"/>
+<text x="44" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">MADRASA PULSE   /   MOBILE DESIGN</text>
+<text x="916" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#425B69" text-anchor="end" direction="ltr">02   /   WORK SCREENS</text>
+<text x="42" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="44" font-weight="750" fill="#172C37" text-anchor="start" direction="ltr">Three everyday decisions</text>
+<text x="45" y="137" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#425B69" text-anchor="start" direction="ltr">Lock state, copy actions and a keyboard-aware composer stay visible at the point of use.</text>
+<path d="M44 161h872" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="45" y="195" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">iPhone   ·   العربية   ·   RTL</text>
+<text x="512" y="195" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Android   ·   Deutsch   ·   LTR</text>
+<g transform="translate(0 218)">
+<text x="44" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">01</text>
+<text x="87" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Attendance</text>
+<text x="915" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Only an authorized arrival can reopen an excused row</text>
+<g transform="translate(45 40)">
+<rect x="0" y="0" width="400" height="466" rx="35" fill="#273540" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="31" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<g transform="translate(376 44) scale(-1 1)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="204" y="66" font-family="Tahoma, Arial, sans-serif" font-size="20" font-weight="700" fill="#172C37" text-anchor="middle" direction="rtl" xml:lang="ar">كشف الحضور</text>
+<text x="365" y="108" font-family="Tahoma, Arial, sans-serif" font-size="20" font-weight="650" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">الصف الثاني · الخميس</text>
+<text x="365" y="138" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="500" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">٣ من ٤ مسجّلين</text>
+<rect x="22" y="155" width="356" height="117" rx="16" fill="#FFF4D9" stroke="#E8CC8C"/>
+<g transform="translate(336 170) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#775313" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="325" y="186" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="650" fill="#614411" text-anchor="start" direction="rtl" xml:lang="ar">مريم · غائبة بعذر</text>
+<text x="365" y="216" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="500" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">بلاغ الأسرة · موعد طبي</text>
+<text x="365" y="249" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="700" fill="#076E61" text-anchor="start" direction="rtl" xml:lang="ar">تسجيل الوصول</text>
+<rect x="22" y="285" width="356" height="67" rx="14" fill="#fff" stroke="#D1DEE5"/>
+<text x="365" y="313" font-family="Tahoma, Arial, sans-serif" font-size="17" font-weight="650" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">أحمد</text>
+<text x="365" y="338" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">لم يُسجّل</text>
+<rect x="22" y="376" width="356" height="51" rx="15" fill="#DBE3E6" stroke="none"/>
+<text x="200" y="409" font-family="Tahoma, Arial, sans-serif" font-size="17" font-weight="700" fill="#445762" text-anchor="middle" direction="rtl" xml:lang="ar">اعتماد الكشف</text>
+</g>
+<g transform="translate(512 40)">
+<rect x="0" y="0" width="400" height="466" rx="22" fill="#24373B" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="18" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<g transform="translate(25 44) scale(1 1)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="65" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Anwesenheit</text>
+<text x="35" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Klasse 2 · Donnerstag</text>
+<text x="35" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500" fill="#425B69" text-anchor="start" direction="ltr">3 von 4 erfasst</text>
+<rect x="22" y="155" width="356" height="117" rx="16" fill="#FFF4D9" stroke="#E8CC8C"/>
+<g transform="translate(35 170) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#775313" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="65" y="186" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#614411" text-anchor="start" direction="ltr">Maryam · Entschuldigt</text>
+<text x="35" y="216" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500" fill="#172C37" text-anchor="start" direction="ltr">Familienmeldung · Arzttermin</text>
+<text x="35" y="249" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">Ankunft erfassen</text>
+<rect x="22" y="285" width="356" height="67" rx="14" fill="#fff" stroke="#D1DEE5"/>
+<text x="35" y="313" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Ahmad</text>
+<text x="35" y="338" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#425B69" text-anchor="start" direction="ltr">Noch offen</text>
+<rect x="22" y="376" width="356" height="51" rx="25" fill="#DBE3E6" stroke="none"/>
+<text x="200" y="409" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#445762" text-anchor="middle" direction="ltr">Liste bestätigen</text>
+</g>
+</g>
+<g transform="translate(0 740)">
+<text x="44" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">02</text>
+<text x="87" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Invoice</text>
+<text x="915" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Four separately selectable values · fictitious transfer data</text>
+<g transform="translate(45 40)">
+<rect x="0" y="0" width="400" height="466" rx="35" fill="#273540" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="31" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<g transform="translate(376 44) scale(-1 1)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="204" y="66" font-family="Tahoma, Arial, sans-serif" font-size="20" font-weight="700" fill="#172C37" text-anchor="middle" direction="rtl" xml:lang="ar">فاتورة مريم</text>
+<text x="365" y="107" font-family="Tahoma, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">رسوم نوفمبر</text>
+<text x="365" y="135" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="650" fill="#875616" text-anchor="start" direction="rtl" xml:lang="ar">بانتظار السداد</text>
+<rect x="20" y="150" width="360" height="253" rx="17" fill="#fff" stroke="#D1DEE5"/>
+<text x="365" y="173" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">المستفيد</text>
+<text x="365" y="198" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172C37" text-anchor="end" direction="ltr">Musterschule</text>
+<g transform="translate(37 172) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M32 213h336" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="365" y="235" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">رقم الحساب الدولي</text>
+<text x="365" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172C37" text-anchor="end" direction="ltr">DE00 0000 0000 0000 0000 00</text>
+<g transform="translate(37 234) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M32 275h336" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="365" y="297" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">المبلغ</text>
+<text x="365" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172C37" text-anchor="end" direction="ltr">45,00 EUR</text>
+<g transform="translate(37 296) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M32 337h336" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="365" y="359" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">مرجع التحويل</text>
+<text x="365" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172C37" text-anchor="end" direction="ltr">Maryam MA-001284</text>
+<g transform="translate(37 358) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="365" y="430" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="500" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">يُجرى التحويل من تطبيق البنك.</text>
+</g>
+<g transform="translate(512 40)">
+<rect x="0" y="0" width="400" height="466" rx="22" fill="#24373B" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="18" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<g transform="translate(25 44) scale(1 1)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="65" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Maryams Rechnung</text>
+<text x="35" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Beitrag November</text>
+<text x="35" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="650" fill="#875616" text-anchor="start" direction="ltr">Zahlung offen</text>
+<rect x="20" y="150" width="360" height="253" rx="17" fill="#fff" stroke="#D1DEE5"/>
+<text x="35" y="173" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="ltr">Empfänger</text>
+<text x="35" y="198" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172C37" text-anchor="start" direction="ltr">Musterschule</text>
+<g transform="translate(340 172) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M32 213h336" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="35" y="235" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="ltr">IBAN</text>
+<text x="35" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172C37" text-anchor="start" direction="ltr">DE00 0000 0000 0000 0000 00</text>
+<g transform="translate(340 234) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M32 275h336" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="35" y="297" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="ltr">Betrag</text>
+<text x="35" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172C37" text-anchor="start" direction="ltr">45,00 EUR</text>
+<g transform="translate(340 296) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M32 337h336" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="35" y="359" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#425B69" text-anchor="start" direction="ltr">Verwendungszweck</text>
+<text x="35" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172C37" text-anchor="start" direction="ltr">Maryam MA-001284</text>
+<g transform="translate(340 358) scale(0.875 0.875)">
+<path d="M9 8h11v13H9zM15 5V3H4v14h2" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="35" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="500" fill="#425B69" text-anchor="start" direction="ltr">Überweisung in der Banking-App.</text>
+</g>
+</g>
+<g transform="translate(0 1262)">
+<text x="44" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">03</text>
+<text x="87" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Official conversation</text>
+<text x="915" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Reply context and composer above the system keyboard</text>
+<g transform="translate(45 40)">
+<rect x="0" y="0" width="400" height="466" rx="35" fill="#273540" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="31" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<g transform="translate(376 44) scale(-1 1)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="204" y="66" font-family="Tahoma, Arial, sans-serif" font-size="20" font-weight="700" fill="#172C37" text-anchor="middle" direction="rtl" xml:lang="ar">شؤون الطلبة</text>
+<text x="360" y="99" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">متابعة الغياب · مريم</text>
+<rect x="36" y="125" width="252" height="58" rx="18" fill="#DFF4ED" stroke="none"/>
+<text x="273" y="151" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">أرسلتُ توضيحًا للغياب.</text>
+<text x="52" y="171" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#425B69" text-anchor="start" direction="ltr">09:35</text>
+<rect x="100" y="201" width="263" height="54" rx="17" fill="#fff" stroke="#D1DEE5"/>
+<text x="350" y="233" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">شكرًا، سنراجع البلاغ.</text>
+<rect x="20" y="272" width="360" height="38" rx="8" fill="#EEF0FA" stroke="none"/>
+<text x="365" y="297" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="600" fill="#54458A" text-anchor="start" direction="rtl" xml:lang="ar">ردّ على شؤون الطلبة</text>
+<rect x="20" y="321" width="360" height="50" rx="22" fill="#fff" stroke="#D1DEE5"/>
+<g transform="translate(342 336) scale(0.875 0.875)">
+<path d="M12 4v16M4 12h16" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="326" y="352" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="400" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">اكتب رسالة…</text>
+<g transform="translate(69 335) scale(0.9166666666666666 0.9166666666666666)">
+<path d="M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11v1a7 7 0 0 0 14 0v-1m-7 8v3m-4 0h8" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g transform="translate(54 336) scale(-0.875 0.875)">
+<path d="M3 3l18 9-18 9 4-9zM7 12h14" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="5" y="384" width="390" height="57" rx="2" fill="#DFE5EB" stroke="none"/>
+<rect x="23" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="59" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="95" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="131" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="167" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="203" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="239" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="275" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="311" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="347" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="57" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="93" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="129" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="165" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="201" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="237" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="273" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="309" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+</g>
+<g transform="translate(512 40)">
+<rect x="0" y="0" width="400" height="466" rx="22" fill="#24373B" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="18" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<g transform="translate(25 44) scale(1 1)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="65" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Schulbüro</text>
+<text x="32" y="99" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#425B69" text-anchor="start" direction="ltr">Fehlzeit · Maryam</text>
+<rect x="112" y="125" width="252" height="58" rx="18" fill="#DFF4ED" stroke="none"/>
+<text x="124" y="151" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Ich habe die Fehlzeit erläutert.</text>
+<text x="345" y="171" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#425B69" text-anchor="end" direction="ltr">09:35</text>
+<rect x="36" y="201" width="263" height="54" rx="17" fill="#fff" stroke="#D1DEE5"/>
+<text x="49" y="233" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Danke, wir prüfen die Meldung.</text>
+<rect x="20" y="272" width="360" height="38" rx="8" fill="#EEF0FA" stroke="none"/>
+<text x="35" y="297" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#54458A" text-anchor="start" direction="ltr">Antwort an das Schulbüro</text>
+<rect x="20" y="321" width="360" height="50" rx="22" fill="#fff" stroke="#D1DEE5"/>
+<g transform="translate(32 336) scale(0.875 0.875)">
+<path d="M12 4v16M4 12h16" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="66" y="352" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#425B69" text-anchor="start" direction="ltr">Nachricht …</text>
+<g transform="translate(301 335) scale(0.9166666666666666 0.9166666666666666)">
+<path d="M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11v1a7 7 0 0 0 14 0v-1m-7 8v3m-4 0h8" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g transform="translate(341 336) scale(0.875 0.875)">
+<path d="M3 3l18 9-18 9 4-9zM7 12h14" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="5" y="384" width="390" height="57" rx="2" fill="#DFE5EB" stroke="none"/>
+<rect x="23" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="59" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="95" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="131" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="167" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="203" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="239" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="275" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="311" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="347" y="391" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="57" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="93" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="129" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="165" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="201" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="237" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="273" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+<rect x="309" y="412" width="29" height="16" rx="3" fill="#FFF" stroke="none"/>
+</g>
+</g>
+</svg>

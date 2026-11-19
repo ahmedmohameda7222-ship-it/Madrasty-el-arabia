@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1355" viewBox="0 0 960 1355" role="img" aria-labelledby="title desc">
+<title id="title">Asynchronous and device states · Madrasa Pulse</title>
+<desc id="desc">Six static state details. Arabic first-load skeleton, German scoped refresh, unsent Arabic draft, revoked German class, disabled Arabic microphone and a German dark-mode media preview.</desc>
+<rect x="0" y="0" width="960" height="1355" rx="0" fill="#EEF3F6" stroke="none"/>
+<text x="44" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">MADRASA PULSE   /   MOBILE DESIGN</text>
+<text x="916" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#425B69" text-anchor="end" direction="ltr">03   /   SURFACE STATES</text>
+<text x="42" y="98" font-family="Segoe UI, Arial, sans-serif" font-size="43" font-weight="750" fill="#172C37" text-anchor="start" direction="ltr">When the screen changes</text>
+<text x="45" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#425B69" text-anchor="start" direction="ltr">Status belongs beside the record or action it affects.</text>
+<path d="M44 161h872" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="45" y="198" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">iPhone   ·   العربية   ·   RTL</text>
+<text x="501" y="198" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Android   ·   Deutsch   ·   LTR</text>
+<g transform="translate(0 256)">
+<text x="44" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">01</text>
+<text x="87" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Loading and refresh</text>
+<text x="916" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">The first view uses shape; a refresh may retain authorized content.</text>
+<g transform="translate(45 23)">
+<rect x="0" y="0" width="412" height="274" rx="22" fill="#F7F9FC" stroke="#D1DEE5"/>
+<text x="389" y="33" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="650" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">جارٍ التحميل</text>
+<text x="389" y="71" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">كشف الحضور</text>
+<rect x="20" y="91" width="372" height="152" rx="14" fill="#fff" stroke="#D1DEE5"/>
+<rect x="350" y="108" width="25" height="25" rx="7" fill="#DEEBEE" stroke="none"/>
+<rect x="238" y="110" width="100" height="9" rx="4" fill="#D4E2E7" stroke="none"/>
+<rect x="272" y="124" width="66" height="6" rx="3" fill="#E1EAEE" stroke="none"/>
+<rect x="350" y="152" width="25" height="25" rx="7" fill="#DEEBEE" stroke="none"/>
+<rect x="238" y="154" width="100" height="9" rx="4" fill="#D4E2E7" stroke="none"/>
+<rect x="272" y="168" width="66" height="6" rx="3" fill="#E1EAEE" stroke="none"/>
+<rect x="350" y="196" width="25" height="25" rx="7" fill="#DEEBEE" stroke="none"/>
+<rect x="238" y="198" width="100" height="9" rx="4" fill="#D4E2E7" stroke="none"/>
+<rect x="272" y="212" width="66" height="6" rx="3" fill="#E1EAEE" stroke="none"/>
+</g>
+<g transform="translate(501 23)">
+<rect x="0" y="0" width="412" height="274" rx="22" fill="#F7F9FC" stroke="#D1DEE5"/>
+<text x="23" y="33" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="650" fill="#425B69" text-anchor="start" direction="ltr">Anwesenheit</text>
+<text x="23" y="71" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Klasse 2</text>
+<rect x="19" y="90" width="374" height="32" rx="9" fill="#E3EFF6" stroke="none"/>
+<g transform="translate(31 96) scale(0.7916666666666666 0.7916666666666666)">
+<path d="M12 3a9 9 0 1 0 .1 0M12 7v6l4 2" fill="none" stroke="#2B5972" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="58" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#2B5972" text-anchor="start" direction="ltr">Wird aktualisiert · Stand 09:32</text>
+<rect x="20" y="139" width="372" height="102" rx="14" fill="#fff" stroke="#D1DEE5"/>
+<text x="36" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Maryam</text>
+<text x="36" y="190" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#425B69" text-anchor="start" direction="ltr">Entschuldigt</text>
+<g transform="translate(347 158) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#805718" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M31 201h350" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="36" y="227" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Ahmad · Anwesend</text>
+</g>
+<text x="45" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="450" fill="#425B69" text-anchor="start" direction="ltr">A cached shell contains no names. A previously opened permitted attendance sheet can show its last verified time.</text>
+</g>
+<g transform="translate(0 633)">
+<text x="44" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">02</text>
+<text x="87" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Offline and revoked access</text>
+<text x="916" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Scope loss removes protected data from view.</text>
+<g transform="translate(45 23)">
+<rect x="0" y="0" width="412" height="274" rx="22" fill="#F7F9FC" stroke="#D1DEE5"/>
+<text x="389" y="33" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="650" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">دون اتصال</text>
+<text x="389" y="71" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">كشف الصف الثاني</text>
+<rect x="20" y="92" width="372" height="70" rx="13" fill="#FFF4D9" stroke="#E8CC8C"/>
+<g transform="translate(353 104) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M12 3a9 9 0 1 0 .1 0M12 7v6l4 2" fill="none" stroke="#775313" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="342" y="122" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="650" fill="#684612" text-anchor="start" direction="rtl" xml:lang="ar">مسودة على هذا الجهاز</text>
+<text x="372" y="148" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="450" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">لم تستلم المدرسة التغييرات بعد.</text>
+<text x="388" y="191" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">أحمد · حاضر</text>
+<text x="388" y="217" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">آخر مزامنة اليوم ٠٩:٣٢</text>
+<rect x="20" y="231" width="144" height="32" rx="16" fill="#DBE3E6" stroke="none"/>
+<text x="92" y="251.8" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="650" fill="#445762" text-anchor="middle" direction="rtl" xml:lang="ar">اعتماد الكشف</text>
+</g>
+<g transform="translate(501 23)">
+<rect x="0" y="0" width="412" height="274" rx="22" fill="#F7F9FC" stroke="#D1DEE5"/>
+<text x="23" y="33" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="650" fill="#425B69" text-anchor="start" direction="ltr">Berechtigungen</text>
+<text x="23" y="71" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Klassenliste</text>
+<rect x="20" y="92" width="372" height="112" rx="14" fill="#FFF" stroke="#D1DEE5"/>
+<g transform="translate(33 106) scale(0.9583333333333334 0.9583333333333334)">
+<path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="66" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Zugriff beendet</text>
+<text x="35" y="156" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="450" fill="#425B69" text-anchor="start" direction="ltr">Ihre Berechtigung für diese Klasse</text>
+<text x="35" y="180" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="450" fill="#425B69" text-anchor="start" direction="ltr">hat sich geändert.</text>
+<rect x="20" y="218" width="174" height="38" rx="18" fill="#076E61" stroke="none"/>
+<text x="107" y="242.7" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="650" fill="#fff" text-anchor="middle" direction="ltr">Zur Übersicht</text>
+</g>
+<text x="45" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="450" fill="#425B69" text-anchor="start" direction="ltr">The draft remains local until the school confirms a write. A revoked class returns to an authorized destination.</text>
+</g>
+<g transform="translate(0 1010)">
+<text x="44" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">03</text>
+<text x="87" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Media and dark mode</text>
+<text x="916" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">The composer stays usable when a device capability is unavailable.</text>
+<g transform="translate(45 23)">
+<rect x="0" y="0" width="412" height="274" rx="22" fill="#F7F9FC" stroke="#D1DEE5"/>
+<text x="389" y="33" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="650" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">رسالة صوتية</text>
+<text x="389" y="71" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">شؤون الطلبة</text>
+<rect x="20" y="91" width="372" height="96" rx="13" fill="#FFF1F0" stroke="#F1C9C6"/>
+<g transform="translate(347 104) scale(0.9583333333333334 0.9583333333333334)">
+<path d="M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11v1a7 7 0 0 0 14 0v-1m-7 8v3m-4 0h8" fill="none" stroke="#92413D" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="336" y="124" font-family="Tahoma, Arial, sans-serif" font-size="17" font-weight="650" fill="#803E39" text-anchor="start" direction="rtl" xml:lang="ar">الميكروفون غير متاح</text>
+<text x="370" y="151" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">يمكنك كتابة رسالة أو السماح بالتسجيل</text>
+<text x="370" y="175" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">من إعدادات الجهاز.</text>
+<rect x="20" y="205" width="372" height="46" rx="20" fill="#fff" stroke="#D1DEE5"/>
+<text x="360" y="235" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="450" fill="#425B69" text-anchor="start" direction="rtl" xml:lang="ar">اكتب رسالة…</text>
+<g transform="translate(56 218) scale(-0.875 0.875)">
+<path d="M3 3l18 9-18 9 4-9zM7 12h14" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g transform="translate(501 23)">
+<rect x="0" y="0" width="412" height="274" rx="22" fill="#0E1623" stroke="#354556"/>
+<text x="23" y="33" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="650" fill="#B9CCDB" text-anchor="start" direction="ltr">Nachrichten</text>
+<text x="23" y="71" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#F3F6FB" text-anchor="start" direction="ltr">Schulbüro</text>
+<rect x="20" y="94" width="372" height="58" rx="14" fill="#1B2634" stroke="#354556"/>
+<text x="37" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="650" fill="#F3F6FB" text-anchor="start" direction="ltr">Foto · Vorschau</text>
+<text x="37" y="140" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#D4DDEB" text-anchor="start" direction="ltr">Noch nicht gesendet</text>
+<rect x="20" y="167" width="372" height="37" rx="10" fill="#343044" stroke="none"/>
+<text x="35" y="191" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="550" fill="#E1D9FF" text-anchor="start" direction="ltr">Antwort an das Schulbüro</text>
+<rect x="20" y="215" width="372" height="42" rx="20" fill="#1B2634" stroke="#526373"/>
+<g transform="translate(35 225) scale(0.875 0.875)">
+<path d="M12 4v16M4 12h16" fill="none" stroke="#8BDEC0" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="73" y="242" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="450" fill="#D4DDEB" text-anchor="start" direction="ltr">Nachricht …</text>
+<g transform="translate(352 226) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 3l18 9-18 9 4-9zM7 12h14" fill="none" stroke="#8BDEC0" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<text x="45" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="450" fill="#425B69" text-anchor="start" direction="ltr">Ask for a microphone on record. The dark composer keeps its pending attachment and reply context legible.</text>
+</g>
+</svg>
