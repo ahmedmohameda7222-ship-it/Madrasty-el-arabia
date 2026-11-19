@@ -1000,6 +1000,124 @@ paths:
               example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","sourceYearId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","targetYearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":2,"confirmed":true,"counts":{"changes":1,"conflicts":0,"noPlacement":0},"rows":[]}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/family-imports:
+    post:
+      operationId: uploadFamilyImport
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["fileName","mime","bytesBase64"],"properties":{"fileName":{"type":"string"},"mime":{"type":"string","enum":["text/csv","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]},"bytesBase64":{"type":"string","contentEncoding":"base64"}}}
+      responses:
+        '201':
+          description: Private family import result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","fileName":"families.csv","mime":"text/csv","state":"uploaded","revision":1,"expiresAt":"2026-11-20T22:00:00.000Z"}}
+        '200':
+          description: Replayed authorized upload
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","fileName":"families.csv","mime":"text/csv","state":"uploaded","revision":1,"expiresAt":"2026-11-20T22:00:00.000Z"}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/family-imports/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: inspectFamilyImport
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - { name: worksheet, in: query, schema: { type: string } }
+        - { name: delimiter, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Private family import result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","fileName":"families.csv","mime":"text/csv","state":"uploaded","revision":1,"expiresAt":"2026-11-20T22:00:00.000Z","worksheets":[],"worksheet":null,"delimiter":",","columns":[{"index":1,"label":"childKey"}]}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/family-imports/{id}/mapping:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: mapFamilyImport
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","columnMap"],"properties":{"revision":{"type":"integer","minimum":1},"columnMap":{"type":"object","additionalProperties":{"type":"integer","minimum":1,"maximum":64}},"worksheet":{"type":"string"},"delimiter":{"type":"string","enum":[",",";","\t"]}}}
+      responses:
+        '200':
+          description: Private family import result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","fileName":"families.csv","mime":"text/csv","state":"review","revision":2,"expiresAt":"2026-11-20T22:00:00.000Z","rows":[],"counts":{"new":0,"existing":0,"duplicate":0,"conflict":0,"revoked":0,"skipped":0}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/family-imports/{id}/preview:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: previewFamilyImport
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Private family import result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","fileName":"families.csv","mime":"text/csv","state":"review","revision":2,"expiresAt":"2026-11-20T22:00:00.000Z","rows":[],"counts":{"new":0,"existing":0,"duplicate":0,"conflict":0,"revoked":0,"skipped":0}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/family-imports/{id}/decisions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: reviewFamilyImportRows
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","rows"],"properties":{"revision":{"type":"integer","minimum":1},"rows":{"type":"array","items":{"type":"object","required":["rowNo","decision"],"properties":{"rowNo":{"type":"integer","minimum":1},"decision":{"type":"string","enum":["approve","skip","restore","match_guardian","match_student"]},"matchedId":{"type":"string","format":"uuid"},"payerCandidate":{"type":"boolean"}}}}}}
+      responses:
+        '200':
+          description: Private family import result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","fileName":"families.csv","mime":"text/csv","state":"review","revision":3,"expiresAt":"2026-11-20T22:00:00.000Z","rows":[],"counts":{"new":0,"existing":0,"duplicate":0,"conflict":0,"revoked":0,"skipped":0}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/family-imports/{id}/commit:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: commitFamilyImport
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["reviewedRevision"],"properties":{"reviewedRevision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Private family import result
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","revision":3,"rowsCommitted":1,"linksCreated":1,"eligibleGuardians":1}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:

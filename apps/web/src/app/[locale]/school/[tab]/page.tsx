@@ -27,7 +27,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
     <>
       <h1>{text[tab as Tab]}</h1>
       {tab === "home" && <p>{text[session.activePersona]}</p>}
-      {families && <Families locale={locale} />}
+      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} /></>}
       {tab === "children" && <Children locale={locale} />}
       {(calendar || placement) && <Link className="plain-button" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
       {calendar && <Link className="plain-button" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}

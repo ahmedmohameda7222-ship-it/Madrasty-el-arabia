@@ -46,6 +46,7 @@ import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.school.ChildrenScreen
 import de.madrasty.app.school.FamiliesScreen
 import de.madrasty.app.school.EnrollmentScreen
+import de.madrasty.app.school.ImportScreen
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
@@ -187,6 +188,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     var capabilities by remember(session?.actor) { mutableStateOf(emptySet<String>()) }
     var calendar by remember(session?.actor) { mutableStateOf(false) }
     var enrollment by remember(session?.actor) { mutableStateOf(false) }
+    var importing by remember(session?.actor) { mutableStateOf(false) }
     LaunchedEffect(session?.actor, session?.assurance) {
         if (session?.actor?.persona == Persona.Admin && session.assurance == "aal2") {
             capabilities = try { model.capabilities() } catch (error: CancellationException) { throw error } catch (_: Exception) { emptySet() }
@@ -199,11 +201,15 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
     else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
         EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
+    else if (importing && "students.manage" in capabilities) ImportScreen(model) { importing = false }
     else SchoolShell(session.actor) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
         if (tab == SchoolTab.Children) ChildrenScreen(model)
-        if (tab == SchoolTab.Students && "students.manage" in capabilities) FamiliesScreen(model)
+        if (tab == SchoolTab.Students && "students.manage" in capabilities) {
+            TextButton(onClick = { importing = true }) { Text(stringResource(R.string.import_families)) }
+            FamiliesScreen(model)
+        }
         if (tab == SchoolTab.More) {
             TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
             if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }
