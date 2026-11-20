@@ -268,4 +268,27 @@
     <string name="conversation_unassigned">بدون مسؤول</string>
     <string name="conversation_references">السجلات المرتبطة</string>
     <string name="conversation_invoice">فاتورة</string>
+    <string name="chat_search_thread">ابحث في المحادثة</string>
+    <string name="chat_search_inbox">ابحث في الرسائل</string>
+    <string name="chat_older">رسائل أقدم</string>
+    <string name="chat_body">رسالتك</string>
+    <string name="chat_send">إرسال</string>
+    <string name="chat_sending">جارٍ الإرسال</string>
+    <string name="chat_failed">الإرسال تعذّر. المسودة محفوظة هنا.</string>
+    <string name="chat_retry">أعد الإرسال</string>
+    <string name="chat_reply">رد</string>
+    <string name="chat_cancel_reply">إلغاء الرد</string>
+    <string name="chat_reactions">التفاعلات</string>
+    <string name="chat_school">المدرسة</string>
+    <string name="chat_read">اتقرأت</string>
+    <string name="chat_sent">اترسلت</string>
+    <string name="chat_archive">أرشفة عندي</string>
+    <string name="chat_restore">إرجاع للمحادثات</string>
+    <string name="chat_archived">مؤرشفة عندك</string>
+    <string name="chat_archive_filter">المؤرشفة</string>
+    <string name="chat_unread">رسائل غير مقروءة</string>
+    <string name="chat_read_only">المحادثة للعرض فقط.</string>
+    <string name="chat_photo">صورة</string>
+    <string name="chat_voice">رسالة صوتية</string>
+    <string name="chat_quoted">افتح الرسالة المقتبسة</string>
 </resources>

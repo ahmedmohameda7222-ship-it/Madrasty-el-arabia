@@ -1,5 +1,6 @@
 package de.madrasty.app.comms
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import de.madrasty.app.academics.academicRead
 import de.madrasty.app.academics.string
 import de.madrasty.app.identity.HttpFailure
 import de.madrasty.app.identity.IdentityViewModel
+import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
 import de.madrasty.app.school.timetableObject
@@ -55,17 +57,26 @@ private val inboxFilters=listOf(
 internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String)->Unit){
     val version=threadRefreshVersion()
     var filter by remember{mutableStateOf("")}
+    var search by remember{mutableStateOf("")}
+    var queryTerm by remember{mutableStateOf("")}
+    var archived by remember{mutableStateOf(false)}
     TextButton(onClick=directory){Text(stringResource(R.string.directory_title))}
+    FilterChip(archived,onClick={archived=!archived},label={Text(stringResource(R.string.chat_archive_filter))})
+    Field(R.string.chat_search_inbox,search){search=it.take(120)}
+    TextButton(onClick={queryTerm=search.trim()}){Text(stringResource(R.string.staff_search))}
     for((key,label) in inboxFilters){
         FilterChip(filter==key,onClick={filter=key},label={Text(stringResource(label))})
     }
     val query=filter.takeIf(String::isNotEmpty)?.let{"&$it"}.orEmpty()
-    academicPages(model,"/threads?limit=30$query",version){threads->
+    val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
+    academicPages(model,"/threads?limit=30$query&archived=$archived$term",version+model.attendanceNetworkRevision){threads->
         for(thread in threads){
             TextButton(onClick={open(thread.getString("id"))}){
                 Column {
                     Text(threadTitle(thread))
                     thread.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
+                    thread.string("latestPreview")?.let{Text(isolate(it))}
+                    if(thread.getInt("unread")>0)Text(stringResource(R.string.chat_unread)+" · "+thread.getInt("unread"))
                 }
             }
         }
@@ -90,6 +101,7 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
             ReferencedRecords(value,openReference)
             val officeCase=value.string("caseId")
             if(value.optBoolean("canManageCase")&&officeCase!=null)OfficeCaseEditor(model,officeCase,revision){changed++}
+            Conversation(model,value){changed++}
             TextButton(onClick={changed++}){Text(stringResource(R.string.curriculum_refresh))}
         }
     }

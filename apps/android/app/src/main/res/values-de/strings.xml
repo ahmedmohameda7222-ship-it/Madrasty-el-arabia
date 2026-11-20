@@ -268,4 +268,27 @@
     <string name="conversation_unassigned">Nicht zugewiesen</string>
     <string name="conversation_references">Verknüpfte Einträge</string>
     <string name="conversation_invoice">Rechnung</string>
+    <string name="chat_search_thread">Unterhaltung durchsuchen</string>
+    <string name="chat_search_inbox">Nachrichten durchsuchen</string>
+    <string name="chat_older">Ältere Nachrichten</string>
+    <string name="chat_body">Nachricht</string>
+    <string name="chat_send">Senden</string>
+    <string name="chat_sending">Wird gesendet</string>
+    <string name="chat_failed">Nachricht konnte nicht gesendet werden. Der Entwurf ist hier verfügbar.</string>
+    <string name="chat_retry">Erneut senden</string>
+    <string name="chat_reply">Antworten</string>
+    <string name="chat_cancel_reply">Antwort verwerfen</string>
+    <string name="chat_reactions">Reaktionen</string>
+    <string name="chat_school">Schule</string>
+    <string name="chat_read">Gelesen</string>
+    <string name="chat_sent">Gesendet</string>
+    <string name="chat_archive">Für mich archivieren</string>
+    <string name="chat_restore">In Unterhaltungen zurückholen</string>
+    <string name="chat_archived">Für dich archiviert</string>
+    <string name="chat_archive_filter">Archiviert</string>
+    <string name="chat_unread">Ungelesene Nachrichten</string>
+    <string name="chat_read_only">Du kannst diese Unterhaltung lesen.</string>
+    <string name="chat_photo">Foto</string>
+    <string name="chat_voice">Sprachnachricht</string>
+    <string name="chat_quoted">Zitierte Nachricht öffnen</string>
 </resources>

@@ -10,16 +10,17 @@ import { useSchoolCommand } from "@/api/commands";
 import { dictionary } from "@/i18n";
 import { AcademicPageItems,useAcademicPage } from "@/features/academics/shared";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
+import { Conversation } from "./Conversation";
 
 const copy={
   ar:{heading:"المحادثات",directory:"دليل التواصل",all:"الكل",direct:"المحادثات الخاصة",office:"المكاتب",student_affairs:"شؤون الطلبة",accounts:"الحسابات",
     back:"رجوع للمحادثات",open:"مفتوحة",in_progress:"قيد المتابعة",closed:"مغلقة",status:"حالة الطلب",caseTitle:"متابعة الطلب",
     assignee:"الموظف المسؤول",unassigned:"بدون مسؤول",save:"حفظ",saved:"اتحدث الطلب.",references:"السجلات المرتبطة",
-    homework:"واجب",attendance:"الحضور",invoice:"فاتورة",refresh:"تحديث"},
+    homework:"واجب",attendance:"الحضور",invoice:"فاتورة",refresh:"تحديث",search:"ابحث في الرسائل",find:"بحث",archived:"المؤرشفة",unread:"رسائل غير مقروءة"},
   de:{heading:"Unterhaltungen",directory:"Kontaktverzeichnis",all:"Alle",direct:"Private Unterhaltungen",office:"Schulbüros",student_affairs:"Schulbüro",accounts:"Buchhaltung",
     back:"Zurück zu den Unterhaltungen",open:"Offen",in_progress:"In Bearbeitung",closed:"Geschlossen",status:"Vorgangsstatus",caseTitle:"Vorgang bearbeiten",
     assignee:"Zuständige Person",unassigned:"Nicht zugewiesen",save:"Speichern",saved:"Vorgang aktualisiert.",references:"Verknüpfte Einträge",
-    homework:"Hausaufgabe",attendance:"Anwesenheit",invoice:"Rechnung",refresh:"Aktualisieren"},
+    homework:"Hausaufgabe",attendance:"Anwesenheit",invoice:"Rechnung",refresh:"Aktualisieren",search:"Nachrichten durchsuchen",find:"Suchen",archived:"Archiviert",unread:"Ungelesene Nachrichten"},
 } as const;
 const options=threadSummary.array();
 const filters=["all","direct","office",...inboxSchema.options] as const;
@@ -32,14 +33,16 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   const text=copy[locale];
   const [selected,setSelected]=useState<Filter>("all");
   const [version,setVersion]=useState(0);
+  const [search,setSearch]=useState(""),[term,setTerm]=useState(""),[archived,setArchived]=useState(false);
   const reload=()=>setVersion((n)=>n+1);
   useEffect(()=>{
     const focus=()=>setVersion((n)=>n+1);
     window.addEventListener("focus",focus);
-    return ()=>window.removeEventListener("focus",focus);
+    window.addEventListener("online",focus);
+    return ()=>{window.removeEventListener("focus",focus);window.removeEventListener("online",focus);};
   },[]);
   const query=selected==="all"?"":selected==="direct"||selected==="office"?`&kind=${selected}`:`&inbox=${selected}`;
-  const list=useAcademicPage(thread?null:`/threads?limit=30${query}`,options,version);
+  const list=useAcademicPage(thread?null:`/threads?limit=30${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version);
   const detail=useTimetableRead(thread?`/threads/${thread}`:null,threadDetail,version);
   const root=`/${locale}/school/messages`;
   if(thread)return <>
@@ -52,17 +55,27 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
         <ReferenceLink locale={locale} reference={reference}/>
       </li>)}</ul>}
       {value.canManageCase&&value.caseId&&<CaseEditor key={value.caseId} locale={locale} id={value.caseId} version={version} changed={reload}/>}
+      <Conversation key={value.id} locale={locale} thread={value} changed={reload}/>
       <button type="button" className="plain-button" onClick={reload}>{text.refresh}</button>
     </section>}</TimetableRead>
   </>;
   return <section className="auth-card auth-form">
-    <Link className="plain-button" href={`/${locale}/directory`}>{text.directory}</Link>
+    <div className="header-actions">
+      <Link className="plain-button" href={`/${locale}/directory`}>{text.directory}</Link>
+      <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>setArchived((old)=>!old)}>{text.archived}</button>
+    </div>
+    <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setTerm(search.trim());}}>
+      <label>{text.search}<input type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/></label>
+      <button className="plain-button" type="submit">{text.find}</button>
+    </form>
     <div className="header-actions">{filters.map((filter)=><button className="plain-button" type="button" key={filter}
       aria-pressed={selected===filter} onClick={()=>setSelected(filter)}>{text[filter]}</button>)}</div>
     <AcademicPageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((item)=><li key={item.id}>
       <Link className="group-row" href={`${root}?thread=${item.id}`}>
         <bdi>{title(locale,item)}</bdi>{item.inbox&&item.contactName&&<span>{text[item.inbox]}</span>}
         {item.caseStatus&&<span>{text[item.caseStatus]}</span>}
+        {item.latestPreview&&<span dir="auto">{item.latestPreview}</span>}
+        {item.unread>0&&<small>{text.unread} · {new Intl.NumberFormat(locale).format(item.unread)}</small>}
       </Link>
     </li>)}</ul>}</AcademicPageItems>
   </section>;
