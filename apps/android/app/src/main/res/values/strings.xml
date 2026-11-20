@@ -68,4 +68,23 @@
     <string name="assignment_academics_grade">تسجيل الدرجات</string>
     <string name="assignment_academics_publish">نشر النتائج</string>
     <string name="assignment_comms_class">مراسلات الفصل</string>
+    <string name="history_title">تاريخ الحضور</string>
+    <string name="history_from">من تاريخ</string>
+    <string name="history_to">إلى تاريخ</string>
+    <string name="history_all">كل الحالات</string>
+    <string name="history_filter">عرض السجل</string>
+    <string name="history_cancelled">يوم دراسي ملغى</string>
+    <string name="history_preliminary">أعذار استلمتها المدرسة وفي انتظار الاعتماد</string>
+    <string name="history_detail">تفاصيل الاعتماد والتصحيحات</string>
+    <string name="history_approval">الاعتماد الأصلي</string>
+    <string name="history_correction">تصحيح معتمد</string>
+    <string name="history_calendar_correction">إلغاء اليوم بعد الاعتماد</string>
+    <string name="history_previous">الحالة السابقة</string>
+    <string name="history_correct">تصحيح الحالة</string>
+    <string name="history_cancel_day">إلغاء اليوم الدراسي لهذا الفصل</string>
+    <string name="history_cancel_explain">اليوم الملغى هيخرج من إجماليات الحضور.</string>
+    <string name="history_reason">سبب التغيير</string>
+    <string name="history_preview">مراجعة التغيير</string>
+    <string name="history_confirm">اعتماد التصحيح</string>
+    <string name="history_confirm_cancel">تأكيد إلغاء اليوم</string>
 </resources>

@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
+import de.madrasty.app.attendance.AttendanceHistoryScreen
 import de.madrasty.app.attendance.DailySheetScreen
 import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
@@ -61,6 +62,7 @@ internal sealed interface WorkspacePage {
     data object Enrollment : WorkspacePage
     data object Applications : WorkspacePage
     data class AttendanceReview(val classId:String?=null,val date:String?=null) : WorkspacePage
+    data class AttendanceHistory(val child:String?=null,val classId:String?=null,val rowId:String?=null) : WorkspacePage
     data object OfflineAttendance : WorkspacePage
     data object Audit : WorkspacePage
     data class Excuse(val child: String,val date:String?=null) : WorkspacePage
@@ -142,6 +144,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
         is WorkspacePage.AttendanceReview -> attendance
+        is WorkspacePage.AttendanceHistory -> if(page.child!=null)persona==Persona.Guardian else persona==Persona.Teacher||attendance
         is WorkspacePage.Assignments -> school || academic
         is WorkspacePage.Import,is WorkspacePage.Family -> students
         is WorkspacePage.Invitations -> students || applications
@@ -202,7 +205,10 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
         WorkspacePage.Applications -> TeacherApplicationReview(model,state::back)
         is WorkspacePage.AttendanceReview -> SupervisorAttendanceScreen(model,page.classId,page.date,
-            openOffline={state.open(WorkspacePage.OfflineAttendance)},close=state::back)
+            openOffline={state.open(WorkspacePage.OfflineAttendance)},openHistory={classId,rowId->
+                state.open(WorkspacePage.AttendanceHistory(classId=classId,rowId=rowId))},close=state::back)
+        is WorkspacePage.AttendanceHistory -> AttendanceHistoryScreen(model,page.child,page.classId,page.rowId,
+            {child,date->state.open(WorkspacePage.Excuse(child,date))},state::back)
         WorkspacePage.OfflineAttendance -> OfflineAttendanceScreen(model,session,state::back)
         WorkspacePage.Audit -> AuditScreen(
             model,state.auditEntry,{state.auditEntry=it},state.auditFilters,{state.auditFilters=it},state::openAuditResource,state::back,
@@ -232,9 +238,11 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openSchedule={state.open(WorkspacePage.Timetable(it))},
             )
             SchoolTab.Attendance -> DailySheetScreen(model,initialClass=state.attendanceClass,initialDate=state.attendanceDate,
-                openOffline={state.open(WorkspacePage.OfflineAttendance)})
+                openOffline={state.open(WorkspacePage.OfflineAttendance)},openHistory={classId,rowId->
+                    state.open(WorkspacePage.AttendanceHistory(classId=classId,rowId=rowId))})
             SchoolTab.Children -> ChildrenScreen(model,state.child,{state.child=it},
-                openTimetable={state.open(WorkspacePage.Timetable(it))},openExcuse={state.open(WorkspacePage.Excuse(it))})
+                openTimetable={state.open(WorkspacePage.Timetable(it))},openExcuse={state.open(WorkspacePage.Excuse(it))},
+                openHistory={state.open(WorkspacePage.AttendanceHistory(child=it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)

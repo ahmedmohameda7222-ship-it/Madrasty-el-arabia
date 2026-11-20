@@ -68,4 +68,23 @@
     <string name="assignment_academics_grade">Noten erfassen</string>
     <string name="assignment_academics_publish">Ergebnisse veröffentlichen</string>
     <string name="assignment_comms_class">Klassenkommunikation</string>
+    <string name="history_title">Anwesenheitsverlauf</string>
+    <string name="history_from">Ab Datum</string>
+    <string name="history_to">Bis Datum</string>
+    <string name="history_all">Alle Status</string>
+    <string name="history_filter">Verlauf anzeigen</string>
+    <string name="history_cancelled">Unterrichtstag abgesagt</string>
+    <string name="history_preliminary">Eingegangene Entschuldigungen vor Freigabe</string>
+    <string name="history_detail">Bestätigung und Korrekturen</string>
+    <string name="history_approval">Ursprüngliche Bestätigung</string>
+    <string name="history_correction">Bestätigte Korrektur</string>
+    <string name="history_calendar_correction">Absage nach Bestätigung</string>
+    <string name="history_previous">Vorheriger Status</string>
+    <string name="history_correct">Anwesenheitsstatus korrigieren</string>
+    <string name="history_cancel_day">Unterrichtstag für diese Klasse absagen</string>
+    <string name="history_cancel_explain">Der abgesagte Tag wird aus der Anwesenheitsstatistik entfernt.</string>
+    <string name="history_reason">Begründung</string>
+    <string name="history_preview">Änderung prüfen</string>
+    <string name="history_confirm">Korrektur bestätigen</string>
+    <string name="history_confirm_cancel">Absage des Tages bestätigen</string>
 </resources>

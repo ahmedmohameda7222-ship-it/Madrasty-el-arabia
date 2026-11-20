@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   attendanceChanges, attendanceClasses, attendancePendingSchema, attendanceSheetSchema, attendanceStatus,
@@ -76,6 +77,9 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
         <button type="submit" className="plain-button">{text.apply}</button>
       </form>
       <a className="plain-button" href="/offline/attendance.html">{text.offline}</a>
+      <Link className="plain-button" href={`/${locale}/school/more/attendance/history${chosen?`?class=${chosen.id}`:""}`}>
+        {locale==="ar"?"تاريخ الحضور":"Anwesenheitsverlauf"}
+      </Link>
       <TimetableRead locale={locale} result={classes}>{(catalog)=>catalog.classes.length?
         <label>{text.select}<select value={chosen?.id??""} onChange={(event)=>setSelected(event.target.value)}>
           <option value="">{text.select}</option>
@@ -276,6 +280,9 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
                   {attendanceStatus.options.map((status)=><option key={status} value={status}>{text[status]}</option>)}
                 </select>
               </label>:<p>{text[row.status??"unmarked"]}</p>}
+              {value.state==="approved"&&<Link className="plain-button" href={`/${locale}/school/more/attendance/history?class=${classId}&row=${row.id}`}>
+                {locale==="ar"?"تفاصيل الاعتماد":"Bestätigung anzeigen"}
+              </Link>}
               {row.locked&&<p>{text.locked}</p>}
               {row.confirmedArrivalAt&&<p>{text.arrival}</p>}
               {(row.locked || editable&&!row.confirmedArrivalAt) && <RowDetails locale={locale} id={row.id}

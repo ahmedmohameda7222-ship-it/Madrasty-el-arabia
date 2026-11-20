@@ -218,9 +218,10 @@ export function approveAttendance(actor:ActorContext,id:string,key:string|null,i
       await appendAudit(tx,{action:"attendance.sheet_approved",aggregateId:id});
       for(const row of rows){
         if(row.status!=="absent_unexcused")continue;
-        await appendEvent(tx,{type:"attendance.unexcused_confirmed",aggregateId:row.id,actorId:actor.accountId,
+        const event=await appendEvent(tx,{type:"attendance.unexcused_confirmed",aggregateId:row.id,actorId:actor.accountId,
           payload:{sheetId:id,classId:sheet.classId,studentId:row.studentId,schoolDate:sheet.schoolDate,revision:row.revision,
             approvalRevision:sheet.approvalRevision+1}});
+        await tx`select app.attach_attendance_approved_event(${row.id},${row.revision},${event})`;
       }
       return view(tx,context,sheet.schoolDate,await storedSheet(tx,id));
     },

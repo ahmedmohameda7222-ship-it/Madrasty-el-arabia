@@ -2102,6 +2102,97 @@ paths:
               schema: {type: string}
         default:
           $ref: '#/components/responses/AuthError'
+  /children/{childId}/attendance:
+    get:
+      operationId: readChildAttendanceHistory
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"childId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"from","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Scoped approved attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/FamilyAttendanceHistory"},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/history:
+    get:
+      operationId: readStaffAttendanceHistory
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"from","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"status","in":"query","schema":{"type":"string","enum":["present","late","absent_unexcused","absent_excused","cancelled"]}}
+      responses:
+        '200':
+          description: Scoped approved attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/ApprovedAttendanceEntry"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/rows/{id}/history:
+    get:
+      operationId: readAttendanceRevisions
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped approved attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceRevisionHistory"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/rows/{id}/corrections:
+    post:
+      operationId: correctApprovedAttendance
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","status","reason"],"properties":{"revision":{"type":"integer","minimum":1},"status":{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},"reason":{"type":"string","minLength":1,"maxLength":500}}}
+      responses:
+        '200':
+          description: Scoped approved attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceCorrectionReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/sheets/{id}/cancel-for-calendar:
+    post:
+      operationId: cancelApprovedAttendanceForCalendar
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["approvalRevision","reason"],"properties":{"approvalRevision":{"type":"integer","minimum":1},"reason":{"type":"string","minLength":1,"maxLength":500}}}
+      responses:
+        '200':
+          description: Scoped approved attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceCancellationReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -2127,6 +2218,11 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    ApprovedAttendanceEntry: {"type":"object","required":["id","studentId","studentName","studentNumber","classId","classCode","classNameAr","classNameDe","schoolDate","status","revision","cancelled"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"schoolDate":{"type":"string","format":"date"},"status":{"anyOf":[{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"cancelled":{"type":"boolean"}}}
+    FamilyAttendanceHistory: {"type":"object","required":["entries","ownPreliminary"],"properties":{"entries":{"type":"array","items":{"$ref":"#/components/schemas/ApprovedAttendanceEntry"}},"ownPreliminary":{"type":"array","items":{"type":"object","required":["id","schoolDate","submittedAt"],"properties":{"id":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"submittedAt":{"type":"string","format":"date-time"}}}}}}
+    AttendanceRevisionHistory: {"type":"object","required":["row","sheetId","classId","schoolDate","calendarCancelled","approvalRevision","canCorrect","canCancel","revisions"],"properties":{"row":{"$ref":"#/components/schemas/AttendanceRow"},"sheetId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"calendarCancelled":{"type":"boolean"},"approvalRevision":{"type":"integer","minimum":1},"canCorrect":{"type":"boolean"},"canCancel":{"type":"boolean"},"revisions":{"type":"array","items":{"type":"object","required":["id","kind","revision","priorStatus","status","actorName","occurredAt","reason"],"properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["approval","correction","calendar_cancellation"]},"revision":{"type":"integer","minimum":1},"priorStatus":{"anyOf":[{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},{"type":"null"}]},"status":{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},"actorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"occurredAt":{"type":"string","format":"date-time"},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]}}}}}}
+    AttendanceCorrectionReceipt: {"type":"object","required":["rowId","classId","schoolDate","status","revision","calendarCancelled"],"properties":{"rowId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"status":{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},"revision":{"type":"integer","minimum":1},"calendarCancelled":{"type":"boolean"}}}
+    AttendanceCancellationReceipt: {"type":"object","required":["classId","schoolDate","calendarCancelled","correctedRows"],"properties":{"classId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"calendarCancelled":{"const":true},"correctedRows":{"type":"integer","minimum":0}}}
     AttendanceExcuseReceipt: {"type":"object","required":["id","studentId","schoolDate","reason","state","revision","rowRevision","submittedAt","withdrawable"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"reason":{"type":"string"},"state":{"type":"string","enum":["pending","withdrawn","superseded"]},"revision":{"type":"integer","minimum":1},"rowRevision":{"type":"integer","minimum":1},"submittedAt":{"type":"string","format":"date-time"},"withdrawable":{"type":"boolean"}}}
     AttendanceExcuseCommandReceipt: {"type":"object","required":["id","studentId","schoolDate","state","revision","rowRevision","submittedAt","withdrawable"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"state":{"type":"string","enum":["pending","withdrawn","superseded"]},"revision":{"type":"integer","minimum":1},"rowRevision":{"type":"integer","minimum":1},"submittedAt":{"type":"string","format":"date-time"},"withdrawable":{"type":"boolean"}}}
     AttendanceRowDetail: {"type":"object","required":["sheetId","classId","schoolDate","row","excuseReason"],"properties":{"sheetId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"row":{"$ref":"#/components/schemas/AttendanceRow"},"excuseReason":{"type":["string","null"]}}}

@@ -17,3 +17,4 @@ export * from "./school/work-queues";
 export * from "./school/audit";
 export * from "./attendance/sheets";
 export * from "./attendance/excuses";
+export * from "./attendance/history";

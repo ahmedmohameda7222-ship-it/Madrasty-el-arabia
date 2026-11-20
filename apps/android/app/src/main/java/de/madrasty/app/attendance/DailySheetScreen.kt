@@ -67,7 +67,7 @@ private val conflictLabels = mapOf(
 private data class Confirmation(val approval:Boolean,val rows:JSONArray,val approvalRevision:Int?=null)
 
 @Composable
-fun SupervisorAttendanceScreen(model:IdentityViewModel,initialClass:String?=null,initialDate:String?=null,openOffline:()->Unit={},close:()->Unit) {
+fun SupervisorAttendanceScreen(model:IdentityViewModel,initialClass:String?=null,initialDate:String?=null,openOffline:()->Unit={},openHistory:(String?,String?)->Unit,close:()->Unit) {
     BackHandler(onBack=close)
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -75,12 +75,12 @@ fun SupervisorAttendanceScreen(model:IdentityViewModel,initialClass:String?=null
     ) {
         TextButton(onClick=close) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.attendance_review),style=MaterialTheme.typography.headlineMedium)
-        DailySheetScreen(model,supervisor=true,initialClass=initialClass,initialDate=initialDate,openOffline=openOffline)
+        DailySheetScreen(model,supervisor=true,initialClass=initialClass,initialDate=initialDate,openOffline=openOffline,openHistory=openHistory)
     }
 }
 
 @Composable
-fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialClass:String?=null,initialDate:String?=null,openOffline:()->Unit={}) {
+fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialClass:String?=null,initialDate:String?=null,openOffline:()->Unit={},openHistory:(String?,String?)->Unit) {
     val language=if (LocalConfiguration.current.locales[0].language=="de") "de" else "ar"
     var chosen by remember(initialClass) { mutableStateOf(initialClass.orEmpty()) }
     var day by remember(initialDate) { mutableStateOf(initialDate.orEmpty()) }
@@ -100,6 +100,7 @@ fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialCla
     }
     val known=(classes as? AsyncState.Ready)?.content?.getString("date")
     TextButton(onClick=openOffline){Text(stringResource(R.string.drafts_on_device))}
+    TextButton(onClick={openHistory(chosen.ifEmpty{null},null)}){Text(stringResource(R.string.history_title))}
     Field(R.string.attendance_date,input) { input=it.take(10) }
     TextButton(enabled=timetableDate(input)&&input!=day,onClick={day=input}) { Text(stringResource(R.string.attendance_day_action)) }
     if (day.isNotEmpty()) TextButton(onClick={day="";input=""}) { Text(stringResource(R.string.timetable_current)) }
@@ -115,7 +116,7 @@ fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialCla
         }
         if (supervisor) PendingSheets(model,date,refresh,language) { chosen=it }
         if (options.any { it.getString("id")==chosen }) key(chosen,date) {
-            ActiveSheet(model,chosen,date,language,refresh) {refresh++}
+            ActiveSheet(model,chosen,date,language,refresh,{row->openHistory(chosen,row)}) {refresh++}
         }
     }
 }
@@ -150,7 +151,7 @@ private fun PendingSheets(model:IdentityViewModel,day:String,refresh:Int,languag
 private suspend fun IdentityViewModel.attendancePage(path:String)=decodeData(schoolRequest(path)) { it as JSONObject }
 
 @Composable
-private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,language:String,refresh:Int,reload:()->Unit) {
+private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,language:String,refresh:Int,openHistory:(String)->Unit,reload:()->Unit) {
     val path="/attendance/classes/$classId/days/$day"
     val attempts=remember { mutableMapOf<String,Pair<String,String>>() }
     val slot=teacherDraftSlot(classId,day)
@@ -287,6 +288,7 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
                         FilterChip(selected==requested,enabled=!busy&&local.ready,onClick={select(row,requested)},label={Text(stringResource(label))})
                     }
                 }else Text(stringResource(marks.getValue(row.status().orEmpty())))
+                if(state=="approved")TextButton(onClick={openHistory(rowId)}){Text(stringResource(R.string.history_detail))}
                 if(locked)Text(stringResource(R.string.attendance_locked))
                 if(arrived)Text(stringResource(R.string.attendance_arrival))
                 if(locked||editable&&!arrived)key(rowId) {
