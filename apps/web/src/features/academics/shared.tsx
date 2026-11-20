@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useEffect,useState,type ReactNode } from "react";
 import type { z } from "zod";
 import type { CurriculumOffering,Locale } from "@madrasty/contracts";
 import { ApiResponseError,requestApi } from "@/api/client";
@@ -46,4 +46,15 @@ export function offeringText(value:CurriculumOffering,locale:Locale){
 
 export function AcademicReadError({locale,error,retry}:{locale:Locale;error:unknown;retry:()=>void}){
   return <AsyncSurface locale={locale} state={denied(error)?{kind:"forbidden"}:{kind:"error",message:timetableError(locale,error),retry}}/>;
+}
+
+export function AcademicPageItems<T>({locale,page,children}:{locale:Locale;page:ReturnType<typeof useAcademicPage<T>>;children:(items:T[])=>ReactNode}){
+  const read=page.visible;
+  if(read?.error)return <AcademicReadError locale={locale} error={read.error} retry={page.retry}/>;
+  if(!read?.items)return <AsyncSurface locale={locale} state={{kind:"initialLoading"}}/>;
+  return <>
+    {read.items.length?children(read.items):<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
+    {read.cursor&&<button className="plain-button" disabled={page.busy} onClick={()=>void page.more()}>{locale==="ar"?"عرض المزيد":"Weitere anzeigen"}</button>}
+    {page.notice!==undefined&&<p role="alert">{timetableError(locale,page.notice)}</p>}
+  </>;
 }

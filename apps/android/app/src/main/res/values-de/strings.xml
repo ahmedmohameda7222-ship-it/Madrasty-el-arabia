@@ -144,4 +144,20 @@
     <string name="academic_edit_mark">Punktzahl bearbeiten</string>
     <string name="academic_mark_reason">Begründung zur Korrektur der veröffentlichten Punktzahl</string>
     <string name="academic_correction_history">Bisherige Korrekturen</string>
+    <string name="homework_title">Hausaufgaben</string>
+    <string name="homework_new">Hausaufgabe anlegen</string>
+    <string name="homework_edit">Hausaufgabe bearbeiten</string>
+    <string name="homework_label">Titel der Hausaufgabe</string>
+    <string name="homework_instructions">Aufgabenstellung</string>
+    <string name="homework_issued">Aufgegeben am</string>
+    <string name="homework_due">Fällig am</string>
+    <string name="homework_lesson">Zugeordnete Unterrichtsstunde</string>
+    <string name="homework_open_lesson">Unterrichtsstunde ansehen</string>
+    <string name="homework_back">Zurück zu den Hausaufgaben</string>
+    <string name="homework_save">Hausaufgabe speichern</string>
+    <string name="homework_joined">Eintritt in die Klasse</string>
+    <string name="homework_added_later">Die Hausaufgabe wurde nach dem Klasseneintritt zugewiesen</string>
+    <string name="homework_score">Punkte von 20</string>
+    <string name="homework_roster">Schülerinnen und Schüler auf der Liste</string>
+    <string name="homework_feedback">Rückmeldung</string>
 </resources>

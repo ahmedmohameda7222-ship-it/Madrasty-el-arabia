@@ -2547,6 +2547,76 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ActivityMarkReceipt"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /academics/homework:
+    get:
+      operationId: listAssignedHomework
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"offeringId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Scoped homework result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/Homework"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: assignHomework
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["title","instructions","lessonId","issuedOn","dueOn","offeringId"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"instructions":{"type":"string","minLength":1,"maxLength":12000},"lessonId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"issuedOn":{"type":"string","format":"date"},"dueOn":{"type":"string","format":"date"},"offeringId":{"type":"string","format":"uuid"}}}
+      responses:
+        '201':
+          description: Scoped homework result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/Homework"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/homework/{id}:
+    get:
+      operationId: readAssignedHomework
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped homework result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/Homework"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: changeAssignedHomework
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["title","instructions","lessonId","issuedOn","dueOn","revision"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"instructions":{"type":"string","minLength":1,"maxLength":12000},"lessonId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"issuedOn":{"type":"string","format":"date"},"dueOn":{"type":"string","format":"date"},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped homework result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/Homework"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -2572,6 +2642,7 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    Homework: {"type":"object","required":["title","instructions","lessonId","issuedOn","dueOn","id","offeringId","classId","classCode","classNameAr","classNameDe","yearId","yearStart","yearEnd","subjectId","subjectNameAr","subjectNameDe","revision","rosterCount","canEdit","canGrade","joinedOn","addedLater","score","feedback"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"instructions":{"type":"string","minLength":1,"maxLength":12000},"lessonId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"issuedOn":{"type":"string","format":"date"},"dueOn":{"type":"string","format":"date"},"id":{"type":"string","format":"uuid"},"offeringId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"yearId":{"type":"string","format":"uuid"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"},"subjectId":{"type":"string","format":"uuid"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"revision":{"type":"integer","minimum":1},"rosterCount":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"canEdit":{"type":"boolean"},"canGrade":{"type":"boolean"},"joinedOn":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"addedLater":{"anyOf":[{"type":"boolean"},{"type":"null"}]},"score":{"anyOf":[{"type":"number","minimum":0,"maximum":20,"multipleOf":0.5},{"type":"null"}]},"feedback":{"anyOf":[{"type":"string"},{"type":"null"}]}}}
     TeachingEntry: {"type":"object","required":["id","offeringId","assignmentId","lessonId","lessonVersionId","actualDate","deliveredNotes","recordedAt","recordedByName","revision","canEdit","plannedDate","planTitleAr","planTitleDe"],"properties":{"id":{"type":"string","format":"uuid"},"offeringId":{"type":"string","format":"uuid"},"assignmentId":{"type":"string","format":"uuid"},"lessonId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"lessonVersionId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"actualDate":{"type":"string","format":"date"},"deliveredNotes":{"type":"string","minLength":1,"maxLength":12000},"recordedAt":{"type":"string","format":"date-time"},"recordedByName":{"anyOf":[{"type":"string"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"canEdit":{"type":"boolean"},"plannedDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"planTitleAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"planTitleDe":{"anyOf":[{"type":"string"},{"type":"null"}]}}}
     TeachingAssignmentChoice: {"type":"object","required":["id","teacherName"],"properties":{"id":{"type":"string","format":"uuid"},"teacherName":{"type":"string"}}}
     Activity: {"type":"object","required":["id","offeringId","date","title","maxScore","score","markId","markRevision","classId","classCode","subjectNameAr","subjectNameDe","canEdit"],"properties":{"id":{"type":"string","format":"uuid"},"offeringId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"},"title":{"type":"string"},"maxScore":{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},"score":{"anyOf":[{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"markId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"markRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"canEdit":{"type":"boolean"}}}

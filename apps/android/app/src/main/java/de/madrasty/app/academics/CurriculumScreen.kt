@@ -53,7 +53,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 @Composable
-fun CurriculumScreen(model:IdentityViewModel,persona:Persona,initialChild:String?,close:()->Unit){
+fun CurriculumScreen(model:IdentityViewModel,persona:Persona,initialChild:String?,initialLesson:String?,close:()->Unit){
     var child by remember(initialChild){mutableStateOf(initialChild)}
     var refresh by remember{mutableStateOf(0)}
     val lifecycle=LocalLifecycleOwner.current.lifecycle
@@ -76,23 +76,23 @@ fun CurriculumScreen(model:IdentityViewModel,persona:Persona,initialChild:String
                     FilterChip(active==id,onClick={child=id},label={Text(isolate(item.getString("displayName")))})
                 }
                 if(active!=null&&items.any{it.getString("id")==active}){
-                    key(active){CurriculumCatalog(model,persona,active,refresh)}
+                    key(active){CurriculumCatalog(model,persona,active,if(child==initialChild)initialLesson else null,refresh)}
                 }else if(child!=null)AsyncSurface<Unit>(AsyncState.Forbidden()){}
                 else Text(stringResource(R.string.empty))
             }
-        }else CurriculumCatalog(model,persona,null,refresh)
+        }else CurriculumCatalog(model,persona,null,initialLesson,refresh)
     }
 }
 
 @Composable
-private fun CurriculumCatalog(model:IdentityViewModel,persona:Persona,child:String?,refresh:Int){
+private fun CurriculumCatalog(model:IdentityViewModel,persona:Persona,child:String?,initialLesson:String?,refresh:Int){
     val language=if(LocalConfiguration.current.locales[0].language=="de")"de" else "ar"
     val query=child?.let{"?childId=$it"}.orEmpty()
     val filter=child?.let{"&childId=$it"}.orEmpty()
     var changed by remember{mutableStateOf(0)}
     var subjectId by remember{mutableStateOf<String?>(null)}
     var offeringId by remember{mutableStateOf<String?>(null)}
-    var lessonId by remember{mutableStateOf<String?>(null)}
+    var lessonId by remember(initialLesson){mutableStateOf(initialLesson)}
     var subjectMode by remember{mutableStateOf<SubjectMode?>(null)}
     var createLesson by remember{mutableStateOf(false)}
     val offerings=academicRead("/academics/offerings$query",refresh+changed){model.records(it)}

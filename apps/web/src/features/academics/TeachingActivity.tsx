@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useState,type FormEvent,type ReactNode } from "react";
+import { useEffect,useState,type FormEvent } from "react";
 import {
   activityCreate,activityEntry,activityHistoryRow,activityMarkInput,activityMarkReceipt,activityRosterRow,
   childSummarySchema,curriculumLesson,curriculumOffering,curriculumSubject,lessonReceipt,schoolDateSchema,
@@ -12,7 +12,7 @@ import { dictionary } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
-import { AcademicReadError,offeringText,useAcademicPage } from "./shared";
+import { AcademicPageItems,offeringText,useAcademicPage } from "./shared";
 
 const copy={
   ar:{title:"الشرح والأنشطة",teaching:"سجل الشرح",activity:"الأنشطة والتقييم",child:"الطفل",context:"المادة والفصل والسنة",
@@ -85,17 +85,6 @@ function StaffWork({locale,refresh,initialActivity}:{locale:Locale;refresh:numbe
   </>;
 }
 
-function PageItems<T>({locale,page,children}:{locale:Locale;page:ReturnType<typeof useAcademicPage<T>>;children:(items:T[])=>ReactNode}){
-  const text=copy[locale],read=page.visible;
-  if(read?.error)return <AcademicReadError locale={locale} error={read.error} retry={page.retry}/>;
-  if(!read?.items)return <AsyncSurface locale={locale} state={{kind:"initialLoading"}}/>;
-  return <>
-    {read.items.length?children(read.items):<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
-    {read.cursor&&<button className="plain-button" disabled={page.busy} onClick={()=>void page.more()}>{text.more}</button>}
-    {page.notice!==undefined&&<p role="alert">{timetableError(locale,page.notice)}</p>}
-  </>;
-}
-
 function TeachingPanel({locale,offering,refresh}:{locale:Locale;offering:string;refresh:number}){
   const text=copy[locale];
   const [changed,setChanged]=useState(0);
@@ -106,14 +95,14 @@ function TeachingPanel({locale,offering,refresh}:{locale:Locale;offering:string;
     <button className="plain-button" onClick={()=>setEditing("new")}>{text.newLog}</button>
     {editing&&<TeachingForm key={editing==="new"?"new":editing.id} locale={locale} offering={offering}
       item={editing==="new"?undefined:editing} cancel={()=>setEditing(undefined)} saved={()=>{setEditing(undefined);setChanged((n)=>n+1);}}/>}
-    <PageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((entry)=><li key={entry.id} className="timetable-day">
+    <AcademicPageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((entry)=><li key={entry.id} className="timetable-day">
       <strong>{text.date} · <bdi dir="ltr">{entry.actualDate}</bdi></strong>
       {entry.recordedByName&&<p><bdi>{entry.recordedByName}</bdi></p>}
       {(entry.planTitleAr||entry.planTitleDe)&&<p>{text.plan} · <bdi>{locale==="ar"?(entry.planTitleAr||entry.planTitleDe):(entry.planTitleDe||entry.planTitleAr)}</bdi></p>}
       {entry.plannedDate&&<p>{text.planDate} · <bdi dir="ltr">{entry.plannedDate}</bdi></p>}
       <p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{entry.deliveredNotes}</p>
       {entry.canEdit&&<button className="plain-button" onClick={()=>setEditing(entry)}>{text.edit}</button>}
-    </li>)}</ul>}</PageItems>
+    </li>)}</ul>}</AcademicPageItems>
   </section>;
 }
 
@@ -187,11 +176,11 @@ function ActivitiesPanel({locale,offering,child,refresh,initial}:{locale:Locale;
     {offering&&!child&&<button className="plain-button" onClick={()=>setCreating(true)}>{text.addActivity}</button>}
     {offering&&!child&&creating&&<NewActivity locale={locale} offering={offering} cancel={()=>setCreating(false)}
       saved={(key)=>{setId(key);setCreating(false);setUpdated((n)=>n+1);}}/>}
-    <PageItems locale={locale} page={page}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>
+    <AcademicPageItems locale={locale} page={page}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>
       <button type="button" className="group-row" onClick={()=>setId(item.id)}>
         <bdi>{item.title}</bdi><bdi dir="ltr">{item.date}</bdi>{child&&<span>{scoreLabel(locale,item.score,item.maxScore)}</span>}
       </button>
-    </li>)}</ul>}</PageItems>
+    </li>)}</ul>}</AcademicPageItems>
   </section>;
 }
 
@@ -235,10 +224,10 @@ function ActivityRoster({locale,activity,refresh}:{locale:Locale;activity:Activi
   return <>
     <h3>{text.classRoster}</h3>
     <button type="button" className="plain-button" onClick={()=>setUpdated((n)=>n+1)}>{text.refresh}</button>
-    <PageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((row)=><li key={row.studentId} className="timetable-day">
+    <AcademicPageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((row)=><li key={row.studentId} className="timetable-day">
       <strong><bdi>{row.studentName}</bdi></strong> · <bdi dir="ltr">{row.studentNumber}</bdi>
       <ActivityMark locale={locale} activity={activity} row={row} changed={()=>setUpdated((n)=>n+1)}/>
-    </li>)}</ul>}</PageItems>
+    </li>)}</ul>}</AcademicPageItems>
   </>;
 }
 

@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
 import de.madrasty.app.academics.CurriculumScreen
+import de.madrasty.app.academics.HomeworkScreen
 import de.madrasty.app.academics.TeachingActivityScreen
 import de.madrasty.app.attendance.AttendanceHistoryScreen
 import de.madrasty.app.attendance.DailySheetScreen
@@ -68,7 +69,8 @@ internal sealed interface WorkspacePage {
     data object OfflineAttendance : WorkspacePage
     data object Audit : WorkspacePage
     data class Excuse(val child: String,val date:String?=null) : WorkspacePage
-    data class Curriculum(val child:String?=null) : WorkspacePage
+    data class Curriculum(val child:String?=null,val lesson:String?=null) : WorkspacePage
+    data class Homework(val child:String?=null,val work:String?=null) : WorkspacePage
     data class AcademicWork(val child:String?=null) : WorkspacePage
     data class Timetable(val child: String? = null) : WorkspacePage
     data class Invitations(val batch: String? = null) : WorkspacePage
@@ -153,6 +155,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
         is WorkspacePage.Import,is WorkspacePage.Family -> students
         is WorkspacePage.Invitations -> students || applications
         is WorkspacePage.Queue -> persona == Persona.Admin
+        is WorkspacePage.Homework -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.AcademicWork -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Curriculum -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Timetable -> persona != Persona.Admin || school || academic
@@ -221,7 +224,9 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         )
         is WorkspacePage.Excuse -> FamilyExcuseScreen(model,page.child,page.date,state::back)
         is WorkspacePage.AcademicWork -> TeachingActivityScreen(model,session.actor.persona,page.child,state::back)
-        is WorkspacePage.Curriculum -> CurriculumScreen(model,session.actor.persona,page.child,state::back)
+        is WorkspacePage.Curriculum -> CurriculumScreen(model,session.actor.persona,page.child,page.lesson,state::back)
+        is WorkspacePage.Homework -> HomeworkScreen(model,session.actor.persona,page.child,page.work,
+            {child,lesson->state.open(WorkspacePage.Curriculum(child,lesson))},state::back)
         is WorkspacePage.Timetable -> TimetableScreen(model,session.actor.persona,page.child,state::back)
         is WorkspacePage.Assignments -> StaffAssignmentsScreen(model,page.classTarget,state::back)
         is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.applications,page.batch,state::back)
@@ -251,7 +256,8 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
             SchoolTab.Children -> ChildrenScreen(model,state.child,{state.child=it},
                 openTimetable={state.open(WorkspacePage.Timetable(it))},openExcuse={state.open(WorkspacePage.Excuse(it))},
                 openHistory={state.open(WorkspacePage.AttendanceHistory(child=it))},
-                openCurriculum={state.open(WorkspacePage.Curriculum(it))},openActivities={state.open(WorkspacePage.AcademicWork(it))})
+                openCurriculum={state.open(WorkspacePage.Curriculum(it))},openActivities={state.open(WorkspacePage.AcademicWork(it))},
+                openHomework={state.open(WorkspacePage.Homework(it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)
@@ -283,6 +289,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
 
     if(rights.persona!=Persona.Admin||rights.school||rights.students||rights.academic||rights.applications||rights.attendance){
         Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
+        if(rights.allows(WorkspacePage.Homework()))OpenPage(state,WorkspacePage.Homework(),R.string.homework_title)
         if(rights.allows(WorkspacePage.AcademicWork()))OpenPage(state,WorkspacePage.AcademicWork(),R.string.academic_work)
         if(rights.allows(WorkspacePage.Curriculum()))OpenPage(state,WorkspacePage.Curriculum(),R.string.curriculum_title)
         if(rights.allows(WorkspacePage.Timetable()))OpenPage(state,WorkspacePage.Timetable(),R.string.timetable_title)

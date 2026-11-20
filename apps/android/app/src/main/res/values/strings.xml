@@ -144,4 +144,20 @@
     <string name="academic_edit_mark">تعديل الدرجة</string>
     <string name="academic_mark_reason">سبب تصحيح الدرجة المعروضة للأسرة</string>
     <string name="academic_correction_history">التصحيحات السابقة</string>
+    <string name="homework_title">الواجبات</string>
+    <string name="homework_new">إضافة واجب</string>
+    <string name="homework_edit">تعديل الواجب</string>
+    <string name="homework_label">عنوان الواجب</string>
+    <string name="homework_instructions">التعليمات</string>
+    <string name="homework_issued">تاريخ التكليف</string>
+    <string name="homework_due">موعد التسليم</string>
+    <string name="homework_lesson">الدرس المرتبط</string>
+    <string name="homework_open_lesson">عرض الدرس</string>
+    <string name="homework_back">رجوع للواجبات</string>
+    <string name="homework_save">حفظ الواجب</string>
+    <string name="homework_joined">تاريخ الانضمام للفصل</string>
+    <string name="homework_added_later">اتضاف الواجب بعد انضمام الطالب للفصل</string>
+    <string name="homework_score">الدرجة من ٢٠</string>
+    <string name="homework_roster">عدد الطلاب في الكشف</string>
+    <string name="homework_feedback">ملاحظات التصحيح</string>
 </resources>
