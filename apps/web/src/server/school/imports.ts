@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import {
   importInspectionSchema, importPreviewSchema, importReceiptSchema, importVersionSchema, maxFamilyUploadBytes,
-  normalizedImportSchema, type importDecisionInput, type importMappingInput, type importSheetOptions,
+  normalizedImportSchema, importMappingInput, type importDecisionInput, type importSheetOptions,
   type importUploadInput,
 } from "@madrasty/contracts";
 import type { z } from "zod";
@@ -16,7 +16,7 @@ import { familyImportNamespace, normalizeRows, reviewRows, type ReviewRow, type 
 
 type Job = {
   id: string; fileName: string; mime: string; state: string; revision: number; expiresAt: string;
-  bytes: Buffer | null; receipt: unknown;
+  bytes: Buffer | null; receipt: unknown; mapping: unknown;
 };
 type StoredReview = {
   rowNo: number; fields: unknown; issue: ReviewRow["issue"]; column: string | null;
@@ -37,7 +37,7 @@ async function job(tx: Transaction, id: string, lock = false, source = false) {
   const [row] = await tx<Job[]>`
     select id, file_name as "fileName", file_mime as mime, state, revision,
       to_char(expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "expiresAt",
-      ${source ? tx`source_bytes` : tx`null::bytea`} as bytes, receipt
+      ${source ? tx`source_bytes` : tx`null::bytea`} as bytes, receipt, mapping
     from app.family_import_job where id = ${id} ${lock ? tx`for update` : tx``}
   `;
   if (!row) throw new ApiError("not_found");
@@ -142,9 +142,14 @@ export async function inspectImport(ctx: ActorContext, id: string, options: z.in
   const file = await withActor(ctx, async (tx) => { await allowed(ctx)(tx); return job(tx, id, false, true); });
   assertWritable(file);
   if (!file.bytes) throw new ApiError("not_found");
-  const parsed = await parseFamilyFile(file.bytes, file.mime, options);
+  const saved = importMappingInput.safeParse(file.mapping).data;
+  const parsed = await parseFamilyFile(file.bytes, file.mime, {
+    worksheet: options.worksheet ?? saved?.worksheet,
+    delimiter: options.delimiter ?? saved?.delimiter,
+  });
+  const same = saved && (saved.worksheet ?? null) === parsed.worksheet && (saved.delimiter ?? null) === parsed.delimiter;
   return importInspectionSchema.parse({ ...version(file), columns: parsed.columns, worksheets: parsed.worksheets,
-    worksheet: parsed.worksheet, delimiter: parsed.delimiter });
+    worksheet: parsed.worksheet, delimiter: parsed.delimiter, savedColumnMap: same ? saved.columnMap : undefined });
 }
 
 export async function mapImport(ctx: ActorContext, id: string, key: string | null, input: z.infer<typeof importMappingInput>) {

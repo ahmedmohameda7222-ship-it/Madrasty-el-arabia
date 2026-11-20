@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,9 @@ import de.madrasty.app.BuildConfig
 import de.madrasty.app.R
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.identity.IdentityViewModel
+import de.madrasty.app.identity.loadAccountSurface
+import de.madrasty.app.ui.AsyncState
+import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.isolate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,7 +61,7 @@ private val dispositions = mapOf("new" to R.string.import_new, "existing" to R.s
     "duplicate" to R.string.import_duplicate, "conflict" to R.string.import_conflict, "revoked" to R.string.import_revoked,
     "skipped" to R.string.import_skipped)
 @Composable
-fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, close: () -> Unit) {
+fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initialJob: String? = null, close: () -> Unit) {
     val context = LocalContext.current
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
     var file by remember { mutableStateOf<Uri?>(null) }
@@ -67,6 +71,8 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, close:
     var preview by remember { mutableStateOf<JSONObject?>(null) }
     var receipt by remember { mutableStateOf<JSONObject?>(null) }
     var maxRows by remember { mutableStateOf(30) }
+    var restoreAttempt by remember(initialJob) { mutableStateOf(0) }
+    var restored by remember(initialJob) { mutableStateOf<AsyncState<Unit>>(AsyncState.InitialLoading()) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         file = uri
         name = uri?.let { value ->
@@ -79,14 +85,24 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, close:
     suspend fun inspect(id: String, option: String = "") {
         val selected = model.objectAt("$base/$id$option")
         val columns = selected.getJSONArray("columns").objects()
+        val saved = selected.optJSONObject("savedColumnMap")
         mapping = fields.keys.mapNotNull { key ->
-            columns.filter { it.getString("label").equals(key, ignoreCase = true) }.singleOrNull()
+            if (saved != null) saved.optInt(key).takeIf { it > 0 }?.let { key to it }
+            else columns.filter { it.getString("label").equals(key, ignoreCase = true) }.singleOrNull()
                 ?.let { key to it.getInt("index") }
         }.toMap()
         inspection = selected
         preview = null
     }
 
+    LaunchedEffect(initialJob,restoreAttempt) {
+        if (initialJob != null) {
+            restored = loadAccountSurface({ restoreAttempt++ }) {
+                inspect(initialJob)
+                if (inspection?.getString("state") == "review") preview = model.objectAt("$base/$initialJob/preview")
+            }
+        }
+    }
     BackHandler(onBack = close)
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -94,6 +110,7 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, close:
     ) {
         TextButton(onClick = close) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.import_families), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
+        if (initialJob != null) AsyncSurface(restored) {}
         Text(stringResource(R.string.import_instructions))
         listOf("csv" to R.string.import_csv, "xlsx" to R.string.import_xlsx).forEach { (extension, label) ->
             TextButton(onClick = {

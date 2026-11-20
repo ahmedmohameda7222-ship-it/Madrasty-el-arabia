@@ -1765,6 +1765,55 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableSlot"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/work-queues:
+    get:
+      operationId: listSchoolWorkQueues
+      description: Actionable queues available to the active persona and the school-local date used by each filter.
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - { name: asOf, in: query, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Authorized queue counts and destinations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/SchoolWorkQueues' }
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/work-queues/{key}:
+    get:
+      operationId: readSchoolWorkQueue
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - { name: key, in: path, required: true, schema: { $ref: '#/components/schemas/SchoolWorkQueueKey' } }
+        - { name: asOf, in: query, schema: { type: string, format: date } }
+        - { name: cursor, in: query, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Authorized actionable records for the requested date
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [asOf, items]
+                    properties:
+                      asOf: { type: string, format: date }
+                      items: { type: array, items: { $ref: '#/components/schemas/SchoolWorkQueueItem' } }
+                  meta:
+                    type: object
+                    properties:
+                      nextCursor: { type: string, format: uuid }
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -1790,6 +1839,55 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    SchoolWorkQueueKey:
+      type: string
+      enum: [guardian_links, family_imports, class_assignments, bounced_invites, unapproved_attendance, noncontinuation_requests, settlement_review, failed_deliveries]
+    SchoolWorkQueues:
+      type: object
+      required: [asOf, today, timezone, queues]
+      properties:
+        asOf: { type: string, format: date }
+        today: { type: string, format: date }
+        timezone: { type: string }
+        queues:
+          type: array
+          items:
+            type: object
+            required: [key, route, filters, state]
+            properties:
+              key: { $ref: '#/components/schemas/SchoolWorkQueueKey' }
+              route: { type: string }
+              filters: { type: object, required: [asOf], properties: { asOf: { type: string, format: date } } }
+              state: { type: string, enum: [ready, unavailable] }
+              count: { type: integer, minimum: 0 }
+    SchoolWorkQueueItem:
+      type: object
+      required: [id, titleAr, titleDe, detailAr, detailDe, target]
+      properties:
+        id: { type: string, format: uuid }
+        titleAr: { type: string }
+        titleDe: { type: string }
+        detailAr: { type: string }
+        detailDe: { type: string }
+        target:
+          oneOf:
+            - type: object
+              required: [kind, guardianId, linkId]
+              properties:
+                kind: { const: guardian_link }
+                guardianId: { type: string, format: uuid }
+                linkId: { type: string, format: uuid }
+            - type: object
+              required: [kind, jobId]
+              properties:
+                kind: { const: family_import }
+                jobId: { type: string, format: uuid }
+            - type: object
+              required: [kind, classId, yearId]
+              properties:
+                kind: { const: class_assignment }
+                classId: { type: string, format: uuid }
+                yearId: { type: string, format: uuid }
     TimetableRoom: {"type":"object","required":["code","nameAr","nameDe","id","revision"],"properties":{"code":{"type":"string","pattern":"^[A-Z0-9][A-Z0-9_-]{0,23}$"},"nameAr":{"type":"string","minLength":1,"maxLength":120},"nameDe":{"type":"string","minLength":1,"maxLength":120},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}}
     TimetableDraft: {"type":"object","required":["assignmentId","roomId","weekday","start","end","from","untilExclusive"],"properties":{"assignmentId":{"type":"string","format":"uuid"},"roomId":{"type":"string","format":"uuid"},"weekday":{"type":"integer","minimum":1,"maximum":7},"start":{"type":"integer","minimum":0,"maximum":1439},"end":{"type":"integer","minimum":1,"maximum":1440},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"}}}
     TimetableReviewedSlot: {"type":"object","required":["assignmentId","roomId","weekday","start","end","from","untilExclusive","assignmentRevision","roomRevision"],"properties":{"assignmentId":{"type":"string","format":"uuid"},"roomId":{"type":"string","format":"uuid"},"weekday":{"type":"integer","minimum":1,"maximum":7},"start":{"type":"integer","minimum":0,"maximum":1439},"end":{"type":"integer","minimum":1,"maximum":1440},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"assignmentRevision":{"type":"integer","minimum":1},"roomRevision":{"type":"integer","minimum":1}}}

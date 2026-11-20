@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
   guardianSchema, importColumns, importInspectionSchema, importPreviewSchema, importReceiptSchema,
@@ -76,7 +76,7 @@ function encode(bytes: Uint8Array) {
   return btoa(binary);
 }
 
-export function FamilyImport({ locale }: { locale: Locale }) {
+export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
   const text = copy[locale], translated = dictionary(locale), command = useAdminCommand();
   const [file, setFile] = useState<File>();
   const [inspection, setInspection] = useState<Inspection>();
@@ -87,7 +87,7 @@ export function FamilyImport({ locale }: { locale: Locale }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<unknown>) {
     setError(""); setPending(true);
     try { await action(); }
     catch (failure) {
@@ -98,18 +98,37 @@ export function FamilyImport({ locale }: { locale: Locale }) {
     } finally { setPending(false); }
   }
 
-  async function inspect(id: string, option?: { worksheet?: string; delimiter?: string }) {
+  async function inspect(id: string, option?: { worksheet?: string; delimiter?: string }, signal?:AbortSignal) {
     const query = new URLSearchParams(option);
-    const { data } = await requestApi(`${base}/${id}${query.size ? `?${query}` : ""}`, importInspectionSchema);
+    const { data } = await requestApi(`${base}/${id}${query.size ? `?${query}` : ""}`, importInspectionSchema,{signal});
+    if(signal?.aborted)return;
     setInspection(data);
     const auto: typeof mapping = {};
     for (const key of fields) {
       const matches = data.columns.filter(({ label }) => label.toLowerCase() === key.toLowerCase());
       if (matches.length === 1) auto[key] = matches[0].index;
     }
-    setMapping(auto);
+    setMapping(data.savedColumnMap??auto);
     setPreview(undefined);
+    return data;
   }
+
+  useEffect(()=>{
+    if(!job)return;
+    const abort=new AbortController();
+    setPending(true);
+    setError("");
+    void inspect(job,undefined,abort.signal).then(async(info)=>{
+      if(info?.state==="review"){
+        const {data}=await requestApi(`${base}/${info.id}/preview`,importPreviewSchema,{signal:abort.signal});
+        if(!abort.signal.aborted)setPreview(data);
+      }
+    }).catch((cause)=>{
+      if(!abort.signal.aborted)setError(cause instanceof ApiResponseError
+        ? localizedError(locale,cause.messageKey) : translated["error.unavailable"]);
+    }).finally(()=>{if(!abort.signal.aborted)setPending(false);});
+    return ()=>abort.abort();
+  },[job,locale,translated]);
 
   const upload = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

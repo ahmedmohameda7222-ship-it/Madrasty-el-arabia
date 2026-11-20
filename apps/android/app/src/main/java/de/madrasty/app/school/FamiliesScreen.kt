@@ -39,9 +39,9 @@ import org.json.JSONObject
 private typealias Picker = AsyncState<WirePage<List<JSONObject>>>
 
 @Composable
-fun FamiliesScreen(model: IdentityViewModel) {
-    var mode by remember { mutableStateOf("students") }
-    var target by remember { mutableStateOf<String?>(null) }
+fun FamiliesScreen(model: IdentityViewModel, initial: SchoolWorkTarget.GuardianLink? = null) {
+    var mode by remember(initial) { mutableStateOf(if (initial == null) "students" else "guardians") }
+    var target by remember(initial) { mutableStateOf(initial?.guardianId) }
     var run by remember { mutableStateOf(0) }
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
     FilterChip(mode == "students", onClick = { mode = "students"; target = null },
@@ -57,7 +57,7 @@ fun FamiliesScreen(model: IdentityViewModel) {
     target?.let { id ->
         HorizontalDivider()
         key(mode, id) {
-            FamilyRecord(model, mode, id, requests) { updated ->
+            FamilyRecord(model, mode, id, requests, initial?.linkId) { updated ->
                 target = updated
                 run++
             }
@@ -108,7 +108,7 @@ private fun RecordPicker(model: IdentityViewModel, mode: String, select: (JSONOb
 
 @Composable
 private fun FamilyRecord(model: IdentityViewModel, mode: String, id: String,
-    requests: MutableMap<String, Pair<String, String>>, saved: (String) -> Unit,
+    requests: MutableMap<String, Pair<String, String>>, focusLink: String?, saved: (String) -> Unit,
 ) {
     var generation by remember { mutableStateOf(0) }
     var value by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -134,7 +134,7 @@ private fun FamilyRecord(model: IdentityViewModel, mode: String, id: String,
                 if (!new) generation++
             }
         }
-        if (!new && !isStudent) RelationshipEditor(model, record, requests) { generation++ }
+        if (!new && !isStudent) RelationshipEditor(model, record, requests, focusLink) { generation++ }
     }
 }
 
@@ -176,7 +176,7 @@ private fun ProfileForm(record: JSONObject, student: Boolean, new: Boolean, comm
 
 @Composable
 private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
-    requests: MutableMap<String, Pair<String, String>>, changed: () -> Unit,
+    requests: MutableMap<String, Pair<String, String>>, focusLink: String?, changed: () -> Unit,
 ) {
     var picker by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
@@ -185,7 +185,7 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
     var immediate by remember { mutableStateOf(false) }
 
     Text(stringResource(R.string.family_links), style = MaterialTheme.typography.titleLarge)
-    val records = record.getJSONArray("links").objects()
+    val records = record.getJSONArray("links").objects().sortedBy { it.getString("id") != focusLink }
     if (!record.getBoolean("linkedAccount") && !record.isNull("contactEmail") && records.any { it.getString("state") == "approved" }) {
         Submit(true, R.string.invite_queue) {
             model.schoolCommand(requests, "/invitations", "POST", JSONObject().put("kind", "guardian")

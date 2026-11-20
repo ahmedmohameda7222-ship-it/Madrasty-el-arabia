@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import type { Locale } from "@madrasty/contracts";
+import { schoolDateSchema, type Locale } from "@madrasty/contracts";
+import { z } from "zod";
+import { SchoolHome } from "@/features/school/SchoolHome";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { mayManageAccess, mayUse } from "@/server/access/capabilities";
 import { TeachingSummary } from "@/features/school/StaffAssignments";
@@ -11,8 +13,11 @@ import { SessionControls } from "@/features/identity/SessionControls";
 const tabs = ["home", "students", "attendance", "children", "messages", "more"] as const;
 type Tab = typeof tabs[number];
 
-export default async function SchoolPage({ params }: { params: Promise<{ locale: Locale; tab: string }> }) {
-  const [{ locale, tab }, session] = await Promise.all([params, webSchoolSession()]);
+export default async function SchoolPage({ params, searchParams }: {
+  params: Promise<{ locale: Locale; tab: string }>;
+  searchParams: Promise<{ asOf?: string; guardian?: string; link?: string; child?: string; class?:string }>;
+}) {
+  const [{ locale, tab }, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
   if (!session) redirect(`/${locale}/account/sign-in?next=${encodeURIComponent(`/${locale}/school/${tab}`)}`);
 
@@ -27,13 +32,13 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
   return (
     <>
       <h1>{text[tab as Tab]}</h1>
-      {tab === "home" && <p>{text[session.activePersona]}</p>}
-      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} /></>}
-      {tab === "children" && <Children locale={locale} />}
+      {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
+      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} initialGuardian={z.uuid().safeParse(search.guardian).data} initialLink={z.uuid().safeParse(search.link).data} /></>}
+      {tab === "children" && <Children locale={locale} initialChild={z.uuid().safeParse(search.child).data} />}
       {(calendar || academic) && <Link className="plain-button" href={`/${locale}/school/more/assignments`}>{locale === "ar" ? "الموظفون والتكليفات" : "Mitarbeitende und Einsätze"}</Link>}
       {tab === "more" && (session.activePersona !== "admin" || calendar || academic) &&
         <Link className="plain-button" href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
-      {tab === "attendance" && session.activePersona === "teacher" && <TeachingSummary locale={locale} />}
+      {tab === "attendance" && session.activePersona === "teacher" && <TeachingSummary locale={locale} classId={z.uuid().safeParse(search.class).data} />}
       {invites && <Link className="plain-button" href={`/${locale}/staff/applications`}>{locale === "ar" ? "طلبات المدرسين" : "Bewerbungen von Lehrkräften"}</Link>}
       {(placement || invites) && <Link className="plain-button" href={`/${locale}/staff/invitations`}>{locale === "ar" ? "الدعوات" : "Einladungen"}</Link>}
       {(calendar || placement) && <Link className="plain-button" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}

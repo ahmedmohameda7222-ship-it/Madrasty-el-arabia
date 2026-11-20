@@ -33,6 +33,7 @@ export const importInspectionSchema = importVersionSchema.extend({
   worksheet: z.string().nullable(),
   columns: z.array(z.object({ index: column, label: z.string() })),
   delimiter: z.enum([",", ";", "\t"]).nullable(),
+  savedColumnMap: importColumns.optional(),
 });
 
 const mappedText = z.string().trim().min(1).max(160);

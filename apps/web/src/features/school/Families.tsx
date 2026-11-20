@@ -63,10 +63,10 @@ const guardianList = guardianSchema.array();
 const childrenSchema = childSummarySchema.array();
 const studentReader = z.union([studentList, guardianList]);
 
-export function Families({ locale }: { locale: Locale }) {
+export function Families({ locale, initialGuardian, initialLink }: { locale: Locale; initialGuardian?:string; initialLink?:string }) {
   const text = copy[locale];
-  const [mode, setMode] = useState<Mode>("students");
-  const [target, setTarget] = useState<string | "new" | null>(null);
+  const [mode, setMode] = useState<Mode>(initialGuardian?"guardians":"students");
+  const [target, setTarget] = useState<string | "new" | null>(initialGuardian??null);
   const [refresh, setRefresh] = useState(0);
   return (
     <>
@@ -82,7 +82,7 @@ export function Families({ locale }: { locale: Locale }) {
           <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={setTarget} />
           <button className="primary-button" onClick={() => setTarget("new")}>{mode === "students" ? text.createPupil : text.createAdult}</button>
         </section>
-        {target && <RecordEditor locale={locale} mode={mode} target={target} key={`${mode}:${target}`}
+        {target && <RecordEditor locale={locale} mode={mode} target={target} key={`${mode}:${target}`} initialLink={initialLink}
           saved={(id) => { setTarget(id); setRefresh(refresh + 1); }} />}
       </div>
     </>
@@ -140,8 +140,8 @@ function RecordPicker({ locale, mode, select }: { locale: Locale; mode: Mode; se
 }
 
 const recordSchema = z.union([studentSchema, guardianDetailSchema]);
-function RecordEditor({ locale, mode, target, saved }: {
-  locale: Locale; mode: Mode; target: string; saved: (id: string) => void;
+function RecordEditor({ locale, mode, target, initialLink, saved }: {
+  locale: Locale; mode: Mode; target: string; initialLink?:string; saved: (id: string) => void;
 }) {
   const reload = useRead(target === "new" ? null : `/school/${mode}/${target}`, recordSchema);
   const text = copy[locale];
@@ -153,7 +153,7 @@ function RecordEditor({ locale, mode, target, saved }: {
           saved={(id) => { saved(id); if (id === target) reload.retry(); }} />
       ) : <AsyncSurface locale={locale} state={reload.error
         ? { kind: "error", retry: reload.retry, message: errorText(locale, reload.error) } : { kind: "initialLoading" }} />}
-      {reload.data && "links" in reload.data && <Relationships locale={locale} record={reload.data} changed={reload.retry} />}
+      {reload.data && "links" in reload.data && <Relationships locale={locale} record={reload.data} initialLink={initialLink} changed={reload.retry} />}
     </section>
   );
 }
@@ -216,7 +216,7 @@ function ProfileForm({ locale, mode, record, saved }: {
   );
 }
 
-function Relationships({ locale, record, changed }: { locale: Locale; record: z.infer<typeof guardianDetailSchema>; changed: () => void }) {
+function Relationships({ locale, record, initialLink, changed }: { locale: Locale; record: z.infer<typeof guardianDetailSchema>; initialLink?:string; changed: () => void }) {
   const text = copy[locale];
   const [pupil, setPupil] = useState("");
   const [picker, setPicker] = useState(false);
@@ -225,6 +225,9 @@ function Relationships({ locale, record, changed }: { locale: Locale; record: z.
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const command = useAdminCommand();
+  useEffect(()=>{
+    if(initialLink) document.getElementById(`guardian-link-${initialLink}`)?.focus();
+  },[initialLink]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const reason = new FormData(event.currentTarget).get("reason");
@@ -250,7 +253,7 @@ function Relationships({ locale, record, changed }: { locale: Locale; record: z.
       <InviteGuardianButton locale={locale} id={record.id} correspondenceLocale={record.correspondenceLocale} />}
     {record.links.length === 0 && <p>{dictionary(locale).empty}</p>}
     <ul className="group-list">
-      {record.links.map((link) => <li key={link.id} className="group-row">
+      {record.links.map((link) => <li key={link.id} className="group-row" id={`guardian-link-${link.id}`} tabIndex={link.id===initialLink?-1:undefined}>
         <bdi>{link.studentName}</bdi><bdi dir="ltr">{link.studentNumber}</bdi><span>{text[link.state]}</span>
         {link.state === "pending" && <button className="plain-button" disabled={pending}
           onClick={() => setAction({ link, type: "approve" })}>{text.approve}</button>}
@@ -273,8 +276,8 @@ function Relationships({ locale, record, changed }: { locale: Locale; record: z.
   </section>;
 }
 
-export function Children({ locale }: { locale: Locale }) {
-  const [chosen, setChosen] = useState<string>();
+export function Children({ locale, initialChild }: { locale: Locale; initialChild?:string }) {
+  const [chosen, setChosen] = useState(initialChild);
   const available = useRead("/me/children?limit=100", childrenSchema);
   useEffect(() => {
     const onFocus = () => available.retry();

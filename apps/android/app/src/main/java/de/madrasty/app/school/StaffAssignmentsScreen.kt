@@ -50,10 +50,10 @@ private val actionLabels = mapOf(
 )
 
 @Composable
-fun StaffAssignmentsScreen(model: IdentityViewModel, close: () -> Unit) {
+fun StaffAssignmentsScreen(model: IdentityViewModel, initial: SchoolWorkTarget.ClassAssignment? = null, close: () -> Unit) {
     val commands = remember { mutableMapOf<String, Pair<String, String>>() }
     var reload by remember { mutableStateOf(0) }
-    var assigning by remember { mutableStateOf(false) }
+    var assigning by remember(initial) { mutableStateOf(initial != null) }
     var query by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
@@ -79,7 +79,7 @@ fun StaffAssignmentsScreen(model: IdentityViewModel, close: () -> Unit) {
         Field(R.string.staff_find, search) { search = it.take(120) }
         TextButton(onClick = { query = search.trim() }) { Text(stringResource(R.string.staff_search)) }
         AsyncSurface(people) { rows ->
-            if (assigning) ClassAssignments(model, commands, rows.filterNot { it.isNull("accountId") || it.getBoolean("disabled") })
+            if (assigning) ClassAssignments(model, commands, rows.filterNot { it.isNull("accountId") || it.getBoolean("disabled") }, initial)
             else {
                 rows.forEach { row ->
                     FilterChip(
@@ -149,10 +149,10 @@ private fun StaffProfileForm(model: IdentityViewModel, commands: SchoolCommandAt
 }
 
 @Composable
-private fun ClassAssignments(model: IdentityViewModel, commands: SchoolCommandAttempts, people: List<JSONObject>) {
+private fun ClassAssignments(model: IdentityViewModel, commands: SchoolCommandAttempts, people: List<JSONObject>, initial: SchoolWorkTarget.ClassAssignment?) {
     val de = LocalConfiguration.current.locales[0].language == "de"
-    var year by remember { mutableStateOf("") }
-    var classId by remember { mutableStateOf("") }
+    var year by remember(initial) { mutableStateOf(initial?.yearId.orEmpty()) }
+    var classId by remember(initial) { mutableStateOf(initial?.classId.orEmpty()) }
     var reload by remember { mutableStateOf(0) }
     var retry by remember { mutableStateOf(0) }
     var years by remember { mutableStateOf<AsyncState<List<JSONObject>>>(AsyncState.InitialLoading()) }
@@ -289,13 +289,14 @@ private fun DatedAssignmentForm(
 }
 
 @Composable
-fun TeachingSummary(model: IdentityViewModel) {
+fun TeachingSummary(model: IdentityViewModel, classId: String? = null) {
     val de = LocalConfiguration.current.locales[0].language == "de"
     var attempt by remember { mutableStateOf(0) }
     var state by remember { mutableStateOf<AsyncState<List<JSONObject>>>(AsyncState.InitialLoading()) }
-    LaunchedEffect(attempt) {
+    LaunchedEffect(attempt,classId) {
+        state = AsyncState.InitialLoading()
         state = assignmentLoad({ attempt++ }) {
-            model.records("/me/teaching")
+            model.records("/me/teaching").filter { classId == null || it.getString("classId") == classId }
         }
     }
     Text(stringResource(R.string.teaching_overview), style = MaterialTheme.typography.titleLarge)

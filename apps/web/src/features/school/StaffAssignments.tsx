@@ -60,9 +60,9 @@ function WorkNotice({ operation }: {operation:ReturnType<typeof useOperation>}) 
 }
 const area = "/school";
 
-export function StaffAssignments({locale}: {locale:Locale}) {
+export function StaffAssignments({locale,initialYear,initialClass}: {locale:Locale;initialYear?:string;initialClass?:string}) {
   const text=words[locale], operation=useOperation(locale);
-  const [mode,setMode]=useState<"profiles"|"assignments">("profiles");
+  const [mode,setMode]=useState<"profiles"|"assignments">(initialClass?"assignments":"profiles");
   const [accounts,setAccounts]=useState<StaffAccounts>();
   const [people,setPeople]=useState<StaffProfile[]>([]);
   const [peopleCursor,setPeopleCursor]=useState<string>();
@@ -71,8 +71,8 @@ export function StaffAssignments({locale}: {locale:Locale}) {
   const [subjectsList,setSubjects]=useState<Subject[]>([]);
   const [record,setRecord]=useState<StaffProfile|null>();
   const [yearsList,setYears]=useState<z.infer<typeof years>>([]);
-  const [yearId,setYearId]=useState("");
-  const [classId,setClassId]=useState("");
+  const [yearId,setYearId]=useState(initialYear??"");
+  const [classId,setClassId]=useState(initialClass??"");
   const [classList,setClassList]=useState<z.infer<typeof classes>>([]);
   const [readiness,setReadiness]=useState<"loading"|"ready"|"error">("loading");
   const [reload,setReload]=useState(0);
@@ -110,7 +110,7 @@ export function StaffAssignments({locale}: {locale:Locale}) {
   useEffect(()=>{
     if(!classId)return;
     const abort=new AbortController();
-    requestApi(`${area}/classes/${classId}/assignments`,assignmentList,{signal:abort.signal}).then(({data})=>setRows(data))
+    requestApi(`${area}/classes/${classId}/assignments`,assignmentList,{signal:abort.signal}).then(({data})=>setRows(classId?data.filter((row)=>row.classId===classId):data))
       .catch((error)=>{if(!abort.signal.aborted)setError(report(locale,error));});
     return ()=>abort.abort();
   },[classId,locale,reload]);
@@ -278,17 +278,18 @@ function AssignmentCard({item,locale,people,saved}:{item:Assignment;locale:Local
   </section>;
 }
 
-export function TeachingSummary({locale}:{locale:Locale}) {
+export function TeachingSummary({locale,classId}:{locale:Locale;classId?:string}) {
   const text=words[locale];
   const [rows,setRows]=useState<z.infer<typeof teaching>>();
   const [error,setError]=useState<unknown>();
   const [version,setVersion]=useState(0);
   useEffect(()=>{
     const abort=new AbortController();
-    requestApi("/me/teaching",teaching,{signal:abort.signal}).then(({data})=>setRows(data))
+    setRows(undefined);
+    requestApi("/me/teaching",teaching,{signal:abort.signal}).then(({data})=>{if(!abort.signal.aborted)setRows(classId?data.filter((row)=>row.classId===classId):data);})
       .catch((error)=>{if(!abort.signal.aborted)setError(error);});
     return()=>abort.abort();
-  },[version]);
+  },[version,classId]);
   return <section className="auth-card"><h2>{text.overview}</h2>
     <AsyncSurface locale={locale} state={error?{kind:"error",message:report(locale,error),retry:()=>{setError(undefined);setVersion(version+1);}}
       :!rows?{kind:"initialLoading"}:rows.length===0?{kind:"empty"}:{kind:"ready",content:<ul className="group-list">

@@ -2,13 +2,13 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S07 role dashboards and work queues. S05 is in ea2d945 and I06 is in 75e15a2. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S08 administrative audit and settings. S05 is in ea2d945, I06 in 75e15a2 and S06 in 5b68a43. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
 | 00 Foundation | built / QA pending | Pin environment, build shells, publish contract primitives |
 | 01 Identity and access | I01–I06 built / QA pending | One account, effective grants and recoverable invites |
-| 02 School operations | S01–S06 built / QA pending; S07 active | Import, linked families, dated staffing and clash-safe timetable |
+| 02 School operations | S01–S07 built / QA pending; S08 active | Import, linked families, dated staffing and clash-safe timetable |
 | 03 Attendance | Planned | Online lock, actual arrival, offline reconciliation and approval |
 | 04 Academics | Planned | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
@@ -38,7 +38,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-19 | S05 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119212628_staff_assignments.sql, professional profiles, dated class and subject assignments, substitutes and teaching views | Type-check, web production build and Android debug build exited 0. I06 exposes the scoped candidate projection, S06 binds timetable. Q02/Q03/Q06 pending. | I06 account preferences and scoped directory. |
 | 2026-11-20 | I06 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119213839_account_preferences_directory.sql, role-scoped directory, own account settings and separate locale preferences on web/Android | Type-check, production web build and debug Android assembly exited 0. Repaired the malformed revocation schema and parsed OpenAPI. C01 connects conversation actions, C05 connects notification registration and C06 applies language preferences to worker outputs. Q02/Q03/Q05/Q06 pending. | S06 collision-safe weekly timetable. |
 | 2026-11-20 | S06 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120005023_weekly_timetable.sql, reviewed timetable editor and weekly views on web and Android | Type-check, production web build, Android debug assembly and OpenAPI parsing exited 0. Subject cover with lesson-log authority reserves the substitute as well as the assigned teacher. Q02/Q03/Q06 still verify concurrent clashes, authorization and device layouts. | S07 role dashboards and scoped work queues. |
-| 2026-11-20 | S07, step 1 | Active | S02–S06 data sources | Implement school queue storage projections and actionable home cards. | Establish shared count/drill-down query and D01 module slots, then bind web and Android. |
+| 2026-11-20 | S07 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120010556_school_work_queues.sql, role home, scoped work counts and paged records, resumable imports and actionable destinations on web/Android | Type-check, production web build, Android debug assembly and OpenAPI parsing exited 0. D01 will bind the five module-owned queues. Q02/Q03/Q06 pending. | S08 administrative audit and settings. |
+| 2026-11-20 | S08, step 1 | Active | F02 audit entries and I03 capability model | Audit projection and navigation pending. | Add action allowlist, gated filters and supported resource navigation. |
 
 ## Decision and discrepancy log
 

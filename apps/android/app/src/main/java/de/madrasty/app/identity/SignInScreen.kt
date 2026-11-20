@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.Network
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,10 @@ import de.madrasty.app.school.ImportScreen
 import de.madrasty.app.school.StaffAssignmentsScreen
 import de.madrasty.app.school.TeachingSummary
 import de.madrasty.app.school.TimetableScreen
+import de.madrasty.app.school.SchoolHomeScreen
+import de.madrasty.app.school.SchoolWorkQueueScreen
+import de.madrasty.app.school.SchoolWorkTarget
+import de.madrasty.app.school.WorkQueueSelection
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
@@ -230,12 +235,38 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     var timetableChild by remember(session?.actor) { mutableStateOf<String?>(null) }
     var selectedChild by remember(session?.actor) { mutableStateOf<String?>(null) }
     var activeTab by remember(session?.actor) { mutableStateOf(SchoolTab.Home) }
+    var attendanceClass by remember(session?.actor) { mutableStateOf<String?>(null) }
+    var workDate by remember(session?.actor) { mutableStateOf("") }
+    var queueSelection by remember(session?.actor) { mutableStateOf<WorkQueueSelection?>(null) }
+    var queueOpen by remember(session?.actor) { mutableStateOf(false) }
+    var workTarget by remember(session?.actor) { mutableStateOf<SchoolWorkTarget?>(null) }
+
+    fun openSchedule(child: String?) {
+        timetableChild = child
+        timetable = true
+    }
+    fun returnToQueue() {
+        workTarget = null
+        activeTab = SchoolTab.Home
+        queueOpen = queueSelection != null
+    }
+    val currentQueue = queueSelection
     if (application) ApplicantScreen(model) { model.endApplicantSession(); application = false }
     else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) { applicationReview = false }
     else if (session == null) SignInScreen(model) { application = true }
     else if (security || session.actor.persona == Persona.Admin && session.assurance != "aal2") {
         SecurityScreen(model, session) { security = false }
     } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
+    else if (queueOpen && currentQueue != null && session.actor.persona == Persona.Admin)
+        SchoolWorkQueueScreen(model,currentQueue,open = { target ->
+            workTarget = target
+            queueOpen = false
+            when (target) {
+                is SchoolWorkTarget.GuardianLink -> activeTab = SchoolTab.Students
+                is SchoolWorkTarget.FamilyImport -> importing = true
+                is SchoolWorkTarget.ClassAssignment -> assignments = true
+            }
+        },close = { queueOpen = false; queueSelection = null })
     else if (preferences) AccountScreen(model, close = { preferences = false }, security = { security = true })
     else if (directory) DirectoryScreen(model) { directory = false }
     else if (timetable) TimetableScreen(model, session.actor.persona, timetableChild) { timetable = false; timetableChild = null }
@@ -243,21 +274,38 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
         EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
     else if (assignments && ("school.manage" in capabilities || "academics.supervise" in capabilities))
-        StaffAssignmentsScreen(model) { assignments = false }
+        StaffAssignmentsScreen(model, workTarget as? SchoolWorkTarget.ClassAssignment) {
+            assignments = false
+            if (workTarget is SchoolWorkTarget.ClassAssignment) returnToQueue()
+        }
     else if (invitations && ("students.manage" in capabilities || "applications.manage" in capabilities))
         StaffInvitationsScreen(model, "applications.manage" in capabilities, inviteBatch) { invitations = false; inviteBatch = null }
-    else if (importing && "students.manage" in capabilities) ImportScreen(model, { id -> inviteBatch = id; invitations = true }) { importing = false }
-    else SchoolShell(session.actor, activeTab, { activeTab = it }) { tab ->
-        Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
-        if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
-        if (tab == SchoolTab.Attendance) TeachingSummary(model)
-        if (tab == SchoolTab.Children) ChildrenScreen(model, selectedChild, { selectedChild = it }) { child ->
-            timetableChild = child
-            timetable = true
+    else if (importing && "students.manage" in capabilities)
+        ImportScreen(model, { id -> inviteBatch = id; invitations = true }, (workTarget as? SchoolWorkTarget.FamilyImport)?.jobId) {
+            importing = false
+            if (workTarget is SchoolWorkTarget.FamilyImport) returnToQueue()
         }
+    else SchoolShell(session.actor, activeTab, { next -> activeTab = next; attendanceClass = null }) { tab ->
+        Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
+        if (tab == SchoolTab.Home) SchoolHomeScreen(
+            model, session.actor.persona, workDate, { workDate = it },
+            openQueue = { queueSelection = it; queueOpen = true },
+            openDirectory = { directory = true },
+            child = selectedChild, pickChild = { selectedChild = it },
+            openProfile = { selectedChild = it; activeTab = SchoolTab.Children },
+            openAttendance = { attendanceClass = it; activeTab = SchoolTab.Attendance },
+            openSchedule = ::openSchedule,
+        )
+        if (tab == SchoolTab.Attendance) TeachingSummary(model, attendanceClass)
+        if (tab == SchoolTab.Children) ChildrenScreen(model, selectedChild, { selectedChild = it }, ::openSchedule)
         if (tab == SchoolTab.Students && "students.manage" in capabilities) {
+            val queued = workTarget as? SchoolWorkTarget.GuardianLink
+            if (queued != null) {
+                BackHandler { returnToQueue() }
+                TextButton(onClick = ::returnToQueue) { Text(stringResource(R.string.queue_open)) }
+            }
             TextButton(onClick = { importing = true }) { Text(stringResource(R.string.import_families)) }
-            FamiliesScreen(model)
+            FamiliesScreen(model, queued)
         }
         if (tab == SchoolTab.More) {
             TextButton(onClick = { preferences = true }) { Text(stringResource(R.string.account_preferences)) }

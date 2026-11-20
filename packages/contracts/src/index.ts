@@ -13,3 +13,4 @@ export * from "./teacherApplications";
 export * from "./school/assignments";
 export * from "./account";
 export * from "./school/timetable";
+export * from "./school/work-queues";
