@@ -421,4 +421,25 @@
     <string name="publish_today">Heute</string>
     <string name="publish_this_month">Alle Veranstaltungen des Monats</string>
     <string name="publish_empty_day">An diesem Tag gibt es keine Veranstaltungen.</string>
+    <string name="finance_bank">Zahlungskonto</string>
+    <string name="finance_bank_active">Aktives Zahlungskonto</string>
+    <string name="finance_bank_empty">Das Zahlungskonto ist noch nicht eingerichtet.</string>
+    <string name="finance_bank_new">Neues Zahlungskonto</string>
+    <string name="finance_bank_review">Daten prüfen</string>
+    <string name="finance_bank_confirm">Daten bestätigen und verifizieren</string>
+    <string name="finance_bank_no_factor">Richte eine Authentifizierungs-App in den Sicherheitseinstellungen ein, um das Zahlungskonto freizugeben.</string>
+    <string name="finance_factor_number">Authentifizierungs-App %1$d</string>
+    <string name="finance_bank_code">Sechsstelliger Code aus der Authentifizierungs-App</string>
+    <string name="finance_bank_apply">Zahlungskonto freigeben</string>
+    <string name="finance_bank_saved">Zahlungskonto aktualisiert</string>
+    <string name="finance_bank_stale">Das Zahlungskonto wurde geändert. Prüfe die Daten erneut.</string>
+    <string name="finance_bank_proof_expired">Starte eine neue Verifizierung, um die Änderung zu bestätigen.</string>
+    <string name="finance_invalid_iban">Prüfe das IBAN-Format und die Prüfziffern.</string>
+    <string name="finance_transfer">Überweisungsdaten</string>
+    <string name="finance_beneficiary">Name des Zahlungsempfängers</string>
+    <string name="finance_iban">IBAN</string>
+    <string name="finance_amount">Betrag</string>
+    <string name="finance_reference">Verwendungszweck</string>
+    <string name="finance_external">Führe die Überweisung in deiner Banking-App aus.</string>
+    <string name="finance_bank_changed">Das Zahlungskonto wurde nach der Rechnungsstellung geändert. Verwende die aktualisierten Daten.</string>
 </resources>

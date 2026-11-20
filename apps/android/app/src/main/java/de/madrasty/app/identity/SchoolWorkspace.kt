@@ -46,6 +46,7 @@ import de.madrasty.app.comms.NotificationCenter
 import de.madrasty.app.comms.PushSessionBinding
 import de.madrasty.app.comms.PublicationSection
 import de.madrasty.app.comms.SchoolPublicationScreen
+import de.madrasty.app.finance.BankSettings
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -81,6 +82,7 @@ internal sealed interface WorkspacePage {
     data class Thread(val id:String) : WorkspacePage
     data object MessageReports : WorkspacePage
     data object Delivery : WorkspacePage
+    data object Bank : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
@@ -206,12 +208,14 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
     val attendance = "attendance.supervise" in keys
     val access = "access.manage" in keys
     val audit = "audit.read" in keys
+    val bank = "bank.configure" in keys
 
     fun allows(page: WorkspacePage): Boolean = when(page){
         WorkspacePage.Access -> access
         WorkspacePage.Audit -> audit
         WorkspacePage.MessageReports -> moderation
         WorkspacePage.Delivery -> delivery
+        WorkspacePage.Bank -> bank
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
@@ -293,6 +297,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         WorkspacePage.Delivery -> DeliveryStatus(model,state::back)
+        WorkspacePage.Bank -> BankSettings(model,state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
@@ -407,11 +412,12 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
         if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
     }
-    if(rights.access||rights.audit||rights.moderation||rights.delivery){
+    if(rights.access||rights.audit||rights.moderation||rights.delivery||rights.bank){
         Text(stringResource(R.string.settings_group_access),style=MaterialTheme.typography.titleLarge)
         if(rights.access)OpenPage(state,WorkspacePage.Access,R.string.staff_access)
         if(rights.moderation)OpenPage(state,WorkspacePage.MessageReports,R.string.chat_reports)
         if(rights.delivery)OpenPage(state,WorkspacePage.Delivery,R.string.delivery_status)
+        if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)
         if(rights.audit)TextButton(onClick={state.auditEntry=null;state.open(WorkspacePage.Audit)}){
             Text(stringResource(R.string.audit_title))
         }

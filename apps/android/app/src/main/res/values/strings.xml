@@ -421,4 +421,25 @@
     <string name="publish_today">النهارده</string>
     <string name="publish_this_month">كل أحداث الشهر</string>
     <string name="publish_empty_day">مفيش أحداث في اليوم ده.</string>
+    <string name="finance_bank">حساب التحصيل</string>
+    <string name="finance_bank_active">الحساب النشط</string>
+    <string name="finance_bank_empty">حساب التحصيل لسه متسجّلش.</string>
+    <string name="finance_bank_new">حساب التحصيل الجديد</string>
+    <string name="finance_bank_review">مراجعة البيانات</string>
+    <string name="finance_bank_confirm">تأكيد البيانات والمتابعة للتحقق</string>
+    <string name="finance_bank_no_factor">أضف تطبيق مصادقة من إعدادات الأمان علشان تعتمد حساب التحصيل.</string>
+    <string name="finance_factor_number">تطبيق المصادقة %1$d</string>
+    <string name="finance_bank_code">الرمز المكوّن من ٦ أرقام من تطبيق المصادقة</string>
+    <string name="finance_bank_apply">اعتماد حساب التحصيل</string>
+    <string name="finance_bank_saved">اتحدّث حساب التحصيل</string>
+    <string name="finance_bank_stale">بيانات حساب التحصيل اتغيّرت. اعمل معاينة جديدة.</string>
+    <string name="finance_bank_proof_expired">ابدأ تحقق جديد علشان تعتمد التغيير.</string>
+    <string name="finance_invalid_iban">راجع صيغة الآيبان وأرقام التحقق.</string>
+    <string name="finance_transfer">بيانات التحويل البنكي</string>
+    <string name="finance_beneficiary">اسم المستفيد</string>
+    <string name="finance_iban">آيبان (IBAN)</string>
+    <string name="finance_amount">المبلغ</string>
+    <string name="finance_reference">مرجع التحويل (Verwendungszweck)</string>
+    <string name="finance_external">نفّذ التحويل من تطبيق البنك.</string>
+    <string name="finance_bank_changed">حساب التحصيل اتغيّر بعد إصدار الفاتورة. استخدم البيانات المحدّثة للتحويل.</string>
 </resources>

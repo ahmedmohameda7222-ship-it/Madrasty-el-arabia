@@ -32,3 +32,4 @@ export * from "./comms/broadcasts";
 export * from "./comms/notifications";
 export * from "./comms/delivery";
 export * from "./comms/schoolPublishing";
+export * from "./finance/bank";

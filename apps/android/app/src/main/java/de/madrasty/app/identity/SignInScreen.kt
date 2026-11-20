@@ -155,6 +155,14 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         return result
     }
 
+    suspend fun verifyBankStepUp(challenge:String,code:String):String {
+        val expected=session?.actor?:throw HttpFailure(401,"unauthenticated")
+        val (renewed,proof)=repository.verifyBankStepUp(challenge,code)
+        if(session?.actor!=expected||renewed.actor!=expected)throw HttpFailure(403,"forbidden")
+        session=renewed
+        return proof
+    }
+
     suspend fun schoolStorageOrigin():String=repository.schoolStorageOrigin()
 
     suspend fun schoolPrivateMedia(path:String,mime:String,limit:Int):ByteArray {

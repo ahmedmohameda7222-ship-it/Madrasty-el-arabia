@@ -4003,6 +4003,91 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolPublishingOptions"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /finance/bank:
+    get:
+      operationId: getSchoolCollectionBank
+      summary: Read the active bank configuration with the bank administration grant
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Read the active bank configuration with the bank administration grant
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolBankSettings"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    put:
+      operationId: changeSchoolCollectionBank
+      summary: Consume a proposal-bound step-up proof and record an immutable bank version
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"revision":{"type":"integer","minimum":0},"stepUpProof":{"type":"string","pattern":"^[A-Za-z0-9_-]{43}$"}},"required":["beneficiary","iban","revision","stepUpProof"]}
+      responses:
+        '200':
+          description: Consume a proposal-bound step-up proof and record an immutable bank version
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BankChangeReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/bank/preview:
+    post:
+      operationId: previewSchoolCollectionBank
+      summary: Normalize and validate the proposed beneficiary and IBAN for confirmation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/BankProposal"}
+      responses:
+        '200':
+          description: Normalize and validate the proposed beneficiary and IBAN for confirmation
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BankProposal"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/bank/step-up:
+    post:
+      operationId: createBankChangeChallenge
+      summary: Challenge a verified factor for the exact confirmed bank proposal
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"revision":{"type":"integer","minimum":0},"factorId":{"type":"string","format":"uuid"}},"required":["beneficiary","iban","revision","factorId"]}
+      responses:
+        '201':
+          description: Challenge a verified factor for the exact confirmed bank proposal
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"challengeId":{"type":"string","format":"uuid"},"expiresAt":{"type":"string","format":"date-time"}},"required":["challengeId","expiresAt"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: verifyBankChangeChallenge
+      summary: Verify the challenge and issue a short-lived single-use bank proof
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"challengeId":{"type":"string","format":"uuid"},"code":{"type":"string","pattern":"^[0-9]{6}$"}},"required":["challengeId","code"]}
+      responses:
+        '200':
+          description: Verify the challenge and issue a short-lived single-use bank proof
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"stepUpProof":{"type":"string","pattern":"^[A-Za-z0-9_-]{43}$"},"expiresAt":{"type":"string","format":"date-time"},"providerSession":{"type":"object","properties":{"access_token":{"type":"string"},"refresh_token":{"type":"string"},"expires_in":{"type":"integer","minimum":0}},"required":["access_token","refresh_token","expires_in"],"description":"Rotated native credentials. Web receives secure cookies instead."}},"required":["stepUpProof","expiresAt"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -4031,6 +4116,11 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    BankProposal: {"type":"object","properties":{"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"revision":{"type":"integer","minimum":0}},"required":["beneficiary","iban","revision"]}
+    SchoolBankSettings: {"type":"object","properties":{"revision":{"type":"integer","minimum":0},"active":{"anyOf":[{"type":"object","properties":{"versionId":{"type":"string","format":"uuid"},"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"effectiveAt":{"type":"string","format":"date-time"}},"required":["versionId","beneficiary","iban","effectiveAt"]},{"type":"null"}]}},"required":["revision","active"]}
+    BankChangeReceipt: {"type":"object","properties":{"versionId":{"type":"string","format":"uuid"},"previousVersionId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":0},"effectiveAt":{"type":"string","format":"date-time"},"maskedIban":{"type":"string"}},"required":["versionId","previousVersionId","revision","effectiveAt","maskedIban"]}
+    BankStepUpProof: {"type":"object","properties":{"stepUpProof":{"type":"string","pattern":"^[A-Za-z0-9_-]{43}$"},"expiresAt":{"type":"string","format":"date-time"}},"required":["stepUpProof","expiresAt"]}
+    BankTransferInstructions: {"type":"object","properties":{"bankVersionId":{"type":"string","format":"uuid"},"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"amountMinor":{"type":"integer","minimum":0},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"reference":{"type":"string","maxLength":140},"bankChanged":{"type":"boolean"}},"required":["bankVersionId","beneficiary","iban","amountMinor","currency","reference","bankChanged"]}
     PublishingAudience: {"oneOf":[{"type":"object","properties":{"kind":{"const":"school"}},"required":["kind"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"class"},"classId":{"type":"string","format":"uuid"}},"required":["kind","classId"],"additionalProperties":false}]}
     SchoolEventTiming: {"type":"object","properties":{"start":{"$ref":"#/components/schemas/SchoolLocalMoment"},"end":{"anyOf":[{"$ref":"#/components/schemas/SchoolLocalMoment"},{"type":"null"}]},"allDay":{"type":"boolean"}},"required":["start","end","allDay"]}
     SchoolLocalMoment: {"type":"object","properties":{"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]}},"required":["date","time"]}

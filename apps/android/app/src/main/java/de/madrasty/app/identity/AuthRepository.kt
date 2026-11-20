@@ -308,10 +308,21 @@ class AuthRepository internal constructor(context: Context, private val attendan
         return JSONObject(exchange("${config.origin}/auth/v1$path", body,
             mapOf("apikey" to config.key, "Authorization" to "Bearer $token"), decodeApiError = false))
     }
-    private fun adopt(response: JSONObject): SchoolSession {
+    suspend fun verifyBankStepUp(challenge:String,code:String):Pair<SchoolSession,String> = io {
+        val expected=active?.actor?:throw HttpFailure(401,"unauthenticated")
+        val input=JSONObject().put("challengeId",challenge).put("code",code)
+        val result=decodeData(authenticated("/finance/bank/step-up",input,expected.persona,method="PATCH")){
+            it as JSONObject
+        }.data
+        val refreshed=adopt(result.getJSONObject("providerSession"),expected)
+        refreshed to result.getString("stepUpProof")
+    }
+
+    private fun adopt(response: JSONObject,expected:SchoolPartition?=null): SchoolSession {
         val nextAccess = response.getString("access_token")
         val nextRefresh = response.getString("refresh_token")
         val session = parseSchoolSession(api("/auth/session", nextAccess))
+        if(expected!=null&&(session.actor!=expected||session.assurance!="aal2"))throw HttpFailure(403,"forbidden")
         store.write("refresh", nextRefresh)
         val ticket = decodeData(api("/auth/revocation-ticket", nextAccess, JSONObject())) {
             (it as JSONObject).getString("ticket")

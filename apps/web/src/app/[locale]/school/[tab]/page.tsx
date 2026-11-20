@@ -27,9 +27,9 @@ export default async function SchoolPage({ params, searchParams }: {
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const [access, calendar, placement, invites, academic, audit, attendance, moderation, delivery] = tab === "more"
-    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage"), mayUse(session, "academics.supervise"), mayUse(session,"audit.read"),mayUse(session,"attendance.supervise"),mayManageMessageReports(session),mayViewDeliveryStatus(session)])
-    : [false, false, false, false, false, false, false, false, false];
+  const [access, calendar, placement, invites, academic, audit, attendance, moderation, delivery, bank] = tab === "more"
+    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage"), mayUse(session, "academics.supervise"), mayUse(session,"audit.read"),mayUse(session,"attendance.supervise"),mayManageMessageReports(session),mayViewDeliveryStatus(session),mayUse(session,"bank.configure")])
+    : [false, false, false, false, false, false, false, false, false, false];
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
   return (
@@ -74,13 +74,14 @@ export default async function SchoolPage({ params, searchParams }: {
             {session.activePersona === "guardian" && <Link className="plain-button" href={`/${locale}/apply`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
           </div>
         </section>}
-        {(access || audit || moderation || delivery) && <section className="auth-card">
+        {(access || audit || moderation || delivery || bank) && <section className="auth-card">
           <h2>{locale === "ar" ? "الصلاحيات والتدقيق" : "Berechtigungen und Protokoll"}</h2>
           <div className="header-actions">
             {access && <Link className="plain-button" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
             {audit && <Link className="plain-button" href={`/${locale}/school/more/audit`}>{locale === "ar" ? "سجل التدقيق" : "Änderungsprotokoll"}</Link>}
             {moderation&&<Link className="plain-button" href={`/${locale}/school/more/message-reports`}>{locale==="ar"?"بلاغات الرسائل":"Gemeldete Nachrichten"}</Link>}
             {delivery&&<Link className="plain-button" href={`/${locale}/school/more/delivery-status`}>{locale==="ar"?"حالة التوصيل":"Zustellstatus"}</Link>}
+            {bank&&<Link className="plain-button" href={`/${locale}/school/more/bank`}>{locale==="ar"?"حساب التحصيل":"Zahlungskonto"}</Link>}
           </div>
         </section>}
       </div>}
