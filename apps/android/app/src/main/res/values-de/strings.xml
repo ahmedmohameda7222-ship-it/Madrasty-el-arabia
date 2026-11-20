@@ -172,4 +172,27 @@
     <string name="gradebook_before">Vorheriger Wert</string>
     <string name="gradebook_after">Aktueller Wert</string>
     <string name="gradebook_invalid">Gib Punkte von 0 bis 20 in Halbschritten an. Begründe Änderungen an sichtbaren Bewertungen.</string>
+    <string name="evaluation_title">Regelmäßige Beurteilungen</string>
+    <string name="evaluation_create">Beurteilung anlegen</string>
+    <string name="evaluation_edit">Entwurf bearbeiten</string>
+    <string name="evaluation_pupil">Schülerin oder Schüler</string>
+    <string name="evaluation_period_start">Beginn des Zeitraums</string>
+    <string name="evaluation_period_end">Ende des Zeitraums</string>
+    <string name="evaluation_label">Titel der Beurteilung</string>
+    <string name="evaluation_participation">Mitarbeit</string>
+    <string name="evaluation_understanding">Verständnis</string>
+    <string name="evaluation_preparation">Vorbereitung</string>
+    <string name="evaluation_strengths">Stärken</string>
+    <string name="evaluation_improvements">Entwicklungsmöglichkeiten</string>
+    <string name="evaluation_unfilled">Offen</string>
+    <string name="evaluation_save">Entwurf speichern</string>
+    <string name="evaluation_back">Zurück zu den Beurteilungen</string>
+    <string name="evaluation_review">Veröffentlichung prüfen</string>
+    <string name="evaluation_publish">Beurteilung veröffentlichen</string>
+    <string name="evaluation_published">Beurteilung veröffentlicht</string>
+    <string name="evaluation_correct">Veröffentlichte Beurteilung korrigieren</string>
+    <string name="evaluation_confirm">Korrektur bestätigen</string>
+    <string name="evaluation_corrected">Korrektur veröffentlicht.</string>
+    <string name="evaluation_reason">Begründung der Korrektur</string>
+    <string name="evaluation_history">Veröffentlichte Fassungen</string>
 </resources>

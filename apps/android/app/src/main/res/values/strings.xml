@@ -172,4 +172,27 @@
     <string name="gradebook_before">القيمة السابقة</string>
     <string name="gradebook_after">القيمة الحالية</string>
     <string name="gradebook_invalid">أدخل درجة من ٠ إلى ٢٠ بنصف درجة، واكتب سبب التصحيح لو النتيجة ظهرت للأسرة.</string>
+    <string name="evaluation_title">التقييمات الدورية</string>
+    <string name="evaluation_create">إضافة تقييم</string>
+    <string name="evaluation_edit">تعديل المسودة</string>
+    <string name="evaluation_pupil">الطالب</string>
+    <string name="evaluation_period_start">بداية الفترة</string>
+    <string name="evaluation_period_end">نهاية الفترة</string>
+    <string name="evaluation_label">عنوان التقييم</string>
+    <string name="evaluation_participation">المشاركة</string>
+    <string name="evaluation_understanding">الفهم</string>
+    <string name="evaluation_preparation">التحضير</string>
+    <string name="evaluation_strengths">نقاط القوة</string>
+    <string name="evaluation_improvements">نقاط التحسين</string>
+    <string name="evaluation_unfilled">غير محدد</string>
+    <string name="evaluation_save">حفظ المسودة</string>
+    <string name="evaluation_back">رجوع للتقييمات</string>
+    <string name="evaluation_review">مراجعة للنشر</string>
+    <string name="evaluation_publish">نشر التقييم</string>
+    <string name="evaluation_published">التقييم منشور</string>
+    <string name="evaluation_correct">تصحيح تقييم منشور</string>
+    <string name="evaluation_confirm">اعتماد التصحيح</string>
+    <string name="evaluation_corrected">اتنشر التصحيح.</string>
+    <string name="evaluation_reason">سبب التصحيح</string>
+    <string name="evaluation_history">النسخ المنشورة</string>
 </resources>

@@ -22,3 +22,4 @@ export * from "./academics/curriculum";
 export * from "./academics/teaching-activity";
 export * from "./academics/homework";
 export * from "./academics/gradebook";
+export * from "./academics/evaluations";

@@ -2704,6 +2704,147 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/HomeworkGradeBulkReceipt"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /academics/evaluations:
+    get:
+      operationId: listStudentEvaluations
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"offeringId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/StudentEvaluation"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createEvaluationDraft
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["title","participation","understanding","preparation","strengths","improvements","periodStart","periodEnd","offeringId","studentId"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"understanding":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"preparation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000},"periodStart":{"type":"string","format":"date"},"periodEnd":{"type":"string","format":"date"},"offeringId":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"}}}
+      responses:
+        '201':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/CurriculumLessonReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/evaluations/{id}:
+    get:
+      operationId: readStudentEvaluation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/StudentEvaluation"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: changeEvaluationDraft
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["title","participation","understanding","preparation","strengths","improvements","periodStart","periodEnd","revision"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"understanding":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"preparation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000},"periodStart":{"type":"string","format":"date"},"periodEnd":{"type":"string","format":"date"},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/CurriculumLessonReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/evaluations/{id}/history:
+    get:
+      operationId: readEvaluationPublicationHistory
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/EvaluationPublication"}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/evaluations/{id}/publish:
+    post:
+      operationId: publishStudentEvaluation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision"],"properties":{"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/EvaluationPublicationReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/evaluations/{id}/correct:
+    post:
+      operationId: correctPublishedEvaluation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","changes","reason"],"properties":{"revision":{"type":"integer","minimum":1},"changes":{"type":"object","required":["title","participation","understanding","preparation","strengths","improvements"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"type":"integer","minimum":1,"maximum":5},"understanding":{"type":"integer","minimum":1,"maximum":5},"preparation":{"type":"integer","minimum":1,"maximum":5},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000}}},"reason":{"type":"string","minLength":1,"maxLength":500}}}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/EvaluationPublicationReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/evaluations/roster:
+    get:
+      operationId: listDatedAssessmentRoster
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"offeringId","in":"query","schema":{"type":"string","format":"uuid"},"required":true}
+        - {"name":"date","in":"query","schema":{"type":"string","format":"date"},"required":true}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"name":"cursor","in":"query","schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped periodic evaluation result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/AssessmentPupil"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -2729,6 +2870,10 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    StudentEvaluation: {"type":"object","required":["title","participation","understanding","preparation","strengths","improvements","periodStart","periodEnd","id","studentId","studentName","studentNumber","offeringId","classId","classCode","classNameAr","classNameDe","yearId","yearStart","yearEnd","subjectId","subjectNameAr","subjectNameDe","revision","publishedId","publishedRevision","publishedAt","canEdit","canPublish","hasCorrections"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"understanding":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"preparation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000},"periodStart":{"type":"string","format":"date"},"periodEnd":{"type":"string","format":"date"},"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"offeringId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"yearId":{"type":"string","format":"uuid"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"},"subjectId":{"type":"string","format":"uuid"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"revision":{"type":"integer","minimum":1},"publishedId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"publishedRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"publishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"canEdit":{"type":"boolean"},"canPublish":{"type":"boolean"},"hasCorrections":{"type":"boolean"}}}
+    EvaluationPublication: {"type":"object","required":["title","participation","understanding","preparation","strengths","improvements","id","revision","publishedAt","actorName","reason"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"type":"integer","minimum":1,"maximum":5},"understanding":{"type":"integer","minimum":1,"maximum":5},"preparation":{"type":"integer","minimum":1,"maximum":5},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"publishedAt":{"type":"string","format":"date-time"},"actorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]}}}
+    EvaluationPublicationReceipt: {"type":"object","required":["publicationId","revision","publishedAt"],"properties":{"publicationId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"publishedAt":{"type":"string","format":"date-time"}}}
+    AssessmentPupil: {"type":"object","required":["studentId","enrollmentId","studentName","studentNumber"],"properties":{"studentId":{"type":"string","format":"uuid"},"enrollmentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"}}}
     HomeworkGradingItem: {"type":"object","required":["homeworkId","offeringId","classId","classCode","subjectNameAr","subjectNameDe","title","issuedOn","dueOn","graded","total","canEdit"],"properties":{"homeworkId":{"type":"string","format":"uuid"},"offeringId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"title":{"type":"string"},"issuedOn":{"type":"string","format":"date"},"dueOn":{"type":"string","format":"date"},"graded":{"type":"integer","minimum":0},"total":{"type":"integer","minimum":0},"canEdit":{"type":"boolean"}}}
     HomeworkGradeRow: {"type":"object","required":["rosterId","studentId","studentName","studentNumber","joinedOn","addedLater","score","feedback","revision","visible","canEdit","corrected"],"properties":{"rosterId":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"joinedOn":{"type":"string","format":"date"},"addedLater":{"type":"boolean"},"score":{"anyOf":[{"type":"number","minimum":0,"maximum":20,"multipleOf":0.5},{"type":"null"}]},"feedback":{"anyOf":[{"type":"string","minLength":1,"maxLength":3000},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"visible":{"type":"boolean"},"canEdit":{"type":"boolean"},"corrected":{"type":"boolean"}}}
     HomeworkGradeReceipt: {"type":"object","required":["studentId","rosterId","revision","changed","correction"],"properties":{"studentId":{"type":"string","format":"uuid"},"rosterId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"changed":{"type":"boolean"},"correction":{"type":"boolean"}}}

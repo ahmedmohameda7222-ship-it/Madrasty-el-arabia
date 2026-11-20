@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
 import de.madrasty.app.academics.CurriculumScreen
+import de.madrasty.app.academics.EvaluationScreen
 import de.madrasty.app.academics.HomeworkScreen
 import de.madrasty.app.academics.GradebookScreen
 import de.madrasty.app.academics.TeachingActivityScreen
@@ -74,6 +75,7 @@ internal sealed interface WorkspacePage {
     data class Homework(val child:String?=null,val work:String?=null) : WorkspacePage
     data class Gradebook(val work:String?=null) : WorkspacePage
     data class AcademicWork(val child:String?=null) : WorkspacePage
+    data class Evaluations(val child:String?=null,val entry:String?=null) : WorkspacePage
     data class Timetable(val child: String? = null) : WorkspacePage
     data class Invitations(val batch: String? = null) : WorkspacePage
     data class Import(val job: String? = null) : WorkspacePage
@@ -159,6 +161,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
         is WorkspacePage.Queue -> persona == Persona.Admin
         is WorkspacePage.Gradebook -> persona==Persona.Teacher||academic
         is WorkspacePage.Homework -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
+        is WorkspacePage.Evaluations -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.AcademicWork -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Curriculum -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Timetable -> persona != Persona.Admin || school || academic
@@ -226,6 +229,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             model,state.auditEntry,{state.auditEntry=it},state.auditFilters,{state.auditFilters=it},state::openAuditResource,state::back,
         )
         is WorkspacePage.Excuse -> FamilyExcuseScreen(model,page.child,page.date,state::back)
+        is WorkspacePage.Evaluations -> EvaluationScreen(model,session.actor.persona,page.child,page.entry,state::back)
         is WorkspacePage.AcademicWork -> TeachingActivityScreen(model,session.actor.persona,page.child,state::back)
         is WorkspacePage.Curriculum -> CurriculumScreen(model,session.actor.persona,page.child,page.lesson,state::back)
         is WorkspacePage.Homework -> HomeworkScreen(model,session.actor.persona,page.child,page.work,
@@ -261,7 +265,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openTimetable={state.open(WorkspacePage.Timetable(it))},openExcuse={state.open(WorkspacePage.Excuse(it))},
                 openHistory={state.open(WorkspacePage.AttendanceHistory(child=it))},
                 openCurriculum={state.open(WorkspacePage.Curriculum(it))},openActivities={state.open(WorkspacePage.AcademicWork(it))},
-                openHomework={state.open(WorkspacePage.Homework(it))})
+                openHomework={state.open(WorkspacePage.Homework(it))},openEvaluations={state.open(WorkspacePage.Evaluations(it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)
@@ -295,6 +299,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
         if(rights.allows(WorkspacePage.Gradebook()))OpenPage(state,WorkspacePage.Gradebook(),R.string.gradebook_title)
         if(rights.allows(WorkspacePage.Homework()))OpenPage(state,WorkspacePage.Homework(),R.string.homework_title)
+        if(rights.allows(WorkspacePage.Evaluations()))OpenPage(state,WorkspacePage.Evaluations(),R.string.evaluation_title)
         if(rights.allows(WorkspacePage.AcademicWork()))OpenPage(state,WorkspacePage.AcademicWork(),R.string.academic_work)
         if(rights.allows(WorkspacePage.Curriculum()))OpenPage(state,WorkspacePage.Curriculum(),R.string.curriculum_title)
         if(rights.allows(WorkspacePage.Timetable()))OpenPage(state,WorkspacePage.Timetable(),R.string.timetable_title)
