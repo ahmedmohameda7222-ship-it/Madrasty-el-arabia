@@ -1621,6 +1621,150 @@ paths:
                   data: { $ref: '#/components/schemas/DirectoryContact' }
         default:
           $ref: '#/components/responses/AuthError'
+  /school/rooms:
+    get:
+      operationId: listTimetableRooms
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/TimetableRoom"}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createTimetableRoom
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["code","nameAr","nameDe"],"properties":{"code":{"type":"string","pattern":"^[A-Z0-9][A-Z0-9_-]{0,23}$"},"nameAr":{"type":"string","minLength":1,"maxLength":120},"nameDe":{"type":"string","minLength":1,"maxLength":120}}}
+      responses:
+        '200':
+          description: Replay of the saved request
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableRoom"}}}
+        '201':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableRoom"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/rooms/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: updateTimetableRoom
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["code","nameAr","nameDe","revision"],"properties":{"code":{"type":"string","pattern":"^[A-Z0-9][A-Z0-9_-]{0,23}$"},"nameAr":{"type":"string","minLength":1,"maxLength":120},"nameDe":{"type":"string","minLength":1,"maxLength":120},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableRoom"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/timetable:
+    get:
+      operationId: readTimetableWeek
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"weekOf","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableWeek"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: saveReviewedTimetable
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["yearId","yearRevision","slots"],"properties":{"yearId":{"type":"string","format":"uuid"},"yearRevision":{"type":"integer","minimum":1},"slots":{"type":"array","items":{"$ref":"#/components/schemas/TimetableReviewedSlot"},"minItems":1,"maxItems":60}}}
+      responses:
+        '200':
+          description: Replay of the saved request
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["ids"],"properties":{"ids":{"type":"array","items":{"type":"string","format":"uuid"}}}}}}
+        '201':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["ids"],"properties":{"ids":{"type":"array","items":{"type":"string","format":"uuid"}}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/timetable/preview:
+    post:
+      operationId: previewTimetable
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["yearId","slots"],"properties":{"yearId":{"type":"string","format":"uuid"},"slots":{"type":"array","items":{"$ref":"#/components/schemas/TimetableDraft"},"minItems":1,"maxItems":60},"editingId":{"type":"string","format":"uuid"}}}
+      responses:
+        '200':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetablePreview"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/timetable/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: readTimetableSlot
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableSlot"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: changeTimetableSlot
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"oneOf":[{"type":"object","required":["revision","cancel"],"properties":{"revision":{"type":"integer","minimum":1},"cancel":{"const":true}}},{"type":"object","required":["revision","yearRevision","slot"],"properties":{"revision":{"type":"integer","minimum":1},"yearRevision":{"type":"integer","minimum":1},"slot":{"$ref":"#/components/schemas/TimetableReviewedSlot"}}}]}
+      responses:
+        '200':
+          description: Scoped timetable result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/TimetableSlot"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -1646,6 +1790,12 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    TimetableRoom: {"type":"object","required":["code","nameAr","nameDe","id","revision"],"properties":{"code":{"type":"string","pattern":"^[A-Z0-9][A-Z0-9_-]{0,23}$"},"nameAr":{"type":"string","minLength":1,"maxLength":120},"nameDe":{"type":"string","minLength":1,"maxLength":120},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}}
+    TimetableDraft: {"type":"object","required":["assignmentId","roomId","weekday","start","end","from","untilExclusive"],"properties":{"assignmentId":{"type":"string","format":"uuid"},"roomId":{"type":"string","format":"uuid"},"weekday":{"type":"integer","minimum":1,"maximum":7},"start":{"type":"integer","minimum":0,"maximum":1439},"end":{"type":"integer","minimum":1,"maximum":1440},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"}}}
+    TimetableReviewedSlot: {"type":"object","required":["assignmentId","roomId","weekday","start","end","from","untilExclusive","assignmentRevision","roomRevision"],"properties":{"assignmentId":{"type":"string","format":"uuid"},"roomId":{"type":"string","format":"uuid"},"weekday":{"type":"integer","minimum":1,"maximum":7},"start":{"type":"integer","minimum":0,"maximum":1439},"end":{"type":"integer","minimum":1,"maximum":1440},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"assignmentRevision":{"type":"integer","minimum":1},"roomRevision":{"type":"integer","minimum":1}}}
+    TimetableSlot: {"type":"object","required":["assignmentId","roomId","weekday","start","end","from","untilExclusive","id","yearId","classId","revision","canceled"],"properties":{"assignmentId":{"type":"string","format":"uuid"},"roomId":{"type":"string","format":"uuid"},"weekday":{"type":"integer","minimum":1,"maximum":7},"start":{"type":"integer","minimum":0,"maximum":1439},"end":{"type":"integer","minimum":1,"maximum":1440},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"id":{"type":"string","format":"uuid"},"yearId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"canceled":{"type":"boolean"}}}
+    TimetablePreview: {"type":"object","required":["yearRevision","entries","canSave"],"properties":{"yearRevision":{"type":"integer","minimum":1},"entries":{"type":"array","items":{"type":"object","required":["slot","issues"],"properties":{"slot":{"anyOf":[{"$ref":"#/components/schemas/TimetableReviewedSlot"},{"type":"null"}]},"issues":{"type":"array","items":{"type":"object","required":["field","kind"],"properties":{"field":{"type":"string","enum":["assignmentId","roomId","weekday","start","end","from","untilExclusive","classId","staffId"]},"kind":{"type":"string","enum":["unavailable","interval","clash"]}}}}}}},"canSave":{"type":"boolean"}}}
+    TimetableWeek: {"type":"object","required":["weekOf","timezone","days","slots"],"properties":{"weekOf":{"type":"string","format":"date"},"timezone":{"type":"string"},"days":{"type":"array","items":{"type":"object","required":["date","teaching"],"properties":{"date":{"type":"string","format":"date"},"teaching":{"type":"boolean"}}},"minItems":7,"maxItems":7},"slots":{"type":"array","items":{"type":"object","required":["id","assignmentId","classId","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe","roomCode","roomNameAr","roomNameDe","teacherName","substitute","date","teaching","start","end","revision"],"properties":{"id":{"type":"string","format":"uuid"},"assignmentId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"roomCode":{"type":"string"},"roomNameAr":{"type":"string"},"roomNameDe":{"type":"string"},"teacherName":{"type":"string"},"substitute":{"type":"boolean"},"date":{"type":"string","format":"date"},"teaching":{"type":"boolean"},"start":{"type":"integer","minimum":0,"maximum":1439},"end":{"type":"integer","minimum":1,"maximum":1440},"revision":{"type":"integer","minimum":1}}}}}}
     AccountPreferences:
       type: object
       required: [uiLocale, correspondenceLocale, theme, revision]

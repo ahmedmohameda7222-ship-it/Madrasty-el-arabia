@@ -56,8 +56,6 @@ private val optional = setOf("studentNumber", "payerCandidate")
 private val dispositions = mapOf("new" to R.string.import_new, "existing" to R.string.import_existing,
     "duplicate" to R.string.import_duplicate, "conflict" to R.string.import_conflict, "revoked" to R.string.import_revoked,
     "skipped" to R.string.import_skipped)
-private typealias Commands = MutableMap<String, Pair<String, String>>
-
 @Composable
 fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, close: () -> Unit) {
     val context = LocalContext.current

@@ -2,13 +2,13 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S06 weekly timetable. S05 is in ea2d945. Account preferences and the scoped directory are built in I06. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** S07 role dashboards and work queues. S05 is in ea2d945 and I06 is in 75e15a2. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
 | 00 Foundation | built / QA pending | Pin environment, build shells, publish contract primitives |
 | 01 Identity and access | I01–I06 built / QA pending | One account, effective grants and recoverable invites |
-| 02 School operations | S01–S05 built / QA pending; S06 active | Import, linked families, dated staffing and clash-safe timetable |
+| 02 School operations | S01–S06 built / QA pending; S07 active | Import, linked families, dated staffing and clash-safe timetable |
 | 03 Attendance | Planned | Online lock, actual arrival, offline reconciliation and approval |
 | 04 Academics | Planned | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
@@ -37,7 +37,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-19 | I05 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119211920_teacher_applications.sql, verified applicant session, review/decision and status on both clients | Type-check and web/Android builds exited 0. D02 binds verification SMTP and redirect templates; C07 delivers decision notices. Q02/Q03 pending. | S05 assignments, then I06 directory. |
 | 2026-11-19 | S05 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119212628_staff_assignments.sql, professional profiles, dated class and subject assignments, substitutes and teaching views | Type-check, web production build and Android debug build exited 0. I06 exposes the scoped candidate projection, S06 binds timetable. Q02/Q03/Q06 pending. | I06 account preferences and scoped directory. |
 | 2026-11-20 | I06 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261119213839_account_preferences_directory.sql, role-scoped directory, own account settings and separate locale preferences on web/Android | Type-check, production web build and debug Android assembly exited 0. Repaired the malformed revocation schema and parsed OpenAPI. C01 connects conversation actions, C05 connects notification registration and C06 applies language preferences to worker outputs. Q02/Q03/Q05/Q06 pending. | S06 collision-safe weekly timetable. |
-| 2026-11-20 | S06, step 1 | Active | S01 calendar, S03 enrollment, S05 assignments | Scheduling storage, API and platform views pending. | Add rooms and timed lesson slots, collision constraints and scoped week projections. |
+| 2026-11-20 | S06 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120005023_weekly_timetable.sql, reviewed timetable editor and weekly views on web and Android | Type-check, production web build, Android debug assembly and OpenAPI parsing exited 0. Subject cover with lesson-log authority reserves the substitute as well as the assigned teacher. Q02/Q03/Q06 still verify concurrent clashes, authorization and device layouts. | S07 role dashboards and scoped work queues. |
+| 2026-11-20 | S07, step 1 | Active | S02–S06 data sources | Implement school queue storage projections and actionable home cards. | Establish shared count/drill-down query and D01 module slots, then bind web and Android. |
 
 ## Decision and discrepancy log
 

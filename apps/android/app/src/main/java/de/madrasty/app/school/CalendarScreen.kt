@@ -62,8 +62,10 @@ private fun period(obj: JSONObject): Period {
         obj.getString("state"), (0 until days.length()).map(days::getInt).toSet(), obj.getInt("revision"))
 }
 
+internal typealias SchoolCommandAttempts = MutableMap<String, Pair<String, String>>
+
 internal suspend fun IdentityViewModel.schoolCommand(
-    attempts: MutableMap<String, Pair<String, String>>, path: String, method: String, input: JSONObject,
+    attempts: SchoolCommandAttempts, path: String, method: String, input: JSONObject,
 ): JSONObject {
     val serialized = input.toString()
     val id = "$method:$path"
@@ -271,14 +273,14 @@ internal fun Field(label: Int, value: String, editable: Boolean = true, edit: (S
 }
 
 @Composable
-internal fun Submit(enabled: Boolean, label: Int = R.string.school_save, action: suspend () -> Unit) {
+internal fun Submit(enabled: Boolean, label: Int = R.string.school_save, success: Int? = R.string.saved, action: suspend () -> Unit) {
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Int?>(null) }
     Button(enabled = enabled && !pending, onClick = { scope.launch {
         pending = true
         status = null
-        try { action(); status = R.string.saved }
+        try { action(); status = success }
         catch (error: CancellationException) { throw error }
         catch (error: HttpFailure) { status = if (error.status == 409) R.string.conflict else R.string.generic_error }
         catch (_: Exception) { status = R.string.generic_error }

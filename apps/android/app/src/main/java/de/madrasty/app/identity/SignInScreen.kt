@@ -49,6 +49,7 @@ import de.madrasty.app.school.EnrollmentScreen
 import de.madrasty.app.school.ImportScreen
 import de.madrasty.app.school.StaffAssignmentsScreen
 import de.madrasty.app.school.TeachingSummary
+import de.madrasty.app.school.TimetableScreen
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
@@ -225,6 +226,10 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     var applicationReview by remember(session?.actor) { mutableStateOf(false) }
     var preferences by remember(session?.actor) { mutableStateOf(false) }
     var directory by remember(session?.actor) { mutableStateOf(false) }
+    var timetable by remember(session?.actor) { mutableStateOf(false) }
+    var timetableChild by remember(session?.actor) { mutableStateOf<String?>(null) }
+    var selectedChild by remember(session?.actor) { mutableStateOf<String?>(null) }
+    var activeTab by remember(session?.actor) { mutableStateOf(SchoolTab.Home) }
     if (application) ApplicantScreen(model) { model.endApplicantSession(); application = false }
     else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) { applicationReview = false }
     else if (session == null) SignInScreen(model) { application = true }
@@ -233,6 +238,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
     else if (preferences) AccountScreen(model, close = { preferences = false }, security = { security = true })
     else if (directory) DirectoryScreen(model) { directory = false }
+    else if (timetable) TimetableScreen(model, session.actor.persona, timetableChild) { timetable = false; timetableChild = null }
     else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
     else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
         EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
@@ -241,11 +247,14 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     else if (invitations && ("students.manage" in capabilities || "applications.manage" in capabilities))
         StaffInvitationsScreen(model, "applications.manage" in capabilities, inviteBatch) { invitations = false; inviteBatch = null }
     else if (importing && "students.manage" in capabilities) ImportScreen(model, { id -> inviteBatch = id; invitations = true }) { importing = false }
-    else SchoolShell(session.actor) { tab ->
+    else SchoolShell(session.actor, activeTab, { activeTab = it }) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (tab == SchoolTab.Home) Text(stringResource(personaLabel(session.actor.persona)))
         if (tab == SchoolTab.Attendance) TeachingSummary(model)
-        if (tab == SchoolTab.Children) ChildrenScreen(model)
+        if (tab == SchoolTab.Children) ChildrenScreen(model, selectedChild, { selectedChild = it }) { child ->
+            timetableChild = child
+            timetable = true
+        }
         if (tab == SchoolTab.Students && "students.manage" in capabilities) {
             TextButton(onClick = { importing = true }) { Text(stringResource(R.string.import_families)) }
             FamiliesScreen(model)
@@ -253,6 +262,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         if (tab == SchoolTab.More) {
             TextButton(onClick = { preferences = true }) { Text(stringResource(R.string.account_preferences)) }
             TextButton(onClick = { directory = true }) { Text(stringResource(R.string.directory_title)) }
+            if (session.actor.persona != Persona.Admin || "school.manage" in capabilities || "academics.supervise" in capabilities)
+                TextButton(onClick = { timetable = true }) { Text(stringResource(R.string.timetable_title)) }
             if ("school.manage" in capabilities || "academics.supervise" in capabilities)
                 TextButton(onClick = { assignments = true }) { Text(stringResource(R.string.staff_assignments)) }
             TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }

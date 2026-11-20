@@ -38,8 +38,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
-private typealias Commands = MutableMap<String, Pair<String, String>>
-
 private val assignmentRoles = mapOf(
     "teacher" to R.string.staff_role_teacher, "principal" to R.string.staff_role_principal,
     "deputy" to R.string.staff_role_deputy, "office" to R.string.staff_role_office,
@@ -111,7 +109,7 @@ private suspend fun staffPage(model: IdentityViewModel, query: String, cursor: S
         (cursor?.let { "&cursor=$it" } ?: ""))) { value -> (value as JSONArray).objects() }
 
 @Composable
-private fun StaffProfileForm(model: IdentityViewModel, commands: Commands, item: JSONObject?, saved: (JSONObject) -> Unit) {
+private fun StaffProfileForm(model: IdentityViewModel, commands: SchoolCommandAttempts, item: JSONObject?, saved: (JSONObject) -> Unit) {
     var name by remember { mutableStateOf(item.present("displayName")) }
     var role by remember { mutableStateOf(item.present("role").ifEmpty { "teacher" }) }
     var ar by remember { mutableStateOf(item.present("titleAr")) }
@@ -151,7 +149,7 @@ private fun StaffProfileForm(model: IdentityViewModel, commands: Commands, item:
 }
 
 @Composable
-private fun ClassAssignments(model: IdentityViewModel, commands: Commands, people: List<JSONObject>) {
+private fun ClassAssignments(model: IdentityViewModel, commands: SchoolCommandAttempts, people: List<JSONObject>) {
     val de = LocalConfiguration.current.locales[0].language == "de"
     var year by remember { mutableStateOf("") }
     var classId by remember { mutableStateOf("") }
@@ -211,7 +209,7 @@ private fun ClassAssignments(model: IdentityViewModel, commands: Commands, peopl
 }
 
 @Composable
-private fun AssignmentRow(model: IdentityViewModel, commands: Commands, row: JSONObject, people: List<JSONObject>, de: Boolean, saved: () -> Unit) {
+private fun AssignmentRow(model: IdentityViewModel, commands: SchoolCommandAttempts, row: JSONObject, people: List<JSONObject>, de: Boolean, saved: () -> Unit) {
     var operation by remember { mutableStateOf("") }
     val path = "/school/assignments/${row.getString("id")}"
     HorizontalDivider()

@@ -38,8 +38,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
-private typealias Commands = MutableMap<String, Pair<String, String>>
-
 @Composable
 fun EnrollmentScreen(model: IdentityViewModel, manageClasses: Boolean, manageEnrollment: Boolean, close: () -> Unit) {
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
@@ -140,7 +138,7 @@ private fun ClassForm(current: JSONObject?, year: String, save: suspend (JSONObj
 }
 
 @Composable
-private fun ClassRoster(model: IdentityViewModel, requests: Commands, current: JSONObject,
+private fun ClassRoster(model: IdentityViewModel, requests: SchoolCommandAttempts, current: JSONObject,
     classes: List<JSONObject>, locale: String, editable: Boolean,
 ) {
     val id = current.getString("id")
@@ -244,7 +242,7 @@ private fun TransferForm(classes: List<JSONObject>, locale: String, transfer: Bo
 }
 
 @Composable
-private fun RolloverEditor(model: IdentityViewModel, requests: Commands, source: JSONObject, years: List<JSONObject>,
+private fun RolloverEditor(model: IdentityViewModel, requests: SchoolCommandAttempts, source: JSONObject, years: List<JSONObject>,
     classes: List<JSONObject>, locale: String, confirmable: Boolean, confirmed: () -> Unit,
 ) {
     var target by remember { mutableStateOf("") }

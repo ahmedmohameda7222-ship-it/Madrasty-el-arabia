@@ -172,3 +172,9 @@ button:disabled { cursor: default; }
 
 .import-row { padding: 12px 16px; }
 .import-row summary { min-block-size: 44px; padding-block: 8px; }
+
+.timetable-day { padding-block: 12px; border-block-end: 1px solid var(--rule); }
+.timetable-day h2 { font-size: 1.125rem; margin-block-end: 4px; }
+.timetable-session { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding-block: 8px; }
+.timetable-session small { color: var(--muted); }
+.timetable-session .plain-button { margin-inline-start: auto; }

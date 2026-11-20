@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
@@ -300,6 +302,9 @@ function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
     : record.data ? { kind: "ready", content: <>
       <h2><bdi>{record.data.displayName}</bdi></h2>
       <p>{copy[locale].number} <bdi dir="ltr">{record.data.studentNumber}</bdi></p>
+      <Link className="plain-button" href={`/${locale}/school/more/timetable?child=${id}`}>
+        {locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}
+      </Link>
       {record.data.currentClass && <p><bdi dir="ltr">{record.data.currentClass.code}</bdi> · <bdi>{locale === "ar" ? record.data.currentClass.nameAr : record.data.currentClass.nameDe}</bdi></p>}
     </> } : { kind: "initialLoading" }} />;
 }

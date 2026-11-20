@@ -66,6 +66,8 @@ private fun tabsFor(persona: Persona): List<SchoolTab> {
 @Composable
 fun SchoolShell(
     actor: SchoolPartition,
+    selected: SchoolTab,
+    changeTab: (SchoolTab) -> Unit,
     selectedScope: ScopeOption? = null,
     choices: List<ScopeOption> = emptyList(),
     selectScope: (String) -> Unit = {},
@@ -73,10 +75,9 @@ fun SchoolShell(
 ) {
     key(actor.accountId, actor.sessionId, actor.persona) {
         val tabs = tabsFor(actor.persona)
-        var selected by rememberSaveable { mutableStateOf(SchoolTab.Home) }
         var pickerVisible by rememberSaveable { mutableStateOf(false) }
         val states = rememberSaveableStateHolder()
-        BackHandler(enabled = selected != SchoolTab.Home && !pickerVisible) { selected = SchoolTab.Home }
+        BackHandler(enabled = selected != SchoolTab.Home && !pickerVisible) { changeTab(SchoolTab.Home) }
 
         Scaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
@@ -101,7 +102,7 @@ fun SchoolShell(
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = selected == tab,
-                            onClick = { selected = tab },
+                            onClick = { changeTab(tab) },
                             icon = { SchoolIcon(tab.icon) },
                             label = { Text(stringResource(tab.label), softWrap = true) },
                         )

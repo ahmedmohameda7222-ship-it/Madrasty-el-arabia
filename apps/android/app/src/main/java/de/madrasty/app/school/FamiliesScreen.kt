@@ -250,9 +250,8 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
 }
 
 @Composable
-fun ChildrenScreen(model: IdentityViewModel) {
+fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -> Unit, openTimetable: (String) -> Unit) {
     var state by remember { mutableStateOf<Picker>(AsyncState.InitialLoading()) }
-    var chosen by remember { mutableStateOf<String?>(null) }
     var selected by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
     var count by remember { mutableStateOf(0) }
     LaunchedEffect(count) {
@@ -275,7 +274,7 @@ fun ChildrenScreen(model: IdentityViewModel) {
         if (records.data.isEmpty()) Text(stringResource(R.string.empty))
         records.data.forEach { child ->
             val id = child.getString("id")
-            FilterChip(chosen == id, onClick = { if (chosen != id) selected = AsyncState.InitialLoading(); chosen = id },
+            FilterChip(chosen == id, onClick = { if (chosen != id) selected = AsyncState.InitialLoading(); choose(id) },
                 label = { Text(isolate(child.getString("displayName"))) })
         }
         if (chosen != null && records.data.any { it.getString("id") == chosen }) {
@@ -285,6 +284,7 @@ fun ChildrenScreen(model: IdentityViewModel) {
                 val language = LocalConfiguration.current.locales[0].language
                 child.optJSONObject("currentClass")?.let { Text(classLabel(it, language)) }
                 Text("${stringResource(R.string.student_number)} · \u2066${child.getString("studentNumber")}\u2069")
+                TextButton(onClick = { openTimetable(child.getString("id")) }) { Text(stringResource(R.string.timetable_title)) }
             }
         }
     }

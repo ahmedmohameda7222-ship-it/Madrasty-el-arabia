@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timetable_title">Wochenplan</string>
+    <string name="timetable_child">Kind auswählen</string>
+    <string name="timetable_previous">Vorige Woche</string>
+    <string name="timetable_current">Diese Woche</string>
+    <string name="timetable_next">Nächste Woche</string>
+    <string name="timetable_date">Woche mit Datum (YYYY-MM-DD)</string>
+    <string name="timetable_open_week">Woche anzeigen</string>
+    <string name="timetable_all_classes">Alle Klassen</string>
+    <string name="timetable_build">Stundenplan erstellen</string>
+    <string name="timetable_edit">Termin bearbeiten</string>
+    <string name="timetable_empty">Für diese Woche sind keine Stunden geplant.</string>
+    <string name="timetable_closed">Ferien oder unterrichtsfrei</string>
+    <string name="timetable_substitute">Vertretung</string>
+    <string name="timetable_assignment">Fachzuordnung</string>
+    <string name="timetable_room">Raum</string>
+    <string name="timetable_rooms">Räume</string>
+    <string name="timetable_weekday">Wochentag</string>
+    <string name="timetable_start">Beginn (HH:MM)</string>
+    <string name="timetable_end">Ende (HH:MM)</string>
+    <string name="timetable_from">Gültig ab (YYYY-MM-DD)</string>
+    <string name="timetable_until">Gültig bis ausschließlich (YYYY-MM-DD)</string>
+    <string name="timetable_add">Termin zur Prüfung hinzufügen</string>
+    <string name="timetable_queued">Zu prüfende Termine</string>
+    <string name="timetable_remove">Aus Entwurf entfernen</string>
+    <string name="timetable_review">Überschneidungen prüfen</string>
+    <string name="timetable_ready">Die Termine können gespeichert werden.</string>
+    <string name="timetable_save">Stundenplan speichern</string>
+    <string name="timetable_cancel">Wiederkehrenden Termin absagen</string>
+    <string name="timetable_confirm_cancel">Absage bestätigen</string>
+    <string name="timetable_new_room">Raum hinzufügen</string>
+    <string name="timetable_room_code">Raumcode</string>
+    <string name="timetable_save_room">Raum speichern</string>
+    <string name="timetable_interval">Uhrzeit oder Gültigkeitszeitraum prüfen.</string>
+    <string name="timetable_unavailable">Die Auswahl ist nicht mehr verfügbar.</string>
+    <string name="timetable_clash">Der Termin überschneidet sich mit einem anderen.</string>
+</resources>
