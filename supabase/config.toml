@@ -1,0 +1,24 @@
+project_id = "madrasty-el-arabia-prelaunch"
+
+[auth]
+site_url = "https://madrastyelarabia.vercel.app"
+additional_redirect_urls = [
+  "https://madrastyelarabia.vercel.app/ar/invite",
+  "https://madrastyelarabia.vercel.app/de/invite",
+  "https://madrastyelarabia.vercel.app/ar/apply/verify",
+  "https://madrastyelarabia.vercel.app/de/apply/verify",
+  "https://madrastyelarabia.vercel.app/ar/account/security/recover",
+  "https://madrastyelarabia.vercel.app/de/account/security/recover",
+  "https://madrastyelarabia.vercel.app/ar/account/security/email",
+  "https://madrastyelarabia.vercel.app/auth/android/callback",
+]
+enable_signup = false
+
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/app/block_revoked_auth_refresh"
+
+[auth.email]
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = true

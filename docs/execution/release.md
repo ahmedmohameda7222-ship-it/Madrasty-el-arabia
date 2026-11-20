@@ -32,11 +32,23 @@ The operation IDs and paths are enumerated in [OpenAPI](../../packages/contracts
 
 | Binding | Recorded evidence |
 |---|---|
-| Supabase project | School connection, ref `ycsyghyigkadtugluugm`, region `eu-west-1`, PostgreSQL 17.12. Read-only deployment inventory found zero Auth users and sessions, Storage buckets and objects, app/public tables, target application roles and applied migrations. |
-| Supabase migration access | Local CLI 2.121.0 authenticated to an account whose project list excludes the school project. School CLI access or an operator-managed migration connection is outstanding. |
-| Vercel | Created dedicated pre-launch project `madrasty-el-arabia-prelaunch` (`prj_lB5FQ4zDGXQk9Qf9pMrIVACah0lY`) in `ahmed-s-projectssasa` and confirmed Node `24.x`. The Preview configuration has `SCHOOL_ENVIRONMENT`, `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from the school connection. The verified domain inventory had no school hostname. No candidate deployment exists. |
-| Delivery | SMTP, transactional sender, VAPID, Firebase and controlled recipient bindings are pending. No provider delivery has been initiated. |
-| Android custody | Both debug and unsigned release variants compiled. The signed release, prior signed baseline, permanent origin, package ID and certificate remain pending. Public install and version endpoints only expose configured release metadata. |
+| Supabase project | School connection, ref `ycsyghyigkadtugluugm`, region `eu-west-1`, PostgreSQL 17.12. Initial inventory found no user data. All 39 migrations have been applied and matched the local ledger. |
+| Supabase migration access | CLI 2.121.0 uses the default school login. The three restricted pooled roles are configured. The site URL, exact redirect list and refresh hook are bound through `supabase/config.toml`. |
+| Vercel | Created dedicated pre-launch project `madrasty-el-arabia-prelaunch` (`prj_lB5FQ4zDGXQk9Qf9pMrIVACah0lY`) in `ahmed-s-projectssasa` and confirmed Node `24.x`. The owner selected `https://madrastyelarabia.vercel.app` as the initial origin, and Vercel verified the binding. That project uses a production alias at the hosting layer and `SCHOOL_ENVIRONMENT=prelaunch` with an application-level synthetic account allowlist. Release build `dpl_6x7Y3vf8sbCAZzSEK6hmxQq8dpWr` uses source `b298cf7591cf8d2ff4b7b931606232696b9f1cfe`. Vercel reports READY and lists the approved alias on this deployment. |
+| Delivery | VAPID, worker authorization, the invitation envelope secret and the approved synthetic recipient allowlist are bound. The first synthetic administrator is pending activation. SMTP, Resend, Firebase and scheduling are pending. Supabase Free rejected custom templates with its default mail service. The Arabic/German templates are prepared in `supabase/templates` and need publishing after custom SMTP is set. No provider delivery has been initiated. |
+| Android custody | Package `de.madrasty.app` uses the owner-approved new school signer. Both builds pin the approved Vercel origin. Adding a custom hostname to a later APK requires the same package and signer and a higher version code. Signing custody is outside Git in the school operator’s Windows profile, protected by DPAPI. Portable backup and recovery custody remain pending. |
+
+
+## Signed Android build record
+
+School origin `https://madrastyelarabia.vercel.app` and Android package `de.madrasty.app`.
+
+| Artifact | Size | SHA-256 |
+|---|---:|---|
+| Signed candidate 0.1.1, version code 2 | 11,758,251 | `d5ca02907bfaaa4604252603bbc8fd2a36b82d5eccf014ea11765051b4f8c99d` |
+| Restricted signed baseline 0.1.0, version code 1 | 11,758,251 | `2df5ca627b6447424ad09d1e3532f589ca54af2bbeed6dfbe6c6e794a8ad10be` |
+
+The SHA-256 of the signer certificate is `8cdd2ca77ae0051388be756512fdda8b50bfd2023b954d078f4079e8c2332fd3`. Both artifacts passed the signer integrity check. The candidate is distributed through the school’s `/download/android` route, backed by an immutable SHA-addressed APK object in Supabase. The baseline remains local for Q06.
 
 ## Candidate freeze
 
