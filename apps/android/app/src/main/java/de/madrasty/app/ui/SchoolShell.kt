@@ -71,6 +71,7 @@ fun SchoolShell(
     selectedScope: ScopeOption? = null,
     choices: List<ScopeOption> = emptyList(),
     selectScope: (String) -> Unit = {},
+    notificationAction: @Composable () -> Unit = {},
     content: @Composable (SchoolTab) -> Unit,
 ) {
     key(actor.accountId, actor.sessionId, actor.persona) {
@@ -91,6 +92,7 @@ fun SchoolShell(
                         }
                     },
                     actions = {
+                        notificationAction()
                         if (choices.isNotEmpty()) {
                             TextButton(onClick = { pickerVisible = true }) { Text(stringResource(R.string.choose_scope)) }
                         }

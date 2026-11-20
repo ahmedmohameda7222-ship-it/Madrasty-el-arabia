@@ -3643,6 +3643,121 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BroadcastEntry"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /notifications:
+    get:
+      operationId: listPersonalNotifications
+      summary: Read the personal notification inbox
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"locale","in":"query","required":false,"schema":{"type":"string","enum":["ar","de"]}}
+        - {"name":"unread","in":"query","required":false,"schema":{"type":"string","enum":["1","0","true","false"]}}
+      responses:
+        '200':
+          description: Read the personal notification inbox
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/NotificationRecord"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /notifications/count:
+    get:
+      operationId: countUnreadPersonalNotifications
+      summary: Count unread notifications within the active account and persona
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Count unread notifications within the active account and persona
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"unread":{"type":"integer","minimum":0}},"required":["unread"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /notifications/{id}:
+    get:
+      operationId: resolvePersonalNotice
+      summary: Resolve currently authorized targets of one personal notification
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Resolve currently authorized targets of one personal notification
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/NoticeDestination"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: markPersonalNoticeRead
+      summary: Mark one notification read across devices
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"read":{"const":true}},"required":["read"]}
+      responses:
+        '200':
+          description: Mark one notification read across devices
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"readAt":{"type":"string","format":"date-time"}},"required":["id","readAt"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /me/push-subscriptions:
+    get:
+      operationId: readSchoolPushSettings
+      summary: Read public provider configuration or your installation status
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"platform","in":"query","required":false,"schema":{"type":"string","enum":["web","android"]}}
+        - {"name":"installationId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read public provider configuration or your installation status
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"oneOf":[{"$ref":"#/components/schemas/PushOptions"},{"$ref":"#/components/schemas/PushStatus"}]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    put:
+      operationId: bindSchoolPushInstallation
+      summary: Bind an explicitly enabled installation to the verified session
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/PushRegistration"}
+      responses:
+        '200':
+          description: Bind an explicitly enabled installation to the verified session
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"installationId":{"type":"string","format":"uuid"},"guard":{"type":"string","format":"uuid"}},"required":["installationId","guard"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    delete:
+      operationId: detachSchoolPushInstallation
+      summary: Detach an installation from the current session
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/PushInstallation"}
+      responses:
+        '200':
+          description: Detach an installation from the current session
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/PushStatus"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -3671,6 +3786,13 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    NoticeTarget: {"oneOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["thread","broadcast","child","application","invoice","receipt","fee_stop"]},"id":{"type":"string","format":"uuid"}},"required":["kind","id"]},{"type":"object","properties":{"kind":{"type":"string","enum":["exam","evaluation","activity","homework"]},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"}},"required":["kind","id","childId"]},{"type":"object","properties":{"kind":{"const":"attendance"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}},"required":["kind","id","childId","date"]}]}
+    NoticeDestination: {"oneOf":[{"type":"object","properties":{"state":{"const":"open"},"targets":{"type":"array","items":{"$ref":"#/components/schemas/NoticeTarget"},"minItems":1,"maxItems":50}},"required":["state","targets"]},{"type":"object","properties":{"state":{"const":"unavailable"}},"required":["state"]}]}
+    NotificationRecord: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"template":{"type":"string"},"title":{"type":"string"},"createdAt":{"type":"string","format":"date-time"},"readAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"superseded":{"type":"boolean"}},"required":["id","template","title","createdAt","readAt","superseded"]}
+    PushInstallation: {"type":"object","properties":{"installationId":{"type":"string","format":"uuid"},"platform":{"type":"string","enum":["web","android"]}},"required":["installationId","platform"]}
+    PushRegistration: {"oneOf":[{"type":"object","properties":{"platform":{"const":"web"},"installationId":{"type":"string","format":"uuid"},"sessionId":{"type":"string","format":"uuid"},"subscription":{"type":"object","properties":{"endpoint":{"type":"string","format":"uri","maxLength":2048},"expirationTime":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"keys":{"type":"object","properties":{"p256dh":{"type":"string","pattern":"^[A-Za-z0-9_-]{87}$"},"auth":{"type":"string","pattern":"^[A-Za-z0-9_-]{22}$"}},"required":["p256dh","auth"]}},"required":["endpoint","keys"]}},"required":["platform","installationId","sessionId","subscription"]},{"type":"object","properties":{"platform":{"const":"android"},"installationId":{"type":"string","format":"uuid"},"sessionId":{"type":"string","format":"uuid"},"token":{"type":"string","minLength":30,"maxLength":4096}},"required":["platform","installationId","sessionId","token"]}]}
+    PushOptions: {"type":"object","properties":{"web":{"anyOf":[{"type":"object","properties":{"publicKey":{"type":"string"}},"required":["publicKey"]},{"type":"null"}]},"android":{"anyOf":[{"type":"object","properties":{"apiKey":{"type":"string"},"projectId":{"type":"string"},"senderId":{"type":"string"},"firebaseAppId":{"type":"string"}},"required":["apiKey","projectId","senderId","firebaseAppId"]},{"type":"null"}]}},"required":["web","android"]}
+    PushStatus: {"type":"object","properties":{"enabled":{"type":"boolean"}},"required":["enabled"]}
     BroadcastAudience: {"oneOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["all_guardians","all_teachers"]}},"required":["kind"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"class_guardians"},"classId":{"type":"string","format":"uuid"}},"required":["kind","classId"],"additionalProperties":false}]}
     BroadcastText: {"type":"object","properties":{"title":{"type":"string","minLength":1,"maxLength":180},"body":{"type":"string","minLength":1,"maxLength":4000}},"required":["title","body"]}
     BroadcastDraft: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]}},"required":["audience","copy"]}

@@ -355,4 +355,19 @@
     <string name="broadcast_suppressed">Nicht mehr zustellberechtigt</string>
     <string name="broadcast_open">Mitteilung lesen</string>
     <string name="broadcast_refresh">Aktualisieren</string>
+    <string name="notices_title">Benachrichtigungen</string>
+    <string name="notices_count">Benachrichtigungen. Ungelesen %1$d</string>
+    <string name="notices_all">Alle Benachrichtigungen</string>
+    <string name="notices_unread">Ungelesen</string>
+    <string name="notices_open">Benachrichtigung öffnen</string>
+    <string name="notices_mark">Als gelesen markieren</string>
+    <string name="notices_corrected">Aktualisiert</string>
+    <string name="notices_unavailable">Die Details sind für dein Konto derzeit nicht verfügbar.</string>
+    <string name="notices_device">Gerätebenachrichtigungen</string>
+    <string name="notices_correspondence">Sprache für Mitteilungen</string>
+    <string name="notices_device_enable">Auf diesem Gerät aktivieren</string>
+    <string name="notices_device_disable">Auf diesem Gerät deaktivieren</string>
+    <string name="notices_device_enabled">Gerätebenachrichtigungen sind aktiviert.</string>
+    <string name="notices_permission">Gerätebenachrichtigungen sind in den Einstellungen blockiert.</string>
+    <string name="notices_push_unavailable">Gerätebenachrichtigungen sind nicht verfügbar. Mitteilungen in der App und per E-Mail bleiben verfügbar.</string>
 </resources>

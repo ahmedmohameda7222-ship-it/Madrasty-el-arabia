@@ -29,3 +29,4 @@ export * from "./comms/threads";
 export * from "./comms/messages";
 export * from "./comms/chatMedia";
 export * from "./comms/broadcasts";
+export * from "./comms/notifications";

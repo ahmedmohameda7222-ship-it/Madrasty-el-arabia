@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import type { Locale } from "@madrasty/contracts";
+import { z } from "zod";
 import { SchoolHeader } from "@/ui/Shell";
 import { ApplyLink } from "@/features/identity/TeacherApplications";
 import { RecoveryLink } from "@/features/identity/SecurityForms";
@@ -12,7 +13,12 @@ export default async function SignIn({ params, searchParams }: {
   const [{ locale }, { next, android }, jar] = await Promise.all([params, searchParams, cookies()]);
   const home = `/${locale}/school/home`;
   const safePaths = ["home", "students", "attendance", "children", "messages", "more"];
-  const destination = safePaths.some((tab) => next === `/${locale}/school/${tab}`) && next ? next : home;
+  const candidate = typeof next === "string" ? next : undefined;
+  const noticeInbox = `/${locale}/school/more/notifications`;
+  const noticePrefix = noticeInbox + "?notice=";
+  const noticeLink = candidate?.startsWith(noticePrefix) && z.uuid().safeParse(candidate.slice(noticePrefix.length)).success;
+  const safe = safePaths.some((tab) => candidate === `/${locale}/school/${tab}`) || candidate === noticeInbox || noticeLink;
+  const destination = safe && candidate ? candidate : home;
   const refreshable = jar.has("__Host-madrasty-refresh") || jar.has("madrasty-refresh");
   return (
     <main className="public-page">

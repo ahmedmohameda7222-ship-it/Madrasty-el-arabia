@@ -355,4 +355,19 @@
     <string name="broadcast_suppressed">خارج نطاق التوصيل</string>
     <string name="broadcast_open">قراءة الإعلان</string>
     <string name="broadcast_refresh">تحديث</string>
+    <string name="notices_title">الإشعارات</string>
+    <string name="notices_count">الإشعارات. غير المقروءة %1$d</string>
+    <string name="notices_all">كل الإشعارات</string>
+    <string name="notices_unread">غير المقروءة</string>
+    <string name="notices_open">افتح الإشعار</string>
+    <string name="notices_mark">تحديد كمقروء</string>
+    <string name="notices_corrected">اتحدّث</string>
+    <string name="notices_unavailable">التفاصيل مش متاحة لحسابك حاليًا.</string>
+    <string name="notices_device">إشعارات الجهاز</string>
+    <string name="notices_correspondence">لغة المراسلات</string>
+    <string name="notices_device_enable">تفعيل على الجهاز ده</string>
+    <string name="notices_device_disable">إيقاف على الجهاز ده</string>
+    <string name="notices_device_enabled">إشعارات الجهاز مفعّلة.</string>
+    <string name="notices_permission">السماح بإشعارات الجهاز موقوف في إعداداته.</string>
+    <string name="notices_push_unavailable">إشعارات الجهاز غير متاحة. الإشعارات داخل التطبيق والبريد شغّالين حسب إعداداتك.</string>
 </resources>

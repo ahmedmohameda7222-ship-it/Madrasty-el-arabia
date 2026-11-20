@@ -178,3 +178,6 @@ button:disabled { cursor: default; }
 .timetable-session { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding-block: 8px; }
 .timetable-session small { color: var(--muted); }
 .timetable-session .plain-button { margin-inline-start: auto; }
+
+.notice-link { display: inline-flex; align-items: center; justify-content: center; min-inline-size: 44px; min-block-size: 44px; gap: .25rem; }
+.notice-count { font-size: .8rem; font-weight: 700; }

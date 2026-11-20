@@ -8,6 +8,7 @@ import { dictionary } from "@/i18n";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
+import { NotificationLink } from "@/features/comms/NotificationCenter";
 
 type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
@@ -88,7 +89,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   return (
     <div className="school-shell">
       <a className="skip-link" href="#school-content">{text.skip}</a>
-      <SchoolHeader locale={locale}>{scopePicker}</SchoolHeader>
+      <SchoolHeader locale={locale}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation}>
           {destinations.map((tab) => (

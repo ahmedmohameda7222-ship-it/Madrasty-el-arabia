@@ -39,6 +39,9 @@ import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
 import de.madrasty.app.comms.BroadcastHub
+import de.madrasty.app.comms.NotificationAction
+import de.madrasty.app.comms.NotificationCenter
+import de.madrasty.app.comms.PushSessionBinding
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -63,6 +66,7 @@ import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
 import kotlinx.coroutines.CancellationException
+import org.json.JSONObject
 
 internal sealed interface WorkspacePage {
     data object Tabs : WorkspacePage
@@ -73,6 +77,7 @@ internal sealed interface WorkspacePage {
     data class Thread(val id:String) : WorkspacePage
     data object MessageReports : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
+    data class Notifications(val notice:String?=null) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data object Enrollment : WorkspacePage
@@ -130,6 +135,29 @@ internal class SchoolNavigation {
         })
     }
     fun openThread(id:String)=open(WorkspacePage.Thread(id))
+    fun openNoticeTarget(target:JSONObject):Boolean{
+        val id=target.getString("id")
+        val childId=target.optString("childId").takeIf{it.isNotBlank()}
+        val page=when(target.getString("kind")){
+            "thread"->WorkspacePage.Thread(id)
+            "broadcast"->WorkspacePage.Broadcasts(id)
+            "child"->{
+                back()
+                choose(SchoolTab.Children)
+                child=id
+                return true
+            }
+            "attendance"->WorkspacePage.AttendanceHistory(child=childId,rowId=id)
+            "exam"->WorkspacePage.Exams(childId,id)
+            "evaluation"->WorkspacePage.Evaluations(childId,id)
+            "activity"->WorkspacePage.AcademicWork(childId,id)
+            "homework"->WorkspacePage.Homework(childId,id)
+            "application"->WorkspacePage.Apply
+            else->return false
+        }
+        open(page)
+        return true
+    }
     fun openReportSource(target:ReportTarget){
         val next=when(target.kind){
             "attendance"->if(target.child==null)WorkspacePage.AttendanceHistory(rowId=target.id) else WorkspacePage.AttendanceHistory(child=target.child)
@@ -218,6 +246,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         return
     }
     val rights=SchoolRights(session.actor.persona,capabilities,moderation)
+    PushSessionBinding(model,session)
     val resume=model.attendanceResume
     LaunchedEffect(resume,session.actor){
         if(resume!=null){
@@ -251,6 +280,8 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
+        is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
+            {state.open(WorkspacePage.Account)},state::back)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
@@ -284,7 +315,9 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
 
 @Composable
 private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:SchoolNavigation,rights:SchoolRights){
-    SchoolShell(session.actor,state.tab,state::choose){tab->
+    SchoolShell(session.actor,state.tab,state::choose,notificationAction={
+        NotificationAction(model){state.open(WorkspacePage.Notifications())}
+    }){tab->
         Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
         when(tab){
             SchoolTab.Home -> SchoolHomeScreen(
@@ -335,6 +368,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
     OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
     OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
+    OpenPage(state,WorkspacePage.Notifications(),R.string.notices_title)
     OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
     AccountActions(model,session)
 

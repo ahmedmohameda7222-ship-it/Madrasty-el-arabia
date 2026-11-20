@@ -6,6 +6,9 @@ import { preferencesSchema, sessionSchema, type Locale, type SchoolSession, type
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary, localizedError } from "@/i18n";
 import { discardAttendanceDrafts } from "@/features/attendance/draft-store";
+import { detachBrowserPush } from "@/features/comms/push-device";
+import { webHeaders } from "@/api/client-headers";
+export { webHeaders } from "@/api/client-headers";
 
 const labels = {
   ar: { signIn: "تسجيل الدخول", email: "البريد الإلكتروني", password: "كلمة السر", show: "إظهار", hide: "إخفاء",
@@ -14,15 +17,6 @@ const labels = {
     signOut: "Abmelden", all: "Von allen Geräten abmelden", switch: "Rolle wechseln", unsent: "Beim Abmelden können ungesendete Entwürfe verloren gehen. Möchten Sie fortfahren?", revoked: "Die Abmeldung wartet auf eine Verbindung zum Server." },
 } as const;
 
-export function webHeaders(persona?: Persona) {
-  const csrf = document.cookie.split(";").map((value) => value.trim()).find((value) =>
-    value.startsWith("__Host-madrasty-csrf=") || value.startsWith("madrasty-csrf="))?.split("=")[1];
-  return {
-    "Content-Type": "application/json",
-    ...(csrf && { "X-CSRF-Token": csrf }),
-    ...(persona && { "X-School-Persona": persona }),
-  };
-}
 
 function pendingLogout() {
   const flag = document.cookie.split(";").map((part) => part.trim()).find((part) =>
@@ -135,7 +129,7 @@ export function SessionControls({ locale, session }: { locale: Locale; session: 
       await requestApi("/auth/persona", sessionSchema, {
         method: "POST", headers: webHeaders(session.activePersona), body: JSON.stringify({ persona }),
       });
-      await discardAttendanceDrafts();
+      await Promise.allSettled([discardAttendanceDrafts(),detachBrowserPush(false)]);
       window.location.replace(`/${locale}/school/home`);
     } catch (cause) {
       setError(errorText(locale, cause));
@@ -165,6 +159,7 @@ export function SessionControls({ locale, session }: { locale: Locale; session: 
     document.cookie = `${secure ? "__Host-" : ""}madrasty-locked=${allDevices ? "all" : "current"}; Path=/; SameSite=Strict; Max-Age=2592000${secure ? "; Secure" : ""}`;
     setSigningOut(true);
     setRevocation(allDevices);
+    void detachBrowserPush().catch(()=>undefined);
     void discardAttendanceDrafts().finally(()=>completeSignOut(allDevices));
   };
 

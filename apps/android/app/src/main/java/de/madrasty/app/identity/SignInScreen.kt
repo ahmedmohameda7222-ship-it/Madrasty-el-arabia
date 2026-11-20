@@ -53,6 +53,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONArray
 import de.madrasty.app.api.decodeData
+import de.madrasty.app.comms.detachAndroidPush
 
 class IdentityViewModel(application: Application) : AndroidViewModel(application) {
     private val attendanceDrafts = AttendanceDraftStore(application)
@@ -69,6 +70,11 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         private set
     var attendanceResume by mutableStateOf<String?>(null)
         private set
+    var pendingPushNotice by mutableStateOf<String?>(null)
+        private set
+    fun routePushNotice(id:String?) {
+        pendingPushNotice=id?.takeIf{it.matches(Regex("[0-9a-fA-F-]{36}"))}
+    }
     var preference by mutableStateOf<Pair<String, AccountPreference>?>(null)
         private set
 
@@ -127,7 +133,9 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
 
     fun switch(persona: Persona) = run(R.string.auth_unavailable) {
         clearSecurity()
-        session = repository.switchPersona(persona)
+        val next=repository.switchPersona(persona)
+        detachAndroidPush(getApplication<Application>())
+        session=next
     }
 
     var verifiedFactor by mutableStateOf<String?>(null)
@@ -238,7 +246,9 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         clearSecurity()
         session = null
         attendanceResume = null
+        pendingPushNotice = null
         preference = null
+        detachAndroidPush(getApplication<Application>())
         run(R.string.sign_out_pending) { repository.signOut(all) }
     }
 
@@ -274,6 +284,13 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     }
     val session = model.session
     val navigation = remember(session?.actor) { SchoolNavigation() }
+    val pendingNotice=model.pendingPushNotice
+    LaunchedEffect(session?.actor,session?.offlineOnly,pendingNotice){
+        if(pendingNotice!=null&&session!=null&&!session.offlineOnly){
+            navigation.open(WorkspacePage.Notifications(pendingNotice))
+            model.routePushNotice(null)
+        }
+    }
     if (navigation.page == WorkspacePage.Apply) {
         ApplicantScreen(model) { model.endApplicantSession(); navigation.back() }
     } else if (session == null) {
