@@ -45,6 +45,8 @@ import androidx.lifecycle.viewModelScope
 import de.madrasty.app.attendance.AttendanceDraftStore
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.R
+import de.madrasty.app.navigation.PendingSchoolResource
+import de.madrasty.app.navigation.SchoolResourceLink
 import de.madrasty.app.ui.Persona
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +77,13 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     fun routePushNotice(id:String?) {
         pendingPushNotice=id?.takeIf{it.matches(Regex("[0-9a-fA-F-]{36}"))}
     }
+    internal var pendingSchoolResource by mutableStateOf<PendingSchoolResource?>(null)
+        private set
+
+    internal fun routeSchoolResource(link: SchoolResourceLink?) {
+        pendingSchoolResource = link?.let { PendingSchoolResource(it,session?.actor?.accountId) }
+    }
+
     var preference by mutableStateOf<Pair<String, AccountPreference>?>(null)
         private set
 

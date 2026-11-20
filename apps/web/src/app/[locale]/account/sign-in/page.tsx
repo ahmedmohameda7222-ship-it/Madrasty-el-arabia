@@ -4,6 +4,7 @@ import { z } from "zod";
 import { SchoolHeader } from "@/ui/Shell";
 import { ApplyLink } from "@/features/identity/TeacherApplications";
 import { RecoveryLink } from "@/features/identity/SecurityForms";
+import {safeSchoolResourceReturn} from "@/features/school/resourceDestination";
 import { SignInForm } from "@/features/identity/SessionControls";
 
 export default async function SignIn({ params, searchParams }: {
@@ -18,7 +19,7 @@ export default async function SignIn({ params, searchParams }: {
   const noticePrefix = noticeInbox + "?notice=";
   const noticeLink = candidate?.startsWith(noticePrefix) && z.uuid().safeParse(candidate.slice(noticePrefix.length)).success;
   const safe = safePaths.some((tab) => candidate === `/${locale}/school/${tab}`) || candidate === noticeInbox || noticeLink;
-  const destination = safe && candidate ? candidate : home;
+  const destination = safe && candidate ? candidate : safeSchoolResourceReturn(locale,candidate)??home;
   const refreshable = jar.has("__Host-madrasty-refresh") || jar.has("madrasty-refresh");
   return (
     <main className="public-page">

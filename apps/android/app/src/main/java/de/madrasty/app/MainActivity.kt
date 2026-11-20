@@ -29,6 +29,7 @@ import de.madrasty.app.comms.verifiedPushNotice
 import de.madrasty.app.identity.IdentityScreen
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.readPreferences
+import de.madrasty.app.navigation.schoolResourceFromUri
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolTheme
 import kotlinx.coroutines.CancellationException
@@ -97,6 +98,13 @@ class MainActivity : ComponentActivity() {
     private fun acceptIntent(intent:Intent,model:IdentityViewModel){
         if(isSchoolPushIntent(intent)){
             verifiedPushNotice(this,intent)?.let(model::routePushNotice)
-        }else callback=intent.data
+        } else {
+            val route = schoolResourceFromUri(intent.data)
+            if (route == null) callback = intent.data
+            else {
+                callback = null
+                model.routeSchoolResource(route)
+            }
+        }
     }
 }

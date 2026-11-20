@@ -7,8 +7,12 @@
   },
   "scripts": {
     "dev": "pnpm --filter @madrasty/web dev",
+    "generate:contracts": "node scripts/generate-contracts.mjs",
     "check:types": "pnpm -r check:types",
     "build:web": "pnpm --filter @madrasty/web build",
     "build:android": "node scripts/build-android.mjs"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
   }
 }

@@ -37,6 +37,15 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${appLinkHost}" android:pathPrefix="/ar/open/" />
+                <data android:scheme="https" android:host="${appLinkHost}" android:pathPrefix="/de/open/" />
+                <data android:scheme="https" android:host="${appLinkHost}" android:pathPrefix="/ar/open-notice/" />
+                <data android:scheme="https" android:host="${appLinkHost}" android:pathPrefix="/de/open-notice/" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="${appLinkHost}" android:path="/auth/android/callback" />
             </intent-filter>
         </activity>

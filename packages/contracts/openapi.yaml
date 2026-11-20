@@ -7,6 +7,8 @@ info:
     Clients ignore unknown response properties and handle unknown error keys generically.
 servers:
   - url: /api/v1
+x-madrasty-generated-models: [SchoolResourceKind, SchoolResourceLink]
+x-madrasty-generated-operations: [resolveSchoolResourceLink]
 paths:
   /health:
     get:
@@ -4624,6 +4626,24 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/StopRefundReceipt"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /resource-links/{kind}/{id}:
+    get:
+      operationId: resolveSchoolResourceLink
+      summary: Resolve an allowlisted resource in the current account and persona
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"kind","in":"path","required":true,"schema":{"$ref":"#/components/schemas/SchoolResourceKind"}}
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"child","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"date","in":"query","schema":{"type":"string","format":"date"}}
+      responses:
+        '200':
+          description: Resolve an allowlisted resource in the current account and persona
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolResourceLink"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -4652,6 +4672,8 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    SchoolResourceKind: {"type":"string","enum":["notice","thread","broadcast","child","attendance","exam","evaluation","activity","homework","application","invoice","receipt","fee_stop"]}
+    SchoolResourceLink: {"type":"object","required":["kind","id"],"properties":{"kind":{"$ref":"#/components/schemas/SchoolResourceKind"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}}}
     StopOptions: {"type":"object","properties":{"schoolMonth":{"$ref":"#/components/schemas/BillingMonth"},"mayDecide":{"type":"boolean"}},"required":["schoolMonth","mayDecide"]}
     StopSubmit: {"type":"object","properties":{"studentId":{"type":"string","format":"uuid"},"lastAttendanceMonth":{"$ref":"#/components/schemas/BillingMonth"},"duration":{"type":"string","enum":["one_month","indefinite"]},"reason":{"type":"string","minLength":3,"maxLength":800}},"required":["studentId","lastAttendanceMonth","duration","reason"]}
     StopWithdraw: {"type":"object","properties":{"action":{"const":"withdraw"},"revision":{"type":"integer","minimum":1}},"required":["action","revision"]}

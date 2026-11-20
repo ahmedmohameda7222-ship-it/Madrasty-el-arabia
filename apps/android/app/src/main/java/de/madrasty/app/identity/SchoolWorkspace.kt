@@ -57,6 +57,10 @@ import de.madrasty.app.finance.FinanceReports
 import de.madrasty.app.finance.StopQueue
 import de.madrasty.app.finance.StopReview
 import de.madrasty.app.finance.financeObject
+import de.madrasty.app.navigation.SchoolResourceLink
+import de.madrasty.app.navigation.SchoolResourceKind
+import de.madrasty.app.navigation.navigationTarget
+import de.madrasty.app.navigation.resolveSchoolResource
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -103,6 +107,7 @@ internal sealed interface WorkspacePage {
     data class StopReviews(val id: String? = null) : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
+    data class ResourceUnavailable(val retry: SchoolResourceLink? = null) : WorkspacePage
     data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
@@ -317,6 +322,27 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             }
         }
     }
+    val pending = model.pendingSchoolResource
+    LaunchedEffect(pending,session.actor){
+        if(pending==null)return@LaunchedEffect
+        if(pending.accountId!=null&&pending.accountId!=session.actor.accountId){
+            model.routeSchoolResource(null)
+            return@LaunchedEffect
+        }
+        try{
+            val link=model.resolveSchoolResource(pending.link)
+            if(model.session?.actor!=session.actor||model.pendingSchoolResource!=pending)return@LaunchedEffect
+            if(link.kind==SchoolResourceKind.NOTICE)state.open(WorkspacePage.Notifications(link.id))
+            else if(!state.openNoticeTarget(link.navigationTarget()))state.open(WorkspacePage.ResourceUnavailable())
+            model.routeSchoolResource(null)
+        }catch(error:CancellationException){throw error}
+        catch(error:Exception){
+            if(model.session?.actor!=session.actor||model.pendingSchoolResource!=pending)return@LaunchedEffect
+            val denied=error is HttpFailure&&error.status in listOf(401,403,404)
+            state.open(WorkspacePage.ResourceUnavailable(if(denied)null else pending.link))
+            model.routeSchoolResource(null)
+        }
+    }
     val page=state.page
     if(!rights.allows(page)){
         BackHandler(onBack=state::back)
@@ -357,6 +383,17 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.StopReviews -> StopReview(model,page.id,{state.open(WorkspacePage.StopReviews(it))},
             {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
+        is WorkspacePage.ResourceUnavailable -> {
+            BackHandler(onBack=state::back)
+            Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp)){
+                val retry=page.retry
+                val surface=if(retry==null)AsyncState.Forbidden(state::back) else AsyncState.Error(retry={
+                    state.back()
+                    model.routeSchoolResource(retry)
+                })
+                AsyncSurface(surface){}
+            }
+        }
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
         is WorkspacePage.Publication -> SchoolPublicationScreen(model,page.section,page.item,state::back)
