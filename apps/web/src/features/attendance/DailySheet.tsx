@@ -11,6 +11,8 @@ import { dictionary, localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { TimetableRead, useTimetableRead } from "@/features/school/timetable/shared";
+import { RowDetails } from "./RowDetails";
+import { useLiveAttendance } from "./LiveAttendance";
 
 const words={
   ar:{title:"الحضور اليومي",date:"يوم الحضور",apply:"اعرض اليوم",select:"اختر الفصل",pending:"كشوف بانتظار الاعتماد",
@@ -132,6 +134,7 @@ function Pending({locale,day,version,choose}:{locale:Locale;day:string;version:n
 function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string;day:string;version:number;update:()=>void}){
   const text=words[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
   const [drafts,setDrafts]=useState<Record<string,Draft>>({});
+  const [patches,setPatches]=useState<Record<string,AttendanceRow>>({});
   const [issues,setIssues]=useState<Conflict[]>([]);
   const [pending,setPending]=useState(false);
   const [outcome,setOutcome]=useState<Outcome>();
@@ -141,10 +144,19 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
   const path=`/attendance/classes/${classId}/days/${day}` as const;
   const current=useTimetableRead(path,attendanceSheetSchema,version);
   const sheet=current.value?.data;
+  function patchRows(rows:AttendanceRow[]){
+    if(rows.some((row)=>!sheet?.rows.some((saved)=>saved.id===row.id))){update();return;}
+    setPatches((old)=>{
+      const changes={...old};
+      for(const row of rows)if(!changes[row.id]||changes[row.id].revision<row.revision)changes[row.id]=row;
+      return changes;
+    });
+  }
+  useLiveAttendance(path,sheet?.state==="open"?sheet.id:null,persona,{patch:patchRows,refresh:update});
   const error=current.value?.error;
   const lost=error instanceof ApiResponseError&&[401,403,404].includes(error.status);
   useEffect(()=>{
-    if(lost){setDrafts({});setIssues([]);setConfirm(undefined);}
+    if(lost){setDrafts({});setPatches({});setIssues([]);setConfirm(undefined);}
   },[lost]);
 
   async function action(operation:()=>Promise<void>){
@@ -178,7 +190,11 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
     update();
   }
 
-  return <TimetableRead locale={locale} result={current}>{(value:AttendanceSheet)=>{
+  return <TimetableRead locale={locale} result={current}>{(confirmed:AttendanceSheet)=>{
+    const rows=confirmed.rows.map((row)=>patches[row.id]?.revision>row.revision?patches[row.id]:row);
+    const counts={unmarked:0,present:0,late:0,absent_unexcused:0,absent_excused:0};
+    for(const row of rows)counts[row.status??"unmarked"]++;
+    const value={...confirmed,rows,counts};
     const editable=value.state==="open"&&value.canMark;
     const rowsById=new Map(value.rows.map((row)=>[row.id,row]));
     const remaining=Object.keys(drafts).filter((id)=>!rowsById.has(id));
@@ -227,6 +243,8 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
               </label>:<p>{text[row.status??"unmarked"]}</p>}
               {row.locked&&<p>{text.locked}</p>}
               {row.confirmedArrivalAt&&<p>{text.arrival}</p>}
+              {(row.locked || editable&&!row.confirmedArrivalAt) && <RowDetails locale={locale} id={row.id}
+                revision={row.revision} markable={editable} changed={(changed)=>{discard(changed.id);patchRows([changed]);update();}}/>}
               {conflict&&<div className="notice">
                 <p>{row.locked?text.locked:row.confirmedArrivalAt?text.arrival:text.stale} · {text[row.status??"unmarked"]}</p>
                 <button type="button" className="plain-button" disabled={pending} onClick={()=>discard(row.id)}>{text.useServer}</button>

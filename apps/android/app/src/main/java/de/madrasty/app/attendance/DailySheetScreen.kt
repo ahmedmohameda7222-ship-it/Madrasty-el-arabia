@@ -40,7 +40,6 @@ import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
 import de.madrasty.app.school.classLabel
 import de.madrasty.app.school.schoolCommand
-import de.madrasty.app.school.scheduleRead
 import de.madrasty.app.school.tableRows
 import de.madrasty.app.school.timetableDate
 import de.madrasty.app.school.timetableObject
@@ -157,9 +156,22 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
     var feedback by remember { mutableStateOf<AttendanceFeedback?>(null) }
     var confirmation by remember { mutableStateOf<Confirmation?>(null) }
     var busy by remember { mutableStateOf(false) }
-    val sheet=scheduleRead(path,refresh,model::timetableObject)
+    var sheet by remember(path) { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
+    var patches by remember(path) { mutableStateOf(emptyMap<String,JSONObject>()) }
+    var retry by remember(path) { mutableStateOf(0) }
+    LaunchedEffect(path,refresh,retry){
+        sheet=loadAccountSurface({retry++}) {model.timetableObject(path)}
+    }
+    fun patch(rows:List<JSONObject>){
+        val known=(sheet as? AsyncState.Ready)?.content?.getJSONArray("rows")?.tableRows()?.map{it.getString("id")}?.toSet()
+        if(known==null||rows.any{it.getString("id") !in known}){reload();return}
+        val updates=rows.filter{(patches[it.getString("id")]?.getInt("revision")?:0)<it.getInt("revision")}
+        patches=patches+updates.associateBy{it.getString("id")}
+    }
+    val opened=(sheet as? AsyncState.Ready)?.content?.takeIf{it.getString("state")=="open"}?.getString("id")
+    WatchAttendance(model,path,opened,::patch,reload)
     LaunchedEffect(sheet is AsyncState.Forbidden) {
-        if (sheet is AsyncState.Forbidden) { drafts=emptyMap();conflicts=emptyMap();confirmation=null }
+        if (sheet is AsyncState.Forbidden) { drafts=emptyMap();patches=emptyMap();conflicts=emptyMap();confirmation=null }
     }
     fun discard(id:String) { drafts=drafts-id;conflicts=conflicts-id }
     fun select(row:JSONObject,status:String?) {
@@ -227,9 +239,11 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
             Text(stringResource(if(state=="approved")R.string.attendance_approved else R.string.attendance_draft),style=MaterialTheme.typography.titleLarge)
             if (state=="approved"&&!value.isNull("approvedAt")) Text(isolate(value.getString("approvedAt")))
             if (state=="open"&&teaching&&!canMark&&!canApprove) Text(stringResource(R.string.read_only))
-            val counts=value.getJSONObject("counts")
-            marks.forEach { (status,label) -> Text("${stringResource(label)} · ${counts.getInt(status.ifEmpty { "unmarked" })}") }
-            val rows=value.getJSONArray("rows").tableRows()
+            val rows=value.getJSONArray("rows").tableRows().map { row ->
+                patches[row.getString("id")]?.takeIf{it.getInt("revision")>row.getInt("revision")}?:row
+            }
+            val counts=rows.groupingBy{it.status().orEmpty()}.eachCount()
+            marks.forEach { (status,label) -> Text("${stringResource(label)} · ${counts[status]?:0}") }
             val bulk=rows.filter { it.status()==null&&it.getString("id") !in drafts&&it.isNull("confirmedArrivalAt") }
             val missing=drafts.keys-rows.map{it.getString("id")}.toSet()
             rows.forEach { row ->
@@ -250,6 +264,13 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
                 }else Text(stringResource(marks.getValue(row.status().orEmpty())))
                 if(locked)Text(stringResource(R.string.attendance_locked))
                 if(arrived)Text(stringResource(R.string.attendance_arrival))
+                if(locked||editable&&!arrived)key(rowId) {
+                    AttendanceRowDetails(model,rowId,editable,row.getInt("revision")) { changed ->
+                        discard(rowId)
+                        patch(listOf(changed))
+                        reload()
+                    }
+                }
                 if(reason!=null){
                     Text(stringResource(conflictLabels.getValue(reason))+" · "+stringResource(marks.getValue(row.status().orEmpty())))
                     TextButton(enabled=!busy,onClick={discard(rowId)}) {Text(stringResource(R.string.attendance_use_server))}
@@ -274,7 +295,7 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
                 }
             }
             if(canApprove){
-                TextButton(enabled=!busy&&counts.getInt("unmarked")==0&&drafts.isEmpty(),onClick={
+                TextButton(enabled=!busy&&(counts[""]?:0)==0&&drafts.isEmpty(),onClick={
                     confirmation=Confirmation(true,reviewedRows(rows),value.getInt("approvalRevision"))
                 }) {Text(stringResource(R.string.attendance_approve))}
             }

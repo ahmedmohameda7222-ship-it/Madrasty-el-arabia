@@ -1988,6 +1988,120 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/DailyAttendanceSheet"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /children/{childId}/attendance/excuses:
+    get:
+      operationId: readOwnFamilyExcuses
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"childId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"date","in":"query","schema":{"type":"string","format":"date"}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["child","schoolDate","teachingDay","receipts"],"properties":{"child":{"type":"object","required":["id","displayName"],"properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"}}},"schoolDate":{"type":"string","format":"date"},"teachingDay":{"type":"boolean"},"receipts":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceExcuseReceipt"}}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: submitFamilyExcuse
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"childId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["schoolDate","reason"],"properties":{"schoolDate":{"type":"string","format":"date"},"reason":{"type":"string","minLength":1,"maxLength":500}}}
+      responses:
+        '201':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceExcuseCommandReceipt"}}}
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceExcuseCommandReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /children/{childId}/attendance/excuses/{id}/withdraw:
+    post:
+      operationId: withdrawOwnFamilyExcuse
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"childId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision"],"properties":{"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceExcuseCommandReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/rows/{id}:
+    get:
+      operationId: readScopedAttendanceRow
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"detail","in":"query","schema":{"type":"string","enum":["private"]}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceRowDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/rows/{id}/confirm-arrival:
+    post:
+      operationId: confirmActualArrival
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","status","confirm"],"properties":{"revision":{"type":"integer","minimum":1},"status":{"type":"string","enum":["present","late"]},"confirm":{"const":true}}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceRowDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/classes/{classId}/days/{date}/changes:
+    get:
+      operationId: watchAttendanceRowChanges
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"classId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"date","in":"path","required":true,"schema":{"type":"string","format":"date"}}
+        - {"name":"after","in":"query","schema":{"type":"string","pattern":"^(0|[1-9][0-9]{0,18})$"}}
+        - {"name":"stream","in":"query","schema":{"type":"string","enum":["0","1"]}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceNoticeBatch"}}}
+            text/event-stream:
+              schema: {type: string}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -2013,6 +2127,10 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    AttendanceExcuseReceipt: {"type":"object","required":["id","studentId","schoolDate","reason","state","revision","rowRevision","submittedAt","withdrawable"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"reason":{"type":"string"},"state":{"type":"string","enum":["pending","withdrawn","superseded"]},"revision":{"type":"integer","minimum":1},"rowRevision":{"type":"integer","minimum":1},"submittedAt":{"type":"string","format":"date-time"},"withdrawable":{"type":"boolean"}}}
+    AttendanceExcuseCommandReceipt: {"type":"object","required":["id","studentId","schoolDate","state","revision","rowRevision","submittedAt","withdrawable"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"state":{"type":"string","enum":["pending","withdrawn","superseded"]},"revision":{"type":"integer","minimum":1},"rowRevision":{"type":"integer","minimum":1},"submittedAt":{"type":"string","format":"date-time"},"withdrawable":{"type":"boolean"}}}
+    AttendanceRowDetail: {"type":"object","required":["sheetId","classId","schoolDate","row","excuseReason"],"properties":{"sheetId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"row":{"$ref":"#/components/schemas/AttendanceRow"},"excuseReason":{"type":["string","null"]}}}
+    AttendanceNoticeBatch: {"type":"object","required":["cursor","rows"],"properties":{"cursor":{"type":"string","pattern":"^(0|[1-9][0-9]{0,18})$"},"rows":{"type":"array","items":{"type":"object","required":["sheetId","rowId","revision"],"properties":{"sheetId":{"type":"string","format":"uuid"},"rowId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}}}}}
     AttendanceRow: {"type":"object","required":["id","studentId","studentNumber","displayName","enrollmentId","status","revision","locked","confirmedArrivalAt"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentNumber":{"type":"string"},"displayName":{"type":"string"},"enrollmentId":{"type":"string","format":"uuid"},"status":{"anyOf":[{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"locked":{"type":"boolean"},"confirmedArrivalAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]}}}
     DailyAttendanceSheet: {"type":"object","required":["id","classroom","yearId","schoolDate","state","teachingDay","closedReason","canMark","canApprove","rosterRevision","approvalRevision","approvedAt","rows","counts"],"properties":{"id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"classroom":{"type":"object","required":["id","code","nameAr","nameDe"],"properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}}},"yearId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"state":{"type":"string","enum":["unstarted","open","approved"]},"teachingDay":{"type":"boolean"},"closedReason":{"anyOf":[{"type":"string"},{"type":"null"}]},"canMark":{"type":"boolean"},"canApprove":{"type":"boolean"},"rosterRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"approvalRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"approvedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"rows":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"counts":{"type":"object","required":["unmarked","present","late","absent_unexcused","absent_excused"],"properties":{"unmarked":{"type":"integer","minimum":0},"present":{"type":"integer","minimum":0},"late":{"type":"integer","minimum":0},"absent_unexcused":{"type":"integer","minimum":0},"absent_excused":{"type":"integer","minimum":0}}}}}
     AttendanceChanges: {"type":"object","required":["applied","skippedLocked","conflicts"],"properties":{"applied":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"skippedLocked":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"conflicts":{"type":"array","items":{"type":"object","required":["rowId","reason","current"],"properties":{"rowId":{"type":"string","format":"uuid"},"reason":{"type":"string","enum":["stale","locked","arrival_confirmed","outside_roster"]},"current":{"anyOf":[{"$ref":"#/components/schemas/AttendanceRow"},{"type":"null"}]}}}}}}

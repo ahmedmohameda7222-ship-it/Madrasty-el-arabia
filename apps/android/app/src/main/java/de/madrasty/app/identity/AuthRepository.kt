@@ -9,11 +9,17 @@ import de.madrasty.app.api.decodeError
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolPartition
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.IOException
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -133,6 +139,53 @@ class AuthRepository(context: Context) {
     suspend fun request(path: String, body: JSONObject? = null, idempotencyKey: String? = null, method: String = if (body == null) "GET" else "POST"): String = io {
         val current = active ?: throw HttpFailure(401, "unauthenticated")
         authenticated(path, body, current.actor.persona, idempotencyKey, method)
+    }
+
+    fun attendanceNoticeStream(path: String, after: String?): Flow<JSONObject> = callbackFlow {
+        require(path.matches(Regex("/attendance/classes/[a-fA-F0-9-]{36}/days/[0-9-]{10}")))
+        val request = io {
+            val session = active ?: throw HttpFailure(401,"unauthenticated")
+            val cursor = after?.let { "&after=${Uri.encode(it)}" }.orEmpty()
+            Request.Builder().url("$apiOrigin/api/v1$path/changes?stream=1$cursor")
+                .header("Accept","text/event-stream")
+                .header("Authorization","Bearer ${access ?: throw HttpFailure(401,"unauthenticated")}")
+                .header("X-School-Persona",session.actor.persona.name.lowercase())
+                .build()
+        }
+        val call = http.newCall(request)
+        call.timeout().timeout(24,TimeUnit.SECONDS)
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call,error: IOException) {
+                close(error)
+            }
+
+            override fun onResponse(call: Call,response: Response) {
+                try {
+                    response.use {
+                        if (!it.isSuccessful) throw HttpFailure(it.code,null)
+                        if (!it.header("Content-Type").orEmpty().startsWith("text/event-stream")) throw IOException("Invalid attendance stream")
+                        val reader = it.body.source()
+                        var event = ""
+                        var data: String? = null
+                        while (!call.isCanceled()) {
+                            val line = reader.readUtf8Line() ?: break
+                            when {
+                                line.startsWith("event:") -> event = line.substringAfter(':').trim()
+                                line.startsWith("data:") -> data = line.substringAfter(':').trim()
+                                line.isEmpty() -> {
+                                    if (event == "forbidden") throw HttpFailure(403,"forbidden")
+                                    if (event in listOf("snapshot","rows")) data?.let { packet -> trySend(JSONObject(packet)) }
+                                    event = ""
+                                    data = null
+                                }
+                            }
+                        }
+                    }
+                    close()
+                } catch (error: Exception) { close(error) }
+            }
+        })
+        awaitClose { call.cancel() }
     }
 
     suspend fun prepareLink(): PkceLink = io {

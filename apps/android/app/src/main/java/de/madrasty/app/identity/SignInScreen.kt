@@ -4,7 +4,6 @@ import android.app.Application
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.Network
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,25 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import de.madrasty.app.R
-import de.madrasty.app.school.CalendarScreen
-import de.madrasty.app.school.ChildrenScreen
-import de.madrasty.app.school.FamiliesScreen
-import de.madrasty.app.school.EnrollmentScreen
-import de.madrasty.app.school.ImportScreen
-import de.madrasty.app.school.StaffAssignmentsScreen
-import de.madrasty.app.attendance.DailySheetScreen
-import de.madrasty.app.attendance.SupervisorAttendanceScreen
-import de.madrasty.app.school.TimetableScreen
-import de.madrasty.app.school.SchoolHomeScreen
-import de.madrasty.app.school.SchoolWorkQueueScreen
-import de.madrasty.app.school.SchoolWorkTarget
-import de.madrasty.app.school.WorkQueueSelection
-import de.madrasty.app.school.AuditDestination
-import de.madrasty.app.school.AuditFilters
-import de.madrasty.app.school.AuditScreen
 import de.madrasty.app.ui.Persona
-import de.madrasty.app.ui.SchoolShell
-import de.madrasty.app.ui.SchoolTab
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -148,6 +129,8 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     suspend fun schoolRequest(path: String, body: JSONObject? = null, method: String = "GET", idempotencyKey: String? = null) =
         repository.request(path, body, idempotencyKey, method)
 
+    fun attendanceNoticeStream(path: String, after: String?) = repository.attendanceNoticeStream(path,after)
+
     suspend fun capabilities(): Set<String> {
         val raw = schoolRequest("/auth/capabilities")
         return decodeData(raw) { value ->
@@ -217,191 +200,13 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         return
     }
     val session = model.session
-    var security by remember(session?.actor) { mutableStateOf(false) }
-    var staffAccess by remember(session?.actor) { mutableStateOf(false) }
-    var capabilities by remember(session?.actor) { mutableStateOf(emptySet<String>()) }
-    var calendar by remember(session?.actor) { mutableStateOf(false) }
-    var enrollment by remember(session?.actor) { mutableStateOf(false) }
-    var assignments by remember(session?.actor) { mutableStateOf(false) }
-    var importing by remember(session?.actor) { mutableStateOf(false) }
-    var invitations by remember(session?.actor) { mutableStateOf(false) }
-    var inviteBatch by remember(session?.actor) { mutableStateOf<String?>(null) }
-    LaunchedEffect(session?.actor, session?.assurance) {
-        if (session?.actor?.persona == Persona.Admin && session.assurance == "aal2") {
-            capabilities = try { model.capabilities() } catch (error: CancellationException) { throw error } catch (_: Exception) { emptySet() }
-        }
-    }
-    var application by remember(session?.actor) { mutableStateOf(false) }
-    var applicationReview by remember(session?.actor) { mutableStateOf(false) }
-    var preferences by remember(session?.actor) { mutableStateOf(false) }
-    var directory by remember(session?.actor) { mutableStateOf(false) }
-    var timetable by remember(session?.actor) { mutableStateOf(false) }
-    var timetableChild by remember(session?.actor) { mutableStateOf<String?>(null) }
-    var selectedChild by remember(session?.actor) { mutableStateOf<String?>(null) }
-    var activeTab by remember(session?.actor) { mutableStateOf(SchoolTab.Home) }
-    var attendanceClass by remember(session?.actor) { mutableStateOf<String?>(null) }
-    var supervisingAttendance by remember(session?.actor) { mutableStateOf(false) }
-    var workDate by remember(session?.actor) { mutableStateOf("") }
-    var queueSelection by remember(session?.actor) { mutableStateOf<WorkQueueSelection?>(null) }
-    var queueOpen by remember(session?.actor) { mutableStateOf(false) }
-    var workTarget by remember(session?.actor) { mutableStateOf<SchoolWorkTarget?>(null) }
-
-    fun openSchedule(child: String?) {
-        timetableChild = child
-        timetable = true
-    }
-    fun returnToQueue() {
-        workTarget = null
-        activeTab = SchoolTab.Home
-        queueOpen = queueSelection != null
-    }
-    var auditing by remember(session?.actor) { mutableStateOf(false) }
-    var auditFilters by remember(session?.actor) { mutableStateOf(AuditFilters()) }
-    var selectedAuditEntry by remember(session?.actor) { mutableStateOf<String?>(null) }
-    var auditDestination by remember(session?.actor) { mutableStateOf<AuditDestination?>(null) }
-
-    fun returnToAudit() {
-        auditDestination = null
-        activeTab = SchoolTab.More
-        auditing = true
-    }
-    fun openAudited(destination: AuditDestination) {
-        auditDestination = destination
-        auditing = false
-        when(destination.kind) {
-            "access" -> staffAccess = true
-            "calendar" -> calendar = true
-            "assignments", "class" -> assignments = true
-            "timetable" -> openSchedule(null)
-            "invitations" -> invitations = true
-            "applications" -> applicationReview = true
-            "import" -> importing = true
-            "student", "guardian" -> activeTab = SchoolTab.Students
-        }
-    }
-    val currentQueue = queueSelection
-    val audited = auditDestination
-    if (application) ApplicantScreen(model) { model.endApplicantSession(); application = false }
-    else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) {
-        applicationReview = false
-        if (audited?.kind == "applications") returnToAudit()
-    }
-    else if (session == null) SignInScreen(model) { application = true }
-    else if (security || session.actor.persona == Persona.Admin && session.assurance != "aal2") {
-        SecurityScreen(model, session) { security = false }
-    } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) {
-        staffAccess = false
-        if (audited?.kind == "access") returnToAudit()
-    }
-    else if (auditing && "audit.read" in capabilities) AuditScreen(
-        model, selectedAuditEntry, { selectedAuditEntry = it }, auditFilters, { auditFilters = it },
-        ::openAudited, { auditing = false },
-    )
-    else if (queueOpen && currentQueue != null && session.actor.persona == Persona.Admin)
-        SchoolWorkQueueScreen(model,currentQueue,open = { target ->
-            workTarget = target
-            queueOpen = false
-            when (target) {
-                is SchoolWorkTarget.GuardianLink -> activeTab = SchoolTab.Students
-                is SchoolWorkTarget.FamilyImport -> importing = true
-                is SchoolWorkTarget.ClassAssignment -> assignments = true
-            }
-        },close = { queueOpen = false; queueSelection = null })
-    else if (supervisingAttendance && "attendance.supervise" in capabilities) SupervisorAttendanceScreen(model) { supervisingAttendance = false }
-    else if (preferences) AccountScreen(model, close = { preferences = false }, security = { security = true })
-    else if (directory) DirectoryScreen(model) { directory = false }
-    else if (timetable) TimetableScreen(model, session.actor.persona, timetableChild) {
-        timetable = false
-        timetableChild = null
-        if (audited?.kind == "timetable") returnToAudit()
-    }
-    else if (calendar && "school.manage" in capabilities) CalendarScreen(model) {
-        calendar = false
-        if (audited?.kind == "calendar") returnToAudit()
-    }
-    else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
-        EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
-    else if (assignments && ("school.manage" in capabilities || "academics.supervise" in capabilities))
-        StaffAssignmentsScreen(model, (workTarget as? SchoolWorkTarget.ClassAssignment) ?:
-            audited?.takeIf { it.kind == "class" && it.id != null && it.yearId != null }?.let {
-                SchoolWorkTarget.ClassAssignment(checkNotNull(it.id),checkNotNull(it.yearId))
-            }
-        ) {
-            assignments = false
-            if (workTarget is SchoolWorkTarget.ClassAssignment) returnToQueue()
-            if (audited?.kind in listOf("assignments","class")) returnToAudit()
-        }
-    else if (invitations && ("students.manage" in capabilities || "applications.manage" in capabilities))
-        StaffInvitationsScreen(model, "applications.manage" in capabilities, inviteBatch) {
-            invitations = false
-            inviteBatch = null
-            if (audited?.kind == "invitations") returnToAudit()
-        }
-    else if (importing && "students.manage" in capabilities)
-        ImportScreen(model, { id -> inviteBatch = id; invitations = true },
-            (workTarget as? SchoolWorkTarget.FamilyImport)?.jobId ?: audited?.takeIf { it.kind == "import" }?.id
-        ) {
-            importing = false
-            if (workTarget is SchoolWorkTarget.FamilyImport) returnToQueue()
-            if (audited?.kind == "import") returnToAudit()
-        }
-    else SchoolShell(session.actor, activeTab, { next -> activeTab = next; attendanceClass = null }) { tab ->
-        Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
-        if (tab == SchoolTab.Home) SchoolHomeScreen(
-            model, session.actor.persona, workDate, { workDate = it },
-            openQueue = { queueSelection = it; queueOpen = true },
-            openDirectory = { directory = true },
-            child = selectedChild, pickChild = { selectedChild = it },
-            openProfile = { selectedChild = it; activeTab = SchoolTab.Children },
-            openAttendance = { attendanceClass = it; activeTab = SchoolTab.Attendance },
-            openSchedule = ::openSchedule,
-        )
-        if (tab == SchoolTab.Attendance) DailySheetScreen(model,initialClass=attendanceClass)
-        if (tab == SchoolTab.Children) ChildrenScreen(model, selectedChild, { selectedChild = it }, ::openSchedule)
-        if (tab == SchoolTab.Students && "students.manage" in capabilities) {
-            val queued = workTarget as? SchoolWorkTarget.GuardianLink
-            if (queued != null) {
-                BackHandler { returnToQueue() }
-                TextButton(onClick = ::returnToQueue) { Text(stringResource(R.string.queue_open)) }
-            }
-            TextButton(onClick = { importing = true }) { Text(stringResource(R.string.import_families)) }
-            if (audited?.kind in listOf("student","guardian")) {
-                BackHandler { returnToAudit() }
-                TextButton(onClick = ::returnToAudit) { Text(stringResource(R.string.audit_title)) }
-            }
-            val guardian = audited?.takeIf { it.kind == "guardian" }
-            FamiliesScreen(model, initialStudent=audited?.takeIf { it.kind == "student" }?.id,
-                initialGuardian=queued?.guardianId ?: guardian?.id,initialLink=queued?.linkId ?: guardian?.linkId)
-        }
-        if (tab == SchoolTab.More) {
-            Text(stringResource(R.string.settings_group_account),style=MaterialTheme.typography.titleLarge)
-            TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
-            TextButton(onClick = { preferences = true }) { Text(stringResource(R.string.account_preferences)) }
-            TextButton(onClick = { directory = true }) { Text(stringResource(R.string.directory_title)) }
-            AccountActions(model, session)
-            if (session.actor.persona != Persona.Admin || capabilities.any {
-                it in setOf("school.manage","students.manage","academics.supervise","applications.manage","attendance.supervise")
-            }) Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
-            if (session.actor.persona != Persona.Admin || "school.manage" in capabilities || "academics.supervise" in capabilities)
-                TextButton(onClick = { timetable = true }) { Text(stringResource(R.string.timetable_title)) }
-            if ("school.manage" in capabilities || "academics.supervise" in capabilities)
-                TextButton(onClick = { assignments = true }) { Text(stringResource(R.string.staff_assignments)) }
-            if ("attendance.supervise" in capabilities) TextButton(onClick = { supervisingAttendance = true }) { Text(stringResource(R.string.attendance_review)) }
-            if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }
-            if ("school.manage" in capabilities || "students.manage" in capabilities)
-                TextButton(onClick = { enrollment = true }) { Text(stringResource(R.string.enrollments)) }
-            if ("students.manage" in capabilities || "applications.manage" in capabilities)
-                TextButton(onClick = { invitations = true }) { Text(stringResource(R.string.invite_title)) }
-            if ("applications.manage" in capabilities) TextButton(onClick={applicationReview=true}) { Text(stringResource(R.string.teacher_apps)) }
-            if (session.actor.persona == Persona.Guardian) TextButton(onClick={application=true}) { Text(stringResource(R.string.teacher_apply)) }
-            if ("access.manage" in capabilities || "audit.read" in capabilities) {
-                Text(stringResource(R.string.settings_group_access),style=MaterialTheme.typography.titleLarge)
-                if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
-                if ("audit.read" in capabilities) TextButton(onClick = { selectedAuditEntry = null; auditing = true }) {
-                    Text(stringResource(R.string.audit_title))
-                }
-            }
-        }
+    val navigation = remember(session?.actor) { SchoolNavigation() }
+    if (navigation.page == WorkspacePage.Apply) {
+        ApplicantScreen(model) { model.endApplicantSession(); navigation.back() }
+    } else if (session == null) {
+        SignInScreen(model) { navigation.open(WorkspacePage.Apply) }
+    } else {
+        SchoolWorkspace(model,session,navigation)
     }
 }
 
@@ -439,7 +244,7 @@ private fun SignInScreen(model: IdentityViewModel, apply: () -> Unit) {
 }
 
 @Composable
-private fun AccountActions(model: IdentityViewModel, session: SchoolSession) {
+internal fun AccountActions(model: IdentityViewModel, session: SchoolSession) {
     var revoke by remember { mutableStateOf<Boolean?>(null) }
     var chosen by remember { mutableStateOf<Persona?>(null) }
     if (session.personas.size > 1) {

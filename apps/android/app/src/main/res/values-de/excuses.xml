@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="excuse_title">Abwesenheit entschuldigen</string>
+    <string name="excuse_date">Tag der Abwesenheit (YYYY-MM-DD)</string>
+    <string name="excuse_reason">Grund der Abwesenheit</string>
+    <string name="excuse_draft">Entschuldigung nicht gesendet</string>
+    <string name="excuse_send">Entschuldigung an die Schule senden</string>
+    <string name="excuse_received">Entschuldigung eingegangen</string>
+    <string name="excuse_withdraw">Entschuldigung zurückziehen</string>
+    <string name="excuse_withdraw_confirm">Rücknahme bestätigen</string>
+    <string name="excuse_withdrawn">Entschuldigung zurückgezogen</string>
+    <string name="excuse_closed">Für diesen Tag kann keine Entschuldigung gesendet werden.</string>
+    <string name="excuse_history">Entschuldigungen für diesen Tag</string>
+    <string name="attendance_row_details">Eintrag ansehen</string>
+    <string name="attendance_actual">Tatsächliche Ankunft bestätigen</string>
+    <string name="attendance_actual_present">Pünktlich eingetroffen</string>
+    <string name="attendance_actual_late">Verspätet eingetroffen</string>
+    <string name="attendance_actual_save">Tatsächliche Ankunft erfassen</string>
+    <string name="attendance_arrival_retry">Der Eintrag wurde geändert. Prüfen Sie ihn und bestätigen Sie die Ankunft erneut.</string>
+</resources>

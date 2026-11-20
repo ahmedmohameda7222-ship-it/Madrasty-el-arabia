@@ -308,6 +308,7 @@ function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
       <Link className="plain-button" href={`/${locale}/school/more/timetable?child=${id}`}>
         {locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}
       </Link>
+      <Link className="plain-button" href={`/${locale}/school/children/${id}/excuse`}>{locale==="ar"?"عذر الغياب":"Abwesenheit entschuldigen"}</Link>
       {record.data.currentClass && <p><bdi dir="ltr">{record.data.currentClass.code}</bdi> · <bdi>{locale === "ar" ? record.data.currentClass.nameAr : record.data.currentClass.nameDe}</bdi></p>}
     </> } : { kind: "initialLoading" }} />;
 }
