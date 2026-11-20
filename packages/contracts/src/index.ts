@@ -37,3 +37,6 @@ export * from "./finance/invoices";
 
 
 export * from "./finance/receipts";
+
+
+export * from "./finance/reports";

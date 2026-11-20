@@ -4372,6 +4372,79 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptMutation"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /finance/reports/summary:
+    get:
+      operationId: readFinanceReport
+      summary: Read grouped invoice and receipt totals at a school-local cutoff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+        - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"status","in":"query","required":false,"schema":{"type":"string","enum":["unpaid","partial","paid","cancelled","overdue"]}}
+        - {"name":"asOf","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"cutoff","in":"query","required":false,"schema":{"type":"string","format":"date-time"}}
+        - {"name":"receivedFrom","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"receivedThrough","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+      responses:
+        '200':
+          description: Read grouped invoice and receipt totals at a school-local cutoff
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/FinanceReportSummary"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/reports/statement:
+    get:
+      operationId: listFinanceStatement
+      summary: Read the scoped statement rows at the same cutoff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+        - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"status","in":"query","required":false,"schema":{"type":"string","enum":["unpaid","partial","paid","cancelled","overdue"]}}
+        - {"name":"asOf","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"cutoff","in":"query","required":false,"schema":{"type":"string","format":"date-time"}}
+        - {"name":"receivedFrom","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"receivedThrough","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Read the scoped statement rows at the same cutoff
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/FinanceStatementEntry"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/reports/export:
+    get:
+      operationId: exportFinanceReport
+      summary: Download the same authorized statement as a CSV attachment
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+        - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"status","in":"query","required":false,"schema":{"type":"string","enum":["unpaid","partial","paid","cancelled","overdue"]}}
+        - {"name":"asOf","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"cutoff","in":"query","required":false,"schema":{"type":"string","format":"date-time"}}
+        - {"name":"receivedFrom","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+        - {"name":"receivedThrough","in":"query","required":false,"schema":{"type":"string","format":"date"}}
+      responses:
+        '200':
+          description: UTC posting timestamps and exact integer minor units
+          headers:
+            Content-Disposition:
+              schema: {type: string}
+            Cache-Control:
+              schema: {type: string, const: 'private, no-store'}
+          content:
+            text/csv:
+              schema: {type: string}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -4400,6 +4473,9 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    FinanceReportSummary: {"type":"object","properties":{"schoolDate":{"type":"string","format":"date"},"asOf":{"type":"string","format":"date"},"cutoff":{"type":"string","format":"date-time"},"scope":{"type":"string","enum":["staff","payer"]},"canExport":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"}},"required":["id","code","nameAr","nameDe","yearStart","yearEnd"]}},"totals":{"type":"array","items":{"$ref":"#/components/schemas/FinanceTotals"}}},"required":["schoolDate","asOf","cutoff","scope","canExport","classes","totals"]}
+    FinanceTotals: {"type":"object","properties":{"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"billedMinor":{"type":"integer","minimum":0},"collectibleMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"outstandingMinor":{"type":"integer","minimum":0},"overdueMinor":{"type":"integer","minimum":0},"invoiceCount":{"type":"integer","minimum":0},"overdueCount":{"type":"integer","minimum":0},"receivedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"netReceivedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"matchedReceivedMinor":{"type":"integer","minimum":0},"reversedMinor":{"type":"integer","minimum":0},"voidedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"refundedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"unmatchedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"receiptCount":{"type":"integer","minimum":0},"matchingCount":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]}},"required":["currency","billedMinor","collectibleMinor","appliedMinor","outstandingMinor","overdueMinor","invoiceCount","overdueCount","receivedMinor","netReceivedMinor","matchedReceivedMinor","reversedMinor","voidedMinor","refundedMinor","unmatchedMinor","receiptCount","matchingCount"]}
+    FinanceStatementEntry: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["invoice","allocation","reversal","record","void_receipt","adjustment","refund"]},"occurredAt":{"type":"string","format":"date-time"},"invoiceId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"invoiceNumber":{"anyOf":[{"type":"string"},{"type":"null"}]},"studentId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"studentName":{"anyOf":[{"type":"string"},{"type":"null"}]},"studentNumber":{"anyOf":[{"type":"string"},{"type":"null"}]},"period":{"anyOf":[{"$ref":"#/components/schemas/BillingMonth"},{"type":"null"}]},"payerName":{"anyOf":[{"type":"string"},{"type":"null"}]},"classCode":{"anyOf":[{"type":"string"},{"type":"null"}]},"dueDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"receiptId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"receiptNumber":{"anyOf":[{"type":"string"},{"type":"null"}]},"receivedDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"amountMinor":{"type":"integer","minimum":0},"balanceMinor":{"type":"integer","minimum":0},"state":{"type":"string","enum":["unpaid","partial","paid","cancelled","overdue","needs_matching","allocated","voided"]}},"required":["id","kind","occurredAt","invoiceId","invoiceNumber","studentId","studentName","studentNumber","period","payerName","classCode","dueDate","receiptId","receiptNumber","receivedDate","currency","amountMinor","balanceMinor","state"]}
     ReceiptOptions: {"type":"object","properties":{"schoolDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"cashEnabled":{"type":"boolean"}},"required":["schoolDate","currency","cashEnabled"]}
     ReceiptState: {"type":"string","enum":["needs_matching","allocated","voided"]}
     RecordReceiptInput: {"type":"object","properties":{"externalReceiptRef":{"type":"string","minLength":1,"maxLength":160},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"invoiceId":{"type":"string","format":"uuid"},"verified":{"const":true}},"required":["externalReceiptRef","method","receivedDate","currency","amountMinor","verified"],"additionalProperties":false}

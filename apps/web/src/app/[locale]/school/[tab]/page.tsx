@@ -78,6 +78,8 @@ export default async function SchoolPage({ params, searchParams }: {
           <h2>{locale==="ar"?"الحسابات":"Buchhaltung"}</h2>
           <div className="header-actions">
             <Link className="plain-button" href={`/${locale}/school/more/invoices`}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>
+            {(finance||posting||session.activePersona==="guardian")&&<Link className="plain-button"
+              href={`/${locale}/school/more/finance-reports`}>{locale==="ar"?"كشف الحساب":"Gebührenübersicht"}</Link>}
             {(finance||posting)&&<Link className="plain-button" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"مطابقة الإيصالات":"Zahlungen abgleichen"}</Link>}
             {posting&&<Link className="plain-button" href={`/${locale}/school/more/record-payment`}>{locale==="ar"?"تسجيل سداد":"Zahlung erfassen"}</Link>}
             {billing&&<Link className="plain-button" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"إصدار الفواتير":"Rechnungen ausstellen"}</Link>}

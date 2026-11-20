@@ -53,6 +53,7 @@ import de.madrasty.app.finance.InvoiceDetails
 import de.madrasty.app.finance.RecordPayment
 import de.madrasty.app.finance.Reconciliation
 import de.madrasty.app.finance.ReceiptDetails
+import de.madrasty.app.finance.FinanceReports
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -94,6 +95,7 @@ internal sealed interface WorkspacePage {
     data class Invoices(val id: String? = null, val student: String? = null, val period: String? = null) : WorkspacePage
     data class Payment(val invoice: String? = null) : WorkspacePage
     data class Receipts(val id: String? = null, val state: String? = null) : WorkspacePage
+    data class FinanceReport(val student: String? = null) : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
@@ -236,6 +238,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         is WorkspacePage.Invoices -> invoiceViewer
         is WorkspacePage.Payment -> posting
         is WorkspacePage.Receipts -> receiptViewer || (page.id != null && persona == Persona.Guardian)
+        is WorkspacePage.FinanceReport -> receiptViewer || persona == Persona.Guardian
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
@@ -332,6 +335,9 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             {state.open(WorkspacePage.Invoices(id=it))},state::back)
         else Reconciliation(model,page.state,rights.posting,{state.open(WorkspacePage.Payment())},
             {state.open(WorkspacePage.Receipts(id=it))},state::back)
+        is WorkspacePage.FinanceReport -> FinanceReports(model,page.student,rights.receiptViewer,
+            {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},
+            {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
@@ -392,7 +398,8 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openCurriculum={state.open(WorkspacePage.Curriculum(it))},openActivities={state.open(WorkspacePage.AcademicWork(it))},
                 openHomework={state.open(WorkspacePage.Homework(it))},openEvaluations={state.open(WorkspacePage.Evaluations(it))},
                 openExams={state.open(WorkspacePage.Exams(it))},openReport={state.open(WorkspacePage.Report(it))},
-                openInvoices={state.open(WorkspacePage.Invoices(student=it))})
+                openInvoices={state.open(WorkspacePage.Invoices(student=it))},
+                openFinance={state.open(WorkspacePage.FinanceReport(it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)
@@ -450,6 +457,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     if(rights.invoiceViewer||rights.bank){
         Text(stringResource(R.string.settings_group_finance),style=MaterialTheme.typography.titleLarge)
         if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
+        if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),R.string.finance_report_title)
         if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
         if(rights.posting)OpenPage(state,WorkspacePage.Payment(),R.string.receipt_record)
         if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
