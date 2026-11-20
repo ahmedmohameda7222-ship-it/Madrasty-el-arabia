@@ -47,6 +47,9 @@ import de.madrasty.app.comms.PushSessionBinding
 import de.madrasty.app.comms.PublicationSection
 import de.madrasty.app.comms.SchoolPublicationScreen
 import de.madrasty.app.finance.BankSettings
+import de.madrasty.app.finance.FeeSettings
+import de.madrasty.app.finance.IssueInvoices
+import de.madrasty.app.finance.InvoiceDetails
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -83,6 +86,9 @@ internal sealed interface WorkspacePage {
     data object MessageReports : WorkspacePage
     data object Delivery : WorkspacePage
     data object Bank : WorkspacePage
+    data class FeeSettings(val student: String? = null) : WorkspacePage
+    data class IssueInvoices(val student: String? = null) : WorkspacePage
+    data class Invoices(val id: String? = null, val student: String? = null, val period: String? = null) : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
@@ -172,6 +178,7 @@ internal class SchoolNavigation {
             "teaching"->WorkspacePage.Curriculum(target.child,target.id)
             "activity"->WorkspacePage.AcademicWork(target.child,target.id)
             "homework"->WorkspacePage.Homework(target.child,target.id)
+            "invoice"->WorkspacePage.Invoices(id=target.id)
             "evaluation"->WorkspacePage.Evaluations(target.child,target.id)
             "exam"->WorkspacePage.Exams(target.child,target.id)
             else->return
@@ -209,6 +216,8 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
     val access = "access.manage" in keys
     val audit = "audit.read" in keys
     val bank = "bank.configure" in keys
+    val billing = "finance.issue" in keys
+    val invoiceViewer = persona == Persona.Guardian || billing || "finance.read" in keys
 
     fun allows(page: WorkspacePage): Boolean = when(page){
         WorkspacePage.Access -> access
@@ -216,6 +225,8 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         WorkspacePage.MessageReports -> moderation
         WorkspacePage.Delivery -> delivery
         WorkspacePage.Bank -> bank
+        is WorkspacePage.FeeSettings, is WorkspacePage.IssueInvoices -> billing
+        is WorkspacePage.Invoices -> invoiceViewer
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
@@ -298,6 +309,12 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         WorkspacePage.Delivery -> DeliveryStatus(model,state::back)
         WorkspacePage.Bank -> BankSettings(model,state::back)
+        is WorkspacePage.FeeSettings -> FeeSettings(model,page.student,state::back)
+        is WorkspacePage.IssueInvoices -> IssueInvoices(model,page.student,
+            if(rights.bank) ({state.open(WorkspacePage.Bank)}) else null,
+            {state.open(WorkspacePage.FeeSettings(it))}, {id,period->state.open(WorkspacePage.Invoices(id,period=period))},state::back)
+        is WorkspacePage.Invoices -> InvoiceDetails(model,page.id,page.student,page.period,
+            {state.open(WorkspacePage.Invoices(id=it))},state::openThread,state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
@@ -357,7 +374,8 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openHistory={state.open(WorkspacePage.AttendanceHistory(child=it))},
                 openCurriculum={state.open(WorkspacePage.Curriculum(it))},openActivities={state.open(WorkspacePage.AcademicWork(it))},
                 openHomework={state.open(WorkspacePage.Homework(it))},openEvaluations={state.open(WorkspacePage.Evaluations(it))},
-                openExams={state.open(WorkspacePage.Exams(it))},openReport={state.open(WorkspacePage.Report(it))})
+                openExams={state.open(WorkspacePage.Exams(it))},openReport={state.open(WorkspacePage.Report(it))},
+                openInvoices={state.open(WorkspacePage.Invoices(student=it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)
@@ -412,12 +430,18 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
         if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
     }
-    if(rights.access||rights.audit||rights.moderation||rights.delivery||rights.bank){
+    if(rights.invoiceViewer||rights.bank){
+        Text(stringResource(R.string.settings_group_finance),style=MaterialTheme.typography.titleLarge)
+        if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
+        if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
+        if(rights.billing)OpenPage(state,WorkspacePage.IssueInvoices(),R.string.fee_issue)
+        if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)
+    }
+    if(rights.access||rights.audit||rights.moderation||rights.delivery){
         Text(stringResource(R.string.settings_group_access),style=MaterialTheme.typography.titleLarge)
         if(rights.access)OpenPage(state,WorkspacePage.Access,R.string.staff_access)
         if(rights.moderation)OpenPage(state,WorkspacePage.MessageReports,R.string.chat_reports)
         if(rights.delivery)OpenPage(state,WorkspacePage.Delivery,R.string.delivery_status)
-        if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)
         if(rights.audit)TextButton(onClick={state.auditEntry=null;state.open(WorkspacePage.Audit)}){
             Text(stringResource(R.string.audit_title))
         }

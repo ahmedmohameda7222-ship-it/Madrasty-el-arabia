@@ -120,7 +120,7 @@ private fun ReferencedRecords(value:JSONObject,open:(ReportTarget)->Unit){
         when(kind){
             "homework"->TextButton(onClick={open(ReportTarget(kind,id,child))}){Text(stringResource(R.string.homework_title))}
             "attendance"->TextButton(onClick={open(ReportTarget(kind,id,child))}){Text(stringResource(R.string.report_attendance))}
-            "invoice"->Text(stringResource(R.string.conversation_invoice))
+            "invoice"->TextButton(onClick={open(ReportTarget(kind,id,child))}){Text(stringResource(R.string.conversation_invoice))}
         }
     }
 }

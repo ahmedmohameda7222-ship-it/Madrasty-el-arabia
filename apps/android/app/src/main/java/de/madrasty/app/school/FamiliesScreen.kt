@@ -253,7 +253,7 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
 
 @Composable
 fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -> Unit,
-    openTimetable: (String) -> Unit, openExcuse: (String) -> Unit, openHistory: (String) -> Unit, openCurriculum:(String)->Unit, openActivities:(String)->Unit, openHomework:(String)->Unit, openEvaluations:(String)->Unit, openExams:(String)->Unit, openReport:(String)->Unit,
+    openTimetable: (String) -> Unit, openExcuse: (String) -> Unit, openHistory: (String) -> Unit, openCurriculum:(String)->Unit, openActivities:(String)->Unit, openHomework:(String)->Unit, openEvaluations:(String)->Unit, openExams:(String)->Unit, openReport:(String)->Unit, openInvoices:(String)->Unit,
 ) {
     var state by remember { mutableStateOf<Picker>(AsyncState.InitialLoading()) }
     var selected by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -297,6 +297,7 @@ fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -
                 TextButton(onClick = { openCurriculum(child.getString("id")) }) { Text(stringResource(R.string.curriculum_title)) }
                 TextButton(onClick = { openHistory(child.getString("id")) }) { Text(stringResource(R.string.history_title)) }
                 TextButton(onClick = { openExcuse(child.getString("id")) }) { Text(stringResource(R.string.excuse_title)) }
+                TextButton(onClick = { openInvoices(child.getString("id")) }) { Text(stringResource(R.string.fee_invoices)) }
             }
         }
     }

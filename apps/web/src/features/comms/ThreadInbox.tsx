@@ -88,7 +88,7 @@ function ReferenceLink({locale,reference}:{locale:Locale;reference:ThreadReferen
     href={`${base}/more/homework?work=${reference.id}${reference.childId?`&child=${reference.childId}`:""}`}>{text.homework}</Link>;
   if(reference.kind==="attendance")return <Link className="plain-button"
     href={reference.childId?`${base}/children/${reference.childId}/attendance`:`${base}/more/attendance/history?row=${reference.id}`}>{text.attendance}</Link>;
-  return <span>{text[reference.kind]}</span>;
+  return <Link className="plain-button" href={`${base}/more/invoices?invoice=${reference.id}`}>{text.invoice}</Link>;
 }
 
 function CaseEditor({locale,id,version,changed}:{locale:Locale;id:string;version:number;changed:()=>void}){

@@ -4088,6 +4088,183 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"stepUpProof":{"type":"string","pattern":"^[A-Za-z0-9_-]{43}$"},"expiresAt":{"type":"string","format":"date-time"},"providerSession":{"type":"object","properties":{"access_token":{"type":"string"},"refresh_token":{"type":"string"},"expires_in":{"type":"integer","minimum":0}},"required":["access_token","refresh_token","expires_in"],"description":"Rotated native credentials. Web receives secure cookies instead."}},"required":["stepUpProof","expiresAt"]}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /finance/tariffs:
+    get:
+      operationId: listFeeTariffs
+      summary: List effective monthly tariffs
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+      responses:
+        '200':
+          description: List effective monthly tariffs
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/FeeTariff"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createFeeTariff
+      summary: Create a versioned tariff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/FeeTariffInput"}
+      responses:
+        '201':
+          description: Create a versioned tariff
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/FeeTariff"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/children/{id}/payer:
+    get:
+      operationId: readFeePayer
+      summary: Read approved payer choices and designations
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read approved payer choices and designations
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/FeePayerProfile"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    put:
+      operationId: designateFeePayer
+      summary: Designate a payer from an effective month
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/FeePayerEdit"}
+      responses:
+        '200':
+          description: Designate a payer from an effective month
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/FeePayerProfile"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/billing-options:
+    get:
+      operationId: readBillingOptions
+      summary: Read the school billing setup and available classes
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+      responses:
+        '200':
+          description: Read the school billing setup and available classes
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BillingOptions"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/pupils:
+    get:
+      operationId: listBillingPupils
+      summary: Find pupils and eligible missing monthly issues
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"period","in":"query","required":true,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+        - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"missing","in":"query","required":false,"schema":{"type":"string","enum":["true","false"]}}
+        - {"name":"q","in":"query","required":false,"schema":{"type":"string","maxLength":100}}
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Find pupils and eligible missing monthly issues
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/BillingPupil"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/invoice-previews:
+    post:
+      operationId: prepareInvoicePreview
+      summary: Preview the scoped issue and its blocked rows
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/InvoicePreviewInput"}
+      responses:
+        '201':
+          description: Preview the scoped issue and its blocked rows
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/InvoicePreview"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/invoice-batches:
+    post:
+      operationId: confirmInvoiceBatch
+      summary: Issue reviewed invoices atomically
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/InvoiceConfirm"}
+      responses:
+        '201':
+          description: Issue reviewed invoices atomically
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/InvoiceBatch"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/invoices:
+    get:
+      operationId: listFinanceInvoices
+      summary: List authorized named-payer or staff invoices
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
+        - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"state","in":"query","required":false,"schema":{"$ref":"#/components/schemas/InvoiceState"}}
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: List authorized named-payer or staff invoices
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/InvoiceSummary"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/invoices/{id}:
+    get:
+      operationId: readFinanceInvoice
+      summary: Read the authorized invoice and transfer instructions
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read the authorized invoice and transfer instructions
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/InvoiceDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -4116,6 +4293,23 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    BillingMonth: {"type":"string","pattern":"^(?!0000)[0-9]{4}-(0[1-9]|1[0-2])$"}
+    FeeLine: {"type":"object","properties":{"titleAr":{"type":"string","minLength":1,"maxLength":120},"titleDe":{"type":"string","minLength":1,"maxLength":120},"amountMinor":{"type":"integer","minimum":1,"maximum":1000000000000}},"required":["titleAr","titleDe","amountMinor"]}
+    FeeTariffInput: {"type":"object","properties":{"effectiveFromMonth":{"$ref":"#/components/schemas/BillingMonth"},"lines":{"type":"array","items":{"$ref":"#/components/schemas/FeeLine"},"minItems":1,"maxItems":20},"dueDay":{"type":"integer","minimum":1,"maximum":31}},"required":["effectiveFromMonth","lines","dueDay"]}
+    FeeTariff: {"type":"object","properties":{"effectiveFromMonth":{"$ref":"#/components/schemas/BillingMonth"},"lines":{"type":"array","items":{"$ref":"#/components/schemas/FeeLine"},"minItems":1,"maxItems":20},"dueDay":{"type":"integer","minimum":1,"maximum":31},"id":{"type":"string","format":"uuid"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"createdAt":{"type":"string","format":"date-time"}},"required":["effectiveFromMonth","lines","dueDay","id","currency","createdAt"]}
+    FeePayerEdit: {"type":"object","properties":{"guardianId":{"type":"string","format":"uuid"},"effectiveFromMonth":{"$ref":"#/components/schemas/BillingMonth"},"revision":{"type":"integer","minimum":0}},"required":["guardianId","effectiveFromMonth","revision"]}
+    FeePayerProfile: {"type":"object","properties":{"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"revision":{"type":"integer","minimum":0},"choices":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"},"activeAccount":{"type":"boolean"}},"required":["id","displayName","activeAccount"]}},"designations":{"type":"array","items":{"type":"object","properties":{"guardianId":{"type":"string","format":"uuid"},"effectiveFromMonth":{"$ref":"#/components/schemas/BillingMonth"},"revision":{"type":"integer","minimum":0},"guardianName":{"type":"string"}},"required":["guardianId","effectiveFromMonth","revision","guardianName"]}}},"required":["studentId","studentName","studentNumber","revision","choices","designations"]}
+    BillingPupil: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"}},"required":["id","studentName","studentNumber"]}
+    BillingOptions: {"type":"object","properties":{"schoolMonth":{"$ref":"#/components/schemas/BillingMonth"},"period":{"$ref":"#/components/schemas/BillingMonth"},"currency":{"anyOf":[{"type":"string","pattern":"^[A-Z]{3}$"},{"type":"null"}]},"dueDay":{"anyOf":[{"type":"integer","minimum":1,"maximum":31},{"type":"null"}]},"bankReady":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}},"required":["id","code","nameAr","nameDe"]}}},"required":["schoolMonth","period","currency","dueDay","bankReady","classes"]}
+    InvoicePreviewInput: {"oneOf":[{"type":"object","properties":{"period":{"$ref":"#/components/schemas/BillingMonth"},"classId":{"type":"string","format":"uuid"},"dueDate":{"type":"string","format":"date"},"kind":{"const":"monthly"},"studentIds":{"type":"array","items":{"type":"string","format":"uuid"},"minItems":1,"maxItems":1000,"uniqueItems":true}},"required":["period","kind"],"additionalProperties":false},{"type":"object","properties":{"period":{"$ref":"#/components/schemas/BillingMonth"},"classId":{"type":"string","format":"uuid"},"dueDate":{"type":"string","format":"date"},"kind":{"const":"manual"},"studentIds":{"type":"array","items":{"type":"string","format":"uuid"},"minItems":1,"maxItems":1},"chargeSourceId":{"type":"string","format":"uuid"},"lineItems":{"type":"array","items":{"$ref":"#/components/schemas/FeeLine"},"minItems":1,"maxItems":20}},"required":["period","kind","studentIds","chargeSourceId","lineItems"],"additionalProperties":false}]}
+    InvoicePreviewOutcome: {"type":"string","enum":["ready","existing","stopped","not_enrolled","payer_missing","payer_inactive","bank_missing","tariff_missing","currency_mismatch","monthly_charge"]}
+    InvoicePreviewRow: {"type":"object","properties":{"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"payerId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"payerName":{"anyOf":[{"type":"string"},{"type":"null"}]},"bankVersionId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"tariffId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"currency":{"anyOf":[{"type":"string","pattern":"^[A-Z]{3}$"},{"type":"null"}]},"dueDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"lines":{"type":"array","items":{"$ref":"#/components/schemas/FeeLine"}},"totalMinor":{"type":"integer","minimum":0},"reference":{"anyOf":[{"type":"string"},{"type":"null"}]},"existingId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"outcome":{"$ref":"#/components/schemas/InvoicePreviewOutcome"}},"required":["studentId","studentName","studentNumber","payerId","payerName","bankVersionId","tariffId","currency","dueDate","lines","totalMinor","reference","existingId","outcome"]}
+    InvoicePreview: {"type":"object","properties":{"previewId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"expiresAt":{"type":"string","format":"date-time"},"period":{"$ref":"#/components/schemas/BillingMonth"},"kind":{"type":"string","enum":["monthly","manual"]},"rows":{"type":"array","items":{"$ref":"#/components/schemas/InvoicePreviewRow"}}},"required":["previewId","revision","expiresAt","period","kind","rows"]}
+    InvoiceConfirm: {"type":"object","properties":{"previewId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}},"required":["previewId","revision"]}
+    InvoiceBatch: {"type":"object","properties":{"batchId":{"type":"string","format":"uuid"},"issuedIds":{"type":"array","items":{"type":"string","format":"uuid"}},"existingIds":{"type":"array","items":{"type":"string","format":"uuid"}},"skipped":{"type":"array","items":{"type":"object","properties":{"studentId":{"type":"string","format":"uuid"},"reason":{"$ref":"#/components/schemas/InvoicePreviewOutcome"}},"required":["studentId","reason"]}}},"required":["batchId","issuedIds","existingIds","skipped"]}
+    InvoiceState: {"type":"string","enum":["unpaid","partial","paid","cancelled"]}
+    InvoiceSummary: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"invoiceNumber":{"type":"string"},"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"payerName":{"type":"string"},"period":{"$ref":"#/components/schemas/BillingMonth"},"kind":{"type":"string","enum":["monthly","manual"]},"dueDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"totalMinor":{"type":"integer","minimum":0},"allocatedMinor":{"type":"integer","minimum":0},"balanceMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/InvoiceState"},"issuedAt":{"type":"string","format":"date-time"},"cancelledAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"revision":{"type":"integer","minimum":1}},"required":["id","invoiceNumber","studentId","studentName","studentNumber","payerName","period","kind","dueDate","currency","totalMinor","allocatedMinor","balanceMinor","state","issuedAt","cancelledAt","revision"]}
+    InvoiceDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"invoiceNumber":{"type":"string"},"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"payerName":{"type":"string"},"period":{"$ref":"#/components/schemas/BillingMonth"},"kind":{"type":"string","enum":["monthly","manual"]},"dueDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"totalMinor":{"type":"integer","minimum":0},"allocatedMinor":{"type":"integer","minimum":0},"balanceMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/InvoiceState"},"issuedAt":{"type":"string","format":"date-time"},"cancelledAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"lines":{"type":"array","items":{"$ref":"#/components/schemas/FeeLine"},"minItems":1,"maxItems":20},"paymentInstructions":{"anyOf":[{"$ref":"#/components/schemas/BankTransferInstructions"},{"type":"null"}]},"issueInstructions":{"$ref":"#/components/schemas/BankTransferInstructions"},"receiptIds":{"type":"array","items":{"type":"string","format":"uuid"}},"canInquire":{"type":"boolean"}},"required":["id","invoiceNumber","studentId","studentName","studentNumber","payerName","period","kind","dueDate","currency","totalMinor","allocatedMinor","balanceMinor","state","issuedAt","cancelledAt","revision","lines","paymentInstructions","issueInstructions","receiptIds","canInquire"]}
     BankProposal: {"type":"object","properties":{"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"revision":{"type":"integer","minimum":0}},"required":["beneficiary","iban","revision"]}
     SchoolBankSettings: {"type":"object","properties":{"revision":{"type":"integer","minimum":0},"active":{"anyOf":[{"type":"object","properties":{"versionId":{"type":"string","format":"uuid"},"beneficiary":{"type":"string","minLength":1,"maxLength":140},"iban":{"type":"string","description":"Electronic IBAN. Spaces are accepted on input and removed before confirmation.","minLength":15,"maxLength":80},"effectiveAt":{"type":"string","format":"date-time"}},"required":["versionId","beneficiary","iban","effectiveAt"]},{"type":"null"}]}},"required":["revision","active"]}
     BankChangeReceipt: {"type":"object","properties":{"versionId":{"type":"string","format":"uuid"},"previousVersionId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":0},"effectiveAt":{"type":"string","format":"date-time"},"maskedIban":{"type":"string"}},"required":["versionId","previousVersionId","revision","effectiveAt","maskedIban"]}
