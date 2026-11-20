@@ -62,6 +62,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   return <section className="auth-card auth-form">
     <div className="header-actions">
       <Link className="plain-button" href={`/${locale}/directory`}>{text.directory}</Link>
+      <Link className="plain-button" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
       <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>setArchived((old)=>!old)}>{text.archived}</button>
     </div>
     <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setTerm(search.trim());}}>

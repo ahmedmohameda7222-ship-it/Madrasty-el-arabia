@@ -38,6 +38,7 @@ import de.madrasty.app.attendance.DailySheetScreen
 import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
+import de.madrasty.app.comms.BroadcastHub
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -71,6 +72,7 @@ internal sealed interface WorkspacePage {
     data object Directory : WorkspacePage
     data class Thread(val id:String) : WorkspacePage
     data object MessageReports : WorkspacePage
+    data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data object Enrollment : WorkspacePage
@@ -248,6 +250,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
         is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
+        is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
@@ -307,7 +310,10 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 FamiliesScreen(model)
             }
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
-            SchoolTab.Messages -> ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
+            SchoolTab.Messages -> {
+                OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
+                ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
+            }
         }
     }
 }
@@ -328,6 +334,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     OpenPage(state,WorkspacePage.Security,R.string.security)
     OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
     OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
+    OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
     OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
     AccountActions(model,session)
 

@@ -3544,6 +3544,105 @@ paths:
               schema: { type: string }
         default:
           $ref: '#/components/responses/AuthError'
+  /broadcasts:
+    get:
+      operationId: listSentSchoolBroadcasts
+      summary: Read your authorized broadcast history and aggregate queue status
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Read your authorized broadcast history and aggregate queue status
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/BroadcastSent"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: publishSchoolBroadcast
+      summary: Publish once after matching the audience with the reviewed copy
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"previewId":{"type":"string","format":"uuid"}},"required":["previewId"]}
+      responses:
+        '201':
+          description: Publish once after matching the audience with the reviewed copy
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"publicationId":{"type":"string","format":"uuid"},"recipientCount":{"type":"integer","minimum":1}},"required":["publicationId","recipientCount"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /broadcasts/preview:
+    post:
+      operationId: previewSchoolBroadcast
+      summary: Review both copies and counts without recipient identities
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/BroadcastDraft"}
+      responses:
+        '201':
+          description: Review both copies and counts without recipient identities
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BroadcastPreview"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /broadcasts/options:
+    get:
+      operationId: getSchoolBroadcastOptions
+      summary: Read available audience kinds and classes
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Read available audience kinds and classes
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BroadcastOptions"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /broadcasts/inbox:
+    get:
+      operationId: listReceivedSchoolBroadcasts
+      summary: Read broadcasts addressed to the authorized current persona
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"locale","in":"query","required":false,"schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
+      responses:
+        '200':
+          description: Read broadcasts addressed to the authorized current persona
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/BroadcastEntry"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /broadcasts/inbox/{id}:
+    get:
+      operationId: getReceivedSchoolBroadcast
+      summary: Open the currently authorized addressed announcement
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"locale","in":"query","required":false,"schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
+      responses:
+        '200':
+          description: Open the currently authorized addressed announcement
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/BroadcastEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -3572,6 +3671,13 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    BroadcastAudience: {"oneOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["all_guardians","all_teachers"]}},"required":["kind"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"class_guardians"},"classId":{"type":"string","format":"uuid"}},"required":["kind","classId"],"additionalProperties":false}]}
+    BroadcastText: {"type":"object","properties":{"title":{"type":"string","minLength":1,"maxLength":180},"body":{"type":"string","minLength":1,"maxLength":4000}},"required":["title","body"]}
+    BroadcastDraft: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]}},"required":["audience","copy"]}
+    BroadcastPreview: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]},"previewId":{"type":"string","format":"uuid"},"expiresAt":{"type":"string","format":"date-time"},"counts":{"type":"object","properties":{"ar":{"type":"integer","minimum":0},"de":{"type":"integer","minimum":0}},"required":["ar","de"]}},"required":["audience","copy","previewId","expiresAt","counts"]}
+    BroadcastOptions: {"type":"object","properties":{"schoolWide":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}},"required":["id","code","nameAr","nameDe"]}}},"required":["schoolWide","classes"]}
+    BroadcastSent: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"publishedAt":{"type":"string","format":"date-time"},"recipientCount":{"type":"integer","minimum":0},"dispatch":{"type":"object","properties":{"pending":{"type":"integer","minimum":0},"queued":{"type":"integer","minimum":0},"suppressed":{"type":"integer","minimum":0}},"required":["pending","queued","suppressed"]}},"required":["id","audience","copy","classAr","classDe","publishedAt","recipientCount","dispatch"]}
+    BroadcastEntry: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"title":{"type":"string"},"body":{"type":"string"},"publishedAt":{"type":"string","format":"date-time"}},"required":["id","title","body","publishedAt"]}
     ChatMediaUpload: {"oneOf":[{"type":"object","properties":{"mediaKind":{"const":"photo"},"mime":{"const":"image/jpeg"},"bytes":{"type":"integer","minimum":1,"maximum":10485760}},"required":["mediaKind","mime","bytes"]},{"type":"object","properties":{"mediaKind":{"const":"voice"},"mime":{"const":"audio/wav"},"bytes":{"type":"integer","minimum":46,"maximum":8388608}},"required":["mediaKind","mime","bytes"]}]}
     ChatMediaGrant: {"type":"object","properties":{"uploadId":{"type":"string","format":"uuid"},"url":{"type":"string","format":"uri"},"expiresAt":{"type":"string","format":"date-time"},"maxBytes":{"type":"integer","minimum":1,"maximum":10485760},"maxDurationMs":{"anyOf":[{"type":"integer","minimum":1,"maximum":180000},{"type":"null"}]}},"required":["uploadId","url","expiresAt","maxBytes","maxDurationMs"]}
     ChatMediaState: {"oneOf":[{"type":"object","properties":{"state":{"const":"ready"},"mediaId":{"type":"string","format":"uuid"}},"required":["state","mediaId"]},{"type":"object","properties":{"state":{"type":"string","enum":["staged","processing","failed","cancelled"]}},"required":["state"]}]}
