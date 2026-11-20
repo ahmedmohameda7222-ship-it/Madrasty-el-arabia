@@ -24,3 +24,4 @@ export * from "./academics/homework";
 export * from "./academics/gradebook";
 export * from "./academics/evaluations";
 export * from "./academics/exams";
+export * from "./academics/reports";

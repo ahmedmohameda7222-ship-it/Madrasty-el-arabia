@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
 import de.madrasty.app.academics.CurriculumScreen
+import de.madrasty.app.academics.AcademicReportScreen
+import de.madrasty.app.academics.ReportTarget
 import de.madrasty.app.academics.EvaluationScreen
 import de.madrasty.app.academics.ExamScreen
 import de.madrasty.app.academics.HomeworkScreen
@@ -75,7 +77,8 @@ internal sealed interface WorkspacePage {
     data class Curriculum(val child:String?=null,val lesson:String?=null) : WorkspacePage
     data class Homework(val child:String?=null,val work:String?=null) : WorkspacePage
     data class Gradebook(val work:String?=null) : WorkspacePage
-    data class AcademicWork(val child:String?=null) : WorkspacePage
+    data class AcademicWork(val child:String?=null,val activity:String?=null) : WorkspacePage
+    data class Report(val pupil:String?=null) : WorkspacePage
     data class Evaluations(val child:String?=null,val entry:String?=null) : WorkspacePage
     data class Exams(val child:String?=null,val entry:String?=null) : WorkspacePage
     data class Timetable(val child: String? = null) : WorkspacePage
@@ -117,6 +120,18 @@ internal class SchoolNavigation {
             is SchoolWorkTarget.FamilyImport -> WorkspacePage.Import(target.jobId)
             is SchoolWorkTarget.GuardianLink -> WorkspacePage.Family(guardian=target.guardianId,link=target.linkId)
         })
+    }
+    fun openReportSource(target:ReportTarget){
+        val next=when(target.kind){
+            "attendance"->if(target.child==null)WorkspacePage.AttendanceHistory(rowId=target.id) else WorkspacePage.AttendanceHistory(child=target.child)
+            "teaching"->WorkspacePage.Curriculum(target.child,target.id)
+            "activity"->WorkspacePage.AcademicWork(target.child,target.id)
+            "homework"->WorkspacePage.Homework(target.child,target.id)
+            "evaluation"->WorkspacePage.Evaluations(target.child,target.id)
+            "exam"->WorkspacePage.Exams(target.child,target.id)
+            else->return
+        }
+        open(next)
     }
     fun openAuditResource(target: AuditDestination) {
         val next = when(target.kind){
@@ -165,6 +180,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
         is WorkspacePage.Homework -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Exams -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Evaluations -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
+        is WorkspacePage.Report -> persona!=Persona.Admin||academic
         is WorkspacePage.AcademicWork -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Curriculum -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Timetable -> persona != Persona.Admin || school || academic
@@ -234,7 +250,8 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Excuse -> FamilyExcuseScreen(model,page.child,page.date,state::back)
         is WorkspacePage.Exams -> ExamScreen(model,session.actor.persona,page.child,page.entry,state::back)
         is WorkspacePage.Evaluations -> EvaluationScreen(model,session.actor.persona,page.child,page.entry,state::back)
-        is WorkspacePage.AcademicWork -> TeachingActivityScreen(model,session.actor.persona,page.child,state::back)
+        is WorkspacePage.AcademicWork -> TeachingActivityScreen(model,session.actor.persona,page.child,page.activity,state::back)
+        is WorkspacePage.Report -> AcademicReportScreen(model,session.actor.persona,page.pupil,state::openReportSource,state::back)
         is WorkspacePage.Curriculum -> CurriculumScreen(model,session.actor.persona,page.child,page.lesson,state::back)
         is WorkspacePage.Homework -> HomeworkScreen(model,session.actor.persona,page.child,page.work,
             {child,lesson->state.open(WorkspacePage.Curriculum(child,lesson))},{state.open(WorkspacePage.Gradebook(it))},state::back)
@@ -270,7 +287,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openHistory={state.open(WorkspacePage.AttendanceHistory(child=it))},
                 openCurriculum={state.open(WorkspacePage.Curriculum(it))},openActivities={state.open(WorkspacePage.AcademicWork(it))},
                 openHomework={state.open(WorkspacePage.Homework(it))},openEvaluations={state.open(WorkspacePage.Evaluations(it))},
-                openExams={state.open(WorkspacePage.Exams(it))})
+                openExams={state.open(WorkspacePage.Exams(it))},openReport={state.open(WorkspacePage.Report(it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)
@@ -304,6 +321,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
         if(rights.allows(WorkspacePage.Gradebook()))OpenPage(state,WorkspacePage.Gradebook(),R.string.gradebook_title)
         if(rights.allows(WorkspacePage.Homework()))OpenPage(state,WorkspacePage.Homework(),R.string.homework_title)
+        if(rights.allows(WorkspacePage.Report()))OpenPage(state,WorkspacePage.Report(),R.string.report_title)
         if(rights.allows(WorkspacePage.Exams()))OpenPage(state,WorkspacePage.Exams(),R.string.exam_title)
         if(rights.allows(WorkspacePage.Evaluations()))OpenPage(state,WorkspacePage.Evaluations(),R.string.evaluation_title)
         if(rights.allows(WorkspacePage.AcademicWork()))OpenPage(state,WorkspacePage.AcademicWork(),R.string.academic_work)

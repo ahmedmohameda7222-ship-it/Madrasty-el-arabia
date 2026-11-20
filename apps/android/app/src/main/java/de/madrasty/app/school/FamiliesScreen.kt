@@ -253,7 +253,7 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
 
 @Composable
 fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -> Unit,
-    openTimetable: (String) -> Unit, openExcuse: (String) -> Unit, openHistory: (String) -> Unit, openCurriculum:(String)->Unit, openActivities:(String)->Unit, openHomework:(String)->Unit, openEvaluations:(String)->Unit, openExams:(String)->Unit,
+    openTimetable: (String) -> Unit, openExcuse: (String) -> Unit, openHistory: (String) -> Unit, openCurriculum:(String)->Unit, openActivities:(String)->Unit, openHomework:(String)->Unit, openEvaluations:(String)->Unit, openExams:(String)->Unit, openReport:(String)->Unit,
 ) {
     var state by remember { mutableStateOf<Picker>(AsyncState.InitialLoading()) }
     var selected by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -289,6 +289,7 @@ fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -
                 child.optJSONObject("currentClass")?.let { Text(classLabel(it, language)) }
                 Text("${stringResource(R.string.student_number)} · \u2066${child.getString("studentNumber")}\u2069")
                 TextButton(onClick = { openTimetable(child.getString("id")) }) { Text(stringResource(R.string.timetable_title)) }
+                TextButton(onClick = { openReport(child.getString("id")) }) { Text(stringResource(R.string.report_title)) }
                 TextButton(onClick = { openExams(child.getString("id")) }) { Text(stringResource(R.string.exam_title)) }
                 TextButton(onClick = { openEvaluations(child.getString("id")) }) { Text(stringResource(R.string.evaluation_title)) }
                 TextButton(onClick = { openHomework(child.getString("id")) }) { Text(stringResource(R.string.homework_title)) }

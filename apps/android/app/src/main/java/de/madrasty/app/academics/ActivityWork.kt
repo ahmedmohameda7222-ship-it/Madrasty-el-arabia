@@ -31,8 +31,8 @@ import java.util.Locale
 import org.json.JSONObject
 
 @Composable
-internal fun ActivityWork(model:IdentityViewModel,language:String,child:String?,offering:String?,refresh:Int){
-    var selected by remember{mutableStateOf<String?>(null)}
+internal fun ActivityWork(model:IdentityViewModel,language:String,child:String?,offering:String?,refresh:Int,initial:String?=null){
+    var selected by remember(initial){mutableStateOf(initial)}
     var creating by remember{mutableStateOf(false)}
     var updated by remember{mutableStateOf(0)}
     val id=selected

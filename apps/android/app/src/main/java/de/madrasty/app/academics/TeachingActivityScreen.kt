@@ -42,7 +42,7 @@ import de.madrasty.app.ui.isolate
 import org.json.JSONObject
 
 @Composable
-fun TeachingActivityScreen(model:IdentityViewModel,persona:Persona,initialChild:String?,close:()->Unit){
+fun TeachingActivityScreen(model:IdentityViewModel,persona:Persona,initialChild:String?,activity:String?,close:()->Unit){
     val language=if(LocalConfiguration.current.locales[0].language=="de")"de" else "ar"
     var refresh by remember{mutableStateOf(0)}
     val lifecycle=LocalLifecycleOwner.current.lifecycle
@@ -57,13 +57,13 @@ fun TeachingActivityScreen(model:IdentityViewModel,persona:Persona,initialChild:
         TextButton(onClick=close){Text(stringResource(R.string.back))}
         Text(stringResource(if(persona==Persona.Guardian)R.string.academic_activities else R.string.academic_work),
             style=MaterialTheme.typography.headlineMedium)
-        if(persona==Persona.Guardian)FamilyActivities(model,initialChild,language,refresh)
-        else StaffActivityWork(model,language,refresh)
+        if(persona==Persona.Guardian)FamilyActivities(model,initialChild,activity,language,refresh)
+        else StaffActivityWork(model,activity,language,refresh)
     }
 }
 
 @Composable
-private fun FamilyActivities(model:IdentityViewModel,initialChild:String?,language:String,refresh:Int){
+private fun FamilyActivities(model:IdentityViewModel,initialChild:String?,activity:String?,language:String,refresh:Int){
     var child by remember(initialChild){mutableStateOf(initialChild)}
     val linked=academicRead("/me/children?limit=100",refresh){model.records(it)}
     AsyncSurface(linked){items->
@@ -73,7 +73,7 @@ private fun FamilyActivities(model:IdentityViewModel,initialChild:String?,langua
             FilterChip(current==id,onClick={child=id},label={Text(isolate(item.getString("displayName")))})
         }
         if(current!=null&&items.any{it.getString("id")==current})key(current){
-            ActivityWork(model,language,current,null,refresh)
+            ActivityWork(model,language,current,null,refresh,if(child==initialChild)activity else null)
         }else if(child!=null)AsyncSurface<Unit>(AsyncState.Forbidden()){}
         else Text(stringResource(R.string.empty))
     }
@@ -82,8 +82,8 @@ private fun FamilyActivities(model:IdentityViewModel,initialChild:String?,langua
 private enum class WorkMode{Teaching,Activities}
 
 @Composable
-private fun StaffActivityWork(model:IdentityViewModel,language:String,refresh:Int){
-    var mode by remember{mutableStateOf(WorkMode.Teaching)}
+private fun StaffActivityWork(model:IdentityViewModel,activity:String?,language:String,refresh:Int){
+    var mode by remember{mutableStateOf(if(activity==null)WorkMode.Teaching else WorkMode.Activities)}
     var chosen by remember{mutableStateOf<String?>(null)}
     val available=academicRead("/academics/offerings",refresh){model.records(it)}
     val subjects=academicRead("/academics/subjects?limit=100",refresh){model.records(it)}
@@ -94,7 +94,8 @@ private fun StaffActivityWork(model:IdentityViewModel,language:String,refresh:In
         val options=values.filter{it.getBoolean(field)}
         val lookup=(subjects as? AsyncState.Ready)?.content.orEmpty()
         val active=options.find{it.getString("id")==chosen}?:options.firstOrNull()
-        if(active==null)Text(stringResource(R.string.empty))
+        if(active==null&&activity!=null&&mode==WorkMode.Activities)ActivityWork(model,language,null,null,refresh,activity)
+        else if(active==null)Text(stringResource(R.string.empty))
         else{
             Text(stringResource(R.string.academic_context),style=MaterialTheme.typography.titleMedium)
             options.forEach{option->
@@ -108,7 +109,7 @@ private fun StaffActivityWork(model:IdentityViewModel,language:String,refresh:In
             val id=active.getString("id")
             key(mode,id){
                 if(mode==WorkMode.Teaching)TeachingLog(model,id,language,refresh)
-                else ActivityWork(model,language,null,id,refresh)
+                else ActivityWork(model,language,null,id,refresh,if(chosen==null)activity else null)
             }
         }
     }
