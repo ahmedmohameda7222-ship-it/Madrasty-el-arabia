@@ -6,6 +6,7 @@ import {
   childSummarySchema,curriculumLesson,curriculumOffering,curriculumSubject,homeworkChange,homeworkCreate,homeworkEntry,
   type CurriculumLesson,type HomeworkEntry,type Locale,
 } from "@madrasty/contracts";
+import { HomeworkConversation } from "@/features/comms/StartConversation";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
@@ -122,6 +123,7 @@ function HomeworkDetails({locale,value,child,saved,refresh}:{
     <p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{value.instructions}</p>
     {value.lessonId&&<Link className="plain-button" href={`/${locale}/school/more/curriculum?lesson=${value.lessonId}${child?`&child=${child}`:""}`}>{text.openLesson}</Link>}
     {child?<>
+      <HomeworkConversation locale={locale} homework={value.id}/>
       {value.joinedOn&&<p>{text.enrolled} · <bdi dir="ltr">{value.joinedOn}</bdi></p>}
       {value.addedLater&&<p>{text.addedLater}</p>}
       <p>{value.score===null?text.pending:<>{text.score} · <bdi>{number.format(value.score)}</bdi></>}</p>

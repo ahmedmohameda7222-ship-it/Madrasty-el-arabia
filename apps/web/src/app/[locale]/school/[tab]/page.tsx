@@ -8,6 +8,7 @@ import { mayManageAccess, mayUse } from "@/server/access/capabilities";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
 import { Children, Families } from "@/features/school/Families";
 import { dictionary } from "@/i18n";
+import { ThreadInbox } from "@/features/comms/ThreadInbox";
 import { SessionControls } from "@/features/identity/SessionControls";
 
 const tabs = ["home", "students", "attendance", "children", "messages", "more"] as const;
@@ -15,7 +16,7 @@ type Tab = typeof tabs[number];
 
 export default async function SchoolPage({ params, searchParams }: {
   params: Promise<{ locale: Locale; tab: string }>;
-  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string }>;
+  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string }>;
 }) {
   const [{ locale, tab }, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
@@ -32,6 +33,7 @@ export default async function SchoolPage({ params, searchParams }: {
   return (
     <>
       <h1>{text[tab as Tab]}</h1>
+      {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} initialStudent={z.uuid().safeParse(search.student).data} initialGuardian={z.uuid().safeParse(search.guardian).data} initialLink={z.uuid().safeParse(search.link).data} /></>}
       {tab === "children" && <Children locale={locale} initialChild={z.uuid().safeParse(search.child).data} />}

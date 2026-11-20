@@ -3064,6 +3064,102 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AcademicReport"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /threads:
+    get:
+      operationId: listScopedThreads
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"kind","in":"query","schema":{"type":"string","enum":["direct","office"]}}
+        - {"name":"inbox","in":"query","schema":{"type":"string","enum":["student_affairs","accounts"]}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Scoped conversation or delegated office case
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/ThreadSummary"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: openScopedThread
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["target"],"properties":{"target":{"oneOf":[{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"person"},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"office"},"id":{"type":"string","enum":["student_affairs","accounts"]}}}]},"context":{"type":"object","required":["kind","id"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"}}}}}
+      responses:
+        '200':
+          description: Scoped conversation or delegated office case
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ThreadOpenReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /threads/{id}:
+    get:
+      operationId: readScopedThread
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped conversation or delegated office case
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ThreadDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /office-cases/{id}:
+    get:
+      operationId: readScopedOfficeCase
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped conversation or delegated office case
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/OfficeCase"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: changeScopedOfficeCase
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision"],"properties":{"assigneeId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"status":{"type":"string","enum":["open","in_progress","closed"]},"revision":{"type":"integer","minimum":1}},"anyOf":[{"required":["assigneeId"]},{"required":["status"]}]}
+      responses:
+        '200':
+          description: Scoped conversation or delegated office case
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/OfficeCase"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/homework/{id}/thread-targets:
+    get:
+      operationId: readAuthorizedHomeworkContacts
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped conversation or delegated office case
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/HomeworkThreadContact"}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -3089,6 +3185,11 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    ThreadOpenReceipt: {"type":"object","required":["threadId","kind","canReply"],"properties":{"threadId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["direct","office"]},"canReply":{"type":"boolean"},"caseId":{"type":"string","format":"uuid"}}}
+    ThreadSummary: {"type":"object","required":["id","kind","contactName","inbox","caseId","caseStatus","caseRevision","createdAt","canReply","canManageCase"],"properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["direct","office"]},"contactName":{"anyOf":[{"type":"string"},{"type":"null"}]},"inbox":{"anyOf":[{"type":"string","enum":["student_affairs","accounts"]},{"type":"null"}]},"caseId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"caseStatus":{"anyOf":[{"type":"string","enum":["open","in_progress","closed"]},{"type":"null"}]},"caseRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"createdAt":{"type":"string","format":"date-time"},"canReply":{"type":"boolean"},"canManageCase":{"type":"boolean"}}}
+    ThreadDetail: {"type":"object","required":["id","kind","contactName","inbox","caseId","caseStatus","caseRevision","createdAt","canReply","canManageCase","references"],"properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["direct","office"]},"contactName":{"anyOf":[{"type":"string"},{"type":"null"}]},"inbox":{"anyOf":[{"type":"string","enum":["student_affairs","accounts"]},{"type":"null"}]},"caseId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"caseStatus":{"anyOf":[{"type":"string","enum":["open","in_progress","closed"]},{"type":"null"}]},"caseRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"createdAt":{"type":"string","format":"date-time"},"canReply":{"type":"boolean"},"canManageCase":{"type":"boolean"},"references":{"type":"array","items":{"type":"object","required":["kind","id","childId"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"},"childId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]}}}}}}
+    OfficeCase: {"type":"object","required":["id","threadId","inbox","status","assigneeId","assigneeName","revision","canManage","origin","delegates"],"properties":{"id":{"type":"string","format":"uuid"},"threadId":{"type":"string","format":"uuid"},"inbox":{"type":"string","enum":["student_affairs","accounts"]},"status":{"type":"string","enum":["open","in_progress","closed"]},"assigneeId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"assigneeName":{"anyOf":[{"type":"string"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"canManage":{"type":"boolean"},"origin":{"anyOf":[{"type":"object","required":["kind","id"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"}}},{"type":"null"}]},"delegates":{"type":"array","items":{"type":"object","required":["accountId","displayName"],"properties":{"accountId":{"type":"string","format":"uuid"},"displayName":{"type":"string"}}}}}}
+    HomeworkThreadContact: {"type":"object","required":["id","displayName"],"properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"}}}
     ReportPupil: {"type":"object","required":["id","displayName","studentNumber"],"properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"},"studentNumber":{"type":"string"}}}
     ReportEnrollment: {"type":"object","required":["enrollmentId","classId","classCode","classNameAr","classNameDe","yearId","yearStart","yearEnd","enrolledFrom","enrolledUntil"],"properties":{"enrollmentId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"yearId":{"type":"string","format":"uuid"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"},"enrolledFrom":{"type":"string","format":"date"},"enrolledUntil":{"type":"string","format":"date"}}}
     ReportSubject: {"type":"object","required":["id","nameAr","nameDe"],"properties":{"id":{"type":"string","format":"uuid"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}}}

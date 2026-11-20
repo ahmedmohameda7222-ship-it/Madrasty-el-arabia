@@ -252,4 +252,20 @@
     <string name="report_homework_mean">Durchschnitt der Hausaufgaben von 20</string>
     <string name="report_revision">Version</string>
     <string name="report_open">Quelle öffnen</string>
+    <string name="conversation_open">Unterhaltung öffnen</string>
+    <string name="conversation_homework">Zur Hausaufgabe nachfragen</string>
+    <string name="conversation_no_teacher">Die Lehrkraft ist derzeit für Nachrichten nicht verfügbar.</string>
+    <string name="conversation_attendance">Schulbüro kontaktieren</string>
+    <string name="conversation_direct">Private Unterhaltungen</string>
+    <string name="conversation_office">Schulbüros</string>
+    <string name="conversation_student_affairs">Schulbüro</string>
+    <string name="conversation_accounts">Buchhaltung</string>
+    <string name="conversation_case_open">Offen</string>
+    <string name="conversation_case_in_progress">In Bearbeitung</string>
+    <string name="conversation_case_closed">Geschlossen</string>
+    <string name="conversation_case">Vorgang bearbeiten</string>
+    <string name="conversation_assignee">Zuständige Person</string>
+    <string name="conversation_unassigned">Nicht zugewiesen</string>
+    <string name="conversation_references">Verknüpfte Einträge</string>
+    <string name="conversation_invoice">Rechnung</string>
 </resources>

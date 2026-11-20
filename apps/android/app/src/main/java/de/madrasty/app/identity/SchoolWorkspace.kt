@@ -38,6 +38,8 @@ import de.madrasty.app.attendance.DailySheetScreen
 import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
+import de.madrasty.app.comms.ThreadInbox
+import de.madrasty.app.comms.ThreadScreen
 import de.madrasty.app.school.AuditDestination
 import de.madrasty.app.school.AuditFilters
 import de.madrasty.app.school.AuditScreen
@@ -65,6 +67,7 @@ internal sealed interface WorkspacePage {
     data object Account : WorkspacePage
     data object Security : WorkspacePage
     data object Directory : WorkspacePage
+    data class Thread(val id:String) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data object Enrollment : WorkspacePage
@@ -121,6 +124,7 @@ internal class SchoolNavigation {
             is SchoolWorkTarget.GuardianLink -> WorkspacePage.Family(guardian=target.guardianId,link=target.linkId)
         })
     }
+    fun openThread(id:String)=open(WorkspacePage.Thread(id))
     fun openReportSource(target:ReportTarget){
         val next=when(target.kind){
             "attendance"->if(target.child==null)WorkspacePage.AttendanceHistory(rowId=target.id) else WorkspacePage.AttendanceHistory(child=target.child)
@@ -233,7 +237,8 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Apply -> Unit
         WorkspacePage.Account -> AccountScreen(model,state::back) { state.open(WorkspacePage.Security) }
         WorkspacePage.Security -> SecurityScreen(model,session,state::back)
-        WorkspacePage.Directory -> DirectoryScreen(model,state::back)
+        WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
+        is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
@@ -242,7 +247,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             openOffline={state.open(WorkspacePage.OfflineAttendance)},openHistory={classId,rowId->
                 state.open(WorkspacePage.AttendanceHistory(classId=classId,rowId=rowId))},close=state::back)
         is WorkspacePage.AttendanceHistory -> AttendanceHistoryScreen(model,page.child,page.classId,page.rowId,
-            {child,date->state.open(WorkspacePage.Excuse(child,date))},state::back)
+            {child,date->state.open(WorkspacePage.Excuse(child,date))},state::openThread,state::back)
         WorkspacePage.OfflineAttendance -> OfflineAttendanceScreen(model,session,state::back)
         WorkspacePage.Audit -> AuditScreen(
             model,state.auditEntry,{state.auditEntry=it},state.auditFilters,{state.auditFilters=it},state::openAuditResource,state::back,
@@ -254,7 +259,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Report -> AcademicReportScreen(model,session.actor.persona,page.pupil,state::openReportSource,state::back)
         is WorkspacePage.Curriculum -> CurriculumScreen(model,session.actor.persona,page.child,page.lesson,state::back)
         is WorkspacePage.Homework -> HomeworkScreen(model,session.actor.persona,page.child,page.work,
-            {child,lesson->state.open(WorkspacePage.Curriculum(child,lesson))},{state.open(WorkspacePage.Gradebook(it))},state::back)
+            {child,lesson->state.open(WorkspacePage.Curriculum(child,lesson))},{state.open(WorkspacePage.Gradebook(it))},state::openThread,state::back)
         is WorkspacePage.Gradebook -> GradebookScreen(model,page.work,{state.open(WorkspacePage.Homework(work=it))},state::back)
         is WorkspacePage.Timetable -> TimetableScreen(model,session.actor.persona,page.child,state::back)
         is WorkspacePage.Assignments -> StaffAssignmentsScreen(model,page.classTarget,state::back)
@@ -293,7 +298,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 FamiliesScreen(model)
             }
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
-            SchoolTab.Messages -> Unit
+            SchoolTab.Messages -> ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
         }
     }
 }

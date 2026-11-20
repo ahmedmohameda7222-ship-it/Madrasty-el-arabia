@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import de.madrasty.app.R
 import de.madrasty.app.api.WirePage
 import de.madrasty.app.api.decodeData
+import de.madrasty.app.comms.StartConversation
 import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
 import de.madrasty.app.ui.AsyncState
@@ -43,7 +44,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 @Composable
-fun DirectoryScreen(model: IdentityViewModel, close: () -> Unit) {
+fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, close: () -> Unit) {
     var selected by remember { mutableStateOf<String?>(null) }
     var search by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
@@ -80,7 +81,7 @@ fun DirectoryScreen(model: IdentityViewModel, close: () -> Unit) {
                 Text(stringResource(R.string.clear_filter))
             }
             DirectoryResults(model,query,role,refresh,language) { selected = it }
-        } else DirectoryDetail(model,id,refresh,language)
+        } else DirectoryDetail(model,id,refresh,language,openThread)
     }
 }
 
@@ -122,7 +123,7 @@ private suspend fun directoryPage(model: IdentityViewModel, query: String, role:
     }
 
 @Composable
-private fun DirectoryDetail(model: IdentityViewModel, id: String, refresh: Int, language: String) {
+private fun DirectoryDetail(model: IdentityViewModel, id: String, refresh: Int, language: String, openThread:(String)->Unit) {
     val context = LocalContext.current
     var retry by remember { mutableStateOf(0) }
     var state by remember(id,refresh) { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -148,6 +149,8 @@ private fun DirectoryDetail(model: IdentityViewModel, id: String, refresh: Int, 
             val item = contexts.getJSONObject(index)
             Text(isolate(item.getString(if (language == "de") "nameDe" else "nameAr")))
         }
+        val target=row.getJSONObject("target")
+        StartConversation(model,target.getString("kind"),target.getString("id"),open=openThread)
         row.optional("workEmail")?.let { email ->
             TextButton(onClick = { open("mailto",email,Intent.ACTION_SENDTO) }) { Text(stringResource(R.string.directory_mail)) }
         }

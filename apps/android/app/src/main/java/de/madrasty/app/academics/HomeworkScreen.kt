@@ -29,6 +29,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import de.madrasty.app.R
+import de.madrasty.app.comms.HomeworkConversation
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
@@ -46,7 +47,7 @@ import org.json.JSONObject
 
 @Composable
 fun HomeworkScreen(
-    model:IdentityViewModel,persona:Persona,initialChild:String?,initialWork:String?,openLesson:(String?,String)->Unit,openGrades:(String)->Unit,close:()->Unit,
+    model:IdentityViewModel,persona:Persona,initialChild:String?,initialWork:String?,openLesson:(String?,String)->Unit,openGrades:(String)->Unit,openThread:(String)->Unit,close:()->Unit,
 ){
     val language=if(LocalConfiguration.current.locales[0].language=="de")"de" else "ar"
     var refresh by remember{mutableStateOf(0)}
@@ -61,14 +62,14 @@ fun HomeworkScreen(
         verticalArrangement=Arrangement.spacedBy(8.dp)){
         TextButton(onClick=close){Text(stringResource(R.string.back))}
         Text(stringResource(R.string.homework_title),style=MaterialTheme.typography.headlineMedium)
-        if(persona==Persona.Guardian)FamilyHomework(model,language,initialChild,initialWork,refresh,openLesson)
+        if(persona==Persona.Guardian)FamilyHomework(model,language,initialChild,initialWork,refresh,openLesson,openThread)
         else StaffHomework(model,language,initialWork,refresh,openLesson,openGrades)
     }
 }
 
 @Composable
 private fun FamilyHomework(
-    model:IdentityViewModel,language:String,initialChild:String?,initialWork:String?,refresh:Int,openLesson:(String?,String)->Unit,
+    model:IdentityViewModel,language:String,initialChild:String?,initialWork:String?,refresh:Int,openLesson:(String?,String)->Unit,openThread:(String)->Unit,
 ){
     var child by remember(initialChild){mutableStateOf(initialChild)}
     val linked=academicRead("/me/children?limit=100",refresh){model.records(it)}
@@ -79,7 +80,7 @@ private fun FamilyHomework(
             FilterChip(active==id,onClick={child=id},label={Text(isolate(item.getString("displayName")))})
         }
         if(active!=null&&items.any{it.getString("id")==active})key(active){
-            HomeworkList(model,language,active,null,if(child==initialChild)initialWork else null,refresh,openLesson,{})
+            HomeworkList(model,language,active,null,if(child==initialChild)initialWork else null,refresh,openLesson,{},openThread)
         }else if(child!=null)AsyncSurface<Unit>(AsyncState.Forbidden()){}
         else Text(stringResource(R.string.empty))
     }
@@ -106,7 +107,7 @@ private fun StaffHomework(model:IdentityViewModel,language:String,initial:String
                 })
             }
             key(active?.getString("id")){
-                HomeworkList(model,language,null,active,if(selected==null)initial else null,refresh,openLesson,openGrades)
+                HomeworkList(model,language,null,active,if(selected==null)initial else null,refresh,openLesson,openGrades,{})
             }
         }
     }
@@ -114,7 +115,7 @@ private fun StaffHomework(model:IdentityViewModel,language:String,initial:String
 
 @Composable
 private fun HomeworkList(
-    model:IdentityViewModel,language:String,child:String?,offering:JSONObject?,initial:String?,refresh:Int,openLesson:(String?,String)->Unit,openGrades:(String)->Unit,
+    model:IdentityViewModel,language:String,child:String?,offering:JSONObject?,initial:String?,refresh:Int,openLesson:(String?,String)->Unit,openGrades:(String)->Unit,openThread:(String)->Unit,
 ){
     var work by remember(initial){mutableStateOf(initial)}
     var adding by remember{mutableStateOf(false)}
@@ -127,7 +128,7 @@ private fun HomeworkList(
         TextButton(onClick={work=null;saved=false}){Text(stringResource(R.string.homework_back))}
         val read=academicRead("/academics/homework/$id"+(child?.let{"?childId=$it"}?:""),refresh+version){model.timetableObject(it)}
         AsyncSurface(read){value->
-            key(id){HomeworkDetails(model,value,language,child,openLesson,openGrades){version++;saved=true}}
+            key(id){HomeworkDetails(model,value,language,child,openLesson,openGrades,openThread){version++;saved=true}}
         }
         return
     }
@@ -153,7 +154,7 @@ private fun HomeworkList(
 
 @Composable
 private fun HomeworkDetails(
-    model:IdentityViewModel,item:JSONObject,language:String,child:String?,openLesson:(String?,String)->Unit,openGrades:(String)->Unit,changed:()->Unit,
+    model:IdentityViewModel,item:JSONObject,language:String,child:String?,openLesson:(String?,String)->Unit,openGrades:(String)->Unit,openThread:(String)->Unit,changed:()->Unit,
 ){
     var editing by remember{mutableStateOf(false)}
     Text(isolate(item.getString("title")),style=MaterialTheme.typography.titleLarge)
@@ -168,8 +169,10 @@ private fun HomeworkDetails(
     item.string("lessonId")?.let{lesson->
         TextButton(onClick={openLesson(child,lesson)}){Text(stringResource(R.string.homework_open_lesson))}
     }
-    if(child!=null)FamilyHomeworkResult(item,language)
-    else if(!item.isNull("rosterCount")){
+    if(child!=null){
+        HomeworkConversation(model,item.getString("id"),openThread)
+        FamilyHomeworkResult(item,language)
+    }else if(!item.isNull("rosterCount")){
         val count=NumberFormat.getIntegerInstance(Locale.forLanguageTag(language)).format(item.getInt("rosterCount"))
         Text(stringResource(R.string.homework_roster)+" · "+isolate(count))
     }

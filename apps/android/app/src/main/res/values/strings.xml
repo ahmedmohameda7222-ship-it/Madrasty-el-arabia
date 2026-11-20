@@ -252,4 +252,20 @@
     <string name="report_homework_mean">متوسط الواجبات من ٢٠</string>
     <string name="report_revision">المراجعة</string>
     <string name="report_open">فتح السجل</string>
+    <string name="conversation_open">افتح محادثة</string>
+    <string name="conversation_homework">اسأل عن الواجب</string>
+    <string name="conversation_no_teacher">مدرس المادة غير متاح للمراسلة دلوقتي.</string>
+    <string name="conversation_attendance">راسل شؤون الطلبة</string>
+    <string name="conversation_direct">المحادثات الخاصة</string>
+    <string name="conversation_office">المكاتب</string>
+    <string name="conversation_student_affairs">شؤون الطلبة</string>
+    <string name="conversation_accounts">الحسابات</string>
+    <string name="conversation_case_open">مفتوحة</string>
+    <string name="conversation_case_in_progress">قيد المتابعة</string>
+    <string name="conversation_case_closed">مغلقة</string>
+    <string name="conversation_case">متابعة الطلب</string>
+    <string name="conversation_assignee">الموظف المسؤول</string>
+    <string name="conversation_unassigned">بدون مسؤول</string>
+    <string name="conversation_references">السجلات المرتبطة</string>
+    <string name="conversation_invoice">فاتورة</string>
 </resources>

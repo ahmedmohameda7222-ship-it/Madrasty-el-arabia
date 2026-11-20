@@ -8,6 +8,7 @@ import {
   type ApprovedAttendanceEntry, type AttendanceRevisionHistory, type AttendanceStatus, type Locale,
 } from "@madrasty/contracts";
 import { ApiResponseError,requestApi } from "@/api/client";
+import { StartConversation } from "@/features/comms/StartConversation";
 import { useAdminCommand } from "@/api/commands";
 import { dictionary,localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
@@ -161,6 +162,8 @@ function HistoryRows({locale,child,params,refresh,open}:{locale:Locale;child?:st
           <bdi dir="ltr">{entry.schoolDate}</bdi> · <bdi>{locale==="ar"?entry.classNameAr:entry.classNameDe}</bdi>
           {open&&<p><bdi>{entry.studentName}</bdi> · <bdi dir="ltr">{entry.studentNumber}</bdi></p>}
           <p>{entry.status?text[entry.status]:text.cancelled}</p>
+          {child&&(entry.status==="absent_excused"||entry.status==="absent_unexcused")&&<StartConversation locale={locale}
+            target={{kind:"office",id:"student_affairs"}} context={{kind:"attendance",id:entry.id}}/>}
           {open&&<button className="plain-button" onClick={()=>open(entry.id)}>{text.detail}</button>}
         </li>)}</ul>
         {page.cursor&&<button className="plain-button" onClick={()=>void more()} disabled={loading}>{text.more}</button>}

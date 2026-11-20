@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { directoryEntrySchema, directoryRoleSchema, type DirectoryEntry, type Locale } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary, localizedError } from "@/i18n";
+import { StartConversation } from "@/features/comms/StartConversation";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface, type AsyncState } from "@/ui/AsyncSurface";
 
@@ -156,6 +157,7 @@ export function DirectoryCard({entry,locale}:{entry:DirectoryEntry;locale:Locale
       <bdi>{locale==="ar" ? item.nameAr : item.nameDe}</bdi>
     </li>)}</ul>}
     <div className="header-actions">
+      <StartConversation locale={locale} target={entry.target}/>
       {entry.workEmail && <a className="plain-button" href={`mailto:${encodeURIComponent(entry.workEmail).replace("%40","@")}`}>{text.mail}</a>}
       {phone && /\d/.test(phone) && <a className="plain-button" href={`tel:${phone}`}>{text.call}</a>}
     </div>

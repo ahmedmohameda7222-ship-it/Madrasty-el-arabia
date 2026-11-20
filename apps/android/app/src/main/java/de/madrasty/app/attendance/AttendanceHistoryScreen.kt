@@ -30,6 +30,7 @@ import de.madrasty.app.R
 import de.madrasty.app.identity.HttpFailure
 import de.madrasty.app.api.WirePage
 import de.madrasty.app.api.decodeData
+import de.madrasty.app.comms.StartConversation
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.loadAccountSurface
 import de.madrasty.app.school.Field
@@ -72,7 +73,7 @@ private data class HistoryItems(val entries:List<JSONObject>,val preliminary:Lis
 @Composable
 fun AttendanceHistoryScreen(
     model:IdentityViewModel,initialChild:String?,classId:String?,initialRow:String?,
-    openExcuse:(String,String)->Unit,close:()->Unit,
+    openExcuse:(String,String)->Unit,openThread:(String)->Unit,close:()->Unit,
 ) {
     var row by remember(initialRow){mutableStateOf(initialRow)}
     var child by remember(initialChild){mutableStateOf(initialChild)}
@@ -86,9 +87,9 @@ fun AttendanceHistoryScreen(
         when {
             entry!=null -> key(entry){AttendanceRecordHistory(model,entry)}
             initialChild!=null -> HistoryChildren(model,child,{child=it}){linked->
-                key(linked){AttendanceHistoryList(model,linked,null,{},{date->openExcuse(linked,date)})}
+                key(linked){AttendanceHistoryList(model,linked,null,{},{date->openExcuse(linked,date)},openThread)}
             }
-            else -> AttendanceHistoryList(model,null,classId,{row=it},{})
+            else -> AttendanceHistoryList(model,null,classId,{row=it},{},openThread)
         }
     }
 }
@@ -111,7 +112,7 @@ private fun HistoryChildren(model:IdentityViewModel,child:String?,pick:(String)-
 }
 
 @Composable
-private fun AttendanceHistoryList(model:IdentityViewModel,child:String?,classId:String?,openRow:(String)->Unit,openExcuse:(String)->Unit){
+private fun AttendanceHistoryList(model:IdentityViewModel,child:String?,classId:String?,openRow:(String)->Unit,openExcuse:(String)->Unit,openThread:(String)->Unit){
     var draft by remember{mutableStateOf(HistoryFilters())}
     var active by remember{mutableStateOf(HistoryFilters())}
     val path=(if(child==null)"/attendance/history" else "/children/$child/attendance")+"?"+active.query(classId)
@@ -148,6 +149,9 @@ private fun AttendanceHistoryList(model:IdentityViewModel,child:String?,classId:
             Text(title,style=MaterialTheme.typography.titleMedium)
             Text(schoolClass)
             Text(stringResource(historyStatuses[status]?:R.string.attendance_unmarked))
+            if(child!=null&&status in setOf("absent_excused","absent_unexcused")){
+                StartConversation(model,"office","student_affairs","attendance",value.getString("id"),R.string.conversation_attendance,openThread)
+            }
             if(child==null)TextButton(onClick={openRow(value.getString("id"))}){Text(stringResource(R.string.history_detail))}
         }
         page.nextCursor?.let{cursor->
