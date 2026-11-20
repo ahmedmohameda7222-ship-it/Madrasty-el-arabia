@@ -308,6 +308,7 @@ function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
       <Link className="plain-button" href={`/${locale}/school/more/timetable?child=${id}`}>
         {locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}
       </Link>
+      <Link className="plain-button" href={`/${locale}/school/more/exams?child=${id}`}>{locale==="ar"?"الامتحانات":"Prüfungen"}</Link>
       <Link className="plain-button" href={`/${locale}/school/more/evaluations?child=${id}`}>{locale==="ar"?"التقييمات الدورية":"Regelmäßige Beurteilungen"}</Link>
       <Link className="plain-button" href={`/${locale}/school/more/homework?child=${id}`}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>
       <Link className="plain-button" href={`/${locale}/school/more/academics?child=${id}`}>{locale==="ar"?"الأنشطة والتقييم":"Bewertete Aktivitäten"}</Link>

@@ -170,7 +170,7 @@ internal fun ScoreField(label:Int,content:String,changed:(String)->Unit){
 }
 private val maximumActivityScore=BigDecimal("1000000")
 private val decimalScore=Regex("[0-9]+(?:\\.[0-9]{1,4})?")
-private fun parseActivityScore(text:String):BigDecimal?{
+internal fun parseActivityScore(text:String):BigDecimal?{
     val normalized=buildString{
         for(char in text.trim())when(char){
             in '٠'..'٩'->append(char-'٠')

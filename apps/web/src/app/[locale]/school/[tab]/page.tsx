@@ -50,6 +50,7 @@ export default async function SchoolPage({ params, searchParams }: {
           <h2>{locale === "ar" ? "إدارة المدرسة" : "Schulverwaltung"}</h2>
           <div className="header-actions">
             {(session.activePersona==="teacher"||academic)&&<Link className="plain-button" href={`/${locale}/school/more/grading`}>{locale==="ar"?"تصحيح الواجبات":"Hausaufgaben korrigieren"}</Link>}
+            {(session.activePersona!=="admin"||academic)&&<Link className="plain-button" href={`/${locale}/school/more/exams`}>{locale==="ar"?"الامتحانات":"Prüfungen"}</Link>}
             {(session.activePersona!=="admin"||academic)&&<Link className="plain-button" href={`/${locale}/school/more/evaluations`}>{locale==="ar"?"التقييمات الدورية":"Regelmäßige Beurteilungen"}</Link>}
             {(session.activePersona!=="admin"||academic)&&<Link className="plain-button" href={`/${locale}/school/more/homework`}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>}
             {(session.activePersona!=="admin"||academic)&&<Link className="plain-button" href={`/${locale}/school/more/academics`}>{locale==="ar"?"الشرح والأنشطة":"Unterricht und Aktivitäten"}</Link>}

@@ -58,3 +58,10 @@ export function AcademicPageItems<T>({locale,page,children}:{locale:Locale;page:
     {page.notice!==undefined&&<p role="alert">{timetableError(locale,page.notice)}</p>}
   </>;
 }
+
+export function scoreInput(raw:string){
+  const normalized=raw.trim().replace(/[٠-٩]/g,(digit)=>String(digit.charCodeAt(0)-0x660))
+    .replace(/[۰-۹]/g,(digit)=>String(digit.charCodeAt(0)-0x6f0)).replace(/[٬]/g,"").replace(/[,٫]/g,".");
+  if(!normalized)return null;
+  return /^\d+(?:\.\d{1,4})?$/.test(normalized)?Number(normalized):Number.NaN;
+}

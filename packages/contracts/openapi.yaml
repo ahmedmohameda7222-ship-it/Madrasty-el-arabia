@@ -2845,6 +2845,189 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/AssessmentPupil"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /academics/exams:
+    get:
+      operationId: listSchoolExams
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"offeringId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/SchoolExam"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createSchoolExam
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["date","time","kind","title","maxScore","offeringId"],"properties":{"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]},"kind":{"type":"string","enum":["oral","written"]},"title":{"type":"string","minLength":1,"maxLength":200},"maxScore":{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},"offeringId":{"type":"string","format":"uuid"}}}
+      responses:
+        '201':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/CurriculumLessonReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}:
+    get:
+      operationId: readSchoolExam
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"childId","in":"query","schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolExam"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: changeSchoolExam
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["date","time","kind","title","maxScore","revision"],"properties":{"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]},"kind":{"type":"string","enum":["oral","written"]},"title":{"type":"string","minLength":1,"maxLength":200},"maxScore":{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},"revision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/CurriculumLessonReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}/announce:
+    post:
+      operationId: announceSchoolExam
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","date"],"properties":{"revision":{"type":"integer","minimum":1},"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]}}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ExamAnnouncementReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}/marks:
+    get:
+      operationId: listSchoolExamMarks
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"name":"cursor","in":"query","schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/ExamRosterRow"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}/marks/{studentId}:
+    put:
+      operationId: recordSchoolExamMark
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"studentId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","score","feedback"],"properties":{"revision":{"type":"integer","minimum":1},"score":{"anyOf":[{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"feedback":{"anyOf":[{"type":"string","minLength":1,"maxLength":3000},{"type":"null"}]}}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ExamMarkReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}/results/publish:
+    post:
+      operationId: publishSchoolExamResults
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","reviewedRows"],"properties":{"revision":{"type":"integer","minimum":1},"reviewedRows":{"type":"array","items":{"type":"object","required":["studentId","revision"],"properties":{"studentId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}},"minItems":1,"maxItems":1000}}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ExamResultBatchReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}/results/{studentId}/correct:
+    post:
+      operationId: correctSchoolExamResult
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"studentId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["revision","score","feedback","reason"],"properties":{"revision":{"type":"integer","minimum":1},"score":{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},"feedback":{"anyOf":[{"type":"string","minLength":1,"maxLength":3000},{"type":"null"}]},"reason":{"type":"string","minLength":1,"maxLength":500},"examRevision":{"type":"integer","minimum":1}}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ExamResultCorrectionReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /academics/exams/{id}/results/{studentId}/history:
+    get:
+      operationId: readSchoolExamResultHistory
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"studentId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Scoped exam schedule or result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/ExamResultHistory"}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -2870,6 +3053,13 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    SchoolExam: {"type":"object","required":["date","time","kind","title","maxScore","id","offeringId","classId","classCode","classNameAr","classNameDe","yearId","yearStart","yearEnd","subjectId","subjectNameAr","subjectNameDe","revision","announcementId","announcementRevision","announcedDate","announcedTime","announcedAt","announcementPending","resultId","resultRevision","resultDate","resultScore","resultMaxScore","resultFeedback","resultPublishedAt","canEdit","canAnnounce","canReview","canMark","canPublish"],"properties":{"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]},"kind":{"type":"string","enum":["oral","written"]},"title":{"type":"string","minLength":1,"maxLength":200},"maxScore":{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},"id":{"type":"string","format":"uuid"},"offeringId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"yearId":{"type":"string","format":"uuid"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"},"subjectId":{"type":"string","format":"uuid"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"revision":{"type":"integer","minimum":1},"announcementId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"announcementRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"announcedDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"announcedTime":{"anyOf":[{"type":"string","pattern":"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]},"announcedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"announcementPending":{"type":"boolean"},"resultId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"resultRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"resultDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"resultScore":{"anyOf":[{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"resultMaxScore":{"anyOf":[{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"resultFeedback":{"anyOf":[{"type":"string","minLength":1,"maxLength":3000},{"type":"null"}]},"resultPublishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"canEdit":{"type":"boolean"},"canAnnounce":{"type":"boolean"},"canReview":{"type":"boolean"},"canMark":{"type":"boolean"},"canPublish":{"type":"boolean"}}}
+    ExamAnnouncementReceipt: {"type":"object","required":["announcementId","revision","date","time","change","announcedAt"],"properties":{"announcementId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]},"change":{"type":"string","enum":["initial","reschedule"]},"announcedAt":{"type":"string","format":"date-time"}}}
+    ExamRosterRow: {"type":"object","required":["studentId","studentName","studentNumber","enrollmentId","resultId","revision","score","feedback","publishedId","publishedRevision","publishedScore","publishedMaxScore","canMark","canCorrect","eligible","readyToPublish"],"properties":{"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"enrollmentId":{"type":"string","format":"uuid"},"resultId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"score":{"anyOf":[{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"feedback":{"anyOf":[{"type":"string","minLength":1,"maxLength":3000},{"type":"null"}]},"publishedId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"publishedRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"publishedScore":{"anyOf":[{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"publishedMaxScore":{"anyOf":[{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},{"type":"null"}]},"canMark":{"type":"boolean"},"canCorrect":{"type":"boolean"},"eligible":{"type":"boolean"},"readyToPublish":{"type":"boolean"}}}
+    ExamMarkReceipt: {"type":"object","required":["resultId","revision"],"properties":{"resultId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}}
+    ExamResultBatchReceipt: {"type":"object","required":["batchId","rows"],"properties":{"batchId":{"type":"string","format":"uuid"},"rows":{"type":"array","items":{"type":"object","required":["studentId","revision","resultId","publicationId"],"properties":{"studentId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"resultId":{"type":"string","format":"uuid"},"publicationId":{"type":"string","format":"uuid"}}},"minItems":1}}}
+    ExamResultCorrectionReceipt: {"type":"object","required":["studentId","revision","resultId","publicationId","batchId"],"properties":{"studentId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"resultId":{"type":"string","format":"uuid"},"publicationId":{"type":"string","format":"uuid"},"batchId":{"type":"string","format":"uuid"}}}
+    ExamResultHistory: {"type":"object","required":["publicationId","revision","score","maxScore","feedback","date","occurredAt","actorName","reason"],"properties":{"publicationId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"score":{"type":"number","minimum":0,"maximum":1000000,"multipleOf":0.0001},"maxScore":{"type":"number","minimum":0.0001,"maximum":1000000,"multipleOf":0.0001},"feedback":{"anyOf":[{"type":"string","minLength":1,"maxLength":3000},{"type":"null"}]},"date":{"type":"string","format":"date"},"occurredAt":{"type":"string","format":"date-time"},"actorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]}}}
     StudentEvaluation: {"type":"object","required":["title","participation","understanding","preparation","strengths","improvements","periodStart","periodEnd","id","studentId","studentName","studentNumber","offeringId","classId","classCode","classNameAr","classNameDe","yearId","yearStart","yearEnd","subjectId","subjectNameAr","subjectNameDe","revision","publishedId","publishedRevision","publishedAt","canEdit","canPublish","hasCorrections"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"understanding":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"preparation":{"anyOf":[{"type":"integer","minimum":1,"maximum":5},{"type":"null"}]},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000},"periodStart":{"type":"string","format":"date"},"periodEnd":{"type":"string","format":"date"},"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"offeringId":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"yearId":{"type":"string","format":"uuid"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"},"subjectId":{"type":"string","format":"uuid"},"subjectNameAr":{"type":"string"},"subjectNameDe":{"type":"string"},"revision":{"type":"integer","minimum":1},"publishedId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"publishedRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"publishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"canEdit":{"type":"boolean"},"canPublish":{"type":"boolean"},"hasCorrections":{"type":"boolean"}}}
     EvaluationPublication: {"type":"object","required":["title","participation","understanding","preparation","strengths","improvements","id","revision","publishedAt","actorName","reason"],"properties":{"title":{"type":"string","minLength":1,"maxLength":200},"participation":{"type":"integer","minimum":1,"maximum":5},"understanding":{"type":"integer","minimum":1,"maximum":5},"preparation":{"type":"integer","minimum":1,"maximum":5},"strengths":{"type":"string","maxLength":6000},"improvements":{"type":"string","maxLength":6000},"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"publishedAt":{"type":"string","format":"date-time"},"actorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]}}}
     EvaluationPublicationReceipt: {"type":"object","required":["publicationId","revision","publishedAt"],"properties":{"publicationId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"publishedAt":{"type":"string","format":"date-time"}}}

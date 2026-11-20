@@ -2,7 +2,7 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** E06 exam schedule, grading and private result publication. E05 periodic evaluations, E04 homework grading (960fab7) and E03 assignment and roster materialization (d1fe08a), E02 teaching and activity records (4a40bc3), E01 curriculum (02cf5d5), and A04 approved attendance corrections (99c27f8) built locally. A01 is in 5d01351 and A02 is in afb88f4. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** E07 scoped academic reports. E06 exam schedules and private results, E05 periodic evaluations (53826be), E04 homework grading (960fab7) and E03 assignment and roster materialization (d1fe08a), E02 teaching and activity records (4a40bc3), E01 curriculum (02cf5d5), and A04 approved attendance corrections (99c27f8) built locally. A01 is in 5d01351 and A02 is in afb88f4. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
@@ -10,7 +10,7 @@
 | 01 Identity and access | I01–I06 built / QA pending | One account, effective grants and recoverable invites |
 | 02 School operations | S01–S08 built / QA pending | Import, linked families, dated staffing and clash-safe timetable |
 | 03 Attendance | A01–A04 built / QA pending | Online lock, actual arrival, offline reconciliation and approval |
-| 04 Academics | E01–E05 built / QA pending; E06 active | Published lessons, gradebook, exam results and reports |
+| 04 Academics | E01–E06 built / QA pending; E07 active | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
 | 06 Finance | Planned | Per-child invoice, manual settlement and stopping decisions |
 | 07 Candidate and distribution | Planned | D05 records deployed web/API, database and signed APK |
@@ -49,7 +49,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-20 | E03 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Whole-class homework authoring and read-only child detail in Arabic/German on web and Android, with same-transaction roster reconciliation across enrollment paths | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. E04 owns grade writes and grade-sheet links. Q03–Q06 pending. | E04 score-only bulk and individual grades. |
 | 2026-11-20 | E04 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Staff homework grading inbox, precise half-point validation, atomic bulk and individual grading, per-pupil correction history and family disclosure on both clients | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. Feedback is omitted from bulk edits, reasons and values are outside event payloads, E07 consumes canonical rows. C07 owns correction delivery. Q03–Q06 pending. | E05 periodic evaluations. |
 | 2026-11-20 | E05 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Periodic evaluation draft, three independent scales, pupil-scoped snapshots, correction history and review on web/Android | Type-check after route generation, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. Publish and correction enqueue private result events for C07. E07 reads the latest published version. Q03–Q06 pending. | E06 exam schedule and private results. |
-| 2026-11-20 | E06, step 1 | Active | E05 dated assessment roster, separate draft/publication scope and result outbox | Exam schedule versions, marks and reviewed batch publish pending | Implement data scope, then APIs and both clients. |
+| 2026-11-20 | E06 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Versioned oral/written schedules, private draft marks, reviewed batch publish and individual corrections, on web and Android | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. Each published result preserves its reviewed denominator and historical enrollment. Corrections may adopt a new reviewed maximum with the exam revision. C07 owns grouped delivery. Q03–Q06 pending. | E07 academic reports. |
+| 2026-11-20 | E07, step 1 | Active | A04 approved attendance and current scoped academic source projections | Cross-source report, protected drill-down and both clients pending | Build scoped contexts and report totals, then web and Compose. |
 
 ## Decision and discrepancy log
 

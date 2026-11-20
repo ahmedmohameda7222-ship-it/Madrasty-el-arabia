@@ -12,7 +12,7 @@ import { dictionary } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
-import { AcademicPageItems,offeringText,useAcademicPage } from "./shared";
+import { AcademicPageItems,offeringText,scoreInput,useAcademicPage } from "./shared";
 
 const copy={
   ar:{title:"الشرح والأنشطة",teaching:"سجل الشرح",activity:"الأنشطة والتقييم",child:"الطفل",context:"المادة والفصل والسنة",
@@ -184,12 +184,6 @@ function ActivitiesPanel({locale,offering,child,refresh,initial}:{locale:Locale;
   </section>;
 }
 
-function scoreInput(raw:string){
-  const normalized=raw.trim().replace(/[٠-٩]/g,(digit)=>String(digit.charCodeAt(0)-0x660))
-    .replace(/[۰-۹]/g,(digit)=>String(digit.charCodeAt(0)-0x6f0)).replace(/[٬]/g,"").replace(/[,٫]/g,".");
-  if(!normalized)return null;
-  return /^\d+(?:\.\d{1,4})?$/.test(normalized)?Number(normalized):Number.NaN;
-}
 function scoreLabel(locale:Locale,score:number|null,maximum:number){
   const format=new Intl.NumberFormat(locale,{maximumFractionDigits:4});
   return score===null?copy[locale].pending:`${format.format(score)} / ${format.format(maximum)}`;

@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  homeworkGradeBulkReceipt,homeworkGradeCorrection,homeworkGradeReceipt,homeworkGradeRow,homeworkGradingItem,homeworkScore,
+  homeworkGradeBulkReceipt,homeworkGradeCorrection,homeworkGradeReceipt,homeworkGradeRow,homeworkGradingItem,
   type gradingInboxQuery,type homeworkGradeBulkInput,type homeworkGradeInput,type homeworkGradeRosterQuery,
 } from "@madrasty/contracts";
 import type { JSONValue } from "postgres";
@@ -8,9 +8,10 @@ import { z } from "zod";
 import { commitCommand,hashCommand } from "@/server/db/commands";
 import { appendAudits,appendEvents } from "@/server/db/outbox";
 import { withActor,type ActorContext,type Transaction } from "@/server/db/scoped";
-import { ApiError,readJson } from "@/server/http";
+import { ApiError } from "@/server/http";
 import { academicReadScope } from "./curriculum";
 import { homeworkRecord } from "./homework";
+import { readDecimalJson } from "./decimal-json";
 
 const cursorSchema=z.object({dueOn:z.iso.date(),id:z.uuid()});
 function inboxCursor(value?:string){
@@ -21,25 +22,8 @@ function inboxCursor(value?:string){
   }catch{throw new ApiError("validation",{cursor:"error.validation"});}
 }
 
-function decimalKey(token:string){
-  const match=/^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(token);
-  if(!match)return null;
-  const fraction=match[3]??"";
-  const significant=(match[2]+fraction).replace(/^0+/,"");
-  if(!significant)return "0";
-  let end=significant.length;
-  while(significant.charCodeAt(end-1)===48)end--;
-  const magnitude=Number(match[4]??0)-fraction.length+significant.length-end;
-  return `${match[1]}${significant.slice(0,end)}e${magnitude}`;
-}
-
 export function readHomeworkGrades<T>(request:Request,schema:z.ZodType<T>){
-  return readJson(request,schema,3*1024*1024,(key,value,context)=>{
-    if(key!=="score"||typeof value!=="number")return value;
-    // Compare the decimal token to the wire number before storing a half-point mark.
-    if(!homeworkScore.safeParse(value).success||!context?.source||decimalKey(context.source)!==decimalKey(String(value)))return Number.NaN;
-    return value;
-  });
+  return readDecimalJson(request,schema,['score'],3*1024*1024);
 }
 
 async function staff(tx:Transaction,actor:ActorContext){
