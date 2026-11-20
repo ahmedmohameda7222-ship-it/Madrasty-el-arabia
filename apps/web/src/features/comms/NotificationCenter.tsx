@@ -3,13 +3,14 @@
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {
-  noticeCount,noticeDestination,noticeReadReceipt,noticeRecord,preferencesSchema,type Locale,type NoticeTarget,
+  noticeCount,noticeDestination,noticeReadReceipt,noticeRecord,preferencesSchema,type Locale,
 } from "@madrasty/contracts";
 import {ApiResponseError,requestApi} from "@/api/client";
 import {webHeaders} from "@/api/client-headers";
 import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {timetableError} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
+import {schoolResourceDestination} from "@/features/school/resourceDestination";
 import {AsyncSurface} from "@/ui/AsyncSurface";
 import {Icon} from "@/ui/Icon";
 import {
@@ -38,25 +39,6 @@ const copy={
 const listSchema=noticeRecord.array();
 const changed="madrasty-notices-changed";
 const noticeURL=(locale:Locale)=>`/${locale}/school/more/notifications`;
-function targetLink(locale:Locale,target:NoticeTarget){
-  const root=`/${locale}/school`,id=target.id;
-  switch(target.kind){
-    case "thread":return `${root}/messages?thread=${id}`;
-    case "broadcast":return `${root}/more/broadcasts?announcement=${id}`;
-    case "child":return `${root}/children?child=${id}`;
-    case "attendance":return `${root}/children/${target.childId}/attendance`;
-    case "exam":return `${root}/more/exams?child=${target.childId}&exam=${id}`;
-    case "evaluation":return `${root}/more/evaluations?child=${target.childId}&evaluation=${id}`;
-    case "activity":return `${root}/more/academics?child=${target.childId}&activity=${id}`;
-    case "homework":return `${root}/more/homework?child=${target.childId}&work=${id}`;
-    case "application":return `/${locale}/apply`;
-    case "invoice":return `${root}/more/invoices?invoice=${id}`;
-    case "receipt":return `${root}/more/receipts?receipt=${id}`;
-    case "fee_stop":return `${root}/more/enrollment-stops?request=${id}`;
-    default:return null;
-  }
-}
-
 export function NotificationLink({locale}:{locale:Locale}){
   const actor=useAccountScope(),labels=copy[locale];
   const [count,setCount]=useState(0);
@@ -179,7 +161,7 @@ function NoticeDetail({locale,selected}:{locale:Locale;selected:string}){
       });
     return ()=>abort.abort();
   },[selected,persona,retry,locale]);
-  const links=value?.state==="open"?value.targets.map((item)=>({item,href:targetLink(locale,item)})).filter((entry)=>entry.href!==null):[];
+  const links=value?.state==="open"?value.targets.map((item)=>({item,href:schoolResourceDestination(locale,item)})):[];
   return <div className="auth-form">
     <Link className="plain-button" href={noticeURL(locale)}>{labels.back}</Link>
     {error&&<AsyncSurface locale={locale} state={{kind:"error",message:error,retry:()=>{setError("");setRetry((n)=>n+1);}}}/>}

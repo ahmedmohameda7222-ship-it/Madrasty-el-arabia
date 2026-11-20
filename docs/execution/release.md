@@ -40,4 +40,6 @@ The operation IDs and paths are enumerated in [OpenAPI](../../packages/contracts
 
 ## Candidate freeze
 
+The local contract contains 200 paths and 259 operations. The 39 migration sources have distinct versions. The local unsigned release is `apps/android/app/build/outputs/apk/release/app-release-unsigned.apk` (11,745,955 bytes, SHA-256 `a0e5eecd58cd2226034fac869f09ab444e3f673441f6d4db5faf021f2e108294`). This path records assembly evidence.
+
 D05 records the full source commit, the ordered applied migration ledger, Vercel deployment ID and origin, OpenAPI SHA-256, APK size/hash/version/public signing certificate, worker revision, recovery pointer and the operational contact. The complete candidate and Q01 entry gate are pending.
