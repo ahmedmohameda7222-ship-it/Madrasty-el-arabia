@@ -44,6 +44,8 @@ import de.madrasty.app.comms.mayUseDeliveryStatus
 import de.madrasty.app.comms.NotificationAction
 import de.madrasty.app.comms.NotificationCenter
 import de.madrasty.app.comms.PushSessionBinding
+import de.madrasty.app.comms.PublicationSection
+import de.madrasty.app.comms.SchoolPublicationScreen
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -81,6 +83,7 @@ internal sealed interface WorkspacePage {
     data object Delivery : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
+    data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data object Enrollment : WorkspacePage
@@ -293,6 +296,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
+        is WorkspacePage.Publication -> SchoolPublicationScreen(model,page.section,page.item,state::back)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
@@ -379,6 +383,8 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
     OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
     OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
+    OpenPage(state,WorkspacePage.Publication(PublicationSection.News),R.string.school_news)
+    OpenPage(state,WorkspacePage.Publication(PublicationSection.Events),R.string.school_events)
     OpenPage(state,WorkspacePage.Notifications(),R.string.notices_title)
     OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
     AccountActions(model,session)

@@ -181,3 +181,10 @@ button:disabled { cursor: default; }
 
 .notice-link { display: inline-flex; align-items: center; justify-content: center; min-inline-size: 44px; min-block-size: 44px; gap: .25rem; }
 .notice-count { font-size: .8rem; font-weight: 700; }
+
+
+.school-month-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: .2rem; }
+.school-month-grid > small { text-align: center; overflow-wrap: anywhere; }
+.school-month-grid button { padding-inline: .15rem; min-inline-size: 0; display: grid; justify-items: center; }
+.school-month-grid button[aria-current="date"] { font-weight: 700; }
+.school-month-dot { font-size: .6rem; }

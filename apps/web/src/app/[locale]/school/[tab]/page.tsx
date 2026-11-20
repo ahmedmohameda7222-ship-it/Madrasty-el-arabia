@@ -48,6 +48,8 @@ export default async function SchoolPage({ params, searchParams }: {
             <Link className="plain-button" href={`/${locale}/account/security`}>{locale === "ar" ? "الأمان والاسترجاع" : "Sicherheit und Wiederherstellung"}</Link>
             <Link className="plain-button" href={`/${locale}/directory`}>{locale === "ar" ? "دليل التواصل" : "Kontaktverzeichnis"}</Link>
             <Link className="plain-button" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
+            <Link className="plain-button" href={`/${locale}/school/more/news`}>{locale==="ar"?"أخبار المدرسة":"Schulnachrichten"}</Link>
+            <Link className="plain-button" href={`/${locale}/school/more/events`}>{locale==="ar"?"تقويم الأحداث":"Veranstaltungskalender"}</Link>
           </div>
           <SessionControls locale={locale} session={session} />
         </section>

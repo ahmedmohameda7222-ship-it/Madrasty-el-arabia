@@ -3845,6 +3845,164 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"recorded":{"type":"boolean"}},"required":["recorded"]}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /news:
+    get:
+      operationId: listSchoolNews
+      summary: Read school news visible to the current account
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"view","in":"query","required":false,"schema":{"type":"string","enum":["feed","managed"],"default":"feed"}}
+      responses:
+        '200':
+          description: Read school news visible to the current account
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/SchoolNewsEntry"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createSchoolNewsDraft
+      summary: Create a revisioned draft in a permitted audience
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]}},"required":["audience","sourceLocale","copy"]}
+      responses:
+        '201':
+          description: Create a revisioned draft in a permitted audience
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolNewsEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /news/{id}:
+    get:
+      operationId: getSchoolNews
+      summary: Read one publication after checking current audience or editor scope
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read one publication after checking current audience or editor scope
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolNewsEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateSchoolNews
+      summary: Save reviewed copy, publish a draft, or withdraw a publication
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"oneOf":[{"type":"object","properties":{"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"action":{"const":"save"},"revision":{"type":"integer","minimum":1}},"required":["audience","sourceLocale","copy","action","revision"]},{"type":"object","properties":{"action":{"type":"string","enum":["publish","withdraw"]},"revision":{"type":"integer","minimum":1}},"required":["action","revision"]}]}
+      responses:
+        '200':
+          description: Save reviewed copy, publish a draft, or withdraw a publication
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolNewsEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /events:
+    get:
+      operationId: listSchoolEvents
+      summary: Read the authorized school-local month including overlapping events
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"view","in":"query","required":false,"schema":{"type":"string","enum":["feed","managed"],"default":"feed"}}
+        - {"name":"month","in":"query","required":true,"schema":{"type":"string","pattern":"^[0-9]{4}-(0[1-9]|1[0-2])$"}}
+      responses:
+        '200':
+          description: Read the authorized school-local month including overlapping events
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/SchoolEventEntry"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: createSchoolEventsDraft
+      summary: Create a revisioned draft in a permitted audience
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"timing":{"$ref":"#/components/schemas/SchoolEventTiming"}},"required":["audience","sourceLocale","copy","timing"]}
+      responses:
+        '201':
+          description: Create a revisioned draft in a permitted audience
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolEventEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /events/{id}:
+    get:
+      operationId: getSchoolEvents
+      summary: Read one publication after checking current audience or editor scope
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read one publication after checking current audience or editor scope
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolEventEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateSchoolEvents
+      summary: Save reviewed copy, publish a draft, or withdraw a publication
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"oneOf":[{"type":"object","properties":{"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"timing":{"$ref":"#/components/schemas/SchoolEventTiming"},"action":{"const":"save"},"revision":{"type":"integer","minimum":1}},"required":["audience","sourceLocale","copy","timing","action","revision"]},{"type":"object","properties":{"action":{"type":"string","enum":["publish","withdraw"]},"revision":{"type":"integer","minimum":1}},"required":["action","revision"]}]}
+      responses:
+        '200':
+          description: Save reviewed copy, publish a draft, or withdraw a publication
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolEventEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/publishing-options:
+    get:
+      operationId: getSchoolPublishingOptions
+      summary: Read school-local date and authorized class choices
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Read school-local date and authorized class choices
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolPublishingOptions"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -3873,6 +4031,12 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    PublishingAudience: {"oneOf":[{"type":"object","properties":{"kind":{"const":"school"}},"required":["kind"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"class"},"classId":{"type":"string","format":"uuid"}},"required":["kind","classId"],"additionalProperties":false}]}
+    SchoolEventTiming: {"type":"object","properties":{"start":{"$ref":"#/components/schemas/SchoolLocalMoment"},"end":{"anyOf":[{"$ref":"#/components/schemas/SchoolLocalMoment"},{"type":"null"}]},"allDay":{"type":"boolean"}},"required":["start","end","allDay"]}
+    SchoolLocalMoment: {"type":"object","properties":{"date":{"type":"string","format":"date"},"time":{"anyOf":[{"type":"string","pattern":"^([01][0-9]|2[0-3]):[0-5][0-9]$"},{"type":"null"}]}},"required":["date","time"]}
+    SchoolNewsEntry: {"type":"object","properties":{"kind":{"const":"news"},"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"state":{"type":"string","enum":["draft","published","withdrawn"]},"publishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"updatedAt":{"type":"string","format":"date-time"},"revision":{"type":"integer","minimum":1},"canEdit":{"type":"boolean"}},"required":["kind","id","audience","sourceLocale","copy","classAr","classDe","state","publishedAt","updatedAt","revision","canEdit"]}
+    SchoolEventEntry: {"type":"object","properties":{"kind":{"const":"event"},"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"state":{"type":"string","enum":["draft","published","withdrawn"]},"publishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"updatedAt":{"type":"string","format":"date-time"},"revision":{"type":"integer","minimum":1},"canEdit":{"type":"boolean"},"timing":{"$ref":"#/components/schemas/SchoolEventTiming"},"timezone":{"type":"string"}},"required":["kind","id","audience","sourceLocale","copy","classAr","classDe","state","publishedAt","updatedAt","revision","canEdit","timing","timezone"]}
+    SchoolPublishingOptions: {"type":"object","properties":{"schoolDate":{"type":"string","format":"date"},"timezone":{"type":"string"},"schoolWide":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"canWrite":{"type":"boolean"}},"required":["id","code","nameAr","nameDe","canWrite"]}}},"required":["schoolDate","timezone","schoolWide","classes"]}
     DeliveryStatusItem: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["invite_guardian","invite_teacher","broadcast","attendance","academics","finance","school"]},"state":{"type":"string","enum":["queued","accepted","delivered","failed","bounced","uncertain","suppressed"]},"channel":{"type":"string","enum":["email","push"]},"dueAt":{"type":"string","format":"date-time"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"},"attempts":{"type":"integer","minimum":0},"revision":{"type":"integer","minimum":1},"canRedrive":{"type":"boolean"},"failure":{"anyOf":[{"type":"string","maxLength":80},{"type":"null"}]}},"required":["id","kind","state","channel","dueAt","createdAt","updatedAt","attempts","revision","canRedrive","failure"]}
     NoticeTarget: {"oneOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["thread","broadcast","child","application","invoice","receipt","fee_stop"]},"id":{"type":"string","format":"uuid"}},"required":["kind","id"]},{"type":"object","properties":{"kind":{"type":"string","enum":["exam","evaluation","activity","homework"]},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"}},"required":["kind","id","childId"]},{"type":"object","properties":{"kind":{"const":"attendance"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}},"required":["kind","id","childId","date"]}]}
     NoticeDestination: {"oneOf":[{"type":"object","properties":{"state":{"const":"open"},"targets":{"type":"array","items":{"$ref":"#/components/schemas/NoticeTarget"},"minItems":1,"maxItems":50}},"required":["state","targets"]},{"type":"object","properties":{"state":{"const":"unavailable"}},"required":["state"]}]}
