@@ -39,6 +39,25 @@ internal data class SchoolResourceLink(
     }
 }
 
+internal data class AndroidClientVersions(
+    val minimumVersionCode: Long,
+    val suggestedVersionCode: Long,
+    val suggestedVersionName: String,
+    val downloadUrl: String,
+    val sha256: String,
+) {
+    companion object {
+        fun fromJson(value: JSONObject): AndroidClientVersions = AndroidClientVersions(
+            minimumVersionCode = value.getLong("minimumVersionCode"),
+            suggestedVersionCode = value.getLong("suggestedVersionCode"),
+            suggestedVersionName = value.getString("suggestedVersionName"),
+            downloadUrl = value.getString("downloadUrl"),
+            sha256 = value.getString("sha256"),
+        )
+    }
+}
+
 internal object SchoolOperations {
     const val resolveSchoolResourceLink = "/resource-links/{kind}/{id}"
+    const val getClientVersions = "/client-versions"
 }

@@ -13,20 +13,42 @@ fun httpsOrigin(value: String): String {
     return value.trimEnd('/')
 }
 val schoolApiOrigin = httpsOrigin(providers.gradleProperty("madrasty.apiOrigin").orElse("https://localhost").get())
+val schoolPackage = providers.gradleProperty("madrasty.applicationId")
+val schoolVersionCode = providers.gradleProperty("madrasty.versionCode").map(String::toInt).orElse(1)
+val schoolVersionName = providers.gradleProperty("madrasty.versionName").orElse("0.1.0")
+val signingInputs = listOf("MADRASTY_ANDROID_KEYSTORE","MADRASTY_ANDROID_STORE_PASSWORD",
+    "MADRASTY_ANDROID_KEY_ALIAS","MADRASTY_ANDROID_KEY_PASSWORD").map { providers.environmentVariable(it).orNull }
+val requireSchoolSignature = providers.gradleProperty("madrasty.requireReleaseSignature").orNull == "true"
+
+if (requireSchoolSignature) {
+    require(signingInputs.all { !it.isNullOrBlank() }) { "School release signing inputs are incomplete." }
+    require(schoolPackage.isPresent && URI.create(schoolApiOrigin).host != "localhost") {
+        "Bind the permanent school package ID and HTTPS origin before signing."
+    }
+}
 
 android {
     namespace = "de.madrasty.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = providers.gradleProperty("madrasty.applicationId")
-            .orElse("de.madrasty.app.prelaunch").get()
+        applicationId = schoolPackage.orElse("de.madrasty.app.prelaunch").get()
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = schoolVersionCode.get()
+        versionName = schoolVersionName.get()
         buildConfigField("String", "API_ORIGIN", "\"$schoolApiOrigin\"")
         manifestPlaceholders["appLinkHost"] = URI.create(schoolApiOrigin).host
+    }
+
+    if (requireSchoolSignature) {
+        val schoolRelease = signingConfigs.create("schoolRelease") {
+            storeFile = file(requireNotNull(signingInputs[0]))
+            storePassword = signingInputs[1]
+            keyAlias = signingInputs[2]
+            keyPassword = signingInputs[3]
+        }
+        buildTypes.named("release") { signingConfig = schoolRelease }
     }
 
     buildFeatures {

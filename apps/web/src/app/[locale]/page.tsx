@@ -10,6 +10,7 @@ export default async function Welcome({ params }: { params: Promise<{ locale: Lo
       <SchoolHeader locale={locale} />
       <h1>{dictionary(locale).school}</h1>
       <Link className="primary-button" href={`/${locale}/account/sign-in`}>{locale === "ar" ? "تسجيل الدخول" : "Anmelden"}</Link>
+      <Link className="plain-button" href={`/${locale}/install`}>{locale === "ar" ? "تثبيت مدرستي العربية" : "App installieren"}</Link>
     </main>
   );
 }

@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import de.madrasty.app.BuildConfig
+import de.madrasty.app.navigation.AndroidClientVersions
+import de.madrasty.app.navigation.SchoolOperations
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.api.decodeError
 import de.madrasty.app.attendance.AttendanceDraftStore
@@ -168,6 +170,11 @@ class AuthRepository internal constructor(context: Context, private val attendan
     suspend fun request(path: String, body: JSONObject? = null, idempotencyKey: String? = null, method: String = if (body == null) "GET" else "POST"): String = io {
         val current = active ?: throw HttpFailure(401, "unauthenticated")
         authenticated(path, body, current.actor.persona, idempotencyKey, method)
+    }
+
+    internal suspend fun currentAndroidRelease(): AndroidClientVersions = io {
+        val raw = exchange("$apiOrigin/api/v1${SchoolOperations.getClientVersions}", null, emptyMap(), decodeApiError = true)
+        decodeData(raw) { AndroidClientVersions.fromJson(it as JSONObject) }.data
     }
 
     suspend fun schoolStorageOrigin():String=io {

@@ -50,3 +50,6 @@ export * from "./comms/events";
 
 export * from "./generated";
 export * from "./resourceLinks";
+
+
+export * from "./clientVersions";

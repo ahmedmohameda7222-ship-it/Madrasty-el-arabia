@@ -54,3 +54,14 @@ The Android Java namespace is `de.madrasty.app`. The provisional local applicati
 - D02 supplies INVITATION_ENVELOPE_KEY as 32 random bytes encoded base64url in the server and dispatcher environments. The dispatcher reads invitation proofs through INVITE_WORKER_DATABASE_URL with the app_invite_worker role and uses generation-specific provider idempotency.
 - D02 provisions a separate restricted pooled login for DELIVERY_WORKER_DATABASE_URL with the app_delivery_worker role. The ordinary web/API DATABASE_URL continues to use the app_runtime role. Each worker login needs permission to assume its own runtime role.
 - D03 binds RESEND_API_KEY, RESEND_FROM, RESEND_WEBHOOK_SECRET, WEB_PUSH_SUBJECT, WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY and the FCM public Android configuration plus FCM_SERVICE_ACCOUNT_B64. D03 uses a scheduled bearer-protected POST to /api/v1/internal/dispatch and registers the signed Resend callback at /api/v1/internal/email-events. Both transactional email and device push require a verified recipient on PRELAUNCH_EMAIL_ALLOWLIST during pre-launch.
+
+
+## Android packaging
+
+Set the Gradle project properties `madrasty.apiOrigin`, `madrasty.applicationId`, `madrasty.versionCode` and `madrasty.versionName` for both the baseline and current release. In PowerShell, Gradle's environment form is `ORG_GRADLE_PROJECT_madrasty.apiOrigin` and correspondingly for the other properties. Use the same permanent HTTPS host, package ID and school-owned signer for both builds. The baseline uses the lower supported version code.
+
+Run `pnpm build:android release` to compile an unsigned release. The publishable build uses `pnpm build:android signed-release`, with the school key supplied through protected environment bindings `MADRASTY_ANDROID_KEYSTORE`, `MADRASTY_ANDROID_STORE_PASSWORD`, `MADRASTY_ANDROID_KEY_ALIAS` and `MADRASTY_ANDROID_KEY_PASSWORD`. Keep the keystore and passwords outside the checkout and shell history.
+
+For the signed candidate, use the pinned SDK Build Tools `apksigner verify --print-certs <actual-apk>`. Record the output certificate SHA-256, package ID, version, bytes and file SHA-256. Upload the verified APK to the authorized artifact store with Android's APK media type and a download disposition. Bind the public version and certificate fields in `.env.example` with the exact storage hostname and immutable artifact URL. The site exposes `/download/android`, `/api/v1/client-versions` and `/.well-known/assetlinks.json`. The Arabic and German `/install` pages include Safari installation and the school APK link.
+
+[Apple Support installation instructions](https://support.apple.com/guide/iphone/turn-a-website-into-an-app-iphea86e5236/ios) · [Android App Links association](https://developer.android.com/training/app-links/configure-assetlinks)

@@ -34,9 +34,9 @@ The operation IDs and paths are enumerated in [OpenAPI](../../packages/contracts
 |---|---|
 | Supabase project | School connection, ref `ycsyghyigkadtugluugm`, region `eu-west-1`, PostgreSQL 17.12. Read-only deployment inventory found zero Auth users and sessions, Storage buckets and objects, app/public tables, target application roles and applied migrations. |
 | Supabase migration access | Local CLI 2.121.0 authenticated to an account whose project list excludes the school project. School CLI access or an operator-managed migration connection is outstanding. |
-| Vercel | Repo search found no existing project in the team linked to the repository owner's Vercel account. No school-controlled hostname was found in the team's verified domain inventory. |
+| Vercel | Created dedicated pre-launch project `madrasty-el-arabia-prelaunch` (`prj_lB5FQ4zDGXQk9Qf9pMrIVACah0lY`) in `ahmed-s-projectssasa` and confirmed Node `24.x`. The Preview configuration has `SCHOOL_ENVIRONMENT`, `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from the school connection. The verified domain inventory had no school hostname. No candidate deployment exists. |
 | Delivery | SMTP, transactional sender, VAPID, Firebase and controlled recipient bindings are pending. No provider delivery has been initiated. |
-| Android custody | Permanent school host, package ID and school-controlled release signing binding are pending. |
+| Android custody | Both debug and unsigned release variants compiled. The signed release, prior signed baseline, permanent origin, package ID and certificate remain pending. Public install and version endpoints only expose configured release metadata. |
 
 ## Candidate freeze
 

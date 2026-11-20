@@ -29,6 +29,7 @@ import de.madrasty.app.comms.verifiedPushNotice
 import de.madrasty.app.identity.IdentityScreen
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.readPreferences
+import de.madrasty.app.navigation.ReleaseVersionGate
 import de.madrasty.app.navigation.schoolResourceFromUri
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolTheme
@@ -83,7 +84,9 @@ class MainActivity : ComponentActivity() {
             ) {
                 SchoolTheme(darkMode = darkMode) {
                     Surface(color = MaterialTheme.colorScheme.background) {
-                        IdentityScreen(model, callback) { callback = null }
+                        ReleaseVersionGate(model) {
+                            IdentityScreen(model, callback) { callback = null }
+                        }
                     }
                 }
             }

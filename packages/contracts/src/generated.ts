@@ -9,9 +9,21 @@ export interface SchoolResourceLink {
   date?: string;
 }
 
+export interface AndroidClientVersions {
+  minimumVersionCode: number;
+  suggestedVersionCode: number;
+  suggestedVersionName: string;
+  downloadUrl: string;
+  sha256: string;
+}
+
 export const schoolOperations = {
   "resolveSchoolResourceLink": {
     "path": "/resource-links/{kind}/{id}",
+    "method": "GET"
+  },
+  "getClientVersions": {
+    "path": "/client-versions",
     "method": "GET"
   }
 } as const;

@@ -2,12 +2,14 @@ import "server-only";
 import { createClient, type AuthError } from "@supabase/supabase-js";
 import { z } from "zod";
 import { ApiError } from "@/server/http";
+import { allowAuthMail } from "./authMail";
 
 const claimsSchema = z.object({
   iss: z.string(),
   aud: z.union([z.literal("authenticated"), z.array(z.string()).refine((aud) => aud.includes("authenticated"))]),
   role: z.literal("authenticated"),
   sub: z.uuid(),
+  email: z.email().optional(),
   session_id: z.uuid(),
   exp: z.number().int(),
   aal: z.enum(["aal1", "aal2"]),
@@ -32,6 +34,9 @@ export async function verifiedClaims(token: string): Promise<Claims> {
   const parsed = claimsSchema.safeParse(checked.data?.claims);
   const issuer = process.env.SUPABASE_URL?.replace(/\/$/, "") + "/auth/v1";
   if (!parsed.success || parsed.data.iss !== issuer || parsed.data.exp * 1000 <= Date.now()) {
+    throw new ApiError("unauthenticated");
+  }
+  if(process.env.SCHOOL_ENVIRONMENT!=="live"&&(!parsed.data.email||!allowAuthMail(parsed.data.email))){
     throw new ApiError("unauthenticated");
   }
   return parsed.data;

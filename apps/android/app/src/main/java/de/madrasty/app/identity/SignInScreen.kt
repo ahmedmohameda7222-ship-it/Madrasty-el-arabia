@@ -172,6 +172,8 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         return proof
     }
 
+    internal suspend fun currentAndroidRelease()=repository.currentAndroidRelease()
+
     suspend fun schoolStorageOrigin():String=repository.schoolStorageOrigin()
 
     suspend fun schoolPrivateMedia(path:String,mime:String,limit:Int):ByteArray {

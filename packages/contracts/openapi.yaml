@@ -7,8 +7,8 @@ info:
     Clients ignore unknown response properties and handle unknown error keys generically.
 servers:
   - url: /api/v1
-x-madrasty-generated-models: [SchoolResourceKind, SchoolResourceLink]
-x-madrasty-generated-operations: [resolveSchoolResourceLink]
+x-madrasty-generated-models: [SchoolResourceKind, SchoolResourceLink, AndroidClientVersions]
+x-madrasty-generated-operations: [resolveSchoolResourceLink, getClientVersions]
 paths:
   /health:
     get:
@@ -4644,6 +4644,19 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolResourceLink"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /client-versions:
+    get:
+      operationId: getClientVersions
+      summary: Discover the current signed Android version at the school origin
+      security: []
+      responses:
+        '200':
+          description: School download URL, confirmed release SHA-256 and supported version codes
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AndroidClientVersions"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -4672,6 +4685,7 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    AndroidClientVersions: {"type":"object","required":["minimumVersionCode","suggestedVersionCode","suggestedVersionName","downloadUrl","sha256"],"properties":{"minimumVersionCode":{"type":"integer","minimum":1,"maximum":2100000000},"suggestedVersionCode":{"type":"integer","minimum":1,"maximum":2100000000},"suggestedVersionName":{"type":"string","minLength":1,"maxLength":40},"downloadUrl":{"type":"string","format":"uri"},"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}}
     SchoolResourceKind: {"type":"string","enum":["notice","thread","broadcast","child","attendance","exam","evaluation","activity","homework","application","invoice","receipt","fee_stop"]}
     SchoolResourceLink: {"type":"object","required":["kind","id"],"properties":{"kind":{"$ref":"#/components/schemas/SchoolResourceKind"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}}}
     StopOptions: {"type":"object","properties":{"schoolMonth":{"$ref":"#/components/schemas/BillingMonth"},"mayDecide":{"type":"boolean"}},"required":["schoolMonth","mayDecide"]}
