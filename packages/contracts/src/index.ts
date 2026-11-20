@@ -27,3 +27,4 @@ export * from "./academics/exams";
 export * from "./academics/reports";
 export * from "./comms/threads";
 export * from "./comms/messages";
+export * from "./comms/chatMedia";

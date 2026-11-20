@@ -170,6 +170,37 @@ class AuthRepository internal constructor(context: Context, private val attendan
         authenticated(path, body, current.actor.persona, idempotencyKey, method)
     }
 
+    suspend fun schoolStorageOrigin():String=io {
+        if(active==null)throw HttpFailure(401,"unauthenticated")
+        getProviderConfig().origin
+    }
+
+    suspend fun privateMedia(path:String,mime:String,limit:Int):ByteArray=io {
+        require(path.matches(Regex("/(threads|message-reports)/[a-fA-F0-9-]{36}/media/[a-fA-F0-9-]{36}")))
+        require(mime in listOf("image/jpeg","audio/wav")&&limit in 1..10*1024*1024)
+        val expected=active?.actor?:throw HttpFailure(401,"unauthenticated")
+        fun fetch(token:String):ByteArray {
+            val request=Request.Builder().url("$apiOrigin/api/v1$path").header("Accept",mime)
+                .header("Authorization","Bearer $token").header("X-School-Persona",expected.persona.name.lowercase()).build()
+            return http.newCall(request).execute().use{response->
+                if(!response.isSuccessful)throw HttpFailure(response.code,null)
+                val length=response.body.contentLength()
+                val source=response.body.source()
+                if(length !in 1..limit.toLong()||response.header("Content-Type")!=mime||
+                    source.request(length+1))throw IOException("Invalid private media")
+                source.readByteArray(length)
+            }
+        }
+        try{fetch(access?:throw HttpFailure(401,"unauthenticated"))}
+        catch(error:HttpFailure){
+            if(error.status!=401)throw error
+            val refresh=store.read("refresh")?:throw error
+            val session=adopt(providerToken("refresh_token",JSONObject().put("refresh_token",refresh)))
+            if(session.actor!=expected)throw HttpFailure(403,"forbidden")
+            fetch(checkNotNull(access))
+        }
+    }
+
     fun attendanceNoticeStream(path: String, after: String?): Flow<JSONObject> = callbackFlow {
         require(path.matches(Regex("/attendance/classes/[a-fA-F0-9-]{36}/days/[0-9-]{10}")))
         val request = io {

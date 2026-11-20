@@ -3238,8 +3238,317 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/ChatReaction"}}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /threads/{id}/uploads:
+    post:
+      operationId: createChatMediaUpload
+      summary: Issue private single-object upload authority
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/ChatMediaUpload"}
+      responses:
+        '201':
+          description: Issue private single-object upload authority
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"$ref":"#/components/schemas/ChatMediaGrant"}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /threads/{id}/uploads/{uploadId}:
+    post:
+      operationId: updateChatMediaUpload
+      summary: Validate staged media or cancel it
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"uploadId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"Idempotency-Key","in":"header","required":false,"schema":{"type":"string","pattern":"^[A-Za-z0-9._~-]{1,128}$"},"description":"Required for finalize."}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"action":{"type":"string","enum":["finalize","cancel"]}},"required":["action"]}
+      responses:
+        '200':
+          description: Validate staged media or cancel it
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"$ref":"#/components/schemas/ChatMediaState"}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /message-reports:
+    get:
+      operationId: listAssignedMessageReports
+      summary: Assigned flagged items
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"state","in":"query","required":false,"schema":{"type":"string","enum":["pending","in_review","resolved","dismissed"]}}
+      responses:
+        '200':
+          description: Assigned flagged items
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/MessageReport"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}},"required":[]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: fileMessageReport
+      summary: Record a report for one message
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"threadId":{"type":"string","format":"uuid"},"messageId":{"type":"string","format":"uuid"},"reason":{"type":"string","minLength":1,"maxLength":500}},"required":["threadId","messageId","reason"]}
+      responses:
+        '201':
+          description: Record a report for one message
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"reportId":{"type":"string","format":"uuid"}},"required":["reportId"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /message-reports/access:
+    get:
+      operationId: getMessageReportAccess
+      summary: Explicit moderation designation for this session
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Explicit moderation designation for this session
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"allowed":{"type":"boolean"}},"required":["allowed"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /message-reports/{id}:
+    get:
+      operationId: getAssignedMessageReport
+      summary: Read the assigned flagged item
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read the assigned flagged item
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"$ref":"#/components/schemas/MessageReport"}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: reviewAssignedMessageReport
+      summary: Record the review outcome
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"state":{"type":"string","enum":["in_review","resolved","dismissed"]},"action":{"type":"string","enum":["none","redact"]},"revision":{"type":"integer","minimum":1}},"required":["state","revision"]}
+      responses:
+        '200':
+          description: Record the review outcome
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"$ref":"#/components/schemas/MessageReport"}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /internal/chat-media/cleanup:
+    post:
+      operationId: cleanupChatMedia
+      summary: Clean expired objects and assign outstanding reports
+      security: [{ schoolWorker: [] }]
+      responses:
+        '200':
+          description: Clean expired objects and assign outstanding reports
+          content:
+            application/json:
+              schema: {"type":"object","properties":{"data":{"type":"object","properties":{"claimed":{"type":"integer","minimum":0},"cleaned":{"type":"integer","minimum":0}},"required":["claimed","cleaned"]}},"required":["data"]}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /threads/{id}/media/{mediaId}:
+    get:
+      operationId: getPrivateThreadMedia
+      summary: Reauthorize private media before serving the requested bytes
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"mediaId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"Range","in":"header","required":false,"schema":{"type":"string","pattern":"^bytes=[0-9]*-[0-9]*$"}}
+      responses:
+        '200':
+          description: Whole media object
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            audio/wav:
+              schema: { type: string, format: binary }
+        '206':
+          description: Single byte range
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            audio/wav:
+              schema: { type: string, format: binary }
+        '416':
+          description: Requested range is unavailable
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+        default:
+          $ref: '#/components/responses/AuthError'
+    head:
+      operationId: headPrivateThreadMedia
+      summary: Reauthorize private media before serving the requested bytes
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"mediaId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"Range","in":"header","required":false,"schema":{"type":"string","pattern":"^bytes=[0-9]*-[0-9]*$"}}
+      responses:
+        '200':
+          description: Whole media object
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+        '206':
+          description: Single byte range
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+        '416':
+          description: Requested range is unavailable
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+        default:
+          $ref: '#/components/responses/AuthError'
+  /message-reports/{id}/media/{mediaId}:
+    get:
+      operationId: getPrivateFlaggedMessageMedia
+      summary: Reauthorize private media before serving the requested bytes
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"mediaId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"Range","in":"header","required":false,"schema":{"type":"string","pattern":"^bytes=[0-9]*-[0-9]*$"}}
+      responses:
+        '200':
+          description: Whole media object
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            audio/wav:
+              schema: { type: string, format: binary }
+        '206':
+          description: Single byte range
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            audio/wav:
+              schema: { type: string, format: binary }
+        '416':
+          description: Requested range is unavailable
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+        default:
+          $ref: '#/components/responses/AuthError'
+    head:
+      operationId: headPrivateFlaggedMessageMedia
+      summary: Reauthorize private media before serving the requested bytes
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"mediaId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"Range","in":"header","required":false,"schema":{"type":"string","pattern":"^bytes=[0-9]*-[0-9]*$"}}
+      responses:
+        '200':
+          description: Whole media object
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+        '206':
+          description: Single byte range
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+        '416':
+          description: Requested range is unavailable
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'private, no-store' }
+            Accept-Ranges:
+              schema: { type: string, const: bytes }
+            Content-Range:
+              schema: { type: string }
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
+    schoolWorker:
+      type: http
+      scheme: bearer
     nativeBearer:
       type: http
       scheme: bearer
@@ -3263,6 +3572,10 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    ChatMediaUpload: {"oneOf":[{"type":"object","properties":{"mediaKind":{"const":"photo"},"mime":{"const":"image/jpeg"},"bytes":{"type":"integer","minimum":1,"maximum":10485760}},"required":["mediaKind","mime","bytes"]},{"type":"object","properties":{"mediaKind":{"const":"voice"},"mime":{"const":"audio/wav"},"bytes":{"type":"integer","minimum":46,"maximum":8388608}},"required":["mediaKind","mime","bytes"]}]}
+    ChatMediaGrant: {"type":"object","properties":{"uploadId":{"type":"string","format":"uuid"},"url":{"type":"string","format":"uri"},"expiresAt":{"type":"string","format":"date-time"},"maxBytes":{"type":"integer","minimum":1,"maximum":10485760},"maxDurationMs":{"anyOf":[{"type":"integer","minimum":1,"maximum":180000},{"type":"null"}]}},"required":["uploadId","url","expiresAt","maxBytes","maxDurationMs"]}
+    ChatMediaState: {"oneOf":[{"type":"object","properties":{"state":{"const":"ready"},"mediaId":{"type":"string","format":"uuid"}},"required":["state","mediaId"]},{"type":"object","properties":{"state":{"type":"string","enum":["staged","processing","failed","cancelled"]}},"required":["state"]}]}
+    MessageReport: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"threadId":{"type":"string","format":"uuid"},"messageId":{"type":"string","format":"uuid"},"state":{"type":"string","enum":["pending","in_review","resolved","dismissed"]},"action":{"anyOf":[{"type":"string","enum":["none","redact"]},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"createdAt":{"type":"string","format":"date-time"},"reason":{"type":"string"},"messageBody":{"anyOf":[{"type":"string"},{"type":"null"}]},"authorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"messageCreatedAt":{"type":"string","format":"date-time"},"attachments":{"type":"array","items":{"$ref":"#/components/schemas/ChatAttachment"}}},"required":["id","threadId","messageId","state","action","revision","createdAt","reason","messageBody","authorName","messageCreatedAt","attachments"]}
     ChatReaction: {"type":"object","required":["emoji","count","mine"],"properties":{"emoji":{"type":"string","enum":["👍","❤️","😂","😮","😢","🙏"]},"count":{"type":"integer","minimum":1},"mine":{"type":"boolean"}}}
     ChatAttachment: {"type":"object","required":["id","kind","contentType","bytes","durationMs"],"properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["photo","voice"]},"contentType":{"type":"string"},"bytes":{"type":"integer","minimum":1},"durationMs":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]}}}
     ChatMessage: {"type":"object","required":["id","threadId","sequence","source","authorName","body","own","clientMessageId","createdAt","replyable","reply","attachments","reactions","counterpartRead"],"properties":{"id":{"type":"string","format":"uuid"},"threadId":{"type":"string","format":"uuid"},"sequence":{"type":"string","pattern":"^(?:0|[1-9][0-9]{0,18})$"},"source":{"type":"string","enum":["human","system"]},"authorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"body":{"anyOf":[{"type":"string"},{"type":"null"}]},"own":{"type":"boolean"},"clientMessageId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"createdAt":{"type":"string","format":"date-time"},"replyable":{"type":"boolean"},"reply":{"anyOf":[{"type":"object","required":["id","sequence","source","authorName","preview"],"properties":{"id":{"type":"string","format":"uuid"},"sequence":{"type":"string","pattern":"^(?:0|[1-9][0-9]{0,18})$"},"source":{"type":"string","enum":["human","system"]},"authorName":{"anyOf":[{"type":"string"},{"type":"null"}]},"preview":{"anyOf":[{"type":"string"},{"type":"null"}]}}},{"type":"null"}]},"attachments":{"type":"array","items":{"$ref":"#/components/schemas/ChatAttachment"}},"reactions":{"type":"array","items":{"$ref":"#/components/schemas/ChatReaction"}},"counterpartRead":{"anyOf":[{"type":"boolean"},{"type":"null"}]}}}

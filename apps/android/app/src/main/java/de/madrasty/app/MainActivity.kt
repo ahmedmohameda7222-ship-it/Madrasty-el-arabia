@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
+import de.madrasty.app.comms.expireChatCameraFiles
 import de.madrasty.app.identity.IdentityScreen
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.readPreferences
@@ -37,7 +38,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (savedInstanceState == null) callback = intent.data
+        if (savedInstanceState == null) {
+            expireChatCameraFiles(this)
+            callback = intent.data
+        }
         val model = ViewModelProvider(this)[IdentityViewModel::class.java]
         setContent {
             val system = LocalConfiguration.current

@@ -38,6 +38,8 @@ import de.madrasty.app.attendance.DailySheetScreen
 import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
+import de.madrasty.app.comms.ReportQueue
+import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
 import de.madrasty.app.comms.ThreadScreen
 import de.madrasty.app.school.AuditDestination
@@ -68,6 +70,7 @@ internal sealed interface WorkspacePage {
     data object Security : WorkspacePage
     data object Directory : WorkspacePage
     data class Thread(val id:String) : WorkspacePage
+    data object MessageReports : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data object Enrollment : WorkspacePage
@@ -159,7 +162,7 @@ internal class SchoolNavigation {
     }
 }
 
-private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
+private data class SchoolRights(val persona: Persona,val keys: Set<String>,val moderation:Boolean) {
     val school = "school.manage" in keys
     val students = "students.manage" in keys
     val applications = "applications.manage" in keys
@@ -171,6 +174,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
     fun allows(page: WorkspacePage): Boolean = when(page){
         WorkspacePage.Access -> access
         WorkspacePage.Audit -> audit
+        WorkspacePage.MessageReports -> moderation
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
@@ -196,18 +200,22 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
 @Composable
 internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,state: SchoolNavigation) {
     var capabilities by remember(session.actor) { mutableStateOf(emptySet<String>()) }
+    var moderation by remember(session.actor) { mutableStateOf(false) }
     LaunchedEffect(session.actor,session.assurance) {
         if (session.actor.persona == Persona.Admin && session.assurance == "aal2") {
             capabilities = try { model.capabilities() }
             catch (error: CancellationException) { throw error }
             catch (_: Exception) { emptySet() }
+            moderation=try{model.mayReviewChatReports()}
+            catch(error:CancellationException){throw error}
+            catch(_:Exception){false}
         }
     }
     if (session.actor.persona == Persona.Admin && session.assurance != "aal2") {
         SecurityScreen(model,session) { if(state.page==WorkspacePage.Security)state.back() }
         return
     }
-    val rights=SchoolRights(session.actor.persona,capabilities)
+    val rights=SchoolRights(session.actor.persona,capabilities,moderation)
     val resume=model.attendanceResume
     LaunchedEffect(resume,session.actor){
         if(resume!=null){
@@ -239,6 +247,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Security -> SecurityScreen(model,session,state::back)
         WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
         is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
+        WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
@@ -340,9 +349,10 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
         if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
     }
-    if(rights.access||rights.audit){
+    if(rights.access||rights.audit||rights.moderation){
         Text(stringResource(R.string.settings_group_access),style=MaterialTheme.typography.titleLarge)
         if(rights.access)OpenPage(state,WorkspacePage.Access,R.string.staff_access)
+        if(rights.moderation)OpenPage(state,WorkspacePage.MessageReports,R.string.chat_reports)
         if(rights.audit)TextButton(onClick={state.auditEntry=null;state.open(WorkspacePage.Audit)}){
             Text(stringResource(R.string.audit_title))
         }

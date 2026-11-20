@@ -10,6 +10,7 @@ import { Children, Families } from "@/features/school/Families";
 import { dictionary } from "@/i18n";
 import { ThreadInbox } from "@/features/comms/ThreadInbox";
 import { SessionControls } from "@/features/identity/SessionControls";
+import { mayManageMessageReports } from "@/server/comms/moderation";
 
 const tabs = ["home", "students", "attendance", "children", "messages", "more"] as const;
 type Tab = typeof tabs[number];
@@ -25,9 +26,9 @@ export default async function SchoolPage({ params, searchParams }: {
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const [access, calendar, placement, invites, academic, audit, attendance] = tab === "more"
-    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage"), mayUse(session, "academics.supervise"), mayUse(session,"audit.read"),mayUse(session,"attendance.supervise")])
-    : [false, false, false, false, false, false, false];
+  const [access, calendar, placement, invites, academic, audit, attendance, moderation] = tab === "more"
+    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage"), mayUse(session, "academics.supervise"), mayUse(session,"audit.read"),mayUse(session,"attendance.supervise"),mayManageMessageReports(session)])
+    : [false, false, false, false, false, false, false, false];
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
   return (
@@ -69,11 +70,12 @@ export default async function SchoolPage({ params, searchParams }: {
             {session.activePersona === "guardian" && <Link className="plain-button" href={`/${locale}/apply`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
           </div>
         </section>}
-        {(access || audit) && <section className="auth-card">
+        {(access || audit || moderation) && <section className="auth-card">
           <h2>{locale === "ar" ? "الصلاحيات والتدقيق" : "Berechtigungen und Protokoll"}</h2>
           <div className="header-actions">
             {access && <Link className="plain-button" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
             {audit && <Link className="plain-button" href={`/${locale}/school/more/audit`}>{locale === "ar" ? "سجل التدقيق" : "Änderungsprotokoll"}</Link>}
+            {moderation&&<Link className="plain-button" href={`/${locale}/school/more/message-reports`}>{locale==="ar"?"بلاغات الرسائل":"Gemeldete Nachrichten"}</Link>}
           </div>
         </section>}
       </div>}

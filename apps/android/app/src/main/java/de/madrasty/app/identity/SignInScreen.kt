@@ -147,6 +147,17 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         return result
     }
 
+    suspend fun schoolStorageOrigin():String=repository.schoolStorageOrigin()
+
+    suspend fun schoolPrivateMedia(path:String,mime:String,limit:Int):ByteArray {
+        val expected=session?.actor?:throw HttpFailure(401,"unauthenticated")
+        val result=repository.privateMedia(path,mime,limit)
+        val refreshed=repository.snapshot()
+        if(refreshed?.actor!=expected||session?.actor!=expected)throw HttpFailure(403,"forbidden")
+        if(session?.expiresAt!=refreshed.expiresAt)session=refreshed
+        return result
+    }
+
     suspend fun readAttendanceDraft(slot:String):JSONObject?{
         val actor=session?.actor?:return null
         return withContext(Dispatchers.IO){runCatching{attendanceDrafts.read(actor,slot)}.getOrNull()}

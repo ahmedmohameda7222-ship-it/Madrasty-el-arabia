@@ -10,6 +10,8 @@ import { webHeaders } from "@/features/identity/SessionControls";
 import { timetableError } from "@/features/school/timetable/shared";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
+import { MediaComposer } from "./MediaComposer";
+import { PrivateChatMedia,ReportMessage,reportCopy } from "./ReportQueue";
 
 const copy={
   ar:{search:"ابحث في المحادثة",find:"بحث",clear:"مسح البحث",older:"رسائل أقدم",body:"رسالتك",send:"إرسال",
@@ -38,16 +40,22 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   const [body,setBody]=useState(""),[quote,setQuote]=useState<ChatMessage>();
   const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}>();
   const [ack,setAck]=useState<ChatMessage>(),[lost,setLost]=useState(false);
+  const [attachment,setAttachment]=useState<string>(),[consumed,setConsumed]=useState<string>(),[preparing,setPreparing]=useState(false);
   const [archived,setArchived]=useState(thread.archived),[notice,setNotice]=useState("");
   const live=useRef(false),sending=useRef(false),confirmed=useRef<string|undefined>(undefined);
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   useEffect(()=>setArchived(thread.archived),[thread.archived]);
-  function deny(){setLost(true);setBody("");setQuote(undefined);setAttempt(undefined);setAck(undefined);changed();}
-  function recognize(rows:ChatMessage[]){
-    const clientId=attempt?.payload.clientMessageId;
-    if(!clientId||!rows.some((item)=>item.clientMessageId===clientId))return;
-    confirmed.current=clientId;
+  function deny(){setLost(true);setBody("");setQuote(undefined);setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
+  function clearSent(payload:Proposed){
+    confirmed.current=payload.clientMessageId;
     setAttempt(undefined);setBody("");setQuote(undefined);
+    if(payload.attachmentIds?.[0]){
+      setConsumed(payload.attachmentIds[0]);setAttachment(undefined);
+    }
+  }
+  function recognize(rows:ChatMessage[]){
+    const payload=attempt?.payload;
+    if(payload&&rows.some((item)=>item.clientMessageId===payload.clientMessageId))clearSent(payload);
   }
   async function send(payload:Proposed){
     if(sending.current||lost||!thread.canReply)return;
@@ -60,7 +68,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       if(!live.current)return;
       setAck(result.data);
       if(confirmed.current!==payload.clientMessageId){
-        confirmed.current=payload.clientMessageId;setAttempt(undefined);setBody("");setQuote(undefined);
+        clearSent(payload);
       }
     }catch(problem){
       if(!live.current||confirmed.current===payload.clientMessageId)return;
@@ -70,8 +78,10 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   }
   function compose(event:FormEvent){
     event.preventDefault();
-    if(attempt?.failed){void send(attempt.payload);return;}
-    const message=postMessageInput.safeParse({clientMessageId:crypto.randomUUID(),body:body.trim(),replyToId:quote?.id});
+    if(preparing)return;
+    if(attempt?.failed&&attempt.payload.attachmentIds?.[0]===attachment){void send(attempt.payload);return;}
+    const message=postMessageInput.safeParse({clientMessageId:crypto.randomUUID(),body:body.trim()||undefined,
+      attachmentIds:attachment?[attachment]:undefined,replyToId:quote?.id});
     if(message.success)void send(message.data);
   }
   async function archive(){
@@ -113,7 +123,9 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       </div>}
       <label>{text.body}<textarea dir="auto" value={body} maxLength={4000} rows={3} disabled={attempt?.pending}
         onChange={(event)=>{setBody(event.target.value);setAttempt(undefined);}}/></label>
-      <button className="primary-button" type="submit" disabled={!body.trim()||attempt?.pending}>
+      <MediaComposer locale={locale} persona={persona} thread={thread.id} locked={attempt?.pending===true} consumed={consumed}
+        onReady={setAttachment} onBusy={setPreparing}/>
+      <button className="primary-button" type="submit" disabled={(!body.trim()&&!attachment)||preparing||attempt?.pending}>
         {attempt?.failed?text.retry:text.send}
       </button>
     </form>:<p>{text.closed}</p>}
@@ -243,19 +255,22 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
         if(message.reply)void jump(message.reply);
       }}><bdi>{message.reply.authorName??text.school}</bdi>{message.reply.preview&&<> · <bdi>{message.reply.preview}</bdi></>}</button>}
       {message.body&&<p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{message.body}</p>}
-      {message.attachments.map((file)=><p key={file.id}>{text[file.kind]}</p>)}
+      {message.attachments.map((file)=><PrivateChatMedia key={file.id} locale={locale} kind={file.kind}
+        path={`/api/v1/threads/${thread.id}/media/${file.id}`}/>)}
+      {message.source==="human"&&!message.body&&!message.attachments.length&&<p>{reportCopy[locale].removed}</p>}
       {message.own&&<small>{message.counterpartRead?text.seen:text.sent}</small>}
       <div className="header-actions">
         {thread.canReply&&message.replyable&&<button type="button" className="plain-button" onClick={()=>reply(message)}>{text.reply}</button>}
+        {(message.body||message.attachments.length>0)&&<ReportMessage locale={locale} thread={thread.id} message={message.id}/>}
         {message.reactions.map((entry)=><button className="plain-button" type="button" key={entry.emoji} aria-pressed={entry.mine}
           onClick={()=>void react(message,entry.emoji)}>{entry.emoji} {entry.count}</button>)}
       </div>
-      <details>
+      {(message.source==="system"||message.body||message.attachments.length>0)&&<details>
         <summary>{text.reactions}</summary>
         <div className="header-actions">{reactionEmoji.options.map((emoji)=><button type="button" className="plain-button" key={emoji}
           aria-label={`${text.reactions} ${emoji}`} aria-pressed={message.reactions.some((entry)=>entry.emoji===emoji&&entry.mine)}
           onClick={()=>void react(message,emoji)}>{emoji}</button>)}</div>
-      </details>
+      </details>}
     </li>)}</ol>
   </>;
 }

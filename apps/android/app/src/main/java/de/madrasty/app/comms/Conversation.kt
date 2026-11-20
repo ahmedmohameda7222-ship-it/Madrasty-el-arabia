@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
-private data class Outgoing(val id:String,val body:String,val replyTo:String?,val pending:Boolean)
+private data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
 
 @Composable
 internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->Unit){
@@ -57,13 +57,20 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
     var search by remember(id){mutableStateOf("")}
     var outgoing by remember(id){mutableStateOf<Outgoing?>(null)}
     var acknowledged by remember(id){mutableStateOf<JSONObject?>(null)}
+    var attachment by remember(id){mutableStateOf<String?>(null)}
+    var consumed by remember(id){mutableStateOf<String?>(null)}
+    var preparing by remember(id){mutableStateOf(false)}
     var forbidden by remember(id){mutableStateOf(false)}
     var archived by remember(id,thread.optBoolean("archived")){mutableStateOf(thread.optBoolean("archived"))}
     val scope=rememberCoroutineScope()
-    fun deny(){forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;changed()}
+    fun deny(){forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;attachment=null;changed()}
+    fun clearSent(message:Outgoing){
+        outgoing=null;typed="";quote=null
+        if(message.media!=null){consumed=message.media;attachment=null}
+    }
     fun recognize(rows:List<JSONObject>){
-        val pending=outgoing?.id?:return
-        if(rows.any{it.string("clientMessageId")==pending}){outgoing=null;typed="";quote=null}
+        val pending=outgoing?:return
+        if(rows.any{it.string("clientMessageId")==pending.id})clearSent(pending)
     }
     if(forbidden){
         AsyncSurface<Unit>(AsyncState.Forbidden()){}
@@ -91,7 +98,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
     }
     val failed=outgoing?.pending==false
     outgoing?.let{message->
-        Text(isolate(message.body))
+        if(message.body.isNotEmpty())Text(isolate(message.body))
         Text(stringResource(if(message.pending)R.string.chat_sending else R.string.chat_failed))
     }
     if(!thread.optBoolean("canReply")){
@@ -105,17 +112,23 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
         TextButton(enabled=outgoing?.pending!=true,onClick={quote=null;outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
     }
     if(outgoing?.pending!=true)AcademicLongField(R.string.chat_body,typed,4000){typed=it;outgoing=null}
-    Button(enabled=typed.isNotBlank()&&outgoing?.pending!=true,onClick={
-        val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),true)
+    MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,onReady={
+        if(attachment!=it&&outgoing?.pending!=true)outgoing=null
+        attachment=it
+    },onBusy={preparing=it})
+    Button(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,onClick={
+        val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),attachment,true)
         outgoing=sending
         scope.launch{
             try{
-                val body=JSONObject().put("clientMessageId",sending.id).put("body",sending.body)
+                val body=JSONObject().put("clientMessageId",sending.id)
+                if(sending.body.isNotEmpty())body.put("body",sending.body)
+                sending.media?.let{body.put("attachmentIds",JSONArray(listOf(it)))}
                 sending.replyTo?.let{body.put("replyToId",it)}
                 val result=model.chatCommand("$path/messages",body,"POST",sending.id)
                 if(!forbidden){
                     acknowledged=result
-                    if(outgoing?.id==sending.id){outgoing=null;typed="";quote=null}
+                    if(outgoing?.id==sending.id)clearSent(sending)
                 }
             }catch(error:CancellationException){throw error}
             catch(error:HttpFailure){
@@ -252,15 +265,20 @@ private fun ChatMessageItem(
     }
     message.string("body")?.let{Text(isolate(it))}
     val media=message.getJSONArray("attachments")
+    val threadId=thread.getString("id")
     for(index in 0 until media.length()){
-        val kind=media.getJSONObject(index).getString("kind")
-        Text(stringResource(if(kind=="photo")R.string.chat_photo else R.string.chat_voice))
+        val attachment=media.getJSONObject(index)
+        val attachmentId=attachment.getString("id")
+        key(attachmentId){PrivateChatMedia(model,"/threads/$threadId/media/$attachmentId",ChatMediaKind.read(attachment.getString("kind")))}
     }
+    val hasContent=message.string("body")!=null||media.length()>0
+    if(!hasContent&&message.getString("source")=="human")Text(stringResource(R.string.chat_message_redacted))
     if(message.optBoolean("own"))Text(stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent))
     if(message.optBoolean("replyable")&&thread.optBoolean("canReply")){
         TextButton(onClick={reply(message)}){Text(stringResource(R.string.chat_reply))}
     }
-    ChatReactions(model,thread.getString("id"),message,deny,replaceReactions)
+    if(hasContent)ReportChatMessage(model,threadId,message.getString("id"))
+    if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions)
 }
 
 private val availableEmojis=listOf("👍","❤️","😂","😮","😢","🙏")
