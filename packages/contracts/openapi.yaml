@@ -1867,6 +1867,127 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolAuditEntry"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /attendance/classes:
+    get:
+      operationId: listAttendanceClasses
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"date","in":"query","schema":{"type":"string","format":"date"}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["date","classes"],"properties":{"date":{"type":"string","format":"date"},"classes":{"type":"array","items":{"type":"object","required":["id","code","nameAr","nameDe"],"properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}}}}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/classes/{classId}/days/{date}:
+    get:
+      operationId: readDailyAttendanceSheet
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"classId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"date","in":"path","required":true,"schema":{"type":"string","format":"date"}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/DailyAttendanceSheet"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/classes/{classId}/days/{date}/open:
+    post:
+      operationId: openDailyAttendanceSheet
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"classId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"date","in":"path","required":true,"schema":{"type":"string","format":"date"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/DailyAttendanceSheet"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/sheets:
+    get:
+      operationId: listPendingAttendanceSheets
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"date","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"cursor","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"limit","in":"query","schema":{"type":"integer","minimum":1,"maximum":100}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["date","items"],"properties":{"date":{"type":"string","format":"date"},"items":{"type":"array","items":{"type":"object","required":["id","classId","day","classCode","nameAr","nameDe","rosterRevision","approvalRevision"],"properties":{"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"day":{"type":"string","format":"date"},"classCode":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"rosterRevision":{"type":"integer","minimum":1},"approvalRevision":{"type":"integer","minimum":1}}}}}},"meta":{"type":"object","required":[],"properties":{"nextCursor":{"type":"string","format":"uuid"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/sheets/{id}/rows:
+    patch:
+      operationId: saveAttendanceDraftRows
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["edits"],"properties":{"edits":{"type":"array","items":{"type":"object","required":["rowId","revision","status"],"properties":{"rowId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"status":{"anyOf":[{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},{"type":"null"}]}}},"minItems":1,"maxItems":1000}}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceChanges"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/sheets/{id}/mark-present:
+    post:
+      operationId: markAttendancePresent
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["rows"],"properties":{"rows":{"type":"array","items":{"type":"object","required":["rowId","revision"],"properties":{"rowId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}},"minItems":1,"maxItems":1000}}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AttendanceChanges"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /attendance/sheets/{id}/approve:
+    post:
+      operationId: approveAttendanceSheet
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","required":["approvalRevision","expectedRows"],"properties":{"approvalRevision":{"type":"integer","minimum":1},"expectedRows":{"type":"array","items":{"type":"object","required":["rowId","revision"],"properties":{"rowId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}}},"maxItems":1000}}}
+      responses:
+        '200':
+          description: Scoped attendance result
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/DailyAttendanceSheet"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -1892,6 +2013,9 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    AttendanceRow: {"type":"object","required":["id","studentId","studentNumber","displayName","enrollmentId","status","revision","locked","confirmedArrivalAt"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentNumber":{"type":"string"},"displayName":{"type":"string"},"enrollmentId":{"type":"string","format":"uuid"},"status":{"anyOf":[{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"locked":{"type":"boolean"},"confirmedArrivalAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]}}}
+    DailyAttendanceSheet: {"type":"object","required":["id","classroom","yearId","schoolDate","state","teachingDay","closedReason","canMark","canApprove","rosterRevision","approvalRevision","approvedAt","rows","counts"],"properties":{"id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"classroom":{"type":"object","required":["id","code","nameAr","nameDe"],"properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}}},"yearId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"state":{"type":"string","enum":["unstarted","open","approved"]},"teachingDay":{"type":"boolean"},"closedReason":{"anyOf":[{"type":"string"},{"type":"null"}]},"canMark":{"type":"boolean"},"canApprove":{"type":"boolean"},"rosterRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"approvalRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"approvedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"rows":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"counts":{"type":"object","required":["unmarked","present","late","absent_unexcused","absent_excused"],"properties":{"unmarked":{"type":"integer","minimum":0},"present":{"type":"integer","minimum":0},"late":{"type":"integer","minimum":0},"absent_unexcused":{"type":"integer","minimum":0},"absent_excused":{"type":"integer","minimum":0}}}}}
+    AttendanceChanges: {"type":"object","required":["applied","skippedLocked","conflicts"],"properties":{"applied":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"skippedLocked":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"conflicts":{"type":"array","items":{"type":"object","required":["rowId","reason","current"],"properties":{"rowId":{"type":"string","format":"uuid"},"reason":{"type":"string","enum":["stale","locked","arrival_confirmed","outside_roster"]},"current":{"anyOf":[{"$ref":"#/components/schemas/AttendanceRow"},{"type":"null"}]}}}}}}
     SchoolAuditEntry: {"type":"object","required":["id","occurredAt","actorDisplay","action","resourceKind","changeCategory","requestId"],"properties":{"id":{"type":"string","format":"uuid"},"occurredAt":{"type":"string","format":"date-time"},"actorDisplay":{"type":"string"},"action":{"type":"string"},"resourceKind":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]},"changeCategory":{"type":"string","enum":["permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication"]},"requestId":{"type":"string","format":"uuid"},"permittedResourceLink":{"oneOf":[{"type":"object","required":["kind"],"properties":{"kind":{"enum":["access","calendar","assignments","timetable","invitations","applications"]}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"enum":["student","import"]},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"guardian"},"id":{"type":"string","format":"uuid"},"linkId":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id","yearId"],"properties":{"kind":{"const":"class"},"id":{"type":"string","format":"uuid"},"yearId":{"type":"string","format":"uuid"}}}]}}}
     SchoolAuditFilters: {"type":"object","required":["timezone","actions","actors"],"properties":{"timezone":{"type":"string"},"actions":{"type":"array","items":{"type":"object","required":["action","resourceKind","changeCategory"],"properties":{"action":{"type":"string"},"resourceKind":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]},"changeCategory":{"type":"string","enum":["permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication"]}}}},"actors":{"type":"array","items":{"type":"object","required":["id","displayName"],"properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"}}}}}}
     SchoolWorkQueueKey:

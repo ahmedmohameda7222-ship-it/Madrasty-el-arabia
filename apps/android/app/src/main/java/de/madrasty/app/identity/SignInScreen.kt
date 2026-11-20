@@ -49,7 +49,8 @@ import de.madrasty.app.school.FamiliesScreen
 import de.madrasty.app.school.EnrollmentScreen
 import de.madrasty.app.school.ImportScreen
 import de.madrasty.app.school.StaffAssignmentsScreen
-import de.madrasty.app.school.TeachingSummary
+import de.madrasty.app.attendance.DailySheetScreen
+import de.madrasty.app.attendance.SupervisorAttendanceScreen
 import de.madrasty.app.school.TimetableScreen
 import de.madrasty.app.school.SchoolHomeScreen
 import de.madrasty.app.school.SchoolWorkQueueScreen
@@ -239,6 +240,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     var selectedChild by remember(session?.actor) { mutableStateOf<String?>(null) }
     var activeTab by remember(session?.actor) { mutableStateOf(SchoolTab.Home) }
     var attendanceClass by remember(session?.actor) { mutableStateOf<String?>(null) }
+    var supervisingAttendance by remember(session?.actor) { mutableStateOf(false) }
     var workDate by remember(session?.actor) { mutableStateOf("") }
     var queueSelection by remember(session?.actor) { mutableStateOf<WorkQueueSelection?>(null) }
     var queueOpen by remember(session?.actor) { mutableStateOf(false) }
@@ -305,6 +307,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
                 is SchoolWorkTarget.ClassAssignment -> assignments = true
             }
         },close = { queueOpen = false; queueSelection = null })
+    else if (supervisingAttendance && "attendance.supervise" in capabilities) SupervisorAttendanceScreen(model) { supervisingAttendance = false }
     else if (preferences) AccountScreen(model, close = { preferences = false }, security = { security = true })
     else if (directory) DirectoryScreen(model) { directory = false }
     else if (timetable) TimetableScreen(model, session.actor.persona, timetableChild) {
@@ -353,7 +356,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             openAttendance = { attendanceClass = it; activeTab = SchoolTab.Attendance },
             openSchedule = ::openSchedule,
         )
-        if (tab == SchoolTab.Attendance) TeachingSummary(model, attendanceClass)
+        if (tab == SchoolTab.Attendance) DailySheetScreen(model,initialClass=attendanceClass)
         if (tab == SchoolTab.Children) ChildrenScreen(model, selectedChild, { selectedChild = it }, ::openSchedule)
         if (tab == SchoolTab.Students && "students.manage" in capabilities) {
             val queued = workTarget as? SchoolWorkTarget.GuardianLink
@@ -377,12 +380,13 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             TextButton(onClick = { directory = true }) { Text(stringResource(R.string.directory_title)) }
             AccountActions(model, session)
             if (session.actor.persona != Persona.Admin || capabilities.any {
-                it in setOf("school.manage","students.manage","academics.supervise","applications.manage")
+                it in setOf("school.manage","students.manage","academics.supervise","applications.manage","attendance.supervise")
             }) Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
             if (session.actor.persona != Persona.Admin || "school.manage" in capabilities || "academics.supervise" in capabilities)
                 TextButton(onClick = { timetable = true }) { Text(stringResource(R.string.timetable_title)) }
             if ("school.manage" in capabilities || "academics.supervise" in capabilities)
                 TextButton(onClick = { assignments = true }) { Text(stringResource(R.string.staff_assignments)) }
+            if ("attendance.supervise" in capabilities) TextButton(onClick = { supervisingAttendance = true }) { Text(stringResource(R.string.attendance_review)) }
             if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }
             if ("school.manage" in capabilities || "students.manage" in capabilities)
                 TextButton(onClick = { enrollment = true }) { Text(stringResource(R.string.enrollments)) }

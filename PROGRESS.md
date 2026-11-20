@@ -2,14 +2,14 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** A01 daily attendance, draft status and approval. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43 and S07 in d731bbe. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** A02 family excuses, actual arrivals and online attendance updates. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
 | 00 Foundation | built / QA pending | Pin environment, build shells, publish contract primitives |
 | 01 Identity and access | I01–I06 built / QA pending | One account, effective grants and recoverable invites |
 | 02 School operations | S01–S08 built / QA pending | Import, linked families, dated staffing and clash-safe timetable |
-| 03 Attendance | Active (A01) | Online lock, actual arrival, offline reconciliation and approval |
+| 03 Attendance | A01 built / QA pending; A02 active | Online lock, actual arrival, offline reconciliation and approval |
 | 04 Academics | Planned | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
 | 06 Finance | Planned | Per-child invoice, manual settlement and stopping decisions |
@@ -40,7 +40,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-20 | S06 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120005023_weekly_timetable.sql, reviewed timetable editor and weekly views on web and Android | Type-check, production web build, Android debug assembly and OpenAPI parsing exited 0. Subject cover with lesson-log authority reserves the substitute as well as the assigned teacher. Q02/Q03/Q06 still verify concurrent clashes, authorization and device layouts. | S07 role dashboards and scoped work queues. |
 | 2026-11-20 | S07 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120010556_school_work_queues.sql, role home, scoped work counts and paged records, resumable imports and actionable destinations on web/Android | Type-check, production web build, Android debug assembly and OpenAPI parsing exited 0. D01 will bind the five module-owned queues. Q02/Q03/Q06 pending. | S08 administrative audit and settings. |
 | 2026-11-20 | S08 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120011714_school_audit_projection.sql, scoped audit routes, row links, settings groups on web and Android | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. Staff deactivation reasons are persisted in the protected domain record. A01/A04, B01/B03 and later modules bind their actions and settings. Q02/Q03 pending. | A01 daily attendance sheet, roster, individual/bulk drafts and approval. |
-| 2026-11-20 | A01, step 1 | Active | School calendar, assignments, enrollment, and audit prerequisites built. | Attendance storage, scope and clients pending. | Add sheet and row invariants, roster reconciliation and approval authorizations. |
+| 2026-11-20 | A01 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120012806_attendance_sheets.sql, scoped sheet commands, effective roster reconciliation, supervisor list, web/Android daily views | Type-check, production web build and Android debug assembly exited 0. SQL function bodies and OpenAPI parsed locally. Closing or changing a day that would contradict an approved sheet is rejected. Approved unexcused events are queued transactionally for C07. Q02/Q03/Q04/Q05 pending. | A02 linked-family excuses and actual arrival. |
+| 2026-11-20 | A02, step 1 | Active | A01 sheet/row transitions and S02 active links available; 20261120013955_family_excuses.sql reserved | Implement guardian-only receipt/withdrawal and separate arrival evidence. | Bind APIs, scoped row invalidations and both clients. |
 
 ## Decision and discrepancy log
 

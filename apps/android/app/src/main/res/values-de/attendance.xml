@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attendance_review">Anwesenheit prüfen</string>
+    <string name="attendance_date">Anwesenheitstag (YYYY-MM-DD)</string>
+    <string name="attendance_day_action">Tag anzeigen</string>
+    <string name="attendance_pending_sheets">Listen zur Freigabe</string>
+    <string name="attendance_no_pending">Für diesen Tag sind keine Freigaben offen.</string>
+    <string name="attendance_open">Anwesenheitsliste öffnen</string>
+    <string name="attendance_draft">Anwesenheitsentwurf</string>
+    <string name="attendance_approved">Liste bestätigt</string>
+    <string name="attendance_unstarted">Die Liste wurde noch nicht geöffnet.</string>
+    <string name="attendance_closed">Der Tag ist für Erfassung oder Freigabe geschlossen.</string>
+    <string name="attendance_incomplete">Erfassen Sie den Status aller Schülerinnen und Schüler vor der Freigabe.</string>
+    <string name="attendance_present">Anwesend</string>
+    <string name="attendance_late">Verspätet</string>
+    <string name="attendance_absent_unexcused">Unentschuldigt abwesend</string>
+    <string name="attendance_absent_excused">Entschuldigt abwesend</string>
+    <string name="attendance_unmarked">Ohne Eintrag</string>
+    <string name="attendance_mark_all">Alle ohne Eintrag als anwesend markieren</string>
+    <string name="attendance_confirm_bulk">Sammelerfassung bestätigen</string>
+    <string name="attendance_save">Entwurf speichern</string>
+    <string name="attendance_approve">Anwesenheit freigeben</string>
+    <string name="attendance_confirm_approval">Endgültige Anwesenheit bestätigen</string>
+    <string name="attendance_locked">Der Status ist durch eine Entschuldigung gesperrt.</string>
+    <string name="attendance_arrival">Ankunft bestätigt</string>
+    <string name="attendance_stale">Der gespeicherte Status hat sich geändert.</string>
+    <string name="attendance_outside">Das Kind gehört für diesen Tag nicht mehr zur Liste.</string>
+    <string name="attendance_use_server">Gespeicherten Status übernehmen</string>
+    <string name="attendance_reapply">Eigene Auswahl mit der neuen Version übernehmen</string>
+    <string name="attendance_refresh">Liste aktualisieren</string>
+    <string name="attendance_conflicts">Einige Einträge müssen geprüft werden.</string>
+    <string name="attendance_skipped">Gesperrte Einträge blieben unverändert: %1$d</string>
+</resources>

@@ -40,6 +40,8 @@
   "error.forbidden": "الصلاحية غير متاحة لحسابك.",
   "error.notFound": "السجل غير متاح.",
   "error.conflict": "تعارضت العملية مع تغيير آخر.",
+  "attendance.closedDay": "يوم الحضور مقفول للتسجيل أو الاعتماد.",
+  "attendance.incomplete": "سجّل حالة كل طالب في الكشف قبل الاعتماد.",
   "error.staleRevision": "السجل اتحدّث. افتح الإصدار الحالي قبل الحفظ.",
   "error.invalidIdempotencyKey": "تعذّر تجهيز الطلب للحفظ.",
   "error.idempotencyConflict": "طلب الحفظ السابق له بيانات مختلفة.",
