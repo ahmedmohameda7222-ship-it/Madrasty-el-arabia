@@ -24,8 +24,23 @@
   font-size: 100%;
 }
 
+:root[data-theme="light"] { color-scheme: light; }
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+    --canvas: #0e1623;
+    --card: #1b2634;
+    --inset: #162131;
+    --ink: #f3f6fb;
+    --muted: #d4ddeb;
+    --rule: #354556;
+    --primary: #8bdec0;
+    --on-primary: #10332a;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --canvas: #0e1623;
     --card: #1b2634;
     --inset: #162131;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { sessionSchema, type Locale, type SchoolSession, type Persona } from "@madrasty/contracts";
+import { preferencesSchema, sessionSchema, type Locale, type SchoolSession, type Persona } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary, localizedError } from "@/i18n";
 
@@ -42,6 +42,15 @@ function errorText(locale: Locale, error: unknown) {
     : dictionary(locale)["error.unavailable"];
 }
 
+async function preferredDestination(locale: Locale, destination: string) {
+  try {
+    const { data } = await requestApi(`/account/preferences?locale=${locale}`, preferencesSchema);
+    return destination.replace(/^\/(ar|de)\//, `/${data.uiLocale}/`);
+  } catch {
+    return destination;
+  }
+}
+
 export function SignInForm({ locale, destination, refreshable }: { locale: Locale; destination: string; refreshable: boolean }) {
   const text = labels[locale];
   const router = useRouter();
@@ -60,14 +69,15 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
           .catch(() => { if (active) setFailure(text.revoked); });
       } else if (refreshable) {
         requestApi("/auth/session", sessionSchema, { method: "POST", headers: webHeaders() })
-          .then(() => { if (active) router.replace(destination); })
+          .then(() => preferredDestination(locale, destination))
+          .then((next) => { if (active) router.replace(next); })
           .catch(() => { if (active) setPending(false); });
       }
     };
     connect();
     window.addEventListener("online", connect);
     return () => { active = false; window.removeEventListener("online", connect); };
-  }, [destination, refreshable, router, text.revoked]);
+  }, [destination, locale, refreshable, router, text.revoked]);
 
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -80,7 +90,7 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
         method: "POST", headers: webHeaders(),
         body: JSON.stringify({ email: String(fields.get("email")).trim(), password: fields.get("password") }),
       });
-      window.location.replace(destination);
+      window.location.replace(await preferredDestination(locale, destination));
     } catch (error) {
       setFailure(errorText(locale, error));
       setPending(false);

@@ -67,6 +67,14 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     var failure by mutableStateOf<Int?>(null)
         private set
     private var initialized = false
+    var preference by mutableStateOf<Pair<String, AccountPreference>?>(null)
+        private set
+
+    fun applyPreferences(account: String, updated: AccountPreference) {
+        if (session?.actor?.accountId != account) return
+        val current = preference?.takeIf { it.first == account }?.second
+        if (current == null || updated.revision >= current.revision) preference = account to updated
+    }
 
     private val connectivity = application.getSystemService(ConnectivityManager::class.java)
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -164,6 +172,7 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     fun signOut(all: Boolean) {
         clearSecurity()
         session = null
+        preference = null
         run(R.string.sign_out_pending) { repository.signOut(all) }
     }
 
@@ -214,12 +223,16 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
     }
     var application by remember(session?.actor) { mutableStateOf(false) }
     var applicationReview by remember(session?.actor) { mutableStateOf(false) }
+    var preferences by remember(session?.actor) { mutableStateOf(false) }
+    var directory by remember(session?.actor) { mutableStateOf(false) }
     if (application) ApplicantScreen(model) { model.endApplicantSession(); application = false }
     else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) { applicationReview = false }
     else if (session == null) SignInScreen(model) { application = true }
     else if (security || session.actor.persona == Persona.Admin && session.assurance != "aal2") {
         SecurityScreen(model, session) { security = false }
     } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
+    else if (preferences) AccountScreen(model, close = { preferences = false }, security = { security = true })
+    else if (directory) DirectoryScreen(model) { directory = false }
     else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
     else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
         EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
@@ -238,6 +251,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             FamiliesScreen(model)
         }
         if (tab == SchoolTab.More) {
+            TextButton(onClick = { preferences = true }) { Text(stringResource(R.string.account_preferences)) }
+            TextButton(onClick = { directory = true }) { Text(stringResource(R.string.directory_title)) }
             if ("school.manage" in capabilities || "academics.supervise" in capabilities)
                 TextButton(onClick = { assignments = true }) { Text(stringResource(R.string.staff_assignments)) }
             TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_preferences">Kontoeinstellungen</string>
+    <string name="account_ui_language">App-Sprache</string>
+    <string name="account_mail_language">Sprache für Schulmitteilungen</string>
+    <string name="account_appearance">Darstellung</string>
+    <string name="account_theme_system">Geräteeinstellung</string>
+    <string name="account_theme_light">Hell</string>
+    <string name="account_theme_dark">Dunkel</string>
+    <string name="account_save">Einstellungen speichern</string>
+    <string name="account_reload">Einstellungen aktualisieren</string>
+    <string name="account_notifications">Gerätebenachrichtigungen</string>
+    <string name="account_device_settings">Benachrichtigungseinstellungen öffnen</string>
+    <string name="directory_title">Kontaktverzeichnis</string>
+    <string name="directory_query">Name oder Funktion</string>
+    <string name="directory_all">Alle</string>
+    <string name="directory_empty">Keine passenden Kontakte.</string>
+    <string name="directory_mail">Dienstliche E-Mail senden</string>
+    <string name="directory_call">Diensttelefon anrufen</string>
+    <string name="directory_external_unavailable">Auf diesem Gerät ist keine passende App verfügbar.</string>
+</resources>

@@ -11,3 +11,4 @@ export * from "./school/imports";
 export * from "./invitations";
 export * from "./teacherApplications";
 export * from "./school/assignments";
+export * from "./account";

@@ -38,7 +38,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ locale:
       {calendar && <Link className="plain-button" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
       {access && <Link className="plain-button" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
       {tab === "more" && session.activePersona === "guardian" && <Link className="plain-button" href={`/${locale}/apply`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
-      {tab === "more" && <><Link className="plain-button" href={`/${locale}/account/security`}>{locale === "ar" ? "أمان الحساب" : "Kontosicherheit"}</Link><SessionControls locale={locale} session={session} /></>}
+      {tab === "more" && <><Link className="plain-button" href={`/${locale}/account/preferences`}>{locale === "ar" ? "تفضيلات الحساب" : "Kontoeinstellungen"}</Link><Link className="plain-button" href={`/${locale}/directory`}>{locale === "ar" ? "دليل التواصل" : "Kontaktverzeichnis"}</Link><Link className="plain-button" href={`/${locale}/account/security`}>{locale === "ar" ? "أمان الحساب" : "Kontosicherheit"}</Link><SessionControls locale={locale} session={session} /></>}
     </>
   );
 }

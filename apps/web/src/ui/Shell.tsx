@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { dictionary } from "@/i18n";
-import type { Locale, Persona } from "@madrasty/contracts";
+import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
 
@@ -34,6 +34,7 @@ export function SchoolShell(props: {
   actor: AccountPartition;
   locale: Locale;
   children: ReactNode;
+  theme?: Preferences["theme"];
   selectedScope?: ScopeChoice;
   scopePicker?: ReactNode;
   secondary?: { href: string; label: string }[];
@@ -45,7 +46,7 @@ export function SchoolShell(props: {
   );
 }
 
-function ScopedShell({ actor, locale, children, selectedScope, scopePicker, secondary }: Parameters<typeof SchoolShell>[0]) {
+function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary }: Parameters<typeof SchoolShell>[0]) {
   const text = dictionary(locale);
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -54,7 +55,12 @@ function ScopedShell({ actor, locale, children, selectedScope, scopePicker, seco
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
   const destinations: Destination[] = ["home", roleTab[actor.persona], "messages", "more"];
-  const active = destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? "home";
+  const active = destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    return () => { delete document.documentElement.dataset.theme; };
+  }, [theme]);
 
   useLayoutEffect(() => {
     const area = main.current;
