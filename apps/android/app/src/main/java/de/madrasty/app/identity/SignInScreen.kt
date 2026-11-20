@@ -55,6 +55,9 @@ import de.madrasty.app.school.SchoolHomeScreen
 import de.madrasty.app.school.SchoolWorkQueueScreen
 import de.madrasty.app.school.SchoolWorkTarget
 import de.madrasty.app.school.WorkQueueSelection
+import de.madrasty.app.school.AuditDestination
+import de.madrasty.app.school.AuditFilters
+import de.madrasty.app.school.AuditScreen
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
@@ -250,13 +253,48 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         activeTab = SchoolTab.Home
         queueOpen = queueSelection != null
     }
+    var auditing by remember(session?.actor) { mutableStateOf(false) }
+    var auditFilters by remember(session?.actor) { mutableStateOf(AuditFilters()) }
+    var selectedAuditEntry by remember(session?.actor) { mutableStateOf<String?>(null) }
+    var auditDestination by remember(session?.actor) { mutableStateOf<AuditDestination?>(null) }
+
+    fun returnToAudit() {
+        auditDestination = null
+        activeTab = SchoolTab.More
+        auditing = true
+    }
+    fun openAudited(destination: AuditDestination) {
+        auditDestination = destination
+        auditing = false
+        when(destination.kind) {
+            "access" -> staffAccess = true
+            "calendar" -> calendar = true
+            "assignments", "class" -> assignments = true
+            "timetable" -> openSchedule(null)
+            "invitations" -> invitations = true
+            "applications" -> applicationReview = true
+            "import" -> importing = true
+            "student", "guardian" -> activeTab = SchoolTab.Students
+        }
+    }
     val currentQueue = queueSelection
+    val audited = auditDestination
     if (application) ApplicantScreen(model) { model.endApplicantSession(); application = false }
-    else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) { applicationReview = false }
+    else if (applicationReview && "applications.manage" in capabilities) TeacherApplicationReview(model) {
+        applicationReview = false
+        if (audited?.kind == "applications") returnToAudit()
+    }
     else if (session == null) SignInScreen(model) { application = true }
     else if (security || session.actor.persona == Persona.Admin && session.assurance != "aal2") {
         SecurityScreen(model, session) { security = false }
-    } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) { staffAccess = false }
+    } else if (staffAccess && "access.manage" in capabilities) StaffAccessScreen(model, session) {
+        staffAccess = false
+        if (audited?.kind == "access") returnToAudit()
+    }
+    else if (auditing && "audit.read" in capabilities) AuditScreen(
+        model, selectedAuditEntry, { selectedAuditEntry = it }, auditFilters, { auditFilters = it },
+        ::openAudited, { auditing = false },
+    )
     else if (queueOpen && currentQueue != null && session.actor.persona == Persona.Admin)
         SchoolWorkQueueScreen(model,currentQueue,open = { target ->
             workTarget = target
@@ -269,21 +307,40 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         },close = { queueOpen = false; queueSelection = null })
     else if (preferences) AccountScreen(model, close = { preferences = false }, security = { security = true })
     else if (directory) DirectoryScreen(model) { directory = false }
-    else if (timetable) TimetableScreen(model, session.actor.persona, timetableChild) { timetable = false; timetableChild = null }
-    else if (calendar && "school.manage" in capabilities) CalendarScreen(model) { calendar = false }
+    else if (timetable) TimetableScreen(model, session.actor.persona, timetableChild) {
+        timetable = false
+        timetableChild = null
+        if (audited?.kind == "timetable") returnToAudit()
+    }
+    else if (calendar && "school.manage" in capabilities) CalendarScreen(model) {
+        calendar = false
+        if (audited?.kind == "calendar") returnToAudit()
+    }
     else if (enrollment && ("school.manage" in capabilities || "students.manage" in capabilities))
         EnrollmentScreen(model, "school.manage" in capabilities, "students.manage" in capabilities) { enrollment = false }
     else if (assignments && ("school.manage" in capabilities || "academics.supervise" in capabilities))
-        StaffAssignmentsScreen(model, workTarget as? SchoolWorkTarget.ClassAssignment) {
+        StaffAssignmentsScreen(model, (workTarget as? SchoolWorkTarget.ClassAssignment) ?:
+            audited?.takeIf { it.kind == "class" && it.id != null && it.yearId != null }?.let {
+                SchoolWorkTarget.ClassAssignment(checkNotNull(it.id),checkNotNull(it.yearId))
+            }
+        ) {
             assignments = false
             if (workTarget is SchoolWorkTarget.ClassAssignment) returnToQueue()
+            if (audited?.kind in listOf("assignments","class")) returnToAudit()
         }
     else if (invitations && ("students.manage" in capabilities || "applications.manage" in capabilities))
-        StaffInvitationsScreen(model, "applications.manage" in capabilities, inviteBatch) { invitations = false; inviteBatch = null }
+        StaffInvitationsScreen(model, "applications.manage" in capabilities, inviteBatch) {
+            invitations = false
+            inviteBatch = null
+            if (audited?.kind == "invitations") returnToAudit()
+        }
     else if (importing && "students.manage" in capabilities)
-        ImportScreen(model, { id -> inviteBatch = id; invitations = true }, (workTarget as? SchoolWorkTarget.FamilyImport)?.jobId) {
+        ImportScreen(model, { id -> inviteBatch = id; invitations = true },
+            (workTarget as? SchoolWorkTarget.FamilyImport)?.jobId ?: audited?.takeIf { it.kind == "import" }?.id
+        ) {
             importing = false
             if (workTarget is SchoolWorkTarget.FamilyImport) returnToQueue()
+            if (audited?.kind == "import") returnToAudit()
         }
     else SchoolShell(session.actor, activeTab, { next -> activeTab = next; attendanceClass = null }) { tab ->
         Text(stringResource(tab.label), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
@@ -305,25 +362,41 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
                 TextButton(onClick = ::returnToQueue) { Text(stringResource(R.string.queue_open)) }
             }
             TextButton(onClick = { importing = true }) { Text(stringResource(R.string.import_families)) }
-            FamiliesScreen(model, queued)
+            if (audited?.kind in listOf("student","guardian")) {
+                BackHandler { returnToAudit() }
+                TextButton(onClick = ::returnToAudit) { Text(stringResource(R.string.audit_title)) }
+            }
+            val guardian = audited?.takeIf { it.kind == "guardian" }
+            FamiliesScreen(model, initialStudent=audited?.takeIf { it.kind == "student" }?.id,
+                initialGuardian=queued?.guardianId ?: guardian?.id,initialLink=queued?.linkId ?: guardian?.linkId)
         }
         if (tab == SchoolTab.More) {
+            Text(stringResource(R.string.settings_group_account),style=MaterialTheme.typography.titleLarge)
+            TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
             TextButton(onClick = { preferences = true }) { Text(stringResource(R.string.account_preferences)) }
             TextButton(onClick = { directory = true }) { Text(stringResource(R.string.directory_title)) }
+            AccountActions(model, session)
+            if (session.actor.persona != Persona.Admin || capabilities.any {
+                it in setOf("school.manage","students.manage","academics.supervise","applications.manage")
+            }) Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
             if (session.actor.persona != Persona.Admin || "school.manage" in capabilities || "academics.supervise" in capabilities)
                 TextButton(onClick = { timetable = true }) { Text(stringResource(R.string.timetable_title)) }
             if ("school.manage" in capabilities || "academics.supervise" in capabilities)
                 TextButton(onClick = { assignments = true }) { Text(stringResource(R.string.staff_assignments)) }
-            TextButton(onClick = { security = true }) { Text(stringResource(R.string.security)) }
             if ("school.manage" in capabilities) TextButton(onClick = { calendar = true }) { Text(stringResource(R.string.school_calendar)) }
             if ("school.manage" in capabilities || "students.manage" in capabilities)
                 TextButton(onClick = { enrollment = true }) { Text(stringResource(R.string.enrollments)) }
-            if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
             if ("students.manage" in capabilities || "applications.manage" in capabilities)
                 TextButton(onClick = { invitations = true }) { Text(stringResource(R.string.invite_title)) }
             if ("applications.manage" in capabilities) TextButton(onClick={applicationReview=true}) { Text(stringResource(R.string.teacher_apps)) }
             if (session.actor.persona == Persona.Guardian) TextButton(onClick={application=true}) { Text(stringResource(R.string.teacher_apply)) }
-            AccountActions(model, session)
+            if ("access.manage" in capabilities || "audit.read" in capabilities) {
+                Text(stringResource(R.string.settings_group_access),style=MaterialTheme.typography.titleLarge)
+                if ("access.manage" in capabilities) TextButton(onClick = { staffAccess = true }) { Text(stringResource(R.string.staff_access)) }
+                if ("audit.read" in capabilities) TextButton(onClick = { selectedAuditEntry = null; auditing = true }) {
+                    Text(stringResource(R.string.audit_title))
+                }
+            }
         }
     }
 }

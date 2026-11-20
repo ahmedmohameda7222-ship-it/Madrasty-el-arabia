@@ -39,9 +39,11 @@ import org.json.JSONObject
 private typealias Picker = AsyncState<WirePage<List<JSONObject>>>
 
 @Composable
-fun FamiliesScreen(model: IdentityViewModel, initial: SchoolWorkTarget.GuardianLink? = null) {
-    var mode by remember(initial) { mutableStateOf(if (initial == null) "students" else "guardians") }
-    var target by remember(initial) { mutableStateOf(initial?.guardianId) }
+fun FamiliesScreen(model: IdentityViewModel, initialStudent: String? = null,
+    initialGuardian: String? = null, initialLink: String? = null,
+) {
+    var mode by remember(initialGuardian) { mutableStateOf(if (initialGuardian == null) "students" else "guardians") }
+    var target by remember(initialGuardian,initialStudent) { mutableStateOf(initialGuardian ?: initialStudent) }
     var run by remember { mutableStateOf(0) }
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
     FilterChip(mode == "students", onClick = { mode = "students"; target = null },
@@ -57,7 +59,7 @@ fun FamiliesScreen(model: IdentityViewModel, initial: SchoolWorkTarget.GuardianL
     target?.let { id ->
         HorizontalDivider()
         key(mode, id) {
-            FamilyRecord(model, mode, id, requests, initial?.linkId) { updated ->
+            FamilyRecord(model, mode, id, requests, initialLink) { updated ->
                 target = updated
                 run++
             }

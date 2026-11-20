@@ -1814,6 +1814,59 @@ paths:
                       nextCursor: { type: string, format: uuid }
         default:
           $ref: '#/components/responses/AuthError'
+  /school/audit:
+    get:
+      operationId: readSchoolAudit
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"from","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
+        - {"name":"action","in":"query","schema":{"type":"string"}}
+        - {"name":"actorId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"resourceKind","in":"query","schema":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]}}
+        - {"name":"cursor","in":"query","schema":{"type":"string","maxLength":256}}
+        - {"name":"limit","in":"query","schema":{"type":"integer","minimum":1,"maximum":100}}
+      responses:
+        '200':
+          description: Audit metadata visible to the current actor
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/SchoolAuditEntry"}},"meta":{"type":"object","required":[],"properties":{"nextCursor":{"type":"string","maxLength":256}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/audit/filters:
+    get:
+      operationId: readSchoolAuditFilters
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"from","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
+        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
+        - {"name":"actorQuery","in":"query","schema":{"type":"string","maxLength":100}}
+      responses:
+        '200':
+          description: Audit metadata visible to the current actor
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolAuditFilters"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/audit/{id}:
+    get:
+      operationId: readSchoolAuditEntry
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
+      responses:
+        '200':
+          description: Audit metadata visible to the current actor
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolAuditEntry"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     nativeBearer:
@@ -1839,6 +1892,8 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    SchoolAuditEntry: {"type":"object","required":["id","occurredAt","actorDisplay","action","resourceKind","changeCategory","requestId"],"properties":{"id":{"type":"string","format":"uuid"},"occurredAt":{"type":"string","format":"date-time"},"actorDisplay":{"type":"string"},"action":{"type":"string"},"resourceKind":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]},"changeCategory":{"type":"string","enum":["permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication"]},"requestId":{"type":"string","format":"uuid"},"permittedResourceLink":{"oneOf":[{"type":"object","required":["kind"],"properties":{"kind":{"enum":["access","calendar","assignments","timetable","invitations","applications"]}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"enum":["student","import"]},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"guardian"},"id":{"type":"string","format":"uuid"},"linkId":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id","yearId"],"properties":{"kind":{"const":"class"},"id":{"type":"string","format":"uuid"},"yearId":{"type":"string","format":"uuid"}}}]}}}
+    SchoolAuditFilters: {"type":"object","required":["timezone","actions","actors"],"properties":{"timezone":{"type":"string"},"actions":{"type":"array","items":{"type":"object","required":["action","resourceKind","changeCategory"],"properties":{"action":{"type":"string"},"resourceKind":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]},"changeCategory":{"type":"string","enum":["permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication"]}}}},"actors":{"type":"array","items":{"type":"object","required":["id","displayName"],"properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"}}}}}}
     SchoolWorkQueueKey:
       type: string
       enum: [guardian_links, family_imports, class_assignments, bounced_invites, unapproved_attendance, noncontinuation_requests, settlement_review, failed_deliveries]

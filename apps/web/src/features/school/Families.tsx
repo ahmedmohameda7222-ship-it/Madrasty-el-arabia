@@ -63,10 +63,10 @@ const guardianList = guardianSchema.array();
 const childrenSchema = childSummarySchema.array();
 const studentReader = z.union([studentList, guardianList]);
 
-export function Families({ locale, initialGuardian, initialLink }: { locale: Locale; initialGuardian?:string; initialLink?:string }) {
+export function Families({ locale, initialGuardian, initialStudent, initialLink }: { locale: Locale; initialGuardian?:string; initialStudent?:string; initialLink?:string }) {
   const text = copy[locale];
   const [mode, setMode] = useState<Mode>(initialGuardian?"guardians":"students");
-  const [target, setTarget] = useState<string | "new" | null>(initialGuardian??null);
+  const [target, setTarget] = useState<string | "new" | null>(initialGuardian??initialStudent??null);
   const [refresh, setRefresh] = useState(0);
   return (
     <>
