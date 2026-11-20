@@ -14,7 +14,7 @@ export const curriculumSubjectsQuery=pageQuerySchema.extend({childId:z.uuid().op
 
 export const curriculumOffering=z.object({
   id:z.uuid(),subjectId:z.uuid(),classId:z.uuid(),classCode:z.string(),classNameAr:z.string(),classNameDe:z.string(),
-  yearId:z.uuid(),yearStart:schoolDateSchema,yearEnd:schoolDateSchema,canPlan:z.boolean(),canPublish:z.boolean(),
+  yearId:z.uuid(),yearStart:schoolDateSchema,yearEnd:schoolDateSchema,canPlan:z.boolean(),canPublish:z.boolean(),canLog:z.boolean(),canGrade:z.boolean(),
 });
 export const lessonListQuery=pageQuerySchema.extend({childId:z.uuid().optional(),offeringId:z.uuid().optional()});
 const content=z.object({

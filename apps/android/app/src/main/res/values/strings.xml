@@ -123,4 +123,25 @@
     <string name="curriculum_original_de">النص الأصلي بالألمانية</string>
     <string name="language_ar">العربية</string>
     <string name="language_de">الألمانية</string>
+    <string name="academic_work">الشرح والأنشطة</string>
+    <string name="academic_teaching">سجل الشرح</string>
+    <string name="academic_activities">الأنشطة والتقييم</string>
+    <string name="academic_context">المادة والفصل والسنة</string>
+    <string name="academic_log_lesson">تسجيل شرح</string>
+    <string name="academic_actual_date">التاريخ الفعلي</string>
+    <string name="academic_staff_assignment">تكليف المدرس</string>
+    <string name="academic_delivery_notes">محتوى الشرح الفعلي</string>
+    <string name="academic_plan">خطة الدرس</string>
+    <string name="academic_no_plan">بدون درس مرتبط</string>
+    <string name="academic_draft_plan">الخطة الحالية</string>
+    <string name="academic_published_plan">النسخة المنشورة</string>
+    <string name="academic_new_activity">إضافة نشاط</string>
+    <string name="academic_activity_name">اسم النشاط</string>
+    <string name="academic_maximum">الدرجة القصوى</string>
+    <string name="academic_roster">كشف درجات النشاط</string>
+    <string name="academic_score">الدرجة</string>
+    <string name="academic_mark_pending">الدرجة غير مسجلة</string>
+    <string name="academic_edit_mark">تعديل الدرجة</string>
+    <string name="academic_mark_reason">سبب تصحيح الدرجة المعروضة للأسرة</string>
+    <string name="academic_correction_history">التصحيحات السابقة</string>
 </resources>

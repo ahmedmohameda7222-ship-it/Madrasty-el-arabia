@@ -88,7 +88,10 @@ export function listCurriculumOfferings(actor:ActorContext,child?:string){
     return curriculumOffering.array().parse(await tx`select id,subject_id as "subjectId",
       class_id as "classId",class_code as "classCode",class_name_ar as "classNameAr",class_name_de as "classNameDe",
       year_id as "yearId",year_start::text as "yearStart",year_end::text as "yearEnd",
-      can_plan as "canPlan",can_publish as "canPublish" from app.curriculum_offerings(${child??null}::uuid)
+      can_plan as "canPlan",can_publish as "canPublish",
+      ${child??null}::uuid is null and (app.has_capability('academics.supervise') or app.academic_offering_scope(id,app.school_today(),'academics.log')) as "canLog",
+      ${child??null}::uuid is null and (app.has_capability('academics.supervise') or app.academic_offering_scope(id,app.school_today(),'academics.grade')) as "canGrade"
+      from app.curriculum_offerings(${child??null}::uuid)
       order by year_start desc,class_code,id`);
   });
 }
@@ -101,12 +104,13 @@ function readCursor(raw?:string){
     return sortCursor.parse(JSON.parse(Buffer.from(raw,"base64url").toString("utf8")));
   }catch{throw new ApiError("validation",{cursor:"error.validation"});}
 }
-function lessonColumns(tx:Transaction){
+function lessonColumns(tx:Transaction,child?:string){
   return tx`id,offering_id as "offeringId",unit_id as "unitId",sort_order as "sortOrder",planned_date::text as "plannedDate",
     source_language as "sourceLanguage",title_ar as "titleAr",body_ar as "bodyAr",title_de as "titleDe",body_de as "bodyDe",
     revision,publication_id as "publicationId",
     to_char(published_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "publishedAt",
-    published_revision as "publishedRevision",can_edit as "canEdit",can_publish as "canPublish",null::text as "latestDeliveryDate"`;
+    published_revision as "publishedRevision",can_edit as "canEdit",can_publish as "canPublish",
+    app.curriculum_delivery_date(${child??null}::uuid,id)::text as "latestDeliveryDate"`;
 }
 
 export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof lessonListQuery>){
@@ -114,7 +118,7 @@ export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof le
     await academicReadScope(tx,actor,query.childId);
     const cursor=readCursor(query.cursor);
     const rows=curriculumLesson.array().parse(await tx`
-      select ${lessonColumns(tx)} from app.curriculum_projection(${query.childId??null}::uuid,${query.offeringId??null}::uuid,null)
+      select ${lessonColumns(tx,query.childId)} from app.curriculum_projection(${query.childId??null}::uuid,${query.offeringId??null}::uuid,null)
       where (${cursor?.id??null}::uuid is null or (sort_order,id)>(${cursor?.order??null}::integer,${cursor?.id??null}::uuid))
       order by sort_order,id limit ${query.limit+1}`);
     const items=rows.slice(0,query.limit),end=items.at(-1);
@@ -125,7 +129,7 @@ export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof le
 export function readCurriculumLesson(actor:ActorContext,id:string,child?:string){
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,child);
-    const [row]=await tx`select ${lessonColumns(tx)} from app.curriculum_projection(${child??null}::uuid,null,${id})`;
+    const [row]=await tx`select ${lessonColumns(tx,child)} from app.curriculum_projection(${child??null}::uuid,null,${id})`;
     if(!row)throw new ApiError("not_found");
     return curriculumLesson.parse(row);
   });

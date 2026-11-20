@@ -123,4 +123,25 @@
     <string name="curriculum_original_de">Original auf Deutsch</string>
     <string name="language_ar">Arabisch</string>
     <string name="language_de">Deutsch</string>
+    <string name="academic_work">Unterricht und Aktivitäten</string>
+    <string name="academic_teaching">Unterrichtsdokumentation</string>
+    <string name="academic_activities">Bewertete Aktivitäten</string>
+    <string name="academic_context">Fach, Klasse und Schuljahr</string>
+    <string name="academic_log_lesson">Unterricht dokumentieren</string>
+    <string name="academic_actual_date">Tatsächliches Datum</string>
+    <string name="academic_staff_assignment">Lehrauftrag</string>
+    <string name="academic_delivery_notes">Tatsächlich unterrichteter Inhalt</string>
+    <string name="academic_plan">Unterrichtsplan</string>
+    <string name="academic_no_plan">Ohne zugeordnete Stunde</string>
+    <string name="academic_draft_plan">Aktueller Plan</string>
+    <string name="academic_published_plan">Veröffentlichte Fassung</string>
+    <string name="academic_new_activity">Aktivität anlegen</string>
+    <string name="academic_activity_name">Name der Aktivität</string>
+    <string name="academic_maximum">Höchstpunktzahl</string>
+    <string name="academic_roster">Punkteliste der Klasse</string>
+    <string name="academic_score">Punkte</string>
+    <string name="academic_mark_pending">Noch keine Punktzahl erfasst</string>
+    <string name="academic_edit_mark">Punktzahl bearbeiten</string>
+    <string name="academic_mark_reason">Begründung zur Korrektur der veröffentlichten Punktzahl</string>
+    <string name="academic_correction_history">Bisherige Korrekturen</string>
 </resources>

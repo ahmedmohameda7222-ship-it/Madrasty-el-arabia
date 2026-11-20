@@ -19,3 +19,4 @@ export * from "./attendance/sheets";
 export * from "./attendance/excuses";
 export * from "./attendance/history";
 export * from "./academics/curriculum";
+export * from "./academics/teaching-activity";

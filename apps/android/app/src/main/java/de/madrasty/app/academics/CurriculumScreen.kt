@@ -316,7 +316,7 @@ private fun AcademicLessonBody(value:JSONObject,language:String){
     Text(displayed.body,style=MaterialTheme.typography.bodyLarge.copy(textDirection=direction))
 }
 @Composable
-private fun AcademicLongField(label:Int,value:String,max:Int,change:(String)->Unit){
+internal fun AcademicLongField(label:Int,value:String,max:Int,change:(String)->Unit){
     OutlinedTextField(value,{change(it.take(max))},Modifier.fillMaxWidth(),label={Text(stringResource(label))},minLines=3)
 }
 private data class LessonText(val title:String,val body:String,val language:String)
@@ -326,13 +326,13 @@ private fun lessonText(value:JSONObject,language:String):LessonText{
     val suffix=if(displayed=="ar")"Ar" else "De"
     return LessonText(value.getString("title$suffix"),value.getString("body$suffix"),displayed)
 }
-private fun offeringLabel(value:JSONObject,language:String)=isolate(value.getString("classCode"))+" · "+
+internal fun offeringLabel(value:JSONObject,language:String)=isolate(value.getString("classCode"))+" · "+
     isolate(value.getString(if(language=="ar")"classNameAr" else "classNameDe"))+" · "+
     isolate(value.getString("yearStart")+" – "+value.getString("yearEnd"))
-private fun JSONObject.string(key:String)=if(isNull(key))null else optString(key)
+internal fun JSONObject.string(key:String)=if(isNull(key))null else optString(key)
 
 @Composable
-private fun <T> academicRead(path:String,refresh:Int,read:suspend (String)->T):AsyncState<T>{
+internal fun <T> academicRead(path:String,refresh:Int,read:suspend (String)->T):AsyncState<T>{
     var retry by remember{mutableStateOf(0)}
     var state by remember(path){mutableStateOf<AsyncState<T>>(AsyncState.InitialLoading())}
     LaunchedEffect(path,refresh,retry){state=loadAccountSurface({retry++}){read(path)}}
@@ -343,7 +343,7 @@ private suspend fun IdentityViewModel.curriculumPage(path:String)=decodeData(sch
     List(rows.length(),rows::getJSONObject)
 }
 @Composable
-private fun academicPages(
+internal fun academicPages(
     model:IdentityViewModel,path:String,refresh:Int,render:@Composable (List<JSONObject>)->Unit,
 ):List<JSONObject>?{
     var retry by remember{mutableStateOf(0)}

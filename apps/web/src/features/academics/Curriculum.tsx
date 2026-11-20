@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect,useState, type FormEvent } from "react";
-import { z } from "zod";
+import { AcademicReadError,offeringText,useAcademicPage } from "./shared";
 import {
   childSummarySchema,curriculumLesson,curriculumOffering,curriculumSubject,curriculumSubjectChange,curriculumSubjectCreate,
   lessonChange,lessonCreate,lessonPublished,lessonReceipt,
   type CurriculumLesson,type CurriculumOffering,type CurriculumSubject,type Locale,
 } from "@madrasty/contracts";
-import { ApiResponseError,requestApi } from "@/api/client";
+import { ApiResponseError } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
 import { dictionary } from "@/i18n";
@@ -48,36 +48,6 @@ function localLesson(value:LessonText,locale:Locale){
   return {language,title:language==="ar"?value.titleAr:value.titleDe,body:language==="ar"?value.bodyAr:value.bodyDe};
 }
 
-function useCurriculumPage<T>(path:`/${string}`|null,schema:z.ZodType<T[]>,refresh:number){
-  const {persona}=useAccountScope();
-  const [read,setRead]=useState<{path:string;refresh:number;items?:T[];cursor?:string;error?:unknown}>();
-  const [retry,setRetry]=useState(0);
-  const [busy,setBusy]=useState(false);
-  const [notice,setNotice]=useState<unknown>();
-  const visible=read?.path===path?read:undefined;
-  useEffect(()=>{
-    if(!path)return;
-    const abort=new AbortController();
-    requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}}).then(
-      ({data,meta})=>{if(!abort.signal.aborted)setRead({path,refresh,items:data,cursor:meta?.nextCursor});},
-      (error)=>{if(!abort.signal.aborted)setRead({path,refresh,error});},
-    );
-    return ()=>abort.abort();
-  },[path,persona,refresh,retry,schema]);
-  async function more(){
-    if(!path||!visible?.cursor||busy)return;
-    setBusy(true);setNotice(undefined);
-    try{
-      const {data,meta}=await requestApi(`${path}&cursor=${encodeURIComponent(visible.cursor)}`,schema,{headers:{"X-School-Persona":persona}});
-      setRead((old)=>old===visible?{path,refresh,items:[...(visible.items??[]),...data],cursor:meta?.nextCursor}:old);
-    }catch(error){
-      if(denied(error))setRead((old)=>old===visible?{path,refresh,error}:old);
-      else setNotice(error);
-    }finally{setBusy(false);}
-  }
-  return {visible,retry:()=>setRetry((count)=>count+1),more,busy,notice};
-}
-
 export function Curriculum({locale,initialChild,initialLesson}:{
   locale:Locale;initialChild?:string;initialLesson?:string;
 }){
@@ -115,7 +85,7 @@ function CurriculumCatalog({locale,child,revision,initialLesson}:{locale:Locale;
   const [createLesson,setCreateLesson]=useState(false);
   const [offering,setOffering]=useState("");
   const refresh=revision+changed;
-  const catalog=useCurriculumPage(`/academics/subjects?limit=100${childFilter}`,subjects,refresh);
+  const catalog=useAcademicPage(`/academics/subjects?limit=100${childFilter}`,subjects,refresh);
   const available=useTimetableRead(`/academics/offerings${childQuery}`,offerings,refresh);
   const options=catalog.visible?.items??[];
   const selected=subject?options.find((item)=>item.id===subject):options[0];
@@ -123,7 +93,7 @@ function CurriculumCatalog({locale,child,revision,initialLesson}:{locale:Locale;
   const current=useTimetableRead(picked?`/academics/subjects/${picked}${childQuery}`:null,curriculumSubject,refresh);
   const validOfferings=available.value?.data?.filter((value)=>value.subjectId===picked)??[];
   const chosen=validOfferings.find((value)=>value.id===offering)??validOfferings[0];
-  const program=useCurriculumPage(chosen?`/academics/lessons?limit=25&offeringId=${chosen.id}${childFilter}`:null,lessons,refresh);
+  const program=useAcademicPage(chosen?`/academics/lessons?limit=25&offeringId=${chosen.id}${childFilter}`:null,lessons,refresh);
   const detail=useTimetableRead(lesson?`/academics/lessons/${lesson}${childQuery}`:null,curriculumLesson,refresh);
   const inc=()=>setChanged((n)=>n+1);
 
@@ -136,7 +106,7 @@ function CurriculumCatalog({locale,child,revision,initialLesson}:{locale:Locale;
   return <>
     <section className="auth-card auth-form">
       <h2>{text.subject}</h2>
-      {catalog.visible?.error?<ReadError locale={locale} error={catalog.visible.error} retry={catalog.retry}/>:
+      {catalog.visible?.error?<AcademicReadError locale={locale} error={catalog.visible.error} retry={catalog.retry}/>:
         !catalog.visible?.items?<AsyncSurface locale={locale} state={{kind:"initialLoading"}}/>:
         options.length?<label>{text.subject}<select value={picked??""} onChange={(event)=>{
           setSubject(event.target.value);setOffering("");setEditSubject(undefined);setCreateLesson(false);
@@ -163,7 +133,7 @@ function CurriculumCatalog({locale,child,revision,initialLesson}:{locale:Locale;
       }}>
         {validOfferings.map((option)=><option value={option.id} key={option.id}>{offeringText(option,locale)}</option>)}
       </select></label>:<p>{text.noOfferings}</p>}</TimetableRead>
-      {chosen&&(program.visible?.error?<ReadError locale={locale} error={program.visible.error} retry={program.retry}/>:
+      {chosen&&(program.visible?.error?<AcademicReadError locale={locale} error={program.visible.error} retry={program.retry}/>:
         !program.visible?.items?<AsyncSurface locale={locale} state={{kind:"initialLoading"}}/>:<>
           {program.visible.items.length?<ul className="group-list">{program.visible.items.map((value)=><li key={value.id}>
             <button className="group-row" onClick={()=>setLesson(value.id)}><bdi>{localLesson(value,locale).title}</bdi>
@@ -178,14 +148,6 @@ function CurriculumCatalog({locale,child,revision,initialLesson}:{locale:Locale;
         units={program.visible?.items??[]} cancel={()=>setCreateLesson(false)} saved={(id)=>{setCreateLesson(false);setLesson(id);inc();}}/>}
     </section>}
   </>;
-}
-
-function offeringText(value:CurriculumOffering,locale:Locale){
-  return `${value.classCode} · ${locale==="ar"?value.classNameAr:value.classNameDe} · ${value.yearStart} – ${value.yearEnd}`;
-}
-
-function ReadError({locale,error,retry}:{locale:Locale;error:unknown;retry:()=>void}){
-  return <AsyncSurface locale={locale} state={denied(error)?{kind:"forbidden"}:{kind:"error",message:timetableError(locale,error),retry}}/>;
 }
 
 function SubjectEditor({locale,item,cancel,saved}:{locale:Locale;item?:CurriculumSubject;cancel:()=>void;saved:(id:string)=>void}){
