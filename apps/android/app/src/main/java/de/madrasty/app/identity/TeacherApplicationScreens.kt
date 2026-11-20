@@ -202,6 +202,7 @@ private fun ApplicationState(record: JSONObject, locale: String) {
         style=MaterialTheme.typography.bodySmall)
     if (!record.isNull("decidedAt")) Text("${stringResource(R.string.applicant_decided_at)} · ${format.format(Instant.parse(record.getString("decidedAt")))}",
         style=MaterialTheme.typography.bodySmall)
+    if (record.optJSONObject("decisionNotice") != null) Text(stringResource(R.string.applicant_decision_notice))
     if (!record.isNull("applicantMessage")) Text(record.getString("applicantMessage"))
 }
 

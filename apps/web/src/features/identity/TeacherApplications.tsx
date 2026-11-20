@@ -181,6 +181,7 @@ function State({ locale, record }: { locale: Locale; record: TeacherApplication 
     <p><bdi>{record.displayName}</bdi> · {text[record.state]}</p>
     <small>{text.submittedAt} <time dateTime={record.submittedAt}>{date(record.submittedAt)}</time></small>
     {record.decidedAt && <small> · {text.decidedAt} <time dateTime={record.decidedAt}>{date(record.decidedAt)}</time></small>}
+    {record.decisionNotice&&<p className="notice" role="status">{locale==="ar"?"المدرسة سجّلت قرار بشأن طلبك.":"Die Schule hat über deinen Antrag entschieden."}</p>}
     {record.applicantMessage && <p>{record.applicantMessage}</p>}
   </>;
 }

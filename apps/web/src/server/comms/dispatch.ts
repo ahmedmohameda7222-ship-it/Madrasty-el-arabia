@@ -9,6 +9,7 @@ import {fcmConfigured,sendAndroidPush} from "./providers/fcm";
 import {sendWebPush,webPushConfigured} from "./providers/webPush";
 import type {TransportResult} from "./providers/result";
 import {genericPushEnvelope,invitationEnvelope,schoolMailEnvelope} from "./templates";
+import {projectSchoolNotifications} from "./rules";
 
 const jobSchema=z.object({
   id:z.uuid(),scope_id:z.uuid(),lease_id:z.uuid(),channel:z.enum(["email","push"]),kind:z.string(),
@@ -75,7 +76,7 @@ async function dispatchEmail(job:Job):Promise<Finished>{
     const [row]=await tx<{started:boolean}[]>`select app.start_mail_submission(${job.id},${job.lease_id},${envelope.to},${locale}) as started`;
     return row.started;
   });
-  if(!started)return {state:"retry",failure:"provider_unavailable"};
+  if(!started)return {state:"suppressed",failure:"scope_changed"};
   const key=isInvite(job)?`invite/${job.scope_id}/${job.source_revision}`:`school/${job.id}`;
   return sendEmail(job.id,envelope,key);
 }
@@ -125,6 +126,10 @@ async function dispatchPush(job:Job){
 }
 
 export async function dispatchSchoolDelivery(){
+  const projection=await projectSchoolNotifications().catch(()=>{
+    console.warn("School notification projection unavailable");
+    return {state:"unavailable"} as const;
+  });
   const jobs=await withDeliveryWorker(async(tx)=>{
     await tx`select app.queue_invitation_delivery_jobs(40)`;
     await tx`select app.expire_school_broadcast_previews(40),app.expire_push_installations(40)`;
@@ -143,7 +148,7 @@ export async function dispatchSchoolDelivery(){
       else pending++;
     }
   }
-  return {claimed:jobs.length,accepted,suppressed,pending};
+  return {claimed:jobs.length,accepted,suppressed,pending,projection};
 }
 
 export async function applyProviderEmailEvent(request:Request){

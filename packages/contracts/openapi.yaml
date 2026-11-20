@@ -3820,7 +3820,7 @@ paths:
           description: Claim bounded due school delivery work
           content:
             application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"claimed":{"type":"integer","minimum":0},"accepted":{"type":"integer","minimum":0},"suppressed":{"type":"integer","minimum":0},"pending":{"type":"integer","minimum":0}},"required":["claimed","accepted","suppressed","pending"]}}}
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"claimed":{"type":"integer","minimum":0},"accepted":{"type":"integer","minimum":0},"suppressed":{"type":"integer","minimum":0},"pending":{"type":"integer","minimum":0},"projection":{"oneOf":[{"type":"object","required":["projected","chatWindows","invoiceReminders","absenceCorrections","retryCount","invalidCount","oldestLagSeconds"],"properties":{"projected":{"type":"integer","minimum":0},"chatWindows":{"type":"integer","minimum":0},"invoiceReminders":{"type":"integer","minimum":0},"absenceCorrections":{"type":"integer","minimum":0},"retryCount":{"type":"integer","minimum":0},"invalidCount":{"type":"integer","minimum":0},"oldestLagSeconds":{"type":"integer","minimum":0}}},{"type":"object","required":["state"],"properties":{"state":{"const":"unavailable"}}}]}},"required":["claimed","accepted","suppressed","pending","projection"]}}}
         default:
           $ref: '#/components/responses/AuthError'
   /internal/email-events:

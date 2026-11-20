@@ -15,6 +15,7 @@ export const applicationSchema = applicationInput.extend({
   id: z.uuid(), state: applicationStatus, revision: revisionSchema,
   submittedAt: z.iso.datetime(), decidedAt: z.iso.datetime().nullable(),
   applicantMessage: z.string().nullable(),
+  decisionNotice: z.object({id:z.uuid(),createdAt:z.iso.datetime()}).optional(),
 });
 export const applicationListInput = pageQuerySchema.extend({
   status: applicationStatus.optional(), cursor: z.uuid().optional(),

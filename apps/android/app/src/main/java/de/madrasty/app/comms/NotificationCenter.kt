@@ -199,6 +199,9 @@ private fun targetLabel(kind:String):Int?=when(kind){
     "exam"->R.string.exam_title
     "activity"->R.string.academic_work
     "application"->R.string.teacher_apply
+    "invoice"->R.string.fee_invoices
+    "receipt"->R.string.receipt_title
+    "fee_stop"->R.string.stop_title
     else->null
 }
 

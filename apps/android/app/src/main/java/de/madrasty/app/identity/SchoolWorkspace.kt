@@ -179,6 +179,9 @@ internal class SchoolNavigation {
             "activity"->WorkspacePage.AcademicWork(childId,id)
             "homework"->WorkspacePage.Homework(childId,id)
             "application"->WorkspacePage.Apply
+            "invoice"->WorkspacePage.Invoices(id=id)
+            "receipt"->WorkspacePage.Receipts(id=id)
+            "fee_stop"->WorkspacePage.Stops(id=id)
             else->return false
         }
         open(page)

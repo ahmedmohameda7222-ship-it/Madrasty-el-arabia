@@ -609,4 +609,5 @@
     <string name="stop_reallocation">إعادة تخصيص مثبتة</string>
     <string name="stop_proof_required">راجع كل إيصال وأضف إثبات للمبلغ المخصص منه بالكامل.</string>
     <string name="stop_stale">الطلب أو الرصيد اتغير. راجع البيانات المحدّثة.</string>
+    <string name="applicant_decision_notice">المدرسة سجّلت قرار بشأن طلبك.</string>
 </resources>
