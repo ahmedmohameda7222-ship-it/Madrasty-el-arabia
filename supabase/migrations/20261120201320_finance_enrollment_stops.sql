@@ -115,11 +115,11 @@ $$;
 create trigger stop_guard_enrollment before insert or update on app.enrollment
 for each row execute function app.guard_enrollment_stop_insert();
 
-create or replace function app.billing_stop_applies(pupil uuid,billing_month date) returns boolean
+create or replace function app.billing_stop_applies(pupil uuid,period_key date) returns boolean
 language sql stable security definer set search_path=pg_catalog
 as $$
   select exists(select 1 from app.enrollment_stop s where s.student_id=pupil and s.state='approved'
-    and billing_month<@daterange(s.start_month,s.end_month,'[)'))
+    and period_key<@daterange(s.start_month,s.end_month,'[)'))
 $$;
 
 create function app.finance_reminder_held(target uuid) returns boolean
