@@ -4237,6 +4237,7 @@ paths:
       summary: List authorized named-payer or staff invoices
       security: [{ webSession: [] }, { nativeBearer: [] }]
       parameters:
+        - {"name":"q","in":"query","required":false,"schema":{"type":"string","maxLength":100}}
         - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
         - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
         - {"name":"state","in":"query","required":false,"schema":{"$ref":"#/components/schemas/InvoiceState"}}
@@ -4263,6 +4264,112 @@ paths:
           content:
             application/json:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/InvoiceDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/receipt-options:
+    get:
+      operationId: readReceiptOptions
+      summary: Read school currency and enabled receipt methods
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Read school currency and enabled receipt methods
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptOptions"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/receipts:
+    get:
+      operationId: listFinanceReceipts
+      summary: List receipts and their matching state for authorized staff
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"state","in":"query","required":false,"schema":{"$ref":"#/components/schemas/ReceiptState"}}
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: List receipts and their matching state for authorized staff
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/ReceiptSummary"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: recordFinanceReceipt
+      summary: Record verified external money and allocate only an exact invoice match
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/RecordReceiptInput"}
+      responses:
+        '201':
+          description: Record verified external money and allocate only an exact invoice match
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptMutation"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/receipts/{id}:
+    get:
+      operationId: readFinanceReceipt
+      summary: Read a staff receipt or a private payer projection
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read a staff receipt or a private payer projection
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"oneOf":[{"$ref":"#/components/schemas/ReceiptStaffDetail"},{"$ref":"#/components/schemas/ReceiptPayerDetail"}]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/receipts/{id}/allocations:
+    post:
+      operationId: allocateFinanceReceipt
+      summary: Post a reviewed allocation using receipt and invoice revisions
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/ReceiptAllocationInput"}
+      responses:
+        '201':
+          description: Post a reviewed allocation using receipt and invoice revisions
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptMutation"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/receipts/{id}/reversals:
+    post:
+      operationId: reverseFinanceReceipt
+      summary: Post a compensating unallocation or void
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/ReceiptReversalInput"}
+      responses:
+        '201':
+          description: Post a compensating unallocation or void
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptMutation"}}}
         default:
           $ref: '#/components/responses/AuthError'
 components:
@@ -4293,6 +4400,16 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    ReceiptOptions: {"type":"object","properties":{"schoolDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"cashEnabled":{"type":"boolean"}},"required":["schoolDate","currency","cashEnabled"]}
+    ReceiptState: {"type":"string","enum":["needs_matching","allocated","voided"]}
+    RecordReceiptInput: {"type":"object","properties":{"externalReceiptRef":{"type":"string","minLength":1,"maxLength":160},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"invoiceId":{"type":"string","format":"uuid"},"verified":{"const":true}},"required":["externalReceiptRef","method","receivedDate","currency","amountMinor","verified"],"additionalProperties":false}
+    ReceiptAllocationInput: {"type":"object","properties":{"revision":{"type":"integer","minimum":1},"lines":{"type":"array","items":{"type":"object","properties":{"invoiceId":{"type":"string","format":"uuid"},"invoiceRevision":{"type":"integer","minimum":1},"amountMinor":{"type":"integer","minimum":1,"maximum":20000000000000}},"required":["invoiceId","invoiceRevision","amountMinor"]},"minItems":1,"maxItems":100}},"required":["revision","lines"]}
+    ReceiptReversalInput: {"oneOf":[{"type":"object","properties":{"kind":{"const":"unapply"},"revision":{"type":"integer","minimum":1},"allocationIds":{"type":"array","items":{"type":"string","format":"uuid"},"minItems":1,"maxItems":100,"uniqueItems":true},"reason":{"type":"string","minLength":3,"maxLength":500}},"required":["kind","revision","allocationIds","reason"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"void_receipt"},"revision":{"type":"integer","minimum":1},"reason":{"type":"string","minLength":3,"maxLength":500}},"required":["kind","revision","reason"],"additionalProperties":false}]}
+    ReceiptSummary: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"activeMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"remainderMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/ReceiptState"},"revision":{"type":"integer","minimum":1}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","amountMinor","activeMinor","appliedMinor","remainderMinor","state","revision"]}
+    ReceiptAllocation: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"invoiceId":{"type":"string","format":"uuid"},"invoiceNumber":{"type":"string"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"period":{"$ref":"#/components/schemas/BillingMonth"},"amountMinor":{"type":"integer","minimum":1,"maximum":20000000000000},"postedAt":{"type":"string","format":"date-time"},"reversedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]},"invoiceBalanceMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]}},"required":["id","invoiceId","invoiceNumber","studentName","studentNumber","period","amountMinor","postedAt","reversedAt","reason","invoiceBalanceMinor"]}
+    ReceiptStaffDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"activeMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"remainderMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/ReceiptState"},"revision":{"type":"integer","minimum":1},"scope":{"const":"staff"},"externalReceiptRef":{"type":"string","minLength":1,"maxLength":160},"suggestedInvoiceId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"allocations":{"type":"array","items":{"$ref":"#/components/schemas/ReceiptAllocation"}},"history":{"type":"array","items":{"type":"object","properties":{"revision":{"type":"integer","minimum":1},"kind":{"type":"string","enum":["record","allocate","unapply","void_receipt"]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]},"postedAt":{"type":"string","format":"date-time"}},"required":["revision","kind","reason","postedAt"]}},"canPost":{"type":"boolean"}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","amountMinor","activeMinor","appliedMinor","remainderMinor","state","revision","scope","externalReceiptRef","suggestedInvoiceId","allocations","history","canPost"]}
+    ReceiptPayerDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"scope":{"const":"payer"},"amountMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"allocations":{"type":"array","items":{"$ref":"#/components/schemas/ReceiptAllocation"}}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","scope","amountMinor","appliedMinor","allocations"]}
+    ReceiptMutation: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"remainderMinor":{"type":"integer","minimum":0},"revision":{"type":"integer","minimum":1},"state":{"$ref":"#/components/schemas/ReceiptState"},"items":{"type":"array","items":{"type":"object","properties":{"allocationId":{"type":"string","format":"uuid"},"invoiceId":{"type":"string","format":"uuid"},"invoiceRevision":{"type":"integer","minimum":1},"balanceMinor":{"type":"integer","minimum":0}},"required":["allocationId","invoiceId","invoiceRevision","balanceMinor"]}}},"required":["id","receiptNumber","remainderMinor","revision","state","items"]}
     BillingMonth: {"type":"string","pattern":"^(?!0000)[0-9]{4}-(0[1-9]|1[0-2])$"}
     FeeLine: {"type":"object","properties":{"titleAr":{"type":"string","minLength":1,"maxLength":120},"titleDe":{"type":"string","minLength":1,"maxLength":120},"amountMinor":{"type":"integer","minimum":1,"maximum":1000000000000}},"required":["titleAr","titleDe","amountMinor"]}
     FeeTariffInput: {"type":"object","properties":{"effectiveFromMonth":{"$ref":"#/components/schemas/BillingMonth"},"lines":{"type":"array","items":{"$ref":"#/components/schemas/FeeLine"},"minItems":1,"maxItems":20},"dueDay":{"type":"integer","minimum":1,"maximum":31}},"required":["effectiveFromMonth","lines","dueDay"]}

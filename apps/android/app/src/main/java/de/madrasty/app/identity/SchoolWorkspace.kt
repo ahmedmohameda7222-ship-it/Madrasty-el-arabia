@@ -50,6 +50,9 @@ import de.madrasty.app.finance.BankSettings
 import de.madrasty.app.finance.FeeSettings
 import de.madrasty.app.finance.IssueInvoices
 import de.madrasty.app.finance.InvoiceDetails
+import de.madrasty.app.finance.RecordPayment
+import de.madrasty.app.finance.Reconciliation
+import de.madrasty.app.finance.ReceiptDetails
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -89,6 +92,8 @@ internal sealed interface WorkspacePage {
     data class FeeSettings(val student: String? = null) : WorkspacePage
     data class IssueInvoices(val student: String? = null) : WorkspacePage
     data class Invoices(val id: String? = null, val student: String? = null, val period: String? = null) : WorkspacePage
+    data class Payment(val invoice: String? = null) : WorkspacePage
+    data class Receipts(val id: String? = null, val state: String? = null) : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
@@ -217,7 +222,9 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
     val audit = "audit.read" in keys
     val bank = "bank.configure" in keys
     val billing = "finance.issue" in keys
-    val invoiceViewer = persona == Persona.Guardian || billing || "finance.read" in keys
+    val posting = "finance.post" in keys
+    val receiptViewer = posting || "finance.read" in keys
+    val invoiceViewer = persona == Persona.Guardian || billing || receiptViewer
 
     fun allows(page: WorkspacePage): Boolean = when(page){
         WorkspacePage.Access -> access
@@ -227,6 +234,8 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         WorkspacePage.Bank -> bank
         is WorkspacePage.FeeSettings, is WorkspacePage.IssueInvoices -> billing
         is WorkspacePage.Invoices -> invoiceViewer
+        is WorkspacePage.Payment -> posting
+        is WorkspacePage.Receipts -> receiptViewer || (page.id != null && persona == Persona.Guardian)
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
@@ -314,7 +323,15 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             if(rights.bank) ({state.open(WorkspacePage.Bank)}) else null,
             {state.open(WorkspacePage.FeeSettings(it))}, {id,period->state.open(WorkspacePage.Invoices(id,period=period))},state::back)
         is WorkspacePage.Invoices -> InvoiceDetails(model,page.id,page.student,page.period,
-            {state.open(WorkspacePage.Invoices(id=it))},state::openThread,state::back)
+            {state.open(WorkspacePage.Invoices(id=it))},state::openThread,
+            {state.open(WorkspacePage.Receipts(id=it))},
+            if(rights.posting) ({id->state.open(WorkspacePage.Payment(id))}) else null,state::back)
+        is WorkspacePage.Payment -> RecordPayment(model,page.invoice,{state.open(WorkspacePage.Receipts(id=it))},
+            {state.open(WorkspacePage.Receipts())},state::back)
+        is WorkspacePage.Receipts -> if(page.id!=null)ReceiptDetails(model,page.id,
+            {state.open(WorkspacePage.Invoices(id=it))},state::back)
+        else Reconciliation(model,page.state,rights.posting,{state.open(WorkspacePage.Payment())},
+            {state.open(WorkspacePage.Receipts(id=it))},state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
@@ -433,6 +450,8 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     if(rights.invoiceViewer||rights.bank){
         Text(stringResource(R.string.settings_group_finance),style=MaterialTheme.typography.titleLarge)
         if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
+        if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
+        if(rights.posting)OpenPage(state,WorkspacePage.Payment(),R.string.receipt_record)
         if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
         if(rights.billing)OpenPage(state,WorkspacePage.IssueInvoices(),R.string.fee_issue)
         if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)

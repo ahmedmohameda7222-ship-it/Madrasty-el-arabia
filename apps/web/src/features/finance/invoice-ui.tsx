@@ -52,17 +52,20 @@ export function financeAmount(amount:number,currency:string){
   const places=currencyDigits(currency),denominator=10n**BigInt(places),value=BigInt(amount);
   return (value/denominator).toString()+(places?"."+(value%denominator).toString().padStart(places,"0"):"")+" "+currency;
 }
+export function inputAmountMinor(value:string,currency:string,limit=1000000000000){
+  const amount=digits(value.trim()).replace(/[,٫]/g,".");
+  if(!/^\d{1,15}(?:\.\d{1,4})?$/.test(amount))return null;
+  const places=currencyDigits(currency),[whole,fraction=""]=amount.split(".");
+  if(fraction.length>places)return null;
+  const integer=BigInt(whole)*10n**BigInt(places)+BigInt(fraction.padEnd(places,"0")||"0");
+  return integer>=1n&&integer<=BigInt(limit)?Number(integer):null;
+}
 export function formatFeeLines(input:DraftLine[],currency:string|null):FeeLine[]|null{
   if(!currency)return null;
-  const places=currencyDigits(currency);
   const parsed=input.map((line)=>{
-    const amount=digits(line.amount.trim()).replace(/[,٫]/g,".");
-    if(!/^\d{1,13}(?:\.\d{1,4})?$/.test(amount))return null;
-    const [whole,fraction=""]=amount.split(".");
-    if(fraction.length>places)return null;
-    const integer=BigInt(whole)*10n**BigInt(places)+BigInt(fraction.padEnd(places,"0")||"0");
-    if(integer<1n||integer>1000000000000n||!line.titleAr.trim()||!line.titleDe.trim())return null;
-    return {titleAr:line.titleAr.trim(),titleDe:line.titleDe.trim(),amountMinor:Number(integer)};
+    const amountMinor=inputAmountMinor(line.amount,currency);
+    if(amountMinor===null||!line.titleAr.trim()||!line.titleDe.trim())return null;
+    return {titleAr:line.titleAr.trim(),titleDe:line.titleDe.trim(),amountMinor};
   });
   return parsed.every((item)=>item!==null)?parsed:null;
 }

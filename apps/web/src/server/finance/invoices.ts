@@ -75,12 +75,14 @@ export function listInvoices(actor:ActorContext,input:z.infer<typeof invoiceQuer
   return withActor(actor,async(tx)=>{
     if(actor.persona==="teacher")throw new ApiError("forbidden");
     if(actor.persona==="admin"){
-      const [scope]=await tx<{allowed:boolean}[]>`select app.has_capability('finance.read') or app.has_capability('finance.issue') as allowed`;
+      const [scope]=await tx<{allowed:boolean}[]>`select app.finance_receipt_staff() or app.has_capability('finance.issue') as allowed`;
       if(!scope.allowed)throw new ApiError("forbidden");
     }
     const rows=invoiceSummary.array().parse(await tx`select ${fields(tx)}
       from app.invoice_rows(null,${input.period?input.period+"-01":null}::date,${input.studentId??null}::uuid,${input.state??null}::text,false) j
       where (${after?.id??null}::uuid is null or (j.issued_at,j.id)<(${after?.issuedAt??null}::timestamptz,${after?.id??null}::uuid))
+        and (${input.q||null}::text is null or strpos(lower(j.student_name),lower(${input.q||null}::text))>0
+          or strpos(lower(j.student_number),lower(${input.q||null}::text))>0 or strpos(lower(j.invoice_number),lower(${input.q||null}::text))>0)
       order by j.issued_at desc,j.id desc limit ${input.limit+1}`);
     const items=rows.slice(0,input.limit),end=items.at(-1);
     return {items,nextCursor:rows.length>input.limit&&end?Buffer.from(JSON.stringify(position.parse(end))).toString("base64url"):undefined};

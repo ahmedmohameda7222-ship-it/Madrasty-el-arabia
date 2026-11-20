@@ -9,9 +9,10 @@ import {TimetableRead,useTimetableRead} from "@/features/school/timetable/shared
 import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,FeeLines,financeAmount} from "./invoice-ui";
 import {TransferDetails} from "./TransferDetails";
+import {receiptCopy} from "./receipt-ui";
 
 const rows=invoiceSummary.array();
-export function InvoiceDetails({locale,invoice,student,period}:{locale:Locale;invoice?:string;student?:string;period?:string}){
+export function InvoiceDetails({locale,invoice,student,period,canPost}:{locale:Locale;invoice?:string;student?:string;period?:string;canPost:boolean}){
   const text=billingCopy[locale],root=`/${locale}/school/more/invoices`;
   const [month,setMonth]=useState(period??""),[state,setState]=useState("");
   const valid=billingMonth.safeParse(month),filter=invoiceState.safeParse(state);
@@ -32,6 +33,10 @@ export function InvoiceDetails({locale,invoice,student,period}:{locale:Locale;in
         <p>{text.balance} · <bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></p>
         {item.paymentInstructions&&<TransferDetails locale={locale} details={item.paymentInstructions}/>}
         <details><summary>{text.issueSnapshot}</summary><TransferDetails locale={locale} details={item.issueInstructions}/></details>
+        {item.receiptIds.length>0&&<ul className="group-list">{item.receiptIds.map((id,index)=><li key={id}>
+          <Link className="plain-button" href={`/${locale}/school/more/receipts?receipt=${id}`}>{receiptCopy[locale].open} {index+1}</Link>
+        </li>)}</ul>}
+        {canPost&&item.state!=="cancelled"&&<Link className="plain-button" href={`/${locale}/school/more/record-payment?invoice=${item.id}`}>{receiptCopy[locale].record}</Link>}
         {item.canInquire&&<StartConversation locale={locale} label={text.ask} target={{kind:"office",id:"accounts"}}
           context={{kind:"invoice",id:item.id}}/>}
       </div>}</TimetableRead>

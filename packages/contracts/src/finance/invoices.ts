@@ -51,7 +51,7 @@ export const invoiceBatch=z.object({
 });
 export const invoiceState=z.enum(["unpaid","partial","paid","cancelled"]);
 export const invoiceQuery=pageQuerySchema.extend({
-  period:billingMonth.optional(),studentId:id.optional(),state:invoiceState.optional(),
+  period:billingMonth.optional(),studentId:id.optional(),state:invoiceState.optional(),q:z.string().trim().max(100).optional(),
 });
 export const invoiceSummary=z.object({
   id,invoiceNumber:z.string(),studentId:id,studentNumber:z.string(),studentName:z.string(),payerName:z.string(),

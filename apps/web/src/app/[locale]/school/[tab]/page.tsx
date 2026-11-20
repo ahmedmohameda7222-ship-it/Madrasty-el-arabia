@@ -27,8 +27,8 @@ export default async function SchoolPage({ params, searchParams }: {
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const [access, calendar, placement, invites, academic, audit, attendance, moderation, delivery, bank, billing, finance] = tab === "more"
-    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage"), mayUse(session, "academics.supervise"), mayUse(session,"audit.read"),mayUse(session,"attendance.supervise"),mayManageMessageReports(session),mayViewDeliveryStatus(session),mayUse(session,"bank.configure"),mayUse(session,"finance.issue"),mayUse(session,"finance.read")])
+  const [access, calendar, placement, invites, academic, audit, attendance, moderation, delivery, bank, billing, finance, posting] = tab === "more"
+    ? await Promise.all([mayManageAccess(session), mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "applications.manage"), mayUse(session, "academics.supervise"), mayUse(session,"audit.read"),mayUse(session,"attendance.supervise"),mayManageMessageReports(session),mayViewDeliveryStatus(session),mayUse(session,"bank.configure"),mayUse(session,"finance.issue"),mayUse(session,"finance.read"),mayUse(session,"finance.post")])
     : [false, false, false, false, false, false, false, false, false, false, false, false];
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
@@ -74,10 +74,12 @@ export default async function SchoolPage({ params, searchParams }: {
             {session.activePersona === "guardian" && <Link className="plain-button" href={`/${locale}/apply`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
           </div>
         </section>}
-        {(finance||billing||session.activePersona==="guardian")&&<section className="auth-card">
+        {(finance||billing||posting||session.activePersona==="guardian")&&<section className="auth-card">
           <h2>{locale==="ar"?"الحسابات":"Buchhaltung"}</h2>
           <div className="header-actions">
             <Link className="plain-button" href={`/${locale}/school/more/invoices`}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>
+            {(finance||posting)&&<Link className="plain-button" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"مطابقة الإيصالات":"Zahlungen abgleichen"}</Link>}
+            {posting&&<Link className="plain-button" href={`/${locale}/school/more/record-payment`}>{locale==="ar"?"تسجيل سداد":"Zahlung erfassen"}</Link>}
             {billing&&<Link className="plain-button" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"إصدار الفواتير":"Rechnungen ausstellen"}</Link>}
             {billing&&<Link className="plain-button" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الرسوم":"Gebühreneinstellungen"}</Link>}
           </div>

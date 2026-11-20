@@ -34,3 +34,6 @@ export * from "./comms/delivery";
 export * from "./comms/schoolPublishing";
 export * from "./finance/bank";
 export * from "./finance/invoices";
+
+
+export * from "./finance/receipts";

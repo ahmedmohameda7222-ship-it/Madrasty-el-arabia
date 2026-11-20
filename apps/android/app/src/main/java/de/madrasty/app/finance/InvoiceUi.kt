@@ -67,13 +67,15 @@ internal fun validFinanceDate(value: String): Boolean =
 
 private fun currencyScale(currency: String) = Currency.getInstance(currency).defaultFractionDigits.coerceAtLeast(0)
 
-internal fun financeMoney(minor: Long, currency: String) =
-    isolate(BigDecimal.valueOf(minor, currencyScale(currency)).toPlainString() + " " + currency)
+internal fun financePlainAmount(minor: Long, currency: String): String =
+    BigDecimal.valueOf(minor, currencyScale(currency)).toPlainString()
 
-internal fun financeMinor(value: String, currency: String): Long? = runCatching {
+internal fun financeMoney(minor: Long, currency: String) = isolate(financePlainAmount(minor, currency) + " " + currency)
+
+internal fun financeMinor(value: String, currency: String, limit: Long = 1_000_000_000_000): Long? = runCatching {
     val normalized = financeDigits(value.trim()).replace(',', '.').replace('٫', '.')
-    if (!normalized.matches(Regex("[0-9]{1,14}(\\.[0-9]{1,6})?"))) return null
-    BigDecimal(normalized).movePointRight(currencyScale(currency)).longValueExact().takeIf { it in 1..1_000_000_000_000 }
+    if (!normalized.matches(Regex("[0-9]{1,15}(\\.[0-9]{1,6})?"))) return null
+    BigDecimal(normalized).movePointRight(currencyScale(currency)).longValueExact().takeIf { it in 1..limit }
 }.getOrNull()
 
 internal data class DraftFeeLine(val ar: String = "", val de: String = "", val amount: String = "")

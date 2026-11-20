@@ -25,12 +25,12 @@ import org.json.JSONObject
 @Composable
 internal fun InvoiceDetails(
     model: IdentityViewModel, id: String?, student: String?, period: String?,
-    open: (String) -> Unit, thread: (String) -> Unit, close: () -> Unit,
+    open: (String) -> Unit, thread: (String) -> Unit, receipt: (String) -> Unit, payment: ((String) -> Unit)?, close: () -> Unit,
 ) {
     FinancePage(R.string.fee_invoices, close) {
         if (id != null) {
             val details = academicRead("/finance/invoices/$id", model.attendanceNetworkRevision) { model.financeObject(it) }
-            AsyncSurface(details) { item -> InvoiceDocument(model, item, thread) }
+            AsyncSurface(details) { item -> InvoiceDocument(model, item, thread, receipt, payment) }
         } else InvoiceList(model, student, period, open)
     }
 }
@@ -63,7 +63,7 @@ private fun InvoiceList(model: IdentityViewModel, student: String?, period: Stri
 }
 
 @Composable
-private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: (String) -> Unit) {
+private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: (String) -> Unit, receipt: (String) -> Unit, payment: ((String) -> Unit)?) {
     val currency = item.getString("currency")
     var snapshot by remember(item.getString("id")) { mutableStateOf(false) }
     Text(isolate(item.getString("invoiceNumber")), style = MaterialTheme.typography.titleLarge)
@@ -81,6 +81,13 @@ private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: 
     item.optJSONObject("paymentInstructions")?.let { TransferDetails(it) }
     TextButton(onClick = { snapshot = !snapshot }) { Text(stringResource(R.string.fee_snapshot)) }
     if (snapshot) TransferDetails(item.getJSONObject("issueInstructions"))
+    val receipts = item.getJSONArray("receiptIds")
+    for (index in 0 until receipts.length()) {
+        TextButton(onClick = { receipt(receipts.getString(index)) }) { Text(stringResource(R.string.receipt_open) + " " + (index + 1)) }
+    }
+    if (payment != null && item.getString("state") != "cancelled") {
+        TextButton(onClick = { payment(item.getString("id")) }) { Text(stringResource(R.string.receipt_record)) }
+    }
     if (item.getBoolean("canInquire")) {
         StartConversation(model, "office", "accounts", "invoice", item.getString("id"), R.string.fee_ask, thread)
     }
