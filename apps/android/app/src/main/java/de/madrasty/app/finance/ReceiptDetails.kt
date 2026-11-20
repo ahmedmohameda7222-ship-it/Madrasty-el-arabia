@@ -83,6 +83,7 @@ private fun ReceiptDocument(item: JSONObject, invoice: (String) -> Unit) {
                 "record" -> R.string.receipt_recorded
                 "allocate" -> R.string.receipt_allocated_event
                 "unapply" -> R.string.receipt_unapplied
+                "refund" -> R.string.finance_report_refund
                 else -> R.string.receipt_voided
             }
             Text(stringResource(kind))

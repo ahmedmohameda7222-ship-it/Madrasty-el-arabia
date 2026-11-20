@@ -31,7 +31,7 @@ const allocation= z.object({
   postedAt:dateTime,reversedAt:dateTime.nullable(),reason:text.nullable(),invoiceBalanceMinor:nonnegative.nullable(),
 });
 const postingKind=z.enum(["record","allocate","unapply","void_receipt"]);
-const historyItem=z.object({revision:revisionSchema,kind:postingKind,reason:text.nullable(),postedAt:dateTime});
+const historyItem=z.object({revision:revisionSchema,kind:z.enum([...postingKind.options,"refund"]),reason:text.nullable(),postedAt:dateTime});
 export const receiptStaffDetail=receiptSummary.extend({
   scope:z.literal("staff"),externalReceiptRef:externalReference,suggestedInvoiceId:id.nullable(),
   allocations:allocation.array(),history:historyItem.array(),canPost:z.boolean(),

@@ -54,6 +54,9 @@ import de.madrasty.app.finance.RecordPayment
 import de.madrasty.app.finance.Reconciliation
 import de.madrasty.app.finance.ReceiptDetails
 import de.madrasty.app.finance.FinanceReports
+import de.madrasty.app.finance.StopQueue
+import de.madrasty.app.finance.StopReview
+import de.madrasty.app.finance.financeObject
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
@@ -96,6 +99,8 @@ internal sealed interface WorkspacePage {
     data class Payment(val invoice: String? = null) : WorkspacePage
     data class Receipts(val id: String? = null, val state: String? = null) : WorkspacePage
     data class FinanceReport(val student: String? = null) : WorkspacePage
+    data class Stops(val id: String? = null, val student: String? = null) : WorkspacePage
+    data class StopReviews(val id: String? = null) : WorkspacePage
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
@@ -214,7 +219,7 @@ internal class SchoolNavigation {
     }
 }
 
-private data class SchoolRights(val persona: Persona,val keys: Set<String>,val moderation:Boolean,val delivery:Boolean) {
+private data class SchoolRights(val persona: Persona,val keys: Set<String>,val moderation:Boolean,val delivery:Boolean,val stopManager:Boolean) {
     val school = "school.manage" in keys
     val students = "students.manage" in keys
     val applications = "applications.manage" in keys
@@ -239,6 +244,8 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         is WorkspacePage.Payment -> posting
         is WorkspacePage.Receipts -> receiptViewer || (page.id != null && persona == Persona.Guardian)
         is WorkspacePage.FinanceReport -> receiptViewer || persona == Persona.Guardian
+        is WorkspacePage.Stops -> stopManager || persona == Persona.Guardian
+        is WorkspacePage.StopReviews -> receiptViewer
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
@@ -266,12 +273,16 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
     var capabilities by remember(session.actor) { mutableStateOf(emptySet<String>()) }
     var moderation by remember(session.actor) { mutableStateOf(false) }
     var delivery by remember(session.actor) { mutableStateOf(false) }
+    var stopManager by remember(session.actor) { mutableStateOf(false) }
     LaunchedEffect(session.actor,session.assurance) {
         if (session.actor.persona == Persona.Admin && session.assurance == "aal2") {
             capabilities = try { model.capabilities() }
             catch (error: CancellationException) { throw error }
             catch (_: Exception) { emptySet() }
             moderation=try{model.mayReviewChatReports()}
+            catch(error:CancellationException){throw error}
+            catch(_:Exception){false}
+            stopManager=try{model.financeObject("/enrollment-stops/options").getBoolean("mayDecide")}
             catch(error:CancellationException){throw error}
             catch(_:Exception){false}
         }
@@ -285,7 +296,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         SecurityScreen(model,session) { if(state.page==WorkspacePage.Security)state.back() }
         return
     }
-    val rights=SchoolRights(session.actor.persona,capabilities,moderation,delivery)
+    val rights=SchoolRights(session.actor.persona,capabilities,moderation,delivery,stopManager)
     PushSessionBinding(model,session)
     val resume=model.attendanceResume
     LaunchedEffect(resume,session.actor){
@@ -338,6 +349,10 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.FinanceReport -> FinanceReports(model,page.student,rights.receiptViewer,
             {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},
             {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back)
+        is WorkspacePage.Stops -> StopQueue(model,page.id,page.student,rights.stopManager,
+            {state.open(WorkspacePage.Stops(id=it))},state::back)
+        is WorkspacePage.StopReviews -> StopReview(model,page.id,{state.open(WorkspacePage.StopReviews(it))},
+            {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},state::back)
         is WorkspacePage.Broadcasts -> BroadcastHub(model,session.actor.persona,page.announcement,state::back)
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
@@ -399,7 +414,8 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openHomework={state.open(WorkspacePage.Homework(it))},openEvaluations={state.open(WorkspacePage.Evaluations(it))},
                 openExams={state.open(WorkspacePage.Exams(it))},openReport={state.open(WorkspacePage.Report(it))},
                 openInvoices={state.open(WorkspacePage.Invoices(student=it))},
-                openFinance={state.open(WorkspacePage.FinanceReport(it))})
+                openFinance={state.open(WorkspacePage.FinanceReport(it))},
+                openStop={state.open(WorkspacePage.Stops(student=it))})
             SchoolTab.Students -> if(rights.students){
                 OpenPage(state,WorkspacePage.Import(),R.string.import_families)
                 FamiliesScreen(model)
@@ -454,9 +470,11 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
         if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
     }
-    if(rights.invoiceViewer||rights.bank){
+    if(rights.invoiceViewer||rights.bank||rights.stopManager){
         Text(stringResource(R.string.settings_group_finance),style=MaterialTheme.typography.titleLarge)
         if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
+        if(rights.stopManager||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Stops(),R.string.stop_title)
+        if(rights.receiptViewer)OpenPage(state,WorkspacePage.StopReviews(),R.string.stop_review_title)
         if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),R.string.finance_report_title)
         if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
         if(rights.posting)OpenPage(state,WorkspacePage.Payment(),R.string.receipt_record)

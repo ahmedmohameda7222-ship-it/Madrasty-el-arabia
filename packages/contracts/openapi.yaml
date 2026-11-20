@@ -4445,6 +4445,185 @@ paths:
               schema: {type: string}
         default:
           $ref: '#/components/responses/AuthError'
+  /enrollment-stops/options:
+    get:
+      operationId: readStopOptions
+      summary: Read school month and permitted decision role
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Read school month and permitted decision role
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/StopOptions"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /enrollment-stops:
+    get:
+      operationId: listEnrollmentStops
+      summary: List requests visible to the requester or student affairs
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
+        - {"name":"status","in":"query","required":false,"schema":{"type":"string","enum":["pending","withdrawn","approved","rejected"]}}
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: List requests visible to the requester or student affairs
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/EnrollmentStop"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    post:
+      operationId: requestEnrollmentStop
+      summary: Submit a child-specific future enrollment stop
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/StopSubmit"}
+      responses:
+        '201':
+          description: Submit a child-specific future enrollment stop
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/EnrollmentStop"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /enrollment-stops/{id}:
+    get:
+      operationId: readEnrollmentStop
+      summary: Read an authorized enrollment stop
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read an authorized enrollment stop
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/EnrollmentStop"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: withdrawEnrollmentStop
+      summary: Withdraw a pending request from the submitting account
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/StopWithdraw"}
+      responses:
+        '200':
+          description: Withdraw a pending request from the submitting account
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/EnrollmentStop"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /enrollment-stops/{id}/decision:
+    post:
+      operationId: decideEnrollmentStop
+      summary: Decide a pending stop and apply enrollment and billing atomically
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/StopDecision"}
+      responses:
+        '200':
+          description: Decide a pending stop and apply enrollment and billing atomically
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/EnrollmentStop"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/stop-reviews:
+    get:
+      operationId: listStopReviews
+      summary: List finance reviews without private request reasons
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"status","in":"query","required":false,"schema":{"type":"string","enum":["open","waived","retained"]}}
+        - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
+        - {"name":"cursor","in":"query","required":false,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: List finance reviews without private request reasons
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/StopReviewSummary"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/stop-reviews/{id}:
+    get:
+      operationId: readStopReview
+      summary: Read current funds and verified disposition evidence
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+      responses:
+        '200':
+          description: Read current funds and verified disposition evidence
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/StopReviewDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: resolveStopReview
+      summary: Close a reviewed charge using existing receipt evidence
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/StopResolution"}
+      responses:
+        '200':
+          description: Close a reviewed charge using existing receipt evidence
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/StopReviewDetail"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/stop-reviews/{id}/refunds:
+    post:
+      operationId: recordVerifiedStopRefund
+      summary: Record an already verified external refund without moving money
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/StopRefund"}
+      responses:
+        '201':
+          description: Record an already verified external refund without moving money
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/StopRefundReceipt"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -4473,6 +4652,16 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    StopOptions: {"type":"object","properties":{"schoolMonth":{"$ref":"#/components/schemas/BillingMonth"},"mayDecide":{"type":"boolean"}},"required":["schoolMonth","mayDecide"]}
+    StopSubmit: {"type":"object","properties":{"studentId":{"type":"string","format":"uuid"},"lastAttendanceMonth":{"$ref":"#/components/schemas/BillingMonth"},"duration":{"type":"string","enum":["one_month","indefinite"]},"reason":{"type":"string","minLength":3,"maxLength":800}},"required":["studentId","lastAttendanceMonth","duration","reason"]}
+    StopWithdraw: {"type":"object","properties":{"action":{"const":"withdraw"},"revision":{"type":"integer","minimum":1}},"required":["action","revision"]}
+    StopDecision: {"type":"object","properties":{"decision":{"type":"string","enum":["approve","reject"]},"note":{"type":"string","minLength":1,"maxLength":800},"revision":{"type":"integer","minimum":1}},"required":["decision","revision"]}
+    EnrollmentStop: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentNumber":{"type":"string"},"studentName":{"type":"string"},"requesterId":{"type":"string","format":"uuid"},"lastAttendanceMonth":{"$ref":"#/components/schemas/BillingMonth"},"startMonth":{"$ref":"#/components/schemas/BillingMonth"},"endMonthExclusive":{"anyOf":[{"$ref":"#/components/schemas/BillingMonth"},{"type":"null"}]},"duration":{"type":"string","enum":["one_month","indefinite"]},"state":{"type":"string","enum":["pending","withdrawn","approved","rejected"]},"reason":{"type":"string","minLength":3,"maxLength":800},"note":{"anyOf":[{"type":"string"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"createdAt":{"type":"string","format":"date-time"},"resolvedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"canDecide":{"type":"boolean"},"canWithdraw":{"type":"boolean"}},"required":["id","studentId","studentNumber","studentName","requesterId","lastAttendanceMonth","startMonth","endMonthExclusive","duration","state","reason","note","revision","createdAt","resolvedAt","canDecide","canWithdraw"]}
+    StopReviewSummary: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"stopId":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentNumber":{"type":"string"},"studentName":{"type":"string"},"invoiceId":{"type":"string","format":"uuid"},"invoiceNumber":{"type":"string"},"period":{"$ref":"#/components/schemas/BillingMonth"},"kind":{"type":"string","enum":["manual","monthly"]},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"originalMinor":{"type":"integer","minimum":0},"collectibleMinor":{"type":"integer","minimum":0},"originalAllocatedMinor":{"type":"integer","minimum":0},"currentAllocatedMinor":{"type":"integer","minimum":0},"state":{"type":"string","enum":["open","waived","retained"]},"revision":{"type":"integer","minimum":1},"openedAt":{"type":"string","format":"date-time"},"resolvedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]}},"required":["id","stopId","studentId","studentNumber","studentName","invoiceId","invoiceNumber","period","kind","currency","originalMinor","collectibleMinor","originalAllocatedMinor","currentAllocatedMinor","state","revision","openedAt","resolvedAt"]}
+    StopReviewDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"stopId":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentNumber":{"type":"string"},"studentName":{"type":"string"},"invoiceId":{"type":"string","format":"uuid"},"invoiceNumber":{"type":"string"},"period":{"$ref":"#/components/schemas/BillingMonth"},"kind":{"type":"string","enum":["manual","monthly"]},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"originalMinor":{"type":"integer","minimum":0},"collectibleMinor":{"type":"integer","minimum":0},"originalAllocatedMinor":{"type":"integer","minimum":0},"currentAllocatedMinor":{"type":"integer","minimum":0},"state":{"type":"string","enum":["open","waived","retained"]},"revision":{"type":"integer","minimum":1},"openedAt":{"type":"string","format":"date-time"},"resolvedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]},"canPost":{"type":"boolean"},"adjustmentId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"funds":{"type":"array","items":{"type":"object","properties":{"receiptId":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"sourceMinor":{"type":"integer","minimum":0},"activeMinor":{"type":"integer","minimum":0},"refundedMinor":{"type":"integer","minimum":0},"unmatchedMinor":{"type":"integer","minimum":0}},"required":["receiptId","receiptNumber","sourceMinor","activeMinor","refundedMinor","unmatchedMinor"]}},"evidence":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["reallocation","refund"]},"amountMinor":{"type":"integer","minimum":0},"reference":{"type":"string"},"recorded":{"type":"boolean"}},"required":["id","receiptId","kind","amountMinor","reference","recorded"]}}},"required":["id","stopId","studentId","studentNumber","studentName","invoiceId","invoiceNumber","period","kind","currency","originalMinor","collectibleMinor","originalAllocatedMinor","currentAllocatedMinor","state","revision","openedAt","resolvedAt","reason","canPost","adjustmentId","funds","evidence"]}
+    StopResolution: {"type":"object","properties":{"resolution":{"type":"string","enum":["waive","retain_manual"]},"receiptOrAdjustmentRef":{"type":"string","format":"uuid"},"references":{"type":"array","items":{"type":"string","format":"uuid"},"maxItems":99,"uniqueItems":true},"reason":{"type":"string","minLength":3,"maxLength":800},"revision":{"type":"integer","minimum":1}},"required":["resolution","reason","revision"]}
+    StopRefund: {"type":"object","properties":{"receiptId":{"type":"string","format":"uuid"},"externalRefundRef":{"type":"string","minLength":1,"maxLength":160},"amountMinor":{"type":"integer","minimum":1,"maximum":20000000000000},"refundedDate":{"type":"string","format":"date"},"verified":{"const":true},"revision":{"type":"integer","minimum":1}},"required":["receiptId","externalRefundRef","amountMinor","refundedDate","verified","revision"]}
+    StopRefundReceipt: {"type":"object","properties":{"refundId":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1}},"required":["refundId","revision"]}
     FinanceReportSummary: {"type":"object","properties":{"schoolDate":{"type":"string","format":"date"},"asOf":{"type":"string","format":"date"},"cutoff":{"type":"string","format":"date-time"},"scope":{"type":"string","enum":["staff","payer"]},"canExport":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"yearStart":{"type":"string","format":"date"},"yearEnd":{"type":"string","format":"date"}},"required":["id","code","nameAr","nameDe","yearStart","yearEnd"]}},"totals":{"type":"array","items":{"$ref":"#/components/schemas/FinanceTotals"}}},"required":["schoolDate","asOf","cutoff","scope","canExport","classes","totals"]}
     FinanceTotals: {"type":"object","properties":{"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"billedMinor":{"type":"integer","minimum":0},"collectibleMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"outstandingMinor":{"type":"integer","minimum":0},"overdueMinor":{"type":"integer","minimum":0},"invoiceCount":{"type":"integer","minimum":0},"overdueCount":{"type":"integer","minimum":0},"receivedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"netReceivedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"matchedReceivedMinor":{"type":"integer","minimum":0},"reversedMinor":{"type":"integer","minimum":0},"voidedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"refundedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"unmatchedMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]},"receiptCount":{"type":"integer","minimum":0},"matchingCount":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]}},"required":["currency","billedMinor","collectibleMinor","appliedMinor","outstandingMinor","overdueMinor","invoiceCount","overdueCount","receivedMinor","netReceivedMinor","matchedReceivedMinor","reversedMinor","voidedMinor","refundedMinor","unmatchedMinor","receiptCount","matchingCount"]}
     FinanceStatementEntry: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["invoice","allocation","reversal","record","void_receipt","adjustment","refund"]},"occurredAt":{"type":"string","format":"date-time"},"invoiceId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"invoiceNumber":{"anyOf":[{"type":"string"},{"type":"null"}]},"studentId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"studentName":{"anyOf":[{"type":"string"},{"type":"null"}]},"studentNumber":{"anyOf":[{"type":"string"},{"type":"null"}]},"period":{"anyOf":[{"$ref":"#/components/schemas/BillingMonth"},{"type":"null"}]},"payerName":{"anyOf":[{"type":"string"},{"type":"null"}]},"classCode":{"anyOf":[{"type":"string"},{"type":"null"}]},"dueDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"receiptId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"receiptNumber":{"anyOf":[{"type":"string"},{"type":"null"}]},"receivedDate":{"anyOf":[{"type":"string","format":"date"},{"type":"null"}]},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"amountMinor":{"type":"integer","minimum":0},"balanceMinor":{"type":"integer","minimum":0},"state":{"type":"string","enum":["unpaid","partial","paid","cancelled","overdue","needs_matching","allocated","voided"]}},"required":["id","kind","occurredAt","invoiceId","invoiceNumber","studentId","studentName","studentNumber","period","payerName","classCode","dueDate","receiptId","receiptNumber","receivedDate","currency","amountMinor","balanceMinor","state"]}
@@ -4483,7 +4672,7 @@ components:
     ReceiptReversalInput: {"oneOf":[{"type":"object","properties":{"kind":{"const":"unapply"},"revision":{"type":"integer","minimum":1},"allocationIds":{"type":"array","items":{"type":"string","format":"uuid"},"minItems":1,"maxItems":100,"uniqueItems":true},"reason":{"type":"string","minLength":3,"maxLength":500}},"required":["kind","revision","allocationIds","reason"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"void_receipt"},"revision":{"type":"integer","minimum":1},"reason":{"type":"string","minLength":3,"maxLength":500}},"required":["kind","revision","reason"],"additionalProperties":false}]}
     ReceiptSummary: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"activeMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"remainderMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/ReceiptState"},"revision":{"type":"integer","minimum":1}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","amountMinor","activeMinor","appliedMinor","remainderMinor","state","revision"]}
     ReceiptAllocation: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"invoiceId":{"type":"string","format":"uuid"},"invoiceNumber":{"type":"string"},"studentName":{"type":"string"},"studentNumber":{"type":"string"},"period":{"$ref":"#/components/schemas/BillingMonth"},"amountMinor":{"type":"integer","minimum":1,"maximum":20000000000000},"postedAt":{"type":"string","format":"date-time"},"reversedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]},"invoiceBalanceMinor":{"anyOf":[{"type":"integer","minimum":0},{"type":"null"}]}},"required":["id","invoiceId","invoiceNumber","studentName","studentNumber","period","amountMinor","postedAt","reversedAt","reason","invoiceBalanceMinor"]}
-    ReceiptStaffDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"activeMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"remainderMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/ReceiptState"},"revision":{"type":"integer","minimum":1},"scope":{"const":"staff"},"externalReceiptRef":{"type":"string","minLength":1,"maxLength":160},"suggestedInvoiceId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"allocations":{"type":"array","items":{"$ref":"#/components/schemas/ReceiptAllocation"}},"history":{"type":"array","items":{"type":"object","properties":{"revision":{"type":"integer","minimum":1},"kind":{"type":"string","enum":["record","allocate","unapply","void_receipt"]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]},"postedAt":{"type":"string","format":"date-time"}},"required":["revision","kind","reason","postedAt"]}},"canPost":{"type":"boolean"}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","amountMinor","activeMinor","appliedMinor","remainderMinor","state","revision","scope","externalReceiptRef","suggestedInvoiceId","allocations","history","canPost"]}
+    ReceiptStaffDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"amountMinor":{"type":"integer","minimum":1,"maximum":100000000000000},"activeMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"remainderMinor":{"type":"integer","minimum":0},"state":{"$ref":"#/components/schemas/ReceiptState"},"revision":{"type":"integer","minimum":1},"scope":{"const":"staff"},"externalReceiptRef":{"type":"string","minLength":1,"maxLength":160},"suggestedInvoiceId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"allocations":{"type":"array","items":{"$ref":"#/components/schemas/ReceiptAllocation"}},"history":{"type":"array","items":{"type":"object","properties":{"revision":{"type":"integer","minimum":1},"kind":{"type":"string","enum":["record","allocate","unapply","void_receipt","refund"]},"reason":{"anyOf":[{"type":"string"},{"type":"null"}]},"postedAt":{"type":"string","format":"date-time"}},"required":["revision","kind","reason","postedAt"]}},"canPost":{"type":"boolean"}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","amountMinor","activeMinor","appliedMinor","remainderMinor","state","revision","scope","externalReceiptRef","suggestedInvoiceId","allocations","history","canPost"]}
     ReceiptPayerDetail: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"method":{"type":"string","enum":["bank","cash"]},"receivedDate":{"type":"string","format":"date"},"currency":{"type":"string","pattern":"^[A-Z]{3}$"},"recordedAt":{"type":"string","format":"date-time"},"scope":{"const":"payer"},"amountMinor":{"type":"integer","minimum":0},"appliedMinor":{"type":"integer","minimum":0},"allocations":{"type":"array","items":{"$ref":"#/components/schemas/ReceiptAllocation"}}},"required":["id","receiptNumber","method","receivedDate","currency","recordedAt","scope","amountMinor","appliedMinor","allocations"]}
     ReceiptMutation: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"receiptNumber":{"type":"string"},"remainderMinor":{"type":"integer","minimum":0},"revision":{"type":"integer","minimum":1},"state":{"$ref":"#/components/schemas/ReceiptState"},"items":{"type":"array","items":{"type":"object","properties":{"allocationId":{"type":"string","format":"uuid"},"invoiceId":{"type":"string","format":"uuid"},"invoiceRevision":{"type":"integer","minimum":1},"balanceMinor":{"type":"integer","minimum":0}},"required":["allocationId","invoiceId","invoiceRevision","balanceMinor"]}}},"required":["id","receiptNumber","remainderMinor","revision","state","items"]}
     BillingMonth: {"type":"string","pattern":"^(?!0000)[0-9]{4}-(0[1-9]|1[0-2])$"}

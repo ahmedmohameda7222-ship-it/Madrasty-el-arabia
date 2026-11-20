@@ -44,7 +44,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
         {item.scope==="staff"&&<>
           {item.canPost&&<ReceiptActions key={item.revision} locale={locale} item={item} refresh={(message)=>{setNotice(message);setVersion((n)=>n+1);}}/>}
           <details><summary>{text.history}</summary><ul className="group-list">{item.history.map((entry)=><li key={entry.revision}>
-            <p>{entry.kind==="record"?text.recorded:entry.kind==="allocate"?text.allocateEvent:entry.kind==="unapply"?text.reversed:text.voidEvent}</p>
+            <p>{entry.kind==="record"?text.recorded:entry.kind==="allocate"?text.allocateEvent:entry.kind==="unapply"?text.reversed:entry.kind==="refund"?text.refund:text.voidEvent}</p>
             <ConfirmedAt locale={locale} value={entry.postedAt}/>
             {entry.reason&&<p><bdi>{entry.reason}</bdi></p>}
           </li>)}</ul></details>
