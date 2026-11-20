@@ -40,7 +40,7 @@ export function SchoolShell(props: {
   secondary?: { href: string; label: string }[];
 }) {
   return (
-    <AccountScope actor={props.actor}>
+    <AccountScope actor={props.actor} locale={props.locale}>
       <ScopedShell {...props} />
     </AccountScope>
   );

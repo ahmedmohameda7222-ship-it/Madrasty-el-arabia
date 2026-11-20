@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { preferencesSchema, sessionSchema, type Locale, type SchoolSession, type Persona } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary, localizedError } from "@/i18n";
+import { discardAttendanceDrafts } from "@/features/attendance/draft-store";
 
 const labels = {
   ar: { signIn: "تسجيل الدخول", email: "البريد الإلكتروني", password: "كلمة السر", show: "إظهار", hide: "إخفاء",
@@ -134,6 +135,7 @@ export function SessionControls({ locale, session }: { locale: Locale; session: 
       await requestApi("/auth/persona", sessionSchema, {
         method: "POST", headers: webHeaders(session.activePersona), body: JSON.stringify({ persona }),
       });
+      await discardAttendanceDrafts();
       window.location.replace(`/${locale}/school/home`);
     } catch (cause) {
       setError(errorText(locale, cause));
@@ -163,7 +165,7 @@ export function SessionControls({ locale, session }: { locale: Locale; session: 
     document.cookie = `${secure ? "__Host-" : ""}madrasty-locked=${allDevices ? "all" : "current"}; Path=/; SameSite=Strict; Max-Age=2592000${secure ? "; Secure" : ""}`;
     setSigningOut(true);
     setRevocation(allDevices);
-    void completeSignOut(allDevices);
+    void discardAttendanceDrafts().finally(()=>completeSignOut(allDevices));
   };
 
   return (

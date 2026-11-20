@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
             val account = session?.actor?.accountId
             val preference = model.preference?.takeIf { it.first == account }?.second
             LaunchedEffect(account,session?.assurance,session?.actor?.persona) {
-                if (account == null || session.actor.persona == Persona.Admin && session.assurance != "aal2") return@LaunchedEffect
+                if (account == null || session.offlineOnly || session.actor.persona == Persona.Admin && session.assurance != "aal2") return@LaunchedEffect
                 try {
                     val found = model.readPreferences(fallback)
                     model.applyPreferences(account,found)

@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.NetworkCapabilities
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,16 +42,21 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import de.madrasty.app.attendance.AttendanceDraftStore
+import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.R
 import de.madrasty.app.ui.Persona
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONArray
 import de.madrasty.app.api.decodeData
 
 class IdentityViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = AuthRepository(application)
+    private val attendanceDrafts = AttendanceDraftStore(application)
+    private val repository = AuthRepository(application,attendanceDrafts)
     var session by mutableStateOf<SchoolSession?>(null)
         private set
     var pending by mutableStateOf(true)
@@ -58,6 +64,11 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     var failure by mutableStateOf<Int?>(null)
         private set
     private var initialized = false
+    private var reconnecting = false
+    var attendanceNetworkRevision by mutableStateOf(0)
+        private set
+    var attendanceResume by mutableStateOf<String?>(null)
+        private set
     var preference by mutableStateOf<Pair<String, AccountPreference>?>(null)
         private set
 
@@ -74,6 +85,8 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
                 try {
                     repository.retrySignOut()
                     if (failure == R.string.sign_out_pending) failure = null
+                    attendanceNetworkRevision++
+                    reconnectAttendance()
                 } catch (error: CancellationException) {
                     throw error
                 } catch (_: Exception) {
@@ -126,8 +139,56 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     var sentEmail by mutableStateOf(false)
         private set
 
-    suspend fun schoolRequest(path: String, body: JSONObject? = null, method: String = "GET", idempotencyKey: String? = null) =
-        repository.request(path, body, idempotencyKey, method)
+    suspend fun schoolRequest(path: String, body: JSONObject? = null, method: String = "GET", idempotencyKey: String? = null): String {
+        val expected=session?.actor
+        val result=repository.request(path,body,idempotencyKey,method)
+        val refreshed=repository.snapshot()
+        if(refreshed!=null && refreshed.actor==expected && session?.actor==expected && session?.expiresAt!=refreshed.expiresAt)session=refreshed
+        return result
+    }
+
+    suspend fun readAttendanceDraft(slot:String):JSONObject?{
+        val actor=session?.actor?:return null
+        return withContext(Dispatchers.IO){runCatching{attendanceDrafts.read(actor,slot)}.getOrNull()}
+    }
+    suspend fun listAttendanceDrafts():List<Pair<String,JSONObject>>{
+        val actor=session?.actor?:return emptyList()
+        return withContext(Dispatchers.IO){runCatching{attendanceDrafts.list(actor)}.getOrDefault(emptyList())}
+    }
+    suspend fun saveAttendanceDraft(slot:String,value:JSONObject):Boolean{
+        val actor=session?.actor?:return false
+        return withContext(Dispatchers.IO){runCatching{attendanceDrafts.write(actor,slot,value)}.getOrDefault(false)}
+    }
+    suspend fun purgeAttendanceDrafts(prefix:String){
+        val actor=session?.actor?:return
+        withContext(Dispatchers.IO){runCatching{attendanceDrafts.purge(actor,prefix)}}
+    }
+
+    fun hasValidatedNetwork():Boolean {
+        val active=connectivity?.activeNetwork?:return false
+        return connectivity.getNetworkCapabilities(active)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)==true
+    }
+
+    fun pickAttendanceResume(slot:String?) { attendanceResume=slot }
+    fun reconnectAttendance() {
+        val previous=session?.takeIf{it.offlineOnly}?:return
+        if(reconnecting)return
+        reconnecting=true
+        viewModelScope.launch{
+            try{
+                val confirmed=repository.restore(allowOffline=false)
+                if(session==previous)session=confirmed
+            }catch(error:CancellationException){throw error}
+            catch(_:Exception){ /* Keep the confirmed local scope until it expires. */ }
+            finally{reconnecting=false}
+        }
+    }
+    fun endExpiredAttendance() {
+        if(session?.offlineOnly!=true)return
+        session=null
+        attendanceResume=null
+        viewModelScope.launch(Dispatchers.IO){runCatching{attendanceDrafts.clear()}}
+    }
 
     fun attendanceNoticeStream(path: String, after: String?) = repository.attendanceNoticeStream(path,after)
 
@@ -165,6 +226,7 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
     fun signOut(all: Boolean) {
         clearSecurity()
         session = null
+        attendanceResume = null
         preference = null
         run(R.string.sign_out_pending) { repository.signOut(all) }
     }
@@ -205,6 +267,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
         ApplicantScreen(model) { model.endApplicantSession(); navigation.back() }
     } else if (session == null) {
         SignInScreen(model) { navigation.open(WorkspacePage.Apply) }
+    } else if (session.offlineOnly) {
+        OfflineAttendanceScreen(model,session)
     } else {
         SchoolWorkspace(model,session,navigation)
     }

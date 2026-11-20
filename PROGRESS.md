@@ -2,14 +2,14 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** A03 device-private offline attendance and draft reconciliation. A01 is in 5d01351. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** A04 approved attendance history, supervised corrections and the alert reconciliation seam. A01 is in 5d01351 and A02 is in afb88f4. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
 | 00 Foundation | built / QA pending | Pin environment, build shells, publish contract primitives |
 | 01 Identity and access | I01–I06 built / QA pending | One account, effective grants and recoverable invites |
 | 02 School operations | S01–S08 built / QA pending | Import, linked families, dated staffing and clash-safe timetable |
-| 03 Attendance | A01–A02 built / QA pending; A03 active | Online lock, actual arrival, offline reconciliation and approval |
+| 03 Attendance | A01–A03 built / QA pending; A04 active | Online lock, actual arrival, offline reconciliation and approval |
 | 04 Academics | Planned | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
 | 06 Finance | Planned | Per-child invoice, manual settlement and stopping decisions |
@@ -42,7 +42,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-20 | S08 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120011714_school_audit_projection.sql, scoped audit routes, row links, settings groups on web and Android | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. Staff deactivation reasons are persisted in the protected domain record. A01/A04, B01/B03 and later modules bind their actions and settings. Q02/Q03 pending. | A01 daily attendance sheet, roster, individual/bulk drafts and approval. |
 | 2026-11-20 | A01 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120012806_attendance_sheets.sql, scoped sheet commands, effective roster reconciliation, supervisor list, web/Android daily views | Type-check, production web build and Android debug assembly exited 0. SQL function bodies and OpenAPI parsed locally. Closing or changing a day that would contradict an approved sheet is rejected. Approved unexcused events are queued transactionally for C07. Q02/Q03/Q04/Q05 pending. | A02 linked-family excuses and actual arrival. |
 | 2026-11-20 | A02 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120013955_family_excuses.sql, scoped family receipt/withdrawal, separate arrival evidence, authenticated stream + conditional polling, both clients | Type-check, web production build and Android debug assembly exited 0. Split native route dispatch after a Kotlin compiler memory failure; build succeeds at the existing memory settings. Private reasons stay in protected domain reads. C07 consumes the arrival event, D02/C06 bind retention for notice rows. Q02–Q06 pending. | A03 device-private drafts and reconnect. |
-| 2026-11-20 | A03, step 1 | Active | A01/A02 statuses, revisions, session scope and notice refresh available | Encrypted browser vault started. | Add offline shells and native vault, durable commands, reconnection and scope cleanup. |
+| 2026-11-20 | A03 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Web IndexedDB/Web Crypto vault and public offline shell, Android SQLite/Keystore vault, reconnect merge and durable request keys | Type-check, production web build, debug Android assembly and static JS parsing exited 0. Each cached record expires with its last confirmed authorization. Offline family drafts require explicit online send. C05 still binds device delivery detach; Q03/Q04/Q06 verify expiry, device restart and reconnection. | A04 approved attendance history and corrections. |
+| 2026-11-20 | A04, step 1 | Active | A01–A03 approved sheets, durable arrivals, family scope and draft sync available | Correction history and alert reconciliation still to implement. | Add immutable approved revisions, then scoped history and both clients. |
 
 ## Decision and discrepancy log
 

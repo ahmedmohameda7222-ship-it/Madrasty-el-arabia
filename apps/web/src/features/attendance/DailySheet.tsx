@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   attendanceChanges, attendanceClasses, attendancePendingSchema, attendanceSheetSchema, attendanceStatus,
   type AttendanceChanges, type AttendanceRow, type AttendanceSheet, type AttendanceStatus, type Locale,
@@ -13,6 +13,9 @@ import { AsyncSurface } from "@/ui/AsyncSurface";
 import { TimetableRead, useTimetableRead } from "@/features/school/timetable/shared";
 import { RowDetails } from "./RowDetails";
 import { useLiveAttendance } from "./LiveAttendance";
+import { CachedAttendance } from "./CachedAttendance";
+import { sheetSlot } from "./draft-store";
+import { useAttendanceDrafts } from "./useAttendanceDrafts";
 
 const words={
   ar:{title:"الحضور اليومي",date:"يوم الحضور",apply:"اعرض اليوم",select:"اختر الفصل",pending:"كشوف بانتظار الاعتماد",
@@ -23,7 +26,8 @@ const words={
     approve:"اعتماد الحضور",confirmApproval:"اعتماد الكشف النهائي",locked:"الحالة مقفولة بسبب عذر الأسرة.",
     arrival:"حضور فعلي مؤكد",stale:"تغيّرت الحالة على الخادم.",outside:"الطالب خرج من كشف الفصل لليوم ده.",
     useServer:"استخدم الحالة المحفوظة",reapply:"احتفظ بتعديلي بالمراجعة الجديدة",tally:"كشف الحضور",refresh:"تحديث الكشف",
-    conflicts:"بعض الحالات تحتاج مراجعة.",lockedCount:"صفوف مقفولة لم تتغيّر",more:"عرض المزيد"},
+    conflicts:"بعض الحالات تحتاج مراجعة.",lockedCount:"صفوف مقفولة لم تتغيّر",more:"عرض المزيد",offline:"مسودات الحضور على الجهاز",
+    pendingSend:"المسودة محفوظة على الجهاز وبانتظار المزامنة.",closedDraft:"الكشف مقفول. أي تعديلات غير مُرسلة لن تُحفظ لدى المدرسة."},
   de:{title:"Tägliche Anwesenheit",date:"Anwesenheitstag",apply:"Tag anzeigen",select:"Klasse auswählen",pending:"Listen zur Freigabe",
     noPending:"Für diesen Tag sind keine Freigaben offen.",open:"Anwesenheitsliste öffnen",draft:"Anwesenheitsentwurf",
     approved:"Liste bestätigt",unstarted:"Die Liste wurde noch nicht geöffnet.",readonly:"Die Liste kann nur gelesen werden.",closed:"Der Tag ist für die Erfassung geschlossen.",
@@ -32,10 +36,10 @@ const words={
     approve:"Anwesenheit freigeben",confirmApproval:"Endgültige Anwesenheit bestätigen",locked:"Der Status ist durch eine Entschuldigung gesperrt.",
     arrival:"Ankunft bestätigt",stale:"Der gespeicherte Status hat sich geändert.",outside:"Das Kind gehört für diesen Tag nicht mehr zur Liste.",
     useServer:"Gespeicherten Status übernehmen",reapply:"Eigene Auswahl mit der neuen Version übernehmen",tally:"Anwesenheitsliste",refresh:"Liste aktualisieren",
-    conflicts:"Einige Einträge müssen geprüft werden.",lockedCount:"Gesperrte Einträge blieben unverändert",more:"Weitere anzeigen"},
+    conflicts:"Einige Einträge müssen geprüft werden.",lockedCount:"Gesperrte Einträge blieben unverändert",more:"Weitere anzeigen",offline:"Anwesenheitsentwürfe auf dem Gerät",
+    pendingSend:"Der Entwurf wurde auf dem Gerät gespeichert und wartet auf Abgleich.",closedDraft:"Die Liste ist geschlossen. Ungesendete Änderungen werden nicht bei der Schule gespeichert."},
 } as const;
 
-type Draft={revision:number;status:AttendanceStatus|null};
 type Conflict=AttendanceChanges["conflicts"][number];
 type Outcome={notice:string;problem?:boolean};
 
@@ -71,6 +75,7 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
         <label>{text.date}<input type="date" value={dateInput||exactDay||""} onChange={(event)=>setDateInput(event.target.value)}/></label>
         <button type="submit" className="plain-button">{text.apply}</button>
       </form>
+      <a className="plain-button" href="/offline/attendance.html">{text.offline}</a>
       <TimetableRead locale={locale} result={classes}>{(catalog)=>catalog.classes.length?
         <label>{text.select}<select value={chosen?.id??""} onChange={(event)=>setSelected(event.target.value)}>
           <option value="">{text.select}</option>
@@ -132,8 +137,11 @@ function Pending({locale,day,version,choose}:{locale:Locale;day:string;version:n
 }
 
 function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string;day:string;version:number;update:()=>void}){
-  const text=words[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
-  const [drafts,setDrafts]=useState<Record<string,Draft>>({});
+  const text=words[locale],actor=useAccountScope(),{persona}=actor,command=useSchoolCommand(persona);
+  const privateDraft=useAttendanceDrafts(actor,locale,sheetSlot(classId,day));
+  const {drafts,setDrafts}=privateDraft;
+  const [connection,setConnection]=useState(0);
+  const lastSync=useRef<string | undefined>(undefined);
   const [patches,setPatches]=useState<Record<string,AttendanceRow>>({});
   const [issues,setIssues]=useState<Conflict[]>([]);
   const [pending,setPending]=useState(false);
@@ -156,8 +164,32 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
   const error=current.value?.error;
   const lost=error instanceof ApiResponseError&&[401,403,404].includes(error.status);
   useEffect(()=>{
-    if(lost){setDrafts({});setPatches({});setIssues([]);setConfirm(undefined);}
-  },[lost]);
+    if(lost){privateDraft.forget();setPatches({});setIssues([]);setConfirm(undefined);}
+  },[lost,privateDraft.forget]);
+
+  useEffect(()=>{
+    if(sheet&&privateDraft.ready)privateDraft.accept(sheet);
+  },[sheet,privateDraft.accept,privateDraft.ready]);
+
+  useEffect(()=>{
+    const connected=()=>setConnection((count)=>count+1);
+    window.addEventListener("online",connected);
+    window.addEventListener("focus",connected);
+    return ()=>{window.removeEventListener("online",connected);window.removeEventListener("focus",connected);};
+  },[]);
+
+  useEffect(()=>{
+    if(!privateDraft.ready||!privateDraft.local?.sync||!sheet?.id||pending||!navigator.onLine)return;
+    const key=`${sheet.id}/${connection}`;
+    if(lastSync.current===key)return;
+    lastSync.current=key;
+    void action(async()=>{
+      const {data}=await requestApi(path,attendanceSheetSchema,{headers:{"X-School-Persona":persona}});
+      const result=await privateDraft.send(data,true);
+      if(result.changes)applyChanges(result.changes);
+      else if(!data.canMark||data.state!=="open")update();
+    });
+  },[connection,pending,persona,privateDraft.ready,privateDraft.local?.sync,sheet?.id]);
 
   async function action(operation:()=>Promise<void>){
     setPending(true);
@@ -179,17 +211,19 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
   }
   function applyChanges(changes:AttendanceChanges){
     setIssues(changes.conflicts);
-    setDrafts((current)=>{
-      const copies={...current};
-      for(const row of changes.applied)delete copies[row.id];
-      return copies;
-    });
     const notice=changes.conflicts.length?text.conflicts:changes.skippedLocked.length
       ?`${text.lockedCount} · ${changes.skippedLocked.length}`:dictionary(locale).saved;
     setOutcome({notice,problem:changes.conflicts.length>0});
     update();
   }
 
+  if(!lost&&error&&privateDraft.local)return <CachedAttendance locale={locale} entry={privateDraft.local} error={privateDraft.storageUnavailable}
+    edit={(row,status)=>setDrafts((existing)=>{
+      const next={...existing};
+      if(row.status===status)delete next[row.id];
+      else next[row.id]={status,revision:row.revision};
+      return next;
+    },true)}/>;
   return <TimetableRead locale={locale} result={current}>{(confirmed:AttendanceSheet)=>{
     const rows=confirmed.rows.map((row)=>patches[row.id]?.revision>row.revision?patches[row.id]:row);
     const counts={unmarked:0,present:0,late:0,absent_unexcused:0,absent_excused:0};
@@ -217,6 +251,7 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
       </>}
       {id&&<>
         <h3>{value.state==="approved"?text.approved:text.draft}</h3>
+        {!editable&&edits.length>0&&<p role="status">{text.closedDraft}</p>}
         {value.approvedAt&&<bdi>{new Date(value.approvedAt).toLocaleString(locale==="ar"?"ar":"de-DE")}</bdi>}
         {value.state==="open"&&!editable&&!value.canApprove&&value.teachingDay&&<p>{text.readonly}</p>}
         <ul className="group-list" aria-label={text.tally}>
@@ -233,7 +268,7 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
               <strong><bdi>{row.displayName}</bdi></strong> <small><bdi dir="ltr">{row.studentNumber}</bdi></small>
               {editable&&!row.locked&&!row.confirmedArrivalAt?<label>
                 <span className="screen-reader-only">{row.displayName}</span>
-                <select disabled={pending} value={(local?local.status:row.status)??""} onChange={(event)=>{
+                <select disabled={pending||!privateDraft.ready} value={(local?local.status:row.status)??""} onChange={(event)=>{
                   const status=event.target.value?attendanceStatus.parse(event.target.value):null;
                   draft(row,status);
                 }}>
@@ -259,7 +294,9 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
         </ul>
         {editable&&<div className="header-actions">
           <button type="button" className="primary-button" disabled={pending||!edits.length} onClick={()=>void action(async()=>{
-            applyChanges(await command(`/attendance/sheets/${id}/rows`,"PATCH",{edits},attendanceChanges));
+            const result=await privateDraft.send(value);
+            if(result.changes)applyChanges(result.changes);
+            else if(result.queued)setOutcome({notice:text.pendingSend});
           })}>{text.save}</button>
           <button type="button" className="plain-button" disabled={pending||!bulk.length} onClick={()=>setConfirm({kind:"bulk",rows:bulk.map(({id,revision})=>({rowId:id,revision}))})}>{text.markAll}</button>
           {confirm?.kind==="bulk"&&<button type="button" className="plain-button" disabled={pending} onClick={()=>void action(async()=>{

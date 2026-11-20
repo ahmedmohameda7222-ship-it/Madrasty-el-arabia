@@ -1,19 +1,22 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
-import type { Persona } from "@madrasty/contracts";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { activateAttendanceDrafts } from "@/features/attendance/draft-store";
+import type { Locale, Persona } from "@madrasty/contracts";
 
 export type AccountPartition = Readonly<{
   accountId: string;
   sessionId: string;
   persona: Persona;
+  expiresAt?: string;
 }>;
 
 export type ScopeChoice = Readonly<{ id: string; label: string; detail?: string }>;
 
 const Scope = createContext<AccountPartition | null>(null);
 
-export function AccountScope({ actor, children }: { actor: AccountPartition; children: ReactNode }) {
+export function AccountScope({ actor, locale, children }: { actor: AccountPartition; locale:Locale; children: ReactNode }) {
+  useEffect(()=>{void activateAttendanceDrafts(actor,locale);},[actor,locale]);
   return (
     <Scope.Provider key={JSON.stringify([actor.accountId, actor.sessionId, actor.persona])} value={actor}>
       {children}

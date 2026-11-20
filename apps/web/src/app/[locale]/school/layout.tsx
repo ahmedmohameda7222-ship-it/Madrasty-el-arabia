@@ -15,7 +15,7 @@ export default async function SchoolLayout({ children, params }: {
   const locale = parsed.data;
   if (!session) redirect(`/${locale}/account/sign-in`);
   if (session.activePersona === "admin" && session.assurance !== "aal2") redirect(`/${locale}/account/security`);
-  const actor = { accountId: session.accountId, sessionId: session.sessionId, persona: session.activePersona };
+  const actor = { accountId: session.accountId, sessionId: session.sessionId, persona: session.activePersona, expiresAt:session.expiresAt };
   const settings = await schoolPreferences(session, locale);
   return <SchoolShell actor={actor} locale={locale} theme={settings.theme}>{children}</SchoolShell>;
 }

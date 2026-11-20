@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -47,6 +48,7 @@ import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.isolate
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -62,11 +64,10 @@ private val conflictLabels = mapOf(
     "arrival_confirmed" to R.string.attendance_arrival,"outside_roster" to R.string.attendance_outside,
 )
 
-private data class Draft(val status:String?,val revision:Int)
 private data class Confirmation(val approval:Boolean,val rows:JSONArray,val approvalRevision:Int?=null)
 
 @Composable
-fun SupervisorAttendanceScreen(model:IdentityViewModel,close:()->Unit) {
+fun SupervisorAttendanceScreen(model:IdentityViewModel,initialClass:String?=null,initialDate:String?=null,openOffline:()->Unit={},close:()->Unit) {
     BackHandler(onBack=close)
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -74,16 +75,16 @@ fun SupervisorAttendanceScreen(model:IdentityViewModel,close:()->Unit) {
     ) {
         TextButton(onClick=close) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.attendance_review),style=MaterialTheme.typography.headlineMedium)
-        DailySheetScreen(model,supervisor=true)
+        DailySheetScreen(model,supervisor=true,initialClass=initialClass,initialDate=initialDate,openOffline=openOffline)
     }
 }
 
 @Composable
-fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialClass:String?=null) {
+fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialClass:String?=null,initialDate:String?=null,openOffline:()->Unit={}) {
     val language=if (LocalConfiguration.current.locales[0].language=="de") "de" else "ar"
     var chosen by remember(initialClass) { mutableStateOf(initialClass.orEmpty()) }
-    var day by remember { mutableStateOf("") }
-    var input by remember { mutableStateOf("") }
+    var day by remember(initialDate) { mutableStateOf(initialDate.orEmpty()) }
+    var input by remember(initialDate) { mutableStateOf(initialDate.orEmpty()) }
     var refresh by remember { mutableStateOf(0) }
     var retry by remember(day) { mutableStateOf(0) }
     var classes by remember(day) { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -93,11 +94,12 @@ fun DailySheetScreen(model:IdentityViewModel,supervisor:Boolean=false,initialCla
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    LaunchedEffect(day,refresh,retry) {
+    LaunchedEffect(day,refresh,retry,model.attendanceNetworkRevision) {
         val path="/attendance/classes" + if (day.isNotEmpty()) "?date=$day" else ""
         classes=loadAccountSurface({retry++}) {model.timetableObject(path)}
     }
     val known=(classes as? AsyncState.Ready)?.content?.getString("date")
+    TextButton(onClick=openOffline){Text(stringResource(R.string.drafts_on_device))}
     Field(R.string.attendance_date,input) { input=it.take(10) }
     TextButton(enabled=timetableDate(input)&&input!=day,onClick={day=input}) { Text(stringResource(R.string.attendance_day_action)) }
     if (day.isNotEmpty()) TextButton(onClick={day="";input=""}) { Text(stringResource(R.string.timetable_current)) }
@@ -123,7 +125,7 @@ private fun PendingSheets(model:IdentityViewModel,day:String,refresh:Int,languag
     val path="/attendance/sheets?date=$day"
     var retry by remember(day) { mutableStateOf(0) }
     var results by remember(day,refresh) { mutableStateOf<AsyncState<WirePage<JSONObject>>>(AsyncState.InitialLoading()) }
-    LaunchedEffect(day,refresh,retry) { results=loadAccountSurface({retry++}) {model.attendancePage(path)} }
+    LaunchedEffect(day,refresh,retry,model.attendanceNetworkRevision) { results=loadAccountSurface({retry++}) {model.attendancePage(path)} }
     Text(stringResource(R.string.attendance_pending_sheets),style=MaterialTheme.typography.titleLarge)
     AsyncSurface(results) { page ->
         val rows=page.data.getJSONArray("items").tableRows()
@@ -151,7 +153,11 @@ private suspend fun IdentityViewModel.attendancePage(path:String)=decodeData(sch
 private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,language:String,refresh:Int,reload:()->Unit) {
     val path="/attendance/classes/$classId/days/$day"
     val attempts=remember { mutableMapOf<String,Pair<String,String>>() }
-    var drafts by remember { mutableStateOf(emptyMap<String,Draft>()) }
+    val slot=teacherDraftSlot(classId,day)
+    val local=remember(slot){AttendanceDraftController(model,slot)}
+    val coroutine=rememberCoroutineScope()
+    val drafts=local.drafts
+    LaunchedEffect(slot){local.load()}
     var conflicts by remember { mutableStateOf(emptyMap<String,String>()) }
     var feedback by remember { mutableStateOf<AttendanceFeedback?>(null) }
     var confirmation by remember { mutableStateOf<Confirmation?>(null) }
@@ -159,9 +165,6 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
     var sheet by remember(path) { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
     var patches by remember(path) { mutableStateOf(emptyMap<String,JSONObject>()) }
     var retry by remember(path) { mutableStateOf(0) }
-    LaunchedEffect(path,refresh,retry){
-        sheet=loadAccountSurface({retry++}) {model.timetableObject(path)}
-    }
     fun patch(rows:List<JSONObject>){
         val known=(sheet as? AsyncState.Ready)?.content?.getJSONArray("rows")?.tableRows()?.map{it.getString("id")}?.toSet()
         if(known==null||rows.any{it.getString("id") !in known}){reload();return}
@@ -171,14 +174,14 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
     val opened=(sheet as? AsyncState.Ready)?.content?.takeIf{it.getString("state")=="open"}?.getString("id")
     WatchAttendance(model,path,opened,::patch,reload)
     LaunchedEffect(sheet is AsyncState.Forbidden) {
-        if (sheet is AsyncState.Forbidden) { drafts=emptyMap();patches=emptyMap();conflicts=emptyMap();confirmation=null }
+        if (sheet is AsyncState.Forbidden) { local.purge();patches=emptyMap();conflicts=emptyMap();confirmation=null }
     }
-    fun discard(id:String) { drafts=drafts-id;conflicts=conflicts-id }
+    fun discard(id:String) { coroutine.launch{local.edit{it-id}};conflicts=conflicts-id }
     fun select(row:JSONObject,status:String?) {
         val id=row.getString("id")
         if (row.status()==status) discard(id)
         else {
-            drafts=drafts+(id to Draft(status,row.getInt("revision")))
+            coroutine.launch{local.edit{it+(id to DraftChange(status,row.getInt("revision")))}}
             conflicts=conflicts-id
         }
     }
@@ -201,8 +204,6 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
         finally {confirmation=null;busy=false}
     }
     fun apply(response:JSONObject){
-        val written=response.getJSONArray("applied").tableRows().map { it.getString("id") }.toSet()
-        drafts=drafts-written
         conflicts=response.getJSONArray("conflicts").tableRows().associate{it.getString("rowId") to it.getString("reason")}
         val locked=response.getJSONArray("skippedLocked").length()
         feedback=when {
@@ -211,6 +212,28 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
             else->AttendanceFeedback(R.string.saved)
         }
         reload()
+    }
+
+    LaunchedEffect(path,refresh,retry,local.ready,model.attendanceNetworkRevision){
+        if(!local.ready)return@LaunchedEffect
+        val read=loadAccountSurface({retry++}) {model.timetableObject(path)}
+        sheet=read
+        if(read is AsyncState.Ready){
+            local.baseline(read.content)
+            if(local.cached?.optBoolean("sync")==true&&!busy){
+                submit {
+                    val delivered=local.send(read.content,true)
+                    delivered.changes?.let(::apply)
+                    if(delivered.queued)feedback=AttendanceFeedback(R.string.offline_queued)
+                }
+            }
+        }
+    }
+
+    val cached=local.cached
+    if(sheet is AsyncState.Error && cached!=null){
+        CachedAttendanceEditor(model,slot,cached,language,local::updatedOffline)
+        return
     }
 
     AsyncSurface(sheet) { value ->
@@ -237,6 +260,8 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
             val id=value.getString("id")
             val editable=state=="open"&&canMark
             Text(stringResource(if(state=="approved")R.string.attendance_approved else R.string.attendance_draft),style=MaterialTheme.typography.titleLarge)
+            if(!editable&&drafts.isNotEmpty())Text(stringResource(R.string.offline_closed_drafts))
+            if(local.failed)Text(stringResource(R.string.offline_storage_failed))
             if (state=="approved"&&!value.isNull("approvedAt")) Text(isolate(value.getString("approvedAt")))
             if (state=="open"&&teaching&&!canMark&&!canApprove) Text(stringResource(R.string.read_only))
             val rows=value.getJSONArray("rows").tableRows().map { row ->
@@ -259,7 +284,7 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
                     val selected=if(draft==null)row.status() else draft.status
                     marks.forEach { (status,label) ->
                         val requested=status.takeIf(String::isNotEmpty)
-                        FilterChip(selected==requested,enabled=!busy,onClick={select(row,requested)},label={Text(stringResource(label))})
+                        FilterChip(selected==requested,enabled=!busy&&local.ready,onClick={select(row,requested)},label={Text(stringResource(label))})
                     }
                 }else Text(stringResource(marks.getValue(row.status().orEmpty())))
                 if(locked)Text(stringResource(R.string.attendance_locked))
@@ -285,10 +310,11 @@ private fun ActiveSheet(model:IdentityViewModel,classId:String,day:String,langua
             }
             if(editable){
                 Submit(!busy&&drafts.isNotEmpty(),R.string.attendance_save,success=null) {
-                    val payload=JSONArray(drafts.map { (rowId,draft)->
-                        JSONObject().put("rowId",rowId).put("revision",draft.revision).put("status",draft.status?:JSONObject.NULL)
-                    })
-                    submit { apply(model.schoolCommand(attempts,"/attendance/sheets/$id/rows","PATCH",JSONObject().put("edits",payload))) }
+                    submit {
+                        val delivered=local.send(value,false)
+                        delivered.changes?.let(::apply)
+                        if(delivered.queued)feedback=AttendanceFeedback(R.string.offline_queued)
+                    }
                 }
                 TextButton(enabled=!busy&&bulk.isNotEmpty(),onClick={confirmation=Confirmation(false,reviewedRows(bulk))}) {
                     Text(stringResource(R.string.attendance_mark_all))

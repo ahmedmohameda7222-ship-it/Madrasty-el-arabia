@@ -6,6 +6,7 @@ import android.util.Base64
 import de.madrasty.app.BuildConfig
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.api.decodeError
+import de.madrasty.app.attendance.AttendanceDraftStore
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolPartition
 import kotlinx.coroutines.Dispatchers
@@ -28,17 +29,20 @@ import java.util.concurrent.TimeUnit
 import java.net.URI
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.time.Instant
+import org.json.JSONArray
 
 data class SchoolSession(
     val actor: SchoolPartition,
     val personas: List<Persona>,
     val assurance: String,
     val expiresAt: String,
+    val offlineOnly: Boolean = false,
 )
 
 class HttpFailure(val status: Int, val code: String?) : IOException()
 
-class AuthRepository(context: Context) {
+class AuthRepository internal constructor(context: Context, private val attendanceDrafts: AttendanceDraftStore) {
     private val store = SessionStore(context.applicationContext)
     private val mutex = Mutex()
     private val random = SecureRandom()
@@ -83,7 +87,7 @@ class AuthRepository(context: Context) {
         adopt(response)
     }
 
-    suspend fun restore(): SchoolSession? = io {
+    suspend fun restore(allowOffline: Boolean = true): SchoolSession? = io {
         flushPending()
         val refresh = store.read("refresh") ?: return@io null
         try {
@@ -93,15 +97,40 @@ class AuthRepository(context: Context) {
                 clearLocal()
                 return@io null
             }
-            throw error
+            if(allowOffline && error.status>=500) offlineSession() ?: throw error else throw error
+        } catch (error: IOException) {
+            if(allowOffline) offlineSession() ?: throw error else throw error
         }
     }
+
+    private fun offlineSession(): SchoolSession? {
+        val cached=store.read("attendance_identity") ?: return null
+        val session=runCatching{parseSchoolSession(JSONObject().put("data",JSONObject(cached)).toString())}.getOrNull()
+        if(session==null || Instant.parse(session.expiresAt).toEpochMilli()<=System.currentTimeMillis()){
+            store.remove("attendance_identity")
+            runCatching{attendanceDrafts.clear()}
+            return null
+        }
+        return session.copy(offlineOnly=true)
+    }
+
+    private fun recordAttendanceIdentity(session:SchoolSession){
+        runCatching {
+            attendanceDrafts.bind(session)
+            store.write("attendance_identity",JSONObject().put("accountId",session.actor.accountId)
+                .put("sessionId",session.actor.sessionId).put("activePersona",session.actor.persona.name.lowercase())
+                .put("personas",JSONArray(session.personas.map{it.name.lowercase()}))
+                .put("assurance",session.assurance).put("expiresAt",session.expiresAt).toString())
+        }
+    }
+
+    suspend fun snapshot():SchoolSession?=io { active }
 
     suspend fun switchPersona(next: Persona): SchoolSession = io {
         val current = active ?: throw HttpFailure(401, "unauthenticated")
         require(next in current.personas)
         val body = JSONObject().put("persona", next.name.lowercase())
-        authenticated("/auth/persona", body, current.actor.persona).let(::parseSchoolSession).also { active = it }
+        authenticated("/auth/persona", body, current.actor.persona).let(::parseSchoolSession).also { active = it;recordAttendanceIdentity(it) }
     }
 
     suspend fun signOut(allDevices: Boolean) = io {
@@ -155,8 +184,8 @@ class AuthRepository(context: Context) {
         val call = http.newCall(request)
         call.timeout().timeout(24,TimeUnit.SECONDS)
         call.enqueue(object : Callback {
-            override fun onFailure(call: Call,error: IOException) {
-                close(error)
+            override fun onFailure(call: Call,e: IOException) {
+                close(e)
             }
 
             override fun onResponse(call: Call,response: Response) {
@@ -259,6 +288,7 @@ class AuthRepository(context: Context) {
         store.write("logout_ticket", ticket)
         access = nextAccess
         active = session
+        recordAttendanceIdentity(session)
         return session
     }
 
@@ -332,6 +362,8 @@ class AuthRepository(context: Context) {
         store.remove("refresh")
         store.remove("logout_ticket")
         store.remove("pkce")
+        store.remove("attendance_identity")
+        runCatching{attendanceDrafts.clear()}
         authConfig = null
     }
 

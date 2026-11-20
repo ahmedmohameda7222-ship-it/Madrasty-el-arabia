@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
 import de.madrasty.app.attendance.DailySheetScreen
 import de.madrasty.app.attendance.FamilyExcuseScreen
+import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
 import de.madrasty.app.school.AuditDestination
 import de.madrasty.app.school.AuditFilters
@@ -59,9 +60,10 @@ internal sealed interface WorkspacePage {
     data object Calendar : WorkspacePage
     data object Enrollment : WorkspacePage
     data object Applications : WorkspacePage
-    data object AttendanceReview : WorkspacePage
+    data class AttendanceReview(val classId:String?=null,val date:String?=null) : WorkspacePage
+    data object OfflineAttendance : WorkspacePage
     data object Audit : WorkspacePage
-    data class Excuse(val child: String) : WorkspacePage
+    data class Excuse(val child: String,val date:String?=null) : WorkspacePage
     data class Timetable(val child: String? = null) : WorkspacePage
     data class Invitations(val batch: String? = null) : WorkspacePage
     data class Import(val job: String? = null) : WorkspacePage
@@ -78,6 +80,7 @@ internal class SchoolNavigation {
     var tab by mutableStateOf(SchoolTab.Home)
     var child by mutableStateOf<String?>(null)
     var attendanceClass by mutableStateOf<String?>(null)
+    var attendanceDate by mutableStateOf<String?>(null)
     var workDate by mutableStateOf("")
     var auditEntry by mutableStateOf<String?>(null)
     var auditFilters by mutableStateOf(AuditFilters())
@@ -92,6 +95,7 @@ internal class SchoolNavigation {
     fun choose(next: SchoolTab) {
         tab = next
         attendanceClass = null
+        attendanceDate = null
     }
     fun openWork(target: SchoolWorkTarget) {
         open(when(target){
@@ -137,7 +141,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>) {
         WorkspacePage.Calendar -> school
         WorkspacePage.Enrollment -> school || students
         WorkspacePage.Applications -> applications
-        WorkspacePage.AttendanceReview -> attendance
+        is WorkspacePage.AttendanceReview -> attendance
         is WorkspacePage.Assignments -> school || academic
         is WorkspacePage.Import,is WorkspacePage.Family -> students
         is WorkspacePage.Invitations -> students || applications
@@ -163,6 +167,22 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         return
     }
     val rights=SchoolRights(session.actor.persona,capabilities)
+    val resume=model.attendanceResume
+    LaunchedEffect(resume,session.actor){
+        if(resume!=null){
+            model.pickAttendanceResume(null)
+            val parts=resume.split('/')
+            if(parts.size==3){
+                val (kind,id,date)=parts
+                if(kind=="excuse"&&session.actor.persona==Persona.Guardian)state.open(WorkspacePage.Excuse(id,date))
+                else if(kind=="sheet"&&session.actor.persona==Persona.Teacher){
+                    state.attendanceClass=id
+                    state.attendanceDate=date
+                    state.tab=SchoolTab.Attendance
+                }
+            }
+        }
+    }
     val page=state.page
     if(!rights.allows(page)){
         BackHandler(onBack=state::back)
@@ -181,11 +201,13 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back)
         WorkspacePage.Applications -> TeacherApplicationReview(model,state::back)
-        WorkspacePage.AttendanceReview -> SupervisorAttendanceScreen(model,state::back)
+        is WorkspacePage.AttendanceReview -> SupervisorAttendanceScreen(model,page.classId,page.date,
+            openOffline={state.open(WorkspacePage.OfflineAttendance)},close=state::back)
+        WorkspacePage.OfflineAttendance -> OfflineAttendanceScreen(model,session,state::back)
         WorkspacePage.Audit -> AuditScreen(
             model,state.auditEntry,{state.auditEntry=it},state.auditFilters,{state.auditFilters=it},state::openAuditResource,state::back,
         )
-        is WorkspacePage.Excuse -> FamilyExcuseScreen(model,page.child,state::back)
+        is WorkspacePage.Excuse -> FamilyExcuseScreen(model,page.child,page.date,state::back)
         is WorkspacePage.Timetable -> TimetableScreen(model,session.actor.persona,page.child,state::back)
         is WorkspacePage.Assignments -> StaffAssignmentsScreen(model,page.classTarget,state::back)
         is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.applications,page.batch,state::back)
@@ -209,7 +231,8 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openAttendance={state.attendanceClass=it;state.tab=SchoolTab.Attendance},
                 openSchedule={state.open(WorkspacePage.Timetable(it))},
             )
-            SchoolTab.Attendance -> DailySheetScreen(model,initialClass=state.attendanceClass)
+            SchoolTab.Attendance -> DailySheetScreen(model,initialClass=state.attendanceClass,initialDate=state.attendanceDate,
+                openOffline={state.open(WorkspacePage.OfflineAttendance)})
             SchoolTab.Children -> ChildrenScreen(model,state.child,{state.child=it},
                 openTimetable={state.open(WorkspacePage.Timetable(it))},openExcuse={state.open(WorkspacePage.Excuse(it))})
             SchoolTab.Students -> if(rights.students){
@@ -238,13 +261,14 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     OpenPage(state,WorkspacePage.Security,R.string.security)
     OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
     OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
+    OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
     AccountActions(model,session)
 
     if(rights.persona!=Persona.Admin||rights.school||rights.students||rights.academic||rights.applications||rights.attendance){
         Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
         if(rights.allows(WorkspacePage.Timetable()))OpenPage(state,WorkspacePage.Timetable(),R.string.timetable_title)
         if(rights.school||rights.academic)OpenPage(state,WorkspacePage.Assignments(),R.string.staff_assignments)
-        if(rights.attendance)OpenPage(state,WorkspacePage.AttendanceReview,R.string.attendance_review)
+        if(rights.attendance)OpenPage(state,WorkspacePage.AttendanceReview(),R.string.attendance_review)
         if(rights.school)OpenPage(state,WorkspacePage.Calendar,R.string.school_calendar)
         if(rights.school||rights.students)OpenPage(state,WorkspacePage.Enrollment,R.string.enrollments)
         if(rights.students||rights.applications)OpenPage(state,WorkspacePage.Invitations(),R.string.invite_title)
