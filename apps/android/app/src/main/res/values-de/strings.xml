@@ -160,4 +160,16 @@
     <string name="homework_score">Punkte von 20</string>
     <string name="homework_roster">Schülerinnen und Schüler auf der Liste</string>
     <string name="homework_feedback">Rückmeldung</string>
+    <string name="gradebook_title">Hausaufgaben korrigieren</string>
+    <string name="gradebook_sheet">Bewertungsliste</string>
+    <string name="gradebook_homework">Aufgabe ansehen</string>
+    <string name="gradebook_all_classes">Alle meine Klassen</string>
+    <string name="gradebook_graded">Bewertete Schülerinnen und Schüler</string>
+    <string name="gradebook_bulk">Ausgewählte Punkte speichern</string>
+    <string name="gradebook_reason">Begründung zur Änderung einer sichtbaren Bewertung</string>
+    <string name="gradebook_individual">Einzelbewertung</string>
+    <string name="gradebook_reapply">Aktuelle Punktzahl prüfen und Änderung übernehmen</string>
+    <string name="gradebook_before">Vorheriger Wert</string>
+    <string name="gradebook_after">Aktueller Wert</string>
+    <string name="gradebook_invalid">Gib Punkte von 0 bis 20 in Halbschritten an. Begründe Änderungen an sichtbaren Bewertungen.</string>
 </resources>

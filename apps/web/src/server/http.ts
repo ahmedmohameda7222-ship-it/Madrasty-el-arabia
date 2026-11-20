@@ -46,7 +46,9 @@ export function api<Extra extends unknown[]>(
   };
 }
 
-export async function readJson<T>(request: Request, schema: ZodType<T>, maxBytes = 64 * 1024): Promise<T> {
+type JsonReviver = (key: string, value: unknown, context?: { source?: string }) => unknown;
+
+export async function readJson<T>(request: Request, schema: ZodType<T>, maxBytes = 64 * 1024, reviver?: JsonReviver): Promise<T> {
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
     throw new ApiError("bad_request");
   }
@@ -68,7 +70,7 @@ export async function readJson<T>(request: Request, schema: ZodType<T>, maxBytes
       }
       body += decoder.decode(value, { stream: true });
     }
-    parsed = JSON.parse(body + decoder.decode());
+    parsed = JSON.parse(body + decoder.decode(), reviver);
   } catch (error) {
     throw error instanceof ApiError ? error : new ApiError("bad_request");
   } finally {

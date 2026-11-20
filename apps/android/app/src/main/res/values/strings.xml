@@ -160,4 +160,16 @@
     <string name="homework_score">الدرجة من ٢٠</string>
     <string name="homework_roster">عدد الطلاب في الكشف</string>
     <string name="homework_feedback">ملاحظات التصحيح</string>
+    <string name="gradebook_title">تصحيح الواجبات</string>
+    <string name="gradebook_sheet">كشف التصحيح</string>
+    <string name="gradebook_homework">تفاصيل الواجب</string>
+    <string name="gradebook_all_classes">كل فصولي</string>
+    <string name="gradebook_graded">طلاب لهم درجة</string>
+    <string name="gradebook_bulk">حفظ الدرجات المحددة</string>
+    <string name="gradebook_reason">سبب التغيير بعد عرض النتيجة للأسرة</string>
+    <string name="gradebook_individual">تصحيح طالب</string>
+    <string name="gradebook_reapply">راجع الدرجة الحالية وأعد تطبيق التعديل</string>
+    <string name="gradebook_before">القيمة السابقة</string>
+    <string name="gradebook_after">القيمة الحالية</string>
+    <string name="gradebook_invalid">أدخل درجة من ٠ إلى ٢٠ بنصف درجة، واكتب سبب التصحيح لو النتيجة ظهرت للأسرة.</string>
 </resources>

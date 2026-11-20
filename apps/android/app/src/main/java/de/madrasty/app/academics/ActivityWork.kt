@@ -164,7 +164,7 @@ private fun ActivityCorrections(model:IdentityViewModel,path:String,language:Str
 }
 
 @Composable
-private fun ScoreField(label:Int,content:String,changed:(String)->Unit){
+internal fun ScoreField(label:Int,content:String,changed:(String)->Unit){
     OutlinedTextField(content,{changed(it.take(24))},label={Text(stringResource(label))},
         keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),singleLine=true)
 }

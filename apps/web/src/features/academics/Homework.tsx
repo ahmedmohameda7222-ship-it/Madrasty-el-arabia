@@ -127,6 +127,7 @@ function HomeworkDetails({locale,value,child,saved,refresh}:{
       <p>{value.score===null?text.pending:<>{text.score} · <bdi>{number.format(value.score)}</bdi></>}</p>
       {value.feedback&&<><h3>{text.feedback}</h3><p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{value.feedback}</p></>}
     </>:value.rosterCount!==null&&<p>{text.roster} · <bdi>{number.format(value.rosterCount)}</bdi></p>}
+    {value.canGrade&&<Link className="plain-button" href={`/${locale}/school/more/grading?work=${value.id}`}>{locale==="ar"?"كشف التصحيح":"Bewertungsliste"}</Link>}
     {value.canEdit&&!edit&&<button className="plain-button" onClick={()=>setEdit(true)}>{text.edit}</button>}
     {value.canEdit&&edit&&<HomeworkForm locale={locale} offering={value.offeringId} item={value}
       cancel={()=>setEdit(false)} saved={(key)=>{setEdit(false);saved(key);}}/>}

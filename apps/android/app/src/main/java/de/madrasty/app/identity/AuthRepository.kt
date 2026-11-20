@@ -40,7 +40,7 @@ data class SchoolSession(
     val offlineOnly: Boolean = false,
 )
 
-class HttpFailure(val status: Int, val code: String?) : IOException()
+class HttpFailure(val status: Int, val code: String?, val fields: Map<String, String> = emptyMap()) : IOException()
 
 class AuthRepository internal constructor(context: Context, private val attendanceDrafts: AttendanceDraftStore) {
     private val store = SessionStore(context.applicationContext)
@@ -348,8 +348,8 @@ class AuthRepository internal constructor(context: Context, private val attendan
             if (response.code == 204) return@use ""
             val raw = response.body.string()
             if (!response.isSuccessful) {
-                val code = if (decodeApiError) runCatching { decodeError(raw).code }.getOrNull() else null
-                throw HttpFailure(response.code, code)
+                val error = if (decodeApiError) runCatching { decodeError(raw) }.getOrNull() else null
+                throw HttpFailure(response.code, error?.code, error?.fields.orEmpty())
             }
             raw
         }

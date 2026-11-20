@@ -14,9 +14,31 @@ export async function appendEvent(tx: Transaction, input: Omit<SchoolEvent, "id"
   return event.id;
 }
 
+export async function appendEvents(tx:Transaction,inputs:Omit<SchoolEvent,"id"|"occurredAt">[]){
+  if(!inputs.length)return;
+  const occurredAt=new Date().toISOString();
+  const events=inputs.map((input)=>eventSchema.parse({...input,id:randomUUID(),occurredAt}));
+  await tx`
+    insert into app.outbox_event(id,type,occurred_at,actor_id,aggregate_id,payload)
+    select id,type,"occurredAt","actorId","aggregateId",payload
+    from jsonb_to_recordset(${tx.json(events)}) as e(id uuid,type text,"occurredAt" timestamptz,"actorId" uuid,"aggregateId" uuid,payload jsonb)
+  `;
+}
+
+export async function appendAudits(tx:Transaction,entries:AuditChange[]){
+  if(!entries.length)return;
+  await tx`
+    insert into app.audit_entry(actor_id,persona,request_id,action,aggregate_id,metadata)
+    select app.actor_account(),app.actor_persona(),app.actor_request(),action,"aggregateId",coalesce(metadata,'{}'::jsonb)
+    from jsonb_to_recordset(${tx.json(entries)}) as e(action text,"aggregateId" uuid,metadata jsonb)
+  `;
+}
+
+export type AuditChange={action:string;aggregateId:string;metadata?:Record<string,JSONValue>};
+
 export async function appendAudit(
   tx: Transaction,
-  entry: { action: string; aggregateId: string; metadata?: Record<string, JSONValue> },
+  entry: AuditChange,
 ) {
   await tx`
     insert into app.audit_entry (actor_id, persona, request_id, action, aggregate_id, metadata)
