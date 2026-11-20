@@ -2,7 +2,7 @@
 
 **Last planning baseline** 2026-11-19 · Design and implementation approved · synthetic pre-launch authorized.
 **Current checkout** Local clone of ahmedmohameda7222-ship-it/Madrasty-el-arabia. Remote baseline 1fe75fc11a19d33188bd5bde514a43d49b99dec2 contained README.md. Identify the planning revision with `git log -1 --oneline` in the delivered checkout. A remote-only clone needs the planning files before it can begin.
-**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** E01 bilingual subject catalog and versioned curriculum publishing. A04 approved attendance history and corrections built locally. A01 is in 5d01351 and A02 is in afb88f4. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
+**Current branch** implementation/prelaunch at planning baseline 1d84284. **Resume** E02 classroom delivery and activity marks. E01 curriculum and A04 approved attendance history and corrections built locally. A01 is in 5d01351 and A02 is in afb88f4. S05 is in ea2d945, I06 in 75e15a2, S06 in 5b68a43, S07 in d731bbe and S08 in 4d33d9c. S04 is in 922c28a and I04 is in 5b692d8. F01–F03/I01 are in 332942e; I02/I03/S01 are in 220a592; S02 is in 49f745c; S03 is in 648ce14. Live activation remains D06.
 
 | Milestone | Current state | Next boundary |
 |---|---|---|
@@ -10,7 +10,7 @@
 | 01 Identity and access | I01–I06 built / QA pending | One account, effective grants and recoverable invites |
 | 02 School operations | S01–S08 built / QA pending | Import, linked families, dated staffing and clash-safe timetable |
 | 03 Attendance | A01–A04 built / QA pending | Online lock, actual arrival, offline reconciliation and approval |
-| 04 Academics | E01 active | Published lessons, gradebook, exam results and reports |
+| 04 Academics | E01 built / QA pending; E02 active | Published lessons, gradebook, exam results and reports |
 | 05 Communications | Planned | Scoped threads, localized notices, provider jobs, news and events |
 | 06 Finance | Planned | Per-child invoice, manual settlement and stopping decisions |
 | 07 Candidate and distribution | Planned | D05 records deployed web/API, database and signed APK |
@@ -44,7 +44,8 @@ During execution, maintain one row per active or finished card. Card checkboxes 
 | 2026-11-20 | A02 | built / QA pending — اتنفّذت وفي انتظار الاختبار | 20261120013955_family_excuses.sql, scoped family receipt/withdrawal, separate arrival evidence, authenticated stream + conditional polling, both clients | Type-check, web production build and Android debug assembly exited 0. Split native route dispatch after a Kotlin compiler memory failure; build succeeds at the existing memory settings. Private reasons stay in protected domain reads. C07 consumes the arrival event, D02/C06 bind retention for notice rows. Q02–Q06 pending. | A03 device-private drafts and reconnect. |
 | 2026-11-20 | A03 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Web IndexedDB/Web Crypto vault and public offline shell, Android SQLite/Keystore vault, reconnect merge and durable request keys | Type-check, production web build, debug Android assembly and static JS parsing exited 0. Each cached record expires with its last confirmed authorization. Offline family drafts require explicit online send. C05 still binds device delivery detach; Q03/Q04/Q06 verify expiry, device restart and reconnection. | A04 approved attendance history and corrections. |
 | 2026-11-20 | A04 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Approved attendance history on web and Android, immutable approval/correction revisions, supervised corrections and date cancellation, approved-only counts | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. Transactional correction events carry predecessors and cancellation state. C07 owns dispatch and correction of deliveries. Q03/Q04/Q06 pending. | E01 subjects and curriculum. |
-| 2026-11-20 | E01, step 1 | Active | S05 dated offerings and staff assignments; S02 active guardian links | Curriculum draft and published projections pending | Extend subject catalog and add immutable publications, then wire both clients. |
+| 2026-11-20 | E01 | built / QA pending — اتنفّذت وفي انتظار الاختبار | Bilingual subject catalog, offering-scoped units, versioned lesson draft/publish, family projection and Arabic/German editors in both clients | Type-check, production web build, Android debug assembly and static SQL/OpenAPI parsing exited 0. E02 owns live coverage data. Supabase migrations applied at D02. Q03–Q05 pending. | E02 teaching logs and assessed activities. |
+| 2026-11-20 | E02, step 1 | Active | E01 scoped academic offerings and published lesson versions; S03 dated roster | Teaching log and activity marks pending | Add protected tables and services, then wire both clients. |
 
 ## Decision and discrepancy log
 

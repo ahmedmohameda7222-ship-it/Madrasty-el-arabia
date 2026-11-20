@@ -49,6 +49,7 @@ export default async function SchoolPage({ params, searchParams }: {
         {(session.activePersona !== "admin" || calendar || placement || invites || academic || attendance) && <section className="auth-card">
           <h2>{locale === "ar" ? "إدارة المدرسة" : "Schulverwaltung"}</h2>
           <div className="header-actions">
+            {(session.activePersona!=="admin"||academic)&&<Link className="plain-button" href={`/${locale}/school/more/curriculum`}>{locale==="ar"?"المواد والدروس":"Fächer und Unterricht"}</Link>}
             {(calendar || academic) && <Link className="plain-button" href={`/${locale}/school/more/assignments`}>{locale === "ar" ? "الموظفون والتكليفات" : "Mitarbeitende und Einsätze"}</Link>}
             {(session.activePersona !== "admin" || calendar || academic) && <Link className="plain-button"
               href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
