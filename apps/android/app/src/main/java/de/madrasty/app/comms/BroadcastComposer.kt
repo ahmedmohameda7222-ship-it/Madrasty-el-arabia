@@ -269,6 +269,11 @@ private fun BroadcastHistory(model:IdentityViewModel,locale:Locale,refresh:Int){
                     for((field,label) in listOf("pending" to R.string.broadcast_pending,"queued" to R.string.broadcast_queued,"suppressed" to R.string.broadcast_suppressed)){
                         Text(stringResource(label)+" · "+isolate(numbers.format(dispatch.getInt(field))))
                     }
+                    Text(stringResource(R.string.email),style=MaterialTheme.typography.titleSmall)
+                    val email=row.getJSONObject("emailDelivery")
+                    val emailStates=listOf("pending" to R.string.delivery_queued,"accepted" to R.string.delivery_accepted,
+                        "delivered" to R.string.delivery_delivered,"unresolved" to R.string.delivery_needs_attention)
+                    for((field,label) in emailStates)Text(stringResource(label)+" · "+isolate(numbers.format(email.getInt(field))))
                     BroadcastCard("ar",BroadcastText.read(copy.getJSONObject("ar")),stringResource(R.string.broadcast_arabic))
                     BroadcastCard("de",BroadcastText.read(copy.getJSONObject("de")),stringResource(R.string.broadcast_german))
                 }

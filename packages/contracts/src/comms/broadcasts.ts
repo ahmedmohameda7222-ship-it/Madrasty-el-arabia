@@ -22,6 +22,7 @@ export const broadcastSent=z.object({
   id:z.uuid(),audience:broadcastAudience,classAr:z.string().nullable(),classDe:z.string().nullable(),
   copy:broadcastCopy,publishedAt:z.iso.datetime(),recipientCount:count,
   dispatch:z.object({pending:count,queued:count,suppressed:count}),
+  emailDelivery:z.object({pending:count,accepted:count,delivered:count,unresolved:count}),
 });
 export const broadcastEntry=broadcastText.extend({id:z.uuid(),publishedAt:z.iso.datetime()});
 export const broadcastQuery=pageQuerySchema.extend({locale:localeSchema.default("ar")});

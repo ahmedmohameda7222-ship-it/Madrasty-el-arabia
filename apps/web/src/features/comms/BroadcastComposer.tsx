@@ -19,7 +19,7 @@ const copy={
     confirm:"تأكيد النشر",preparing:"جارٍ تجهيز المعاينة",publishing:"جارٍ النشر",count:"عدد المستلمين",
     stale:"المعاينة انتهت أو الجمهور اتغيّر. جهّز معاينة جديدة قبل النشر.",until:"المعاينة صالحة لحد",
     noRecipients:"لا يوجد مستلمون مخوّلون لهذا الإعلان.",published:"اتنشر الإعلان",waiting:"بانتظار التجهيز",queued:"اتجهّز للتوصيل",
-    skipped:"خارج نطاق التوصيل",open:"قراءة الإعلان",back:"رجوع للإعلانات",reload:"تحديث"},
+    skipped:"خارج نطاق التوصيل",email:"البريد الإلكتروني",emailPending:"في الطابور",emailAccepted:"قبله المزوّد",emailDelivered:"اتسلّم",emailUnresolved:"بحاجة لمتابعة",open:"قراءة الإعلان",back:"رجوع للإعلانات",reload:"تحديث"},
   de:{title:"Schulmitteilungen",compose:"Neue Mitteilung",inbox:"Empfangene Mitteilungen",history:"Veröffentlichte Mitteilungen",
     audience:"Zielgruppe",all_guardians:"Alle Sorgeberechtigten",class_guardians:"Sorgeberechtigte der Klasse",all_teachers:"Alle Lehrkräfte",class:"Klasse",
     ar:"Arabisch",de:"Deutsch",subject:"Titel",body:"Text der Mitteilung",preview:"Vorschau erstellen",edit:"Entwurf bearbeiten",
@@ -27,7 +27,8 @@ const copy={
     stale:"Die Vorschau ist abgelaufen oder die Zielgruppe hat sich geändert. Erstelle eine neue Vorschau.",
     until:"Vorschau gültig bis",noRecipients:"Für diese Mitteilung gibt es keine berechtigten Empfänger.",published:"Mitteilung veröffentlicht",
     waiting:"Wartet auf Vorbereitung",queued:"Für die Zustellung vorbereitet",skipped:"Nicht mehr zustellberechtigt",
-    open:"Mitteilung lesen",back:"Zurück zu den Mitteilungen",reload:"Aktualisieren"},
+    email:"E-Mail",emailPending:"In der Warteschlange",emailAccepted:"Vom Anbieter angenommen",emailDelivered:"Zugestellt",
+    emailUnresolved:"Prüfung erforderlich",open:"Mitteilung lesen",back:"Zurück zu den Mitteilungen",reload:"Aktualisieren"},
 } as const;
 const locales=["ar","de"] as const;
 const emptyCopy=()=>({ar:{title:"",body:""},de:{title:"",body:""}});
@@ -83,6 +84,13 @@ export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string})
               <li>{labels.waiting} · {count(item.dispatch.pending)}</li>
               <li>{labels.queued} · {count(item.dispatch.queued)}</li>
               <li>{labels.skipped} · {count(item.dispatch.suppressed)}</li>
+            </ul>
+            <p>{labels.email}</p>
+            <ul className="group-list">
+              <li>{labels.emailPending} · {count(item.emailDelivery.pending)}</li>
+              <li>{labels.emailAccepted} · {count(item.emailDelivery.accepted)}</li>
+              <li>{labels.emailDelivered} · {count(item.emailDelivery.delivered)}</li>
+              <li>{labels.emailUnresolved} · {count(item.emailDelivery.unresolved)}</li>
             </ul>
             {locales.map((language)=><BroadcastText key={language} locale={language} {...item.copy[language]} heading={labels[language]}/>)}
           </details>

@@ -3758,6 +3758,93 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/PushStatus"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /delivery-status:
+    get:
+      operationId: listInstitutionalDeliveryStatus
+      summary: Read permitted institutional delivery history
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+        - {"name":"kind","in":"query","required":false,"schema":{"type":"string","enum":["invite_guardian","invite_teacher","broadcast","attendance","academics","finance","school"]}}
+        - {"name":"state","in":"query","required":false,"schema":{"type":"string","enum":["queued","accepted","delivered","failed","bounced","uncertain","suppressed"]}}
+      responses:
+        '200':
+          description: Read permitted institutional delivery history
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/DeliveryStatusItem"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /delivery-status/access:
+    get:
+      operationId: readDeliveryQueueAccess
+      summary: Read access to institutional delivery operations
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Read access to institutional delivery operations
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"allowed":{"type":"boolean"}},"required":["allowed"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /delivery-status/{id}/redrive:
+    post:
+      operationId: redriveFailedDelivery
+      summary: Queue a retry for an eligible and reconciled delivery
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"revision":{"type":"integer","minimum":1}},"required":["revision"]}
+      responses:
+        '200':
+          description: Queue a retry for an eligible and reconciled delivery
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"state":{"const":"queued"}},"required":["id","revision","state"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /internal/dispatch:
+    post:
+      operationId: dispatchSchoolDelivery
+      summary: Claim bounded due school delivery work
+      security: [{ schoolWorker: [] }]
+      responses:
+        '200':
+          description: Claim bounded due school delivery work
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"claimed":{"type":"integer","minimum":0},"accepted":{"type":"integer","minimum":0},"suppressed":{"type":"integer","minimum":0},"pending":{"type":"integer","minimum":0}},"required":["claimed","accepted","suppressed","pending"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /internal/email-events:
+    post:
+      operationId: applySchoolEmailEvent
+      summary: Verify and deduplicate an email provider event
+      security: []
+      parameters:
+        - {"name":"svix-id","in":"header","required":true,"schema":{"type":"string"}}
+        - {"name":"svix-timestamp","in":"header","required":true,"schema":{"type":"string"}}
+        - {"name":"svix-signature","in":"header","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"type":{"type":"string"},"created_at":{"type":"string","format":"date-time"},"data":{"type":"object"}},"required":["type","created_at","data"]}
+      responses:
+        '200':
+          description: Verify and deduplicate an email provider event
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"recorded":{"type":"boolean"}},"required":["recorded"]}}}
+        default:
+          $ref: '#/components/responses/AuthError'
 components:
   securitySchemes:
     schoolWorker:
@@ -3786,6 +3873,7 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    DeliveryStatusItem: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["invite_guardian","invite_teacher","broadcast","attendance","academics","finance","school"]},"state":{"type":"string","enum":["queued","accepted","delivered","failed","bounced","uncertain","suppressed"]},"channel":{"type":"string","enum":["email","push"]},"dueAt":{"type":"string","format":"date-time"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"},"attempts":{"type":"integer","minimum":0},"revision":{"type":"integer","minimum":1},"canRedrive":{"type":"boolean"},"failure":{"anyOf":[{"type":"string","maxLength":80},{"type":"null"}]}},"required":["id","kind","state","channel","dueAt","createdAt","updatedAt","attempts","revision","canRedrive","failure"]}
     NoticeTarget: {"oneOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["thread","broadcast","child","application","invoice","receipt","fee_stop"]},"id":{"type":"string","format":"uuid"}},"required":["kind","id"]},{"type":"object","properties":{"kind":{"type":"string","enum":["exam","evaluation","activity","homework"]},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"}},"required":["kind","id","childId"]},{"type":"object","properties":{"kind":{"const":"attendance"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}},"required":["kind","id","childId","date"]}]}
     NoticeDestination: {"oneOf":[{"type":"object","properties":{"state":{"const":"open"},"targets":{"type":"array","items":{"$ref":"#/components/schemas/NoticeTarget"},"minItems":1,"maxItems":50}},"required":["state","targets"]},{"type":"object","properties":{"state":{"const":"unavailable"}},"required":["state"]}]}
     NotificationRecord: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"template":{"type":"string"},"title":{"type":"string"},"createdAt":{"type":"string","format":"date-time"},"readAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"superseded":{"type":"boolean"}},"required":["id","template","title","createdAt","readAt","superseded"]}
@@ -3798,7 +3886,7 @@ components:
     BroadcastDraft: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]}},"required":["audience","copy"]}
     BroadcastPreview: {"type":"object","properties":{"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]},"previewId":{"type":"string","format":"uuid"},"expiresAt":{"type":"string","format":"date-time"},"counts":{"type":"object","properties":{"ar":{"type":"integer","minimum":0},"de":{"type":"integer","minimum":0}},"required":["ar","de"]}},"required":["audience","copy","previewId","expiresAt","counts"]}
     BroadcastOptions: {"type":"object","properties":{"schoolWide":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}},"required":["id","code","nameAr","nameDe"]}}},"required":["schoolWide","classes"]}
-    BroadcastSent: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"publishedAt":{"type":"string","format":"date-time"},"recipientCount":{"type":"integer","minimum":0},"dispatch":{"type":"object","properties":{"pending":{"type":"integer","minimum":0},"queued":{"type":"integer","minimum":0},"suppressed":{"type":"integer","minimum":0}},"required":["pending","queued","suppressed"]}},"required":["id","audience","copy","classAr","classDe","publishedAt","recipientCount","dispatch"]}
+    BroadcastSent: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/BroadcastAudience"},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":["ar","de"]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"publishedAt":{"type":"string","format":"date-time"},"recipientCount":{"type":"integer","minimum":0},"dispatch":{"type":"object","properties":{"pending":{"type":"integer","minimum":0},"queued":{"type":"integer","minimum":0},"suppressed":{"type":"integer","minimum":0}},"required":["pending","queued","suppressed"]},"emailDelivery":{"type":"object","required":["pending","accepted","delivered","unresolved"],"properties":{"pending":{"type":"integer","minimum":0},"accepted":{"type":"integer","minimum":0},"delivered":{"type":"integer","minimum":0},"unresolved":{"type":"integer","minimum":0}}}},"required":["id","audience","copy","classAr","classDe","publishedAt","recipientCount","dispatch","emailDelivery"]}
     BroadcastEntry: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"title":{"type":"string"},"body":{"type":"string"},"publishedAt":{"type":"string","format":"date-time"}},"required":["id","title","body","publishedAt"]}
     ChatMediaUpload: {"oneOf":[{"type":"object","properties":{"mediaKind":{"const":"photo"},"mime":{"const":"image/jpeg"},"bytes":{"type":"integer","minimum":1,"maximum":10485760}},"required":["mediaKind","mime","bytes"]},{"type":"object","properties":{"mediaKind":{"const":"voice"},"mime":{"const":"audio/wav"},"bytes":{"type":"integer","minimum":46,"maximum":8388608}},"required":["mediaKind","mime","bytes"]}]}
     ChatMediaGrant: {"type":"object","properties":{"uploadId":{"type":"string","format":"uuid"},"url":{"type":"string","format":"uri"},"expiresAt":{"type":"string","format":"date-time"},"maxBytes":{"type":"integer","minimum":1,"maximum":10485760},"maxDurationMs":{"anyOf":[{"type":"integer","minimum":1,"maximum":180000},{"type":"null"}]}},"required":["uploadId","url","expiresAt","maxBytes","maxDurationMs"]}

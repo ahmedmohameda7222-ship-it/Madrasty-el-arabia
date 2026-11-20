@@ -110,7 +110,7 @@ export async function activateBrowserPush(actor:AccountPartition,option:NonNulla
   }
 }
 
-export async function reconcileBrowserPush(actor:AccountPartition,signal?:AbortSignal){
+export async function reconcileBrowserPush(actor:AccountPartition,signal?:AbortSignal,rotate=false){
   const current=readMarker();
   if(!current)return false;
   if(!browserPushSupported()||current.owner!==await owner(actor)){
@@ -128,7 +128,7 @@ export async function reconcileBrowserPush(actor:AccountPartition,signal?:AbortS
       {headers:{"X-School-Persona":actor.persona},signal});
     if(signal?.aborted)return false;
     if(!data.enabled){await detachBrowserPush(false);return false;}
-    if(Date.now()-current.confirmed>=86400000)await bind(actor,subscription,signal);
+    if(rotate||Date.now()-current.confirmed>=86400000)await bind(actor,subscription,signal);
     return true;
   }catch(error){
     if(signal?.aborted)return false;

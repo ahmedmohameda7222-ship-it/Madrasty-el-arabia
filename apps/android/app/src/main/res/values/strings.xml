@@ -370,4 +370,25 @@
     <string name="notices_device_enabled">إشعارات الجهاز مفعّلة.</string>
     <string name="notices_permission">السماح بإشعارات الجهاز موقوف في إعداداته.</string>
     <string name="notices_push_unavailable">إشعارات الجهاز غير متاحة. الإشعارات داخل التطبيق والبريد شغّالين حسب إعداداتك.</string>
+    <string name="delivery_status">حالة التوصيل</string>
+    <string name="delivery_filter_kind">النوع</string>
+    <string name="delivery_filter_state">الحالة</string>
+    <string name="delivery_invite_guardians">دعوات الأسر</string>
+    <string name="delivery_invite_teachers">دعوات المدرسين</string>
+    <string name="delivery_academics">الشؤون الأكاديمية</string>
+    <string name="delivery_school">تحديثات المدرسة</string>
+    <string name="delivery_queued">في الطابور</string>
+    <string name="delivery_accepted">قبله المزوّد</string>
+    <string name="delivery_delivered">اتسلّم</string>
+    <string name="delivery_failed">تعذّر التوصيل</string>
+    <string name="delivery_bounced">ارتدّ البريد</string>
+    <string name="delivery_needs_attention">بحاجة لمتابعة</string>
+    <string name="delivery_uncertain">في انتظار تأكيد المزوّد</string>
+    <string name="delivery_suppressed">اتوقف التوصيل</string>
+    <string name="delivery_attempts">المحاولات</string>
+    <string name="delivery_updated">آخر تحديث</string>
+    <string name="delivery_due">موعد المحاولة</string>
+    <string name="delivery_redrive">إعادة للطابور</string>
+    <string name="delivery_rescheduled">اتسجّلت محاولة جديدة.</string>
+    <string name="notices_push_generic">إشعار من المدرسة</string>
 </resources>

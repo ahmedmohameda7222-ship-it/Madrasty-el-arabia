@@ -31,3 +31,64 @@ self.addEventListener("fetch",(event)=>{
     }));
   }
 });
+
+
+const noticeIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const pushLabels = {
+  ar: { title: "مدرستي العربية", body: "إشعار من المدرسة", dir: "rtl" },
+  de: { title: "Madrasty El Arabia", body: "Mitteilung der Schule", dir: "ltr" },
+};
+
+function storedDeliveryGuard() {
+  return new Promise((resolve) => {
+    const opening = indexedDB.open("madrasty-push", 1);
+    opening.onupgradeneeded = () => { opening.result.createObjectStore("device"); };
+    opening.onerror = opening.onblocked = () => resolve(null);
+    opening.onsuccess = () => {
+      const database = opening.result;
+      const transaction = database.transaction("device", "readonly");
+      const saved = transaction.objectStore("device").get("deliveryGuard");
+      saved.onsuccess = () => resolve(saved.result ?? null);
+      saved.onerror = () => resolve(null);
+      transaction.oncomplete = transaction.onabort = () => database.close();
+    };
+  });
+}
+
+function noticeMessage(message) {
+  return message && (message.locale === "ar" || message.locale === "de") &&
+    typeof message.noticeId === "string" && noticeIdPattern.test(message.noticeId) &&
+    typeof message.deviceGuard === "string" && noticeIdPattern.test(message.deviceGuard);
+}
+
+self.addEventListener("push", (event) => {
+  event.waitUntil((async () => {
+    let message;
+    try { message = event.data?.json(); } catch { return; }
+    if (!noticeMessage(message) || await storedDeliveryGuard() !== message.deviceGuard) return;
+    const { title, body, dir } = pushLabels[message.locale];
+    await self.registration.showNotification(title, {
+      body, dir, lang: message.locale, icon: "/school-192.png", tag: "notice-" + message.noticeId,
+      data: { noticeId: message.noticeId, locale: message.locale, deviceGuard: message.deviceGuard },
+    });
+  })());
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const message = event.notification.data;
+    if (!noticeMessage(message) || await storedDeliveryGuard() !== message.deviceGuard) return;
+    const url = new URL("/" + message.locale + "/open-notice/" + message.noticeId, self.location.origin).href;
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const open = windows.find((client) => client.url === url);
+    if (open) await open.focus();
+    else await self.clients.openWindow(url);
+  })());
+});
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(self.clients.matchAll({ type: "window" }).then((windows) => {
+    for (const client of windows) client.postMessage({ type: "madrasty-push-refresh" });
+  }));
+});

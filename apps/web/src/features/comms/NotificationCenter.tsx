@@ -78,6 +78,10 @@ export function NotificationLink({locale}:{locale:Locale}){
     };
     const reconcile=()=>{void reconcileBrowserPush(actor,abort.signal).catch(()=>undefined);};
     function wake(){void sync();reconcile();}
+    function rotate(message:MessageEvent){
+      if(message.data?.type==="madrasty-push-refresh")void reconcileBrowserPush(actor,abort.signal,true).catch(()=>undefined);
+    }
+    navigator.serviceWorker?.addEventListener("message",rotate);
     const timer=window.setInterval(()=>void sync(),25000);
     window.addEventListener(changed,sync);window.addEventListener("focus",wake);window.addEventListener("online",wake);
     document.addEventListener("visibilitychange",sync);
@@ -86,6 +90,7 @@ export function NotificationLink({locale}:{locale:Locale}){
       abort.abort();window.clearInterval(timer);
       window.removeEventListener(changed,sync);window.removeEventListener("focus",wake);window.removeEventListener("online",wake);
       document.removeEventListener("visibilitychange",sync);
+      navigator.serviceWorker?.removeEventListener("message",rotate);
     };
   },[actor.accountId,actor.sessionId,actor.persona]);
   const amount=new Intl.NumberFormat(locale).format(count);

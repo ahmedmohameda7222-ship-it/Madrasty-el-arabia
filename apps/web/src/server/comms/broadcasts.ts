@@ -70,8 +70,9 @@ export function listSentBroadcasts(actor:ActorContext,input:z.infer<typeof pageQ
   const after=positionOf(input.cursor);
   return withActor(actor,async(tx)=>{
     const rows=await tx`select id,audience_kind as kind,class_id as "classId",class_ar as "classAr",class_de as "classDe",
-        copy,${publicationTime(tx)},reviewed_count as "recipientCount",pending_count as pending,queued_count as queued,suppressed_count as suppressed
-      from app.sent_school_broadcasts() as b
+        copy,${publicationTime(tx)},reviewed_count as "recipientCount",pending_count as pending,queued_count as queued,suppressed_count as suppressed,
+        jsonb_build_object('pending',mail.pending,'accepted',mail.accepted,'delivered',mail.delivered,'unresolved',mail.unresolved) as "emailDelivery"
+      from app.sent_school_broadcasts() as b cross join lateral app.broadcast_delivery_counts(b.id) as mail
       where (${after?.id??null}::uuid is null or (b.published_at,b.id)<(${after?.publishedAt??null}::timestamptz,${after?.id??null}::uuid))
       order by b.published_at desc,b.id desc limit ${input.limit+1}`;
     return window(rows.map((row)=>broadcastSent.parse({...row,

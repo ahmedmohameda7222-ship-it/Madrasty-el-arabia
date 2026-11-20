@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
 import de.madrasty.app.comms.expireChatCameraFiles
+import de.madrasty.app.comms.isSchoolPushIntent
+import de.madrasty.app.comms.verifiedPushNotice
 import de.madrasty.app.identity.IdentityScreen
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.readPreferences
@@ -38,11 +40,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val model = ViewModelProvider(this)[IdentityViewModel::class.java]
         if (savedInstanceState == null) {
             expireChatCameraFiles(this)
-            callback = intent.data
+            acceptIntent(intent,model)
         }
-        val model = ViewModelProvider(this)[IdentityViewModel::class.java]
         setContent {
             val system = LocalConfiguration.current
             val fallback = if (system.locales[0].language == "de") "de" else "ar"
@@ -89,6 +91,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        callback = intent.data
+        acceptIntent(intent,ViewModelProvider(this)[IdentityViewModel::class.java])
+    }
+
+    private fun acceptIntent(intent:Intent,model:IdentityViewModel){
+        if(isSchoolPushIntent(intent)){
+            verifiedPushNotice(this,intent)?.let(model::routePushNotice)
+        }else callback=intent.data
     }
 }

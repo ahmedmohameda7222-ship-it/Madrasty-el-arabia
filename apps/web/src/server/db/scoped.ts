@@ -11,30 +11,36 @@ export type ActorContext = Readonly<RequestContext & {
 }>;
 
 export type Transaction = TransactionSql;
-let connection: ReturnType<typeof postgres> | undefined;
+const databaseKeys = {
+  app_runtime:"DATABASE_URL",app_delivery_worker:"DELIVERY_WORKER_DATABASE_URL",app_invite_worker:"INVITE_WORKER_DATABASE_URL",
+} as const;
+type DatabaseRole=keyof typeof databaseKeys;
+const connections=new Map<DatabaseRole,ReturnType<typeof postgres>>();
 
-function database() {
-  if (connection) return connection;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new ApiError("unavailable");
-  connection = postgres(url, {
-    prepare: false,
-    ssl: process.env.NODE_ENV === "production" ? "verify-full" : undefined,
-    max: 4,
-    idle_timeout: 20,
-    connect_timeout: 8,
+function database(role:DatabaseRole) {
+  const existing=connections.get(role);
+  if(existing)return existing;
+  const url=process.env[databaseKeys[role]];
+  if(!url)throw new ApiError("unavailable");
+  const connection=postgres(url,{
+    prepare:false,
+    ssl:process.env.NODE_ENV==="production"?"verify-full":undefined,
+    max:role==="app_runtime"?4:2,
+    idle_timeout:20,
+    connect_timeout:8,
   });
+  connections.set(role,connection);
   return connection;
 }
 
-export async function withRuntime<T>(work: (tx: Transaction) => Promise<T>): Promise<T> {
+async function withRole<T>(role:DatabaseRole,work:(tx:Transaction)=>Promise<T>):Promise<T> {
   try {
-    return await database().begin(async (tx) => {
+    return await database(role).begin(async (tx) => {
       const [login] = await tx<{ restricted: boolean }[]>`
         select not (rolsuper or rolbypassrls) as restricted from pg_roles where rolname = session_user
       `;
       if (!login?.restricted) throw new ApiError("unavailable");
-      await tx`set local role app_runtime`;
+      await tx`set local role ${tx(role)}`;
       await tx`set local statement_timeout = '8000ms'`;
       return work(tx);
     }) as T;
@@ -52,6 +58,10 @@ export async function withRuntime<T>(work: (tx: Transaction) => Promise<T>): Pro
     throw error;
   }
 }
+
+export const withRuntime=<T>(work:(tx:Transaction)=>Promise<T>)=>withRole("app_runtime",work);
+export const withDeliveryWorker=<T>(work:(tx:Transaction)=>Promise<T>)=>withRole("app_delivery_worker",work);
+export const withInviteWorker=<T>(work:(tx:Transaction)=>Promise<T>)=>withRole("app_invite_worker",work);
 
 export function withActor<T>(ctx: ActorContext, work: (tx: Transaction) => Promise<T>): Promise<T> {
   return withRuntime(async (tx) => {
