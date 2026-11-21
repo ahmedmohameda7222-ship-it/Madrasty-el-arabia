@@ -24,7 +24,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
 | UIX-01 | 0 | Partial: pure capture-policy regression tests RED → GREEN locally; screenshot runner and browser checks pending | `node --test qa/screenshot-audit-policy.test.mjs` 5 expected RED failures against old policy, then 9/9 GREEN with new policy; browser and full fixture verification unverified |
-| UIX-02 | 0 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-02 | 0 | RED confirmed in Chromium; fixture display-name correction committed; GREEN pending new CI run | Failed expected assertion in isolated Chromium: hero `QA Ahmed (qa-...)`; seed now uses 93-character Arabic name and single-word `نور`, leaving run/keys/emails intact |
 | UIX-03 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-04 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-05 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -82,3 +82,10 @@ No command from the block above has been represented as successful in this docum
 - `node --test qa/screenshot-audit-policy.test.mjs` on the prior screenshot policy: exit **1**, 5 intended RED cases failed and 4 passed (loading accepted; terminal state absent; unverified 404 accepted; wrong-width attempt overlooked; redirect accepted).
 - Same command on the corrected policy: exit **0**, **9 passed**, **0 failed**; `node --check` succeeded for both files. The two complete logs are retained in the conversation output artifacts.
 - This verifies **pure Node classification logic only**, not the Playwright screenshot runner nor page readiness, component behavior, CI, types/build or device UX. The runner must populate real terminal state and exact target pairs before this policy can govern visual acceptance.
+
+## UIX-02 browser RED evidence
+
+- GitHub Actions run [44893054000](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44893054000), browser-fixture job `136812808875`, commit `619b5d20`.
+- `pnpm exec playwright test --config qa/ui-remediation.config.ts` exit **1**, **1 failed**, **0 passed**. Explicit failing assertion: `fixture run ID must never be displayed as a child's name`; actual rendered hero was `QA Ahmed (qa-a8aa5cc33da043cf84934a415cddaabb)`. This proves the issue with **isolated synthetic fixtures**, not production.
+- The RED workflow used an output directory relative to the config so its upload step did not find screenshots; corrected evidence output paths with the GREEN commit. No RED screenshot ZIP was uploaded, but the full failure stack and actual text remain in the GitHub job log.
+- This task's changes are confined to `qa/fixtures/local.sql`: visible names only. Stable `source_namespace`, `external_key`, `run_id`, email fixture identity, linked family records and permissions are unchanged.

@@ -34,12 +34,22 @@ begin
   if name in ('teacher', 'teacher-other', 'substitute', 'dual-role') then
     insert into app.persona_grant (account_id, persona) values (account, 'teacher');
     insert into app.staff_profile (account_id, display_name, role, title_ar, title_de, active_from)
-      values (account, run || ' ' || name, 'teacher', 'مدرس', 'Lehrkraft', '2026-01-01');
+      values (account, case name
+        when 'teacher' then 'يوسف عبد الرحمن محمود'
+        when 'teacher-other' then 'Johannes Peter Schneider'
+        when 'substitute' then 'ليلى مراد'
+        when 'dual-role' then 'محمود صالح'
+      end, 'teacher', 'مدرس', 'Lehrkraft', '2026-01-01');
   end if;
   if name in ('guardian-ar', 'guardian-de', 'guardian-other', 'dual-role') then
     insert into app.persona_grant (account_id, persona) values (account, 'guardian');
     insert into app.guardian_profile (account_id, source_namespace, external_key, display_name, contact_email, correspondence_locale)
-      values (account, run, name, run || ' ' || name, run || '.' || name || '@madrasty.invalid',
+      values (account, run, name, case name
+          when 'guardian-ar' then 'سلمى عبد الرحمن محمد'
+          when 'guardian-de' then 'Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk'
+          when 'guardian-other' then 'أمينة'
+          when 'dual-role' then 'محمود صالح'
+        end, run || '.' || name || '@madrasty.invalid',
         case when name = 'guardian-ar' then 'ar' else 'de' end);
   end if;
   if name in ('admin', 'admin-two') then
@@ -70,8 +80,12 @@ declare
 begin
   select account_id into strict admin from qa.actor where run_id = run and principal = 'admin';
   insert into app.student (source_namespace, external_key, display_name)
-    select run, supplied.name, supplied.label || ' (' || run || ')'
-    from (values ('ahmed', 'QA Ahmed'), ('omar', 'QA Omar'), ('other', 'QA Other'), ('revoked', 'QA Revoked')) supplied(name, label);
+    select run, supplied.name, supplied.label
+    from (values
+      ('ahmed', 'عبد الرحمن محمد أحمد إبراهيم مصطفى عبد الله السيد محمود عبد العزيز حسن عبد المنعم علي أبو زيد'),
+      ('omar', 'نور'),
+      ('other', 'Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk'),
+      ('revoked', 'مريم')) supplied(name, label);
   insert into app.child_link (guardian_id, student_id, state, effective_from, effective_until, changed_by)
     select g.id, s.id, link.state, now() - interval '30 days',
       case when link.state = 'revoked' then now() - interval '1 day' else null end, admin

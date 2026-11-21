@@ -10,8 +10,8 @@ export default defineConfig({
   retries: 0,
   timeout: 120_000,
   expect: { timeout: 30_000 },
-  reporter: [["list"], ["json", { outputFile: "qa-artifacts/ui-fixture-results.json" }]],
-  outputDir: "qa-artifacts/ui-remediation-test-results",
+  reporter: [["list"], ["json", { outputFile: "../qa-artifacts/ui-fixture-results.json" }]],
+  outputDir: "../qa-artifacts/ui-remediation-test-results",
   use: { baseURL: localOrigin, trace: "retain-on-failure", screenshot: "only-on-failure", video: "retain-on-failure" },
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
 });
