@@ -30,9 +30,9 @@ jobs:
   dashboard-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      LOCALAPPDATA: ${{ runner.temp }}
     steps:
+      - name: Set disposable runner workspace
+        run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
