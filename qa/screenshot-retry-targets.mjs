@@ -26,7 +26,7 @@ export function buildVerifiedDenials(manifests) {
     const denied = byPersona.get(manifest.persona) ?? new Set();
     for (const entry of manifest.captures) {
       if (entry.httpStatus === 403 || entry.httpStatus === 404) {
-        denied.add(entry.route.replace(/^\\/(ar|de)(?=\\/|$)/, ''));
+        denied.add(entry.route.replace(/^\/(ar|de)(?=\/|$)/, ''));
       }
     }
     byPersona.set(manifest.persona, denied);
