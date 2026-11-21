@@ -45,19 +45,47 @@ jobs:
           pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-screenshot-server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/madrasty-screenshot-server.pid"
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
-      - name: Capture authorized pages for every role in Arabic and German
+      # The admin/teacher captures are preserved in artifact 14697767436
+      # of run 44878617957; intentionally do not re-run those 4 suites.
+      - name: Capture guardian pages only (Arabic and German)
         shell: bash
         run: |
           export LOCALAPPDATA="$RUNNER_TEMP"
-          pnpm exec playwright test --config qa/screenshot-audit.config.ts
-      - name: Upload screenshot images and coverage manifests
+          set +e
+          pnpm exec playwright test --config qa/screenshot-audit.config.ts --grep "Screenshots: guardian"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "Guardian screenshot suite failed with exit code $status"
+            curl -fsS --max-time 8 http://127.0.0.1:4300/api/v1/health || echo "Local QA web server unavailable during failure inspection"
+          fi
+          exit "$status"
+      - name: Preserve local server diagnostics, even after a failed test
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p qa-artifacts/server
+          if [ -f "$RUNNER_TEMP/madrasty-screenshot-server.log" ]; then
+            cp "$RUNNER_TEMP/madrasty-screenshot-server.log" qa-artifacts/server/next-server.log
+            echo "Server diagnostics retained in artifact (synthetic local QA only)."
+          else
+            echo "Server log was not created" > qa-artifacts/server/next-server.log
+          fi
+          if curl -fsS --max-time 8 http://127.0.0.1:4300/api/v1/health > qa-artifacts/server/last-health.json; then
+            echo "Final local server health: reachable"
+          else
+            echo "Final local server health: unreachable"
+            printf '%s\n' '{"status":"unreachable"}' > qa-artifacts/server/last-health.json
+          fi
+      - name: Upload guardian-only screenshots and failure diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: madrasty-ui-audit-screenshots
+          name: madrasty-ui-audit-guardian-screenshots
           path: |
             qa-artifacts/screenshots/
             qa-artifacts/playwright-results.json
             qa-artifacts/test-results/
+            qa-artifacts/server/
           if-no-files-found: warn
           retention-days: 7
