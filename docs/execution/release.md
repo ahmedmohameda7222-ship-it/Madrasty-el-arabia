@@ -76,3 +76,11 @@ The candidate below was frozen on 2026-11-21 before any final QA was written or 
 20261120144518 20261120150142 20261120181622 20261120182810 20261120190740
 20261120194810 20261120201320 20261120202600 20261120205130
 ```
+
+## School operation on the published domain
+
+On 2026-11-21 the owner directed immediate school operation on the existing public origin and moved final QA after activation. The operating Vercel target is `SCHOOL_ENVIRONMENT=live` at `https://madrastyelarabia.vercel.app`. Final QA remains pending.
+
+Deployment `dpl_xLU9MKiMRipQ9srJhGyZzgC8YpG4` uses web, API and worker source `f77624aba9702f5bdbd15a2beefde290ef6e0ea6`. All three Supabase pooler connections trust the project's public root CA while checking the TLS chain and hostname. The CA fingerprint is `807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa`. The database migration ledger, OpenAPI digest and signed Android artifact remain those recorded above.
+
+The school mailbox is the primary administrator. Its address was confirmed through the provider account verification, the pending administrator grant was rebound to that identity, and the former identity lost school access. The initial password was supplied by the owner. Administrator operations still require a verified TOTP factor. One recovery message was accepted for the school mailbox. No family delivery or fixture execution took place in this cutover.
