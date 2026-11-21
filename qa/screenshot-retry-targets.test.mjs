@@ -16,3 +16,15 @@ test('selects only unresolved network navigations from both archived suites', ()
     'guardian-de':[{route:'/de/school/more/exams',width:1280}]
   });
 });
+
+
+test('role-specific historical 404 evidence can validate the corresponding locale during retry', async () => {
+  const {buildVerifiedDenials} = await import('./screenshot-retry-targets.mjs');
+  const manifests=[
+    {persona:'teacher',locale:'ar',captures:[{route:'/ar/school/students',width:390,httpStatus:404}]},
+    {persona:'admin',locale:'de',captures:[{route:'/de/school/more/bank',width:390,httpStatus:200,files:['x.png']}]}
+  ];
+  const known=buildVerifiedDenials(manifests);
+  assert.deepEqual(known['teacher-de'],['/de/school/students']);
+  assert.equal((known['admin-de']??[]).includes('/de/school/students'),false);
+});
