@@ -60,7 +60,7 @@ function ColdLoad({ locale, shape = "list" }: { locale: Locale; shape?: "list" |
   }, []);
   return (
     <>
-      <p role="status" className={slow ? "status" : "screen-reader-only"}>{slow ? text.stillLoading : text.loading}</p>
+      <p role="status" data-async-state="loading" className={slow ? "status" : "screen-reader-only"}>{slow ? text.stillLoading : text.loading}</p>
       {showSkeleton && (
         <div className={`skeleton skeleton-${shape}`} aria-hidden="true">
           {Array.from({ length: shape === "card" ? 2 : 4 }, (_, index) => (

@@ -23,7 +23,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | Task | Phase | Status | Verification / next gate |
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
-| UIX-01 | 0 | Policy 9/9 passed; pending/loading browser marker RED test committed; full runner remains open | New isolated test deliberately holds /me/children and requires a machine-readable loading marker; duplicate draft-PR QA run removed |
+| UIX-01 | 0 | Screenshot policy 9/9 pass; pending-state browser RED verified; marker fix committed, GREEN pending | Run 44926108339: 1 expected failing missing `data-async-state`, other 5 browser tests passed; full screenshot runner still unverified |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
@@ -145,3 +145,7 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - Existing accepted screenshot examples include a guardian-home skeleton and an attendance error state despite filenames containing `ready`; these are diagnostic captures only. Their terminal-state acceptance remains blocked until state is machine-readable and the runner checks it.
 - The new browser RED test holds a synthetic /me/children response and requires AsyncSurface to expose loading state before screenshot capture. Add the smallest DOM marker after the expected RED result, then rerun affected tests.
+
+## UIX-01 loading-state RED evidence
+
+- [Run 44926108339](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44926108339), browser-fixture job 136912439167: `pnpm exec playwright test --config qa/ui-remediation.config.ts` 5 passed / 1 expected RED. The pending `p[role=status]` was present and contained `Wird geladen`, but the requested `data-async-state=loading` attribute was null. No timing, content, permission, or endpoint change is needed; adding just the state attribute allows the screenshot runner to reject unresolved loading frames. GREEN pending.
