@@ -24,8 +24,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
 | UIX-01 | 0 | Partial: pure capture-policy regression tests RED → GREEN locally; screenshot runner and browser checks pending | `node --test qa/screenshot-audit-policy.test.mjs` 5 expected RED failures against old policy, then 9/9 GREEN with new policy; browser and full fixture verification unverified |
-| UIX-02 | 0 | RED confirmed in Chromium; fixture display-name correction committed; GREEN pending new CI run | Failed expected assertion in isolated Chromium: hero `QA Ahmed (qa-...)`; seed now uses 93-character Arabic name and single-word `نور`, leaving run/keys/emails intact |
-| UIX-03 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
+| UIX-03 | 1 | Browser regression test authored; RED pending CI | `qa/web/ui-native-controls.spec.ts` checks 44px target, press feedback, touch-action, dark/reduced motion, focus |
 | UIX-04 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-05 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-06 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -89,3 +89,8 @@ No command from the block above has been represented as successful in this docum
 - `pnpm exec playwright test --config qa/ui-remediation.config.ts` exit **1**, **1 failed**, **0 passed**. Explicit failing assertion: `fixture run ID must never be displayed as a child's name`; actual rendered hero was `QA Ahmed (qa-a8aa5cc33da043cf84934a415cddaabb)`. This proves the issue with **isolated synthetic fixtures**, not production.
 - The RED workflow used an output directory relative to the config so its upload step did not find screenshots; corrected evidence output paths with the GREEN commit. No RED screenshot ZIP was uploaded, but the full failure stack and actual text remain in the GitHub job log.
 - This task's changes are confined to `qa/fixtures/local.sql`: visible names only. Stable `source_namespace`, `external_key`, `run_id`, email fixture identity, linked family records and permissions are unchanged.
+
+## UIX-02 GREEN checkpoint
+
+- Run [44893313926](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44893313926) on `a8dc6b62`: **browser-fixture succeeded**, Chromium **1 passed / 0 failed**, and the separate static job `pnpm check:types`, `pnpm build:web`, and 9 screenshot-policy unit tests all passed. Artifact `madrasty-ui-fixture-qa` ID `14703092042` is available in that GitHub Actions run.
+- Automated scope is guardian hero and German homework selection, using a disposable database. Other pages, full QA and real device still pending. A single source-name fix does not certify every UI screen.
