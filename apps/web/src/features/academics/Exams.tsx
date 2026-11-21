@@ -23,7 +23,8 @@ export function Exams({locale,initialChild,initial}:{locale:Locale;initialChild?
   return <>
     <h1>{examCopy[locale].heading}</h1>
     <AssessmentScope locale={locale} initialChild={initialChild} initial={initial}
-      allow={(item)=>item.canPlan||item.canGrade||item.canPublish}>
+      allow={(item)=>item.canPlan||item.canGrade||item.canPublish}
+      staffEmptyMessage={locale==="ar"?"لا توجد فصول أو مواد متاحة لعرض الامتحانات حاليًا.":"Derzeit sind keine Klassen oder Fächer für Prüfungen verfügbar."}>
       {(scope)=><ExamList key={scope.child??scope.offering?.id??"exam"} locale={locale} scope={scope}/>}
     </AssessmentScope>
   </>;
@@ -44,7 +45,9 @@ function ExamList({locale,scope}:{locale:Locale;scope:AssessmentContext}){
       {offering?.canPlan&&<button type="button" className="plain-button" onClick={()=>setCreate(true)}>{text.newExam}</button>}
       {offering?.canPlan&&create&&<ExamForm locale={locale} offering={offering.id} cancel={()=>setCreate(false)}
         saved={(key)=>{setCreate(false);setId(key);setNotice(text.saved);setUpdated((n)=>n+1);}}/>}
-      <AcademicPageItems locale={locale} page={page}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>
+      <AcademicPageItems locale={locale} page={page} emptyMessage={child
+        ? (locale==="ar"?"لا توجد امتحانات مسجلة لهذا الطفل حاليًا.":"Für dieses Kind sind derzeit keine Prüfungen eingetragen.")
+        : (locale==="ar"?"لم يتم تسجيل امتحانات لهذا الفصل حتى الآن.":"Für diese Klasse sind noch keine Prüfungen eingetragen.")}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>
         <button type="button" className="group-row" onClick={()=>{setId(item.id);setNotice("");}}>
           <bdi>{item.title}</bdi><span>{text[item.kind]}</span><bdi dir="ltr">{dateAndTime(item.date,item.time)}</bdi>
           <span>{child?(item.resultId?text.result:text.pending):item.announcementId?text.announced:text.draft}</span>

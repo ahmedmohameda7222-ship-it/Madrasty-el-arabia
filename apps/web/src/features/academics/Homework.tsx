@@ -50,7 +50,7 @@ export function Homework({locale,initialChild,initialWork}:{locale:Locale;initia
           {!active&&<option value="">{dictionary(locale).choose}</option>}
           {items.map((entry)=><option key={entry.id} value={entry.id}>{entry.displayName}</option>)}
         </select>
-      </label>:<AsyncSurface locale={locale} state={{kind:"empty"}}/>}</TimetableRead>
+      </label>:<AsyncSurface locale={locale} state={{kind:"empty",message:locale==="ar"?"لا يوجد أطفال مرتبطون بحسابك حاليًا.":"Mit Ihrem Konto sind derzeit keine Kinder verknüpft."}}/>}</TimetableRead>
       {active?<WorkList key={active.id} locale={locale} child={active.id} revision={revision}
         initial={child===initialChild?initialWork:undefined}/>:child&&linked.value?.data&&<AsyncSurface locale={locale} state={{kind:"forbidden"}}/>}
     </>:<StaffHomework locale={locale} revision={revision} initial={initialWork}/>}
@@ -73,7 +73,7 @@ function StaffHomework({locale,revision,initial}:{locale:Locale;revision:number;
           return <option key={item.id} value={item.id}>{[name,offeringText(item,locale)].filter(Boolean).join(" · ")}</option>;
         })}
       </select>
-    </label>:<AsyncSurface locale={locale} state={{kind:"empty"}}/>}</TimetableRead>
+    </label>:<AsyncSurface locale={locale} state={{kind:"empty",message:locale==="ar"?"لا توجد فصول مسندة إليك للواجبات حاليًا.":"Für Sie sind derzeit keine Klassen für Hausaufgaben verfügbar."}}/>}</TimetableRead>
     {(active||initial)&&<WorkList key={active?.id??"detail"} locale={locale} offering={active?.id} canPlan={active?.canPlan}
       initial={selected?undefined:initial} revision={revision}/>}
   </>;
@@ -99,7 +99,9 @@ function WorkList({locale,revision,initial,child,offering,canPlan}:{
       {offering&&canPlan&&<button className="plain-button" onClick={()=>setCreate(true)}>{text.newWork}</button>}
       {offering&&canPlan&&create&&<HomeworkForm locale={locale} offering={offering}
         saved={saved} cancel={()=>setCreate(false)}/>}
-      <AcademicPageItems locale={locale} page={page}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>
+      <AcademicPageItems locale={locale} page={page} emptyMessage={child
+        ? (locale==="ar"?"لا توجد واجبات مسجلة لهذا الطفل حاليًا.":"Für dieses Kind sind derzeit keine Hausaufgaben eingetragen.")
+        : (locale==="ar"?"لم يتم تسجيل واجبات لهذا الفصل حتى الآن.":"Für diese Klasse sind noch keine Hausaufgaben eingetragen.")}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>
         <button className="group-row" onClick={()=>{setId(item.id);setNotice("");}}>
           <bdi>{item.title}</bdi><bdi>{locale==="ar"?item.subjectNameAr:item.subjectNameDe}</bdi><bdi dir="ltr">{item.dueOn}</bdi>
         </button>

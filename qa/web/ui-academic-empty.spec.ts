@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { mkdirSync } from "node:fs";
 import { schoolFixtures } from "../fixtures/school";
 import { localOrigin } from "../support/target";
 
@@ -22,6 +23,8 @@ for (const scenario of [
       await expect(message).toHaveAttribute("role","status");
       await expect(message.locator("a,button")).toHaveCount(0);
       await expect(page.locator("html")).toHaveAttribute("dir",scenario.locale==="ar"?"rtl":"ltr");
+      mkdirSync("qa-artifacts/ui-after",{recursive:true});
+      await page.screenshot({path:"qa-artifacts/ui-after/UIX08-"+scenario.persona+"-"+scenario.locale+"-"+scenario.path+"-390-empty.png",animations:"disabled"});
     } finally { await school.close(); }
   });
 }

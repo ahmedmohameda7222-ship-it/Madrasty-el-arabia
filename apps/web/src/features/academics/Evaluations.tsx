@@ -38,7 +38,8 @@ export function Evaluations({locale,initialChild,initial}:{locale:Locale;initial
   return <>
     <h1>{copy[locale].title}</h1>
     <AssessmentScope locale={locale} initialChild={initialChild} initial={initial}
-      allow={(offering)=>offering.canGrade||offering.canPublish}>
+      allow={(offering)=>offering.canGrade||offering.canPublish}
+      staffEmptyMessage={locale==="ar"?"لا توجد فصول متاحة لإعداد التقييمات حاليًا.":"Für Sie sind derzeit keine Klassen zur Beurteilung verfügbar."}>
       {(scope)=><EvaluationList key={scope.child??scope.offering?.id??"record"} locale={locale} scope={scope}/>}
     </AssessmentScope>
   </>;
@@ -62,7 +63,9 @@ function EvaluationList({locale,scope}:{locale:Locale;scope:AssessmentContext}){
       {offering?.canGrade&&newDraft&&<DraftForm locale={locale} offering={offering.id} cancel={()=>setNewDraft(false)} saved={(id)=>{
         setNewDraft(false);setSelected(id);setMessage(text.done);refresh();
       }}/>}
-      <AcademicPageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((row)=><li key={row.id}>
+      <AcademicPageItems locale={locale} page={list} emptyMessage={child
+        ? (locale==="ar"?"لا توجد تقييمات منشورة لهذا الطفل حاليًا.":"Für dieses Kind sind noch keine Beurteilungen veröffentlicht.")
+        : (locale==="ar"?"لم يتم تسجيل تقييمات لهذا الفصل حتى الآن.":"Für diese Klasse sind noch keine Beurteilungen erfasst.")}>{(rows)=><ul className="group-list">{rows.map((row)=><li key={row.id}>
         <button className="group-row" type="button" onClick={()=>{setSelected(row.id);setMessage("");}}>
           <bdi>{row.title}</bdi><bdi>{row.studentName}</bdi><bdi dir="ltr">{row.periodStart} – {row.periodEnd}</bdi>
           {!child&&<span>{row.publishedId?text.published:text.draft}</span>}

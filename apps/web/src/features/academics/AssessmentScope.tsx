@@ -10,8 +10,8 @@ import { offeringText } from "./shared";
 
 const children=childSummarySchema.array(),offerings=curriculumOffering.array(),subjects=curriculumSubject.array();
 export type AssessmentContext={child?:string;offering?:CurriculumOffering;version:number;initial?:string};
-export function AssessmentScope({locale,initialChild,initial,allow,children:render}:{
-  locale:Locale;initialChild?:string;initial?:string;allow:(offering:CurriculumOffering)=>boolean;
+export function AssessmentScope({locale,initialChild,initial,allow,children:render,staffEmptyMessage}:{
+  locale:Locale;initialChild?:string;initial?:string;allow:(offering:CurriculumOffering)=>boolean;staffEmptyMessage?:string;
   children:(scope:AssessmentContext)=>ReactNode;
 }){
   const guardian=useAccountScope().persona==="guardian";
@@ -35,7 +35,7 @@ export function AssessmentScope({locale,initialChild,initial,allow,children:rend
           {!linked&&<option value="">{dictionary(locale).choose}</option>}
           {items.map((item)=><option value={item.id} key={item.id}>{item.displayName}</option>)}
         </select>
-      </label>:<AsyncSurface locale={locale} state={{kind:"empty"}}/>}</TimetableRead>
+      </label>:<AsyncSurface locale={locale} state={{kind:"empty",message:locale==="ar"?"لا يوجد أطفال مرتبطون بحسابك حاليًا.":"Mit Ihrem Konto sind derzeit keine Kinder verknüpft."}}/>}</TimetableRead>
       {linked?render({child:linked.id,version,initial:selected===(initialChild??"")?initial:undefined})
         :selected&&options&&<AsyncSurface locale={locale} state={{kind:"forbidden"}}/>}
     </>;
@@ -52,7 +52,7 @@ export function AssessmentScope({locale,initialChild,initial,allow,children:rend
           return <option value={item.id} key={item.id}>{[name,offeringText(item,locale)].filter(Boolean).join(" · ")}</option>;
         })}
       </select>
-    </label>:!initial&&<AsyncSurface locale={locale} state={{kind:"empty"}}/>}</TimetableRead>
+    </label>:!initial&&<AsyncSurface locale={locale} state={{kind:"empty",message:staffEmptyMessage}}/>}</TimetableRead>
     {(picked||initial)&&render({offering:picked,version,initial:selected?undefined:initial})}
   </>;
 }
