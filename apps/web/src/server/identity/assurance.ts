@@ -15,7 +15,8 @@ const enrolledFactorSchema = z.object({
   id: z.uuid(),
   totp: z.object({
     secret: z.string(), uri: z.string().startsWith("otpauth://"),
-    qr_code: z.string().max(65536).regex(/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i),
+    // Supabase emits a rectangle for each QR module, including white ones.
+    qr_code: z.string().max(1024 * 1024).regex(/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i),
   }),
 });
 const challengeSchema = z.object({ id: z.uuid(), expires_at: z.number() });
