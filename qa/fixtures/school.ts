@@ -19,7 +19,7 @@ function binding(name: string) {
   return value;
 }
 
-function totp(secret: string) {
+export function totp(secret: string) {
   assert.match(secret, /^[A-Z2-7]+$/);
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const bitString = [...secret].map((letter) => alphabet.indexOf(letter).toString(2).padStart(5, "0")).join("");

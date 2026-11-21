@@ -59,4 +59,14 @@ export function mayUse(session: import("@madrasty/contracts").SchoolSession, key
   });
 }
 
+/** Evaluate menu visibility in a single actor-scoped transaction. Route handlers still authorize writes independently. */
+export async function menuCapabilities(session: import("@madrasty/contracts").SchoolSession, keys: import("@madrasty/contracts").Capability[]) {
+  if (session.activePersona !== "admin" || session.assurance !== "aal2") return new Set<string>();
+  const rows = await withActor({
+    requestId: crypto.randomUUID(), accountId: session.accountId, sessionId: session.sessionId,
+    persona: session.activePersona, assurance: session.assurance,
+  }, tx => tx<{key:string}[]>`select key from unnest(${tx.array(keys)}::text[]) as item(key) where app.has_capability(key)`);
+  return new Set(rows.map(row => row.key));
+}
+
 export const mayManageAccess = (session: import("@madrasty/contracts").SchoolSession) => mayUse(session, "access.manage");

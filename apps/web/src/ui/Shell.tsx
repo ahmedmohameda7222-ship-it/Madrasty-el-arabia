@@ -13,7 +13,7 @@ import { NotificationLink } from "@/features/comms/NotificationCenter";
 type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 
-export function SchoolHeader({ locale, children }: { locale: Locale; children?: ReactNode }) {
+export function SchoolHeader({ locale, children, alternateHref }: { locale: Locale; children?: ReactNode; alternateHref?: string }) {
   const text = dictionary(locale);
   return (
     <header className="school-header">
@@ -23,7 +23,7 @@ export function SchoolHeader({ locale, children }: { locale: Locale; children?: 
       </Link>
       <div className="header-actions">
         {children}
-        <Link className="plain-button" href={locale === "ar" ? "/de" : "/ar"} lang={locale === "ar" ? "de" : "ar"}>
+        <Link className="plain-button" href={alternateHref ?? (locale === "ar" ? "/de" : "/ar")} lang={locale === "ar" ? "de" : "ar"}>
           {locale === "ar" ? "Deutsch" : "العربية"}
         </Link>
       </div>
@@ -89,7 +89,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   return (
     <div className="school-shell">
       <a className="skip-link" href="#school-content">{text.skip}</a>
-      <SchoolHeader locale={locale}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
+      <SchoolHeader locale={locale} alternateHref={pathname.replace(/^\/(ar|de)(?=\/|$)/, locale === "ar" ? "/de" : "/ar") + (search ? "?" + search : "")}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation}>
           {destinations.map((tab) => (

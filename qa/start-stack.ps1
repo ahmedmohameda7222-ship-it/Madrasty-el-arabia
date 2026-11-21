@@ -40,6 +40,9 @@ uri = "pg-functions://postgres/app/block_revoked_auth_refresh"
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
+[auth.email.template.recovery]
+subject = "Madrasty El Arabia — استرجاع كلمة المرور / Passwort zurücksetzen"
+content_path = "./supabase/templates/recovery.html"
 [storage]
 enabled = true
 '@ | Set-Content -LiteralPath (Join-Path $qaSupabase 'config.toml') -Encoding utf8NoBOM

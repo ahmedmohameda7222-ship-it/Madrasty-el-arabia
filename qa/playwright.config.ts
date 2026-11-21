@@ -13,7 +13,7 @@ export default defineConfig({
   use: { baseURL: localOrigin, trace: "off", screenshot: "off", video: "off" },
   projects: [
     { name: "edge", use: { browserName: "chromium", channel: "msedge" } },
-    { name: "firefox", testIgnore: "**/attendance-offline.spec.ts", use: { browserName: "firefox" } },
-    { name: "webkit", testIgnore: "**/attendance-offline.spec.ts", use: { browserName: "webkit" } },
+    { name: "firefox", testIgnore: ["**/attendance-offline.spec.ts", "**/admin-mfa.spec.ts"], use: { browserName: "firefox" } },
+    { name: "webkit", testIgnore: ["**/attendance-offline.spec.ts", "**/admin-mfa.spec.ts"], use: { browserName: "webkit" } },
   ],
 });

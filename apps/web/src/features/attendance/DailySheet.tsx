@@ -61,9 +61,13 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
   const exactDay=classes.value?.data?.date;
 
   useEffect(()=>{
-    const focus=()=>setVersion((count)=>count+1);
-    window.addEventListener("focus",focus);
-    return ()=>window.removeEventListener("focus",focus);
+    const reload=()=>setVersion((count)=>count+1);
+    window.addEventListener("focus",reload);
+    window.addEventListener("online",reload);
+    return ()=>{
+      window.removeEventListener("focus",reload);
+      window.removeEventListener("online",reload);
+    };
   },[]);
 
   function refresh(){

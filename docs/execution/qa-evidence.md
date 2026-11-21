@@ -47,13 +47,25 @@ The preliminary runs found fixture issues with the timetable assignment type, pr
 | Q06 | Desktop administration and role home pages, Arabic RTL and German LTR, narrow and desktop viewports in Edge, Firefox and WebKit, standalone PWA manifests, signed APK download, App Links metadata, Kotlin wire models and debug assembly |
 | Q07 | Restricted dispatcher, no external delivery on local bindings, and logical PostgreSQL backup/restore comparison |
 
+## Q08 laptop follow-up on 2026-11-21
+
+The owner requested the Windows laptop pass and said no mobile device was connected. The operating school homepage opened in Arabic after the owner submitted the first authenticator code. Supabase reported one verified TOTP factor and an AAL2 session for the primary administrator. The school recovery message was present in the existing Outlook inbox with the bilingual template. One-time links, QR data and codes were kept out of the evidence.
+
+The laptop reproduced a 500 during enrollment while Supabase accepted the factor. The provider SVG included a comment between the XML declaration and root; the web response validator rejected it. Commit `6520dd0` accepts that preamble, and the same laptop test now checks rendering and a real synthetic TOTP challenge. A separate laptop check found that an unhydrated sign-in form could use the browser's default GET. Commit `9e76eb9` protects the fallback with POST and disables sign-in submission until React is ready. The latest Vercel release is `dpl_CToF1pHubX6tBvSeWN7UqqRaQbPT` at `9e76eb93d991b63c1275e866e902e2dd599fd526`. The published sign-in HTML was checked for both safeguards.
+
+On the isolated QA stacks, the local recovery email test validated receipt, the bilingual template's destination, a one-time password change and rejection of replay. The independent Storage drill restored a 3,244-byte synthetic voice object into a separately running Supabase instance, compared SHA-256 and checked anonymous denial on both copies. A local proxy switched from the current web version to the archived prior release and back while preserving the same guardian session, API version and child scope over the shared QA database.
+
+The `9e76eb9` consolidated follow-up produced 58 passes and two browser failures. The first synthetic German administrator navigation missed Playwright's five-second assertion timeout while the local development server was routing to the security page. The attendance case lost its mounted sheet after a class catalog refresh failed while offline. The local change refreshes that catalog on reconnect. A focused Windows Edge run then passed the attendance case, including the failed offline catalog request, an applied safe edit and the conflicting excused row. The MFA assertion now allows the cold local navigation more time and awaits a rerun. The independent Storage drill and rollback rehearsal both passed. The rollback rehearsal needed the archived server restarted after the local fixture credentials rotated.
+
+The owner paused work after the targeted attendance pass. The attendance change remains local and has yet to be deployed or included in a complete candidate rerun. The school site remains on the READY deployment listed above.
+
 ## Remaining acceptance
 
 | Requirement | Next evidence | Owner |
 |---|---|---|
-| Owner administrator access and notifications | Confirm the real QR with Microsoft Authenticator, test activation/recovery and provider delivery in approved controlled mailboxes, and reconcile provider retry, bounce and live push | School owner and QA |
-| Physical platforms | Complete the [device checklist](../../qa/devices/matrix.md), including Safari Home Screen, microphone, private attachments, offline attendance, push, Android upgrade and platform accessibility | School owner and QA |
-| Broader workflow coverage | Exercise controlled invitation/teacher onboarding, signed media upload and private byte delivery, notification timing and further offline/native paths | QA |
-| Operational recovery | Restore private object bytes and run the service against a separate Supabase target with outbound providers disabled. Rehearse rollback and measure against the school's RTO/RPO | School owner and QA |
+| Notifications and invitations | Reconcile external delivery, retry and bounce in a controlled recipient flow and verify push. Exercise distinct invitation and teacher onboarding cases | School owner and QA |
+| Physical mobile platforms | Complete the [device checklist](../../qa/devices/matrix.md), including Safari Home Screen, microphone, private attachments, offline attendance, push, Android upgrade and platform accessibility | School owner and QA |
+| Broader workflow coverage | Verify application-level signed media upload and delivery, notification timing and remaining native flows | QA |
+| Operational recovery | Rehearse release alias rollback in an approved test deployment and compare a school recovery run with approved RTO/RPO. The local proxy and separate synthetic media restore are recorded above | School owner and QA |
 
 Q08 remains open for the listed acceptance evidence. No permission changes, test accounts, balances or messages were written to the operating school from these test suites.

@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch]$Serve)
+param([switch]$Serve, [switch]$PreviousRelease)
 
 $ErrorActionPreference = 'Stop'
 $qaProject = 'madrasty_final_qa'
@@ -35,8 +35,24 @@ if ($Serve) {
     'WEB_PUSH_PRIVATE_KEY','WEB_PUSH_PUBLIC_KEY','SCHOOL_EMAIL_PROVIDER')) {
     [Environment]::SetEnvironmentVariable($name, $null, 'Process')
   }
-  Push-Location $repo
-  try { pnpm --filter @madrasty/web exec next dev --hostname 127.0.0.1 --port 4300 }
+  $webRoot = $repo
+  $port = 4300
+  if ($PreviousRelease) {
+    $previous = 'a45f18ed79dc5e315a8bb91f07c9f5b9bc086d14'
+    $webRoot = Join-Path $qaTarget "rollback-$previous"
+    $archive = Join-Path $qaTarget "rollback-$previous.zip"
+    if (-not (Test-Path -LiteralPath (Join-Path $webRoot 'apps/web/package.json'))) {
+      git -C $repo archive --format=zip --output=$archive $previous -- apps/web packages/contracts package.json pnpm-lock.yaml pnpm-workspace.yaml
+      if ($LASTEXITCODE -ne 0) { throw 'Could not export the previous operating web source.' }
+      Expand-Archive -LiteralPath $archive -DestinationPath $webRoot
+      Remove-Item -LiteralPath $archive
+    }
+    pnpm --dir $webRoot install --frozen-lockfile
+    if ($LASTEXITCODE -ne 0) { throw 'Installing the pinned previous release dependencies failed.' }
+    $port = 4310
+  }
+  Push-Location $webRoot
+  try { pnpm --filter @madrasty/web exec next dev --webpack --hostname 127.0.0.1 --port $port }
   finally { Pop-Location }
   exit $LASTEXITCODE
 }

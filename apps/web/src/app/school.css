@@ -189,3 +189,19 @@ button:disabled { cursor: default; }
 .school-month-grid button { padding-inline: .15rem; min-inline-size: 0; display: grid; justify-items: center; }
 .school-month-grid button[aria-current="date"] { font-weight: 700; }
 .school-month-dot { font-size: .6rem; }
+
+/* Role-scoped disclosure navigation shared by desktop and installed web. */
+.more-index {display:grid;gap:12px;max-inline-size:58rem;margin-inline:auto}
+.more-group {background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:16px;overflow:hidden}
+.more-group summary,.more-row {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;min-block-size:48px;box-sizing:border-box;text-align:start}
+.more-group summary {font-weight:700;cursor:pointer;list-style:none}
+.more-group summary::-webkit-details-marker {display:none}
+.more-group summary::after {content:"+";color:var(--primary)}
+.more-group[open] summary::after {content:"−"}
+.more-row {border-block-start:1px solid var(--rule);text-decoration:none;color:inherit}
+.more-row::after {content:"›";color:var(--primary)}
+[dir=rtl] .more-row::after {content:"‹"}
+.more-group :focus-visible {outline:2px solid var(--primary);outline-offset:-3px}
+.more-group .header-actions {padding:12px 16px}
+@media (hover:hover) {.more-row:hover,.more-group summary:hover {background:var(--inset,ButtonFace)}}
+@media (prefers-reduced-motion:no-preference) {.more-group[open] .more-rows {animation:more-enter 140ms ease-out}@keyframes more-enter {from {opacity:.65;transform:translateY(-3px)} to {opacity:1;transform:none}}}

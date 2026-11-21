@@ -1,9 +1,10 @@
 # Physical-device verification
 
-The owner deferred this checklist while automated QA runs. Record the OS version, device type and signed release identifier using synthetic accounts. Keep invitation URLs, OTPs, student names and device identifiers outside this record.
+The owner resumed verification on the Windows laptop and reported that no phone was connected. Record the OS version, device type and signed release identifier using synthetic accounts. Keep invitation URLs, OTPs, student names and device identifiers outside this record.
 
 | Platform | Physical check | State |
 |---|---|---|
+| Windows laptop | Open the operating site, display and scan the primary administrator's setup QR, then reach the Arabic administration home | Passed on 2026-11-21. Supabase reported a verified TOTP factor and an AAL2 session |
 | iPhone | Open a controlled invitation in Safari, add to the Home Screen, launch in standalone mode and sign in | Deferred |
 | iPhone | Request push from a user gesture, receive a controlled notification and open the correct authorized record | Deferred |
 | iPhone | Deny and re-enable microphone permission, attach a synthetic image and voice clip, repeat after sign-out and account switch | Deferred |

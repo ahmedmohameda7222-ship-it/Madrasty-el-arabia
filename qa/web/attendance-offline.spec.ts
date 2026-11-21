@@ -8,6 +8,7 @@ import { fixtureEmail, localOrigin } from "../support/target";
 test("desktop web reconnects one safe attendance edit and surfaces the conflicting row", async ({ page, context }) => {
   const school = schoolFixtures();
   try {
+    await school.seed();
     const admin = await school.bearer("admin", "admin");
     const { apple, ids } = await setUpCalendar(school, admin);
     const [teacher, guardian] = await Promise.all([school.bearer("teacher", "teacher"), school.bearer("guardian-ar", "guardian")]);
@@ -37,6 +38,10 @@ test("desktop web reconnects one safe attendance edit and surfaces the conflicti
     await secondMark.selectOption("present");
     await page.getByRole("button", { name: "Entwurf speichern" }).click();
     await expect(page.getByText("Der Entwurf wurde auf dem Gerät gespeichert und wartet auf Abgleich.")).toBeVisible();
+    const offlineRefresh = page.waitForEvent("requestfailed", (request) => new URL(request.url()).pathname === "/api/v1/attendance/classes");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await offlineRefresh;
+    await expect(page.getByRole("button", { name: "Erneut versuchen" }).first()).toBeVisible();
     const offline = await fixtureApi(school, path, { token: teacher });
     expect(offline.payload.data.rows.find((row: { studentId: string }) => row.studentId === ids.omar).status).toBeNull();
     await fixtureApi(school, `/children/${ids.ahmed}/attendance/excuses`, {

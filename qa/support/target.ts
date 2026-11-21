@@ -7,8 +7,8 @@ export const localProject = "madrasty_final_qa";
 const schoolProject = "ycsyghyigkadtugluugm";
 
 export const candidate = {
-  webSha: "a45f18ed79dc5e315a8bb91f07c9f5b9bc086d14",
-  deployment: "dpl_7UYnxMtSN6v3pe6jkCrsyiezkFQc",
+  webSha: "9e76eb93d991b63c1275e866e902e2dd599fd526",
+  deployment: "dpl_CToF1pHubX6tBvSeWN7UqqRaQbPT",
   projectRef: schoolProject,
   openApiSha256: "cadfa05acf2604019d3c7acd05c35e4b2252cde92c197a3abf8dbc9070e77316",
   apkSha256: "d5ca02907bfaaa4604252603bbc8fd2a36b82d5eccf014ea11765051b4f8c99d",

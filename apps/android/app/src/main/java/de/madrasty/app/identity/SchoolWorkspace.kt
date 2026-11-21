@@ -3,6 +3,11 @@ package de.madrasty.app.identity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -481,59 +486,74 @@ private fun FamilyWorkspace(model:IdentityViewModel,page:WorkspacePage.Family,cl
 
 @Composable
 private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:SchoolNavigation,rights:SchoolRights){
-    Text(stringResource(R.string.settings_group_account),style=MaterialTheme.typography.titleLarge)
-    OpenPage(state,WorkspacePage.Security,R.string.security)
-    OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
-    OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
-    OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
-    OpenPage(state,WorkspacePage.Publication(PublicationSection.News),R.string.school_news)
-    OpenPage(state,WorkspacePage.Publication(PublicationSection.Events),R.string.school_events)
-    OpenPage(state,WorkspacePage.Notifications(),R.string.notices_title)
-    OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
-    AccountActions(model,session)
-
+    SettingsGroup(R.string.settings_group_account) {
+        OpenPage(state,WorkspacePage.Security,R.string.security)
+        OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
+        OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
+        AccountActions(model,session)
+    }
+    SettingsGroup(R.string.directory_title) {
+        OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
+        OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
+        OpenPage(state,WorkspacePage.Publication(PublicationSection.News),R.string.school_news)
+        OpenPage(state,WorkspacePage.Publication(PublicationSection.Events),R.string.school_events)
+        OpenPage(state,WorkspacePage.Notifications(),R.string.notices_title)
+    }
     if(rights.persona!=Persona.Admin||rights.school||rights.students||rights.academic||rights.applications||rights.attendance){
-        Text(stringResource(R.string.settings_group_school),style=MaterialTheme.typography.titleLarge)
-        if(rights.allows(WorkspacePage.Gradebook()))OpenPage(state,WorkspacePage.Gradebook(),R.string.gradebook_title)
-        if(rights.allows(WorkspacePage.Homework()))OpenPage(state,WorkspacePage.Homework(),R.string.homework_title)
-        if(rights.allows(WorkspacePage.Report()))OpenPage(state,WorkspacePage.Report(),R.string.report_title)
-        if(rights.allows(WorkspacePage.Exams()))OpenPage(state,WorkspacePage.Exams(),R.string.exam_title)
-        if(rights.allows(WorkspacePage.Evaluations()))OpenPage(state,WorkspacePage.Evaluations(),R.string.evaluation_title)
-        if(rights.allows(WorkspacePage.AcademicWork()))OpenPage(state,WorkspacePage.AcademicWork(),R.string.academic_work)
-        if(rights.allows(WorkspacePage.Curriculum()))OpenPage(state,WorkspacePage.Curriculum(),R.string.curriculum_title)
-        if(rights.allows(WorkspacePage.Timetable()))OpenPage(state,WorkspacePage.Timetable(),R.string.timetable_title)
-        if(rights.school||rights.academic)OpenPage(state,WorkspacePage.Assignments(),R.string.staff_assignments)
-        if(rights.attendance)OpenPage(state,WorkspacePage.AttendanceReview(),R.string.attendance_review)
-        if(rights.school)OpenPage(state,WorkspacePage.Calendar,R.string.school_calendar)
-        if(rights.school||rights.students)OpenPage(state,WorkspacePage.Enrollment,R.string.enrollments)
-        if(rights.students||rights.applications)OpenPage(state,WorkspacePage.Invitations(),R.string.invite_title)
-        if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
-        if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
+        SettingsGroup(R.string.settings_group_school) {
+            if(rights.allows(WorkspacePage.Gradebook()))OpenPage(state,WorkspacePage.Gradebook(),R.string.gradebook_title)
+            if(rights.allows(WorkspacePage.Homework()))OpenPage(state,WorkspacePage.Homework(),R.string.homework_title)
+            if(rights.allows(WorkspacePage.Report()))OpenPage(state,WorkspacePage.Report(),R.string.report_title)
+            if(rights.allows(WorkspacePage.Exams()))OpenPage(state,WorkspacePage.Exams(),R.string.exam_title)
+            if(rights.allows(WorkspacePage.Evaluations()))OpenPage(state,WorkspacePage.Evaluations(),R.string.evaluation_title)
+            if(rights.allows(WorkspacePage.AcademicWork()))OpenPage(state,WorkspacePage.AcademicWork(),R.string.academic_work)
+            if(rights.allows(WorkspacePage.Curriculum()))OpenPage(state,WorkspacePage.Curriculum(),R.string.curriculum_title)
+            if(rights.allows(WorkspacePage.Timetable()))OpenPage(state,WorkspacePage.Timetable(),R.string.timetable_title)
+            if(rights.school||rights.academic)OpenPage(state,WorkspacePage.Assignments(),R.string.staff_assignments)
+            if(rights.attendance)OpenPage(state,WorkspacePage.AttendanceReview(),R.string.attendance_review)
+            if(rights.school)OpenPage(state,WorkspacePage.Calendar,R.string.school_calendar)
+            if(rights.school||rights.students)OpenPage(state,WorkspacePage.Enrollment,R.string.enrollments)
+            if(rights.students||rights.applications)OpenPage(state,WorkspacePage.Invitations(),R.string.invite_title)
+            if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
+            if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
+        }
     }
     if(rights.invoiceViewer||rights.bank||rights.stopManager){
-        Text(stringResource(R.string.settings_group_finance),style=MaterialTheme.typography.titleLarge)
-        if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
-        if(rights.stopManager||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Stops(),R.string.stop_title)
-        if(rights.receiptViewer)OpenPage(state,WorkspacePage.StopReviews(),R.string.stop_review_title)
-        if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),R.string.finance_report_title)
-        if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
-        if(rights.posting)OpenPage(state,WorkspacePage.Payment(),R.string.receipt_record)
-        if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
-        if(rights.billing)OpenPage(state,WorkspacePage.IssueInvoices(),R.string.fee_issue)
-        if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)
+        SettingsGroup(R.string.settings_group_finance) {
+            if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
+            if(rights.stopManager||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Stops(),R.string.stop_title)
+            if(rights.receiptViewer)OpenPage(state,WorkspacePage.StopReviews(),R.string.stop_review_title)
+            if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),R.string.finance_report_title)
+            if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
+            if(rights.posting)OpenPage(state,WorkspacePage.Payment(),R.string.receipt_record)
+            if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
+            if(rights.billing)OpenPage(state,WorkspacePage.IssueInvoices(),R.string.fee_issue)
+            if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)
+        }
     }
     if(rights.access||rights.audit||rights.moderation||rights.delivery){
-        Text(stringResource(R.string.settings_group_access),style=MaterialTheme.typography.titleLarge)
-        if(rights.access)OpenPage(state,WorkspacePage.Access,R.string.staff_access)
-        if(rights.moderation)OpenPage(state,WorkspacePage.MessageReports,R.string.chat_reports)
-        if(rights.delivery)OpenPage(state,WorkspacePage.Delivery,R.string.delivery_status)
-        if(rights.audit)TextButton(onClick={state.auditEntry=null;state.open(WorkspacePage.Audit)}){
-            Text(stringResource(R.string.audit_title))
+        SettingsGroup(R.string.settings_group_access) {
+            if(rights.access)OpenPage(state,WorkspacePage.Access,R.string.staff_access)
+            if(rights.moderation)OpenPage(state,WorkspacePage.MessageReports,R.string.chat_reports)
+            if(rights.delivery)OpenPage(state,WorkspacePage.Delivery,R.string.delivery_status)
+            if(rights.audit)TextButton(onClick={state.auditEntry=null;state.open(WorkspacePage.Audit)}){
+                Text(stringResource(R.string.audit_title))
+            }
         }
     }
 }
 
 @Composable
+private fun SettingsGroup(label:Int, content:@Composable () -> Unit) {
+    var expanded by rememberSaveable(label) { mutableStateOf(false) }
+    ListItem(headlineContent={Text(stringResource(label),style=MaterialTheme.typography.titleMedium)},
+        trailingContent={Text(if(expanded) "−" else "+")},
+        modifier=Modifier.fillMaxWidth().clickable { expanded=!expanded })
+    if(expanded) content()
+    HorizontalDivider()
+}
+
+@Composable
 private fun OpenPage(state:SchoolNavigation,page:WorkspacePage,label:Int){
-    TextButton(onClick={state.open(page)}) { Text(stringResource(label)) }
+    ListItem(headlineContent={Text(stringResource(label))}, modifier=Modifier.fillMaxWidth().clickable { state.open(page) })
 }

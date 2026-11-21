@@ -12,3 +12,9 @@ The acceptance scenario uses 2026-11-21 as the school day. Update the scenario d
 The QA stack uses a restricted SQL fixture login and an independent runtime login. Test accounts have namespaced synthetic addresses under `madrasty.invalid`. The local application allows only those addresses and has no external mail or push credentials. Test bindings and fixture TOTP keys stay in git-ignored files. The fixture collision test removes only the unused tagged run. The operating site receives only read-only API, installation-page and APK checks.
 
 The Android command checks the signed public download and runs Kotlin JVM wire tests with the debug build. Browser viewports run in Edge, Firefox and WebKit. The PostgreSQL drill restores a logical snapshot into a disposable database beside the local source and compares sanitized counts and totals. The evidence report records delivery, physical installation, private media recovery and other cases that need separate runs.
+
+The recovery email test runs at the end of `qa:all`. It changes one synthetic account password through the school's bilingual template and the local Mailpit inbox. Start a fresh fixture run before repeating the full suite.
+
+For the independent private media drill, start `pwsh -File qa/ops/start-media-restore.ps1` and run `pnpm qa:restore-media` with the main QA stack online. The destination is a second loopback Supabase instance on port 56421. The test compares the restored object's SHA-256 and anonymous access.
+
+For the rollback drill, keep the current local QA web application running, start `pwsh -File qa/local.ps1 -Serve -PreviousRelease` and run `pnpm qa:rollback`. Both versions use the same isolated QA database with outbound providers disabled. The previous release listens on port 4310. The rehearsal switches a local proxy and checks a guardian's existing session and child access.

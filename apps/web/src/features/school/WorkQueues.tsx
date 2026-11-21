@@ -47,6 +47,14 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
     setAsOf(date||undefined);
   }
 
+  if (!result.value?.data) {
+    return <>
+      <RoleHero persona="admin" title={text.work}
+        detail={locale==="ar"?"متابعة أعمال المدرسة":"Schulaufgaben im Überblick"}
+        action={{href:`/${locale}/school/more`,label:locale==="ar"?"أقسام المدرسة":"Schulbereiche"}} />
+      <TimetableRead locale={locale} result={result}>{()=>null}</TimetableRead>
+    </>;
+  }
   return <TimetableRead locale={locale} result={result}>{(summary)=>{
     const first=summary.queues.find((row)=>row.state==="ready"&&row.count>0);
     const detail=first?queueLabels[locale][first.key]:summary.queues.some((row)=>row.state==="unavailable")?text.unavailable:text.empty;

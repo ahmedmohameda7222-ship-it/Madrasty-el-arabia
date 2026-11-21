@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $failed = @()
-foreach ($suite in @('contracts','school','policy','academics','communication','finance','web','android','ops')) {
+foreach ($suite in @('contracts','school','policy','academics','communication','finance','web','android','ops','recovery-email')) {
   pnpm "qa:$suite"
   if ($LASTEXITCODE -ne 0) { $failed += $suite }
 }
