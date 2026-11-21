@@ -24,6 +24,8 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Test terminal-state and screenshot coverage gate
         run: node --test qa/screenshot-audit-policy.test.mjs
+      - name: Test QA-only dev-badge policy
+        run: node --test qa/qa-overlay-policy.test.mjs
       - name: Verify TypeScript
         run: pnpm check:types
       - name: Build web without deployment

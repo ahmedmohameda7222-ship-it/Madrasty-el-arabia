@@ -23,7 +23,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | Task | Phase | Status | Verification / next gate |
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
-| UIX-01 | 0 | Partial: pure capture-policy regression tests RED → GREEN locally; screenshot runner and browser checks pending | `node --test qa/screenshot-audit-policy.test.mjs` 5 expected RED failures against old policy, then 9/9 GREEN with new policy; browser and full fixture verification unverified |
+| UIX-01 | 0 | Partial: policy 9/9 GREEN; QA-only dev-badge policy RED → GREEN; full screenshot runner still pending | Added `devIndicators` opt-out only under isolated `QA_SCREENSHOTS_ONLY=1`; no global hiding of error overlays |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED verified; flex sizing correction committed; GREEN pending | RED run 44894123403: German header centerline split by 54.64px at 320; all other tests 2 passed |
@@ -107,3 +107,8 @@ No command from the block above has been represented as successful in this docum
 ## UIX-04 RED checkpoint
 
 - [Run 44894123403](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44894123403), browser job 136816000892, RED 1 failing / 2 passing. At 320px German the actual logo center was y=34px, title y=88.64px and language link y=88.64px; assertion allowed <=20px and observed 54.64px. Evidence artifact 14703451938, isolated guardian test only. The fix constrains header flex children and retains the full accessible brand name. Browser GREEN and 200% text pending.
+
+## UIX-01 QA-only developer-badge regression
+
+- Locally ran `node --test qa/qa-overlay-policy.test.mjs` against unchanged Next config: exit **1**, expected RED because no disposable-QA flag gated the Next dev badge. The same Node test after the conditional config: exit **0**, 1 passed. Logs in source handoff output archive. Conditional `devIndicators` only affects QA_SCREENSHOTS_ONLY=1; ordinary local dev and production config remain unchanged.
+- This does **not** finish UIX-01: terminal-state DOM classification, role-specific forbidden routes, full screenshot runner integration and visual acceptance remain pending.
