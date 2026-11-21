@@ -1,0 +1,63 @@
+name: Isolated UI screenshot audit
+on:
+  push:
+    branches:
+      - audit/playwright-screenshots-2026-11-21
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: screenshot-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install pinned workspace dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Install headless Chromium with Linux dependencies
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Start isolated fixture Supabase (not the live school)
+        shell: bash
+        run: |
+          echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Start local Next.js server with synthetic fixture bindings
+        shell: bash
+        run: |
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-screenshot-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/madrasty-screenshot-server.pid"
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+      - name: Capture authorized pages for every role in Arabic and German
+        shell: bash
+        run: |
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pnpm exec playwright test --config qa/screenshot-audit.config.ts
+      - name: Upload screenshot images and coverage manifests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrasty-ui-audit-screenshots
+          path: |
+            qa-artifacts/screenshots/
+            qa-artifacts/playwright-results.json
+            qa-artifacts/test-results/
+          if-no-files-found: warn
+          retention-days: 7
