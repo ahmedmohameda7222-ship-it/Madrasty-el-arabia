@@ -95,7 +95,7 @@ export function EmailAction({ locale, action, token }: {
           <Link href={`/${locale}/account/sign-in`}>{text.signin}</Link>
         </div>
       ) : (token || requesting) ? (
-        <form className="auth-form" onSubmit={submit} aria-busy={pending}>
+        <form className="auth-form" method="post" onSubmit={submit} aria-busy={pending}>
           {requesting && <label>{text.email}<input name="email" type="email" autoComplete="email" required /></label>}
           {token && action !== "email" && <label>{text.newPassword}<input name="password" type="password"
             autoComplete="new-password" minLength={12} maxLength={128} required /></label>}
@@ -171,13 +171,13 @@ export function AccountSecurity({ locale, persona, assured }: { locale: Locale; 
             <Image src={setup.totp.qrCode} alt={text.qrLabel} width={240} height={240} unoptimized className="auth-qr" />
             <details><summary>{text.manualKey}</summary><bdi dir="ltr">{setup.totp.secret}</bdi></details>
           </div>}
-          {candidate && <form className="auth-form" onSubmit={verify}>
+          {candidate && <form className="auth-form" method="post" onSubmit={verify}>
             <label>{text.code}<input name="code" dir="ltr" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" required /></label>
             <button className="primary-button" disabled={pending}>{text.confirm}</button>
           </form>}
         </section>
       )}
-      {(persona !== "admin" || assured) && <form className="auth-form" onSubmit={changeEmail}>
+      {(persona !== "admin" || assured) && <form className="auth-form" method="post" onSubmit={changeEmail}>
         <h2>{text.address}</h2>
         <label>{text.newEmail}<input name="email" type="email" dir="ltr" autoComplete="email" required /></label>
         <label>{text.currentPassword}<input name="password" type="password" autoComplete="current-password" required /></label>

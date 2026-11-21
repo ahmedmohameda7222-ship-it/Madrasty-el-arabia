@@ -50,11 +50,13 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
   const text = labels[locale];
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [pending, setPending] = useState(refreshable);
   const [failure, setFailure] = useState("");
 
   useEffect(() => {
     let active = true;
+    setHydrated(true);
     const revoke = pendingLogout();
     const connect = () => {
       if (revoke !== null) {
@@ -95,7 +97,7 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
   return (
     <section className="auth-card">
       <h1>{text.signIn}</h1>
-      <form className="auth-form" onSubmit={submit} aria-busy={pending}>
+      <form className="auth-form" method="post" onSubmit={submit} aria-busy={!hydrated || pending}>
         <label htmlFor="email">{text.email}</label>
         <input id="email" name="email" dir="ltr" inputMode="email" type="email" autoComplete="username" required maxLength={254} />
         <label htmlFor="password">{text.password}</label>
@@ -106,7 +108,7 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
             onClick={() => setPasswordVisible(!passwordVisible)}>{passwordVisible ? text.hide : text.show}</button>
         </div>
         {failure && <p id="sign-in-error" role="alert">{failure}</p>}
-        <button className="primary-button" type="submit" disabled={pending}>
+        <button className="primary-button" type="submit" disabled={!hydrated || pending}>
           {pending ? dictionary(locale).loading : text.signIn}
         </button>
       </form>
