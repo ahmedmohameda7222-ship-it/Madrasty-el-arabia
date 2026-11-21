@@ -27,3 +27,32 @@ jobs:
         run: pnpm exec tsx --test --test-name-pattern="dashboard wire contract" qa/contracts/api.test.ts
       - name: Build web application
         run: pnpm build:web
+  dashboard-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LOCALAPPDATA: ${{ runner.temp }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install pinned pnpm and workspace dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Prepare disposable synthetic database
+        run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Check first-run setup, queues and protected finance records
+        shell: bash
+        run: |
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-qa-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 15 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test --test-name-pattern="unconfigured school" qa/contracts/fixtures.test.ts
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/academics/attendance.test.ts
+          pnpm qa:finance

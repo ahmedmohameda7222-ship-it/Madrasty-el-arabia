@@ -4821,25 +4821,34 @@ components:
       type: string
       enum: [guardian_links, family_imports, class_assignments, bounced_invites, unapproved_attendance, noncontinuation_requests, settlement_review, failed_deliveries]
     SchoolWorkQueues:
-      type: object
-      required: [asOf, today, timezone, queues]
-      properties:
-        asOf: { type: [string, 'null'], format: date }
-        today: { type: [string, 'null'], format: date }
-        timezone: { type: [string, 'null'] }
-        setupRequired: { type: boolean }
-        mayConfigure: { type: boolean }
-        queues:
-          type: array
-          items:
-            type: object
-            required: [key, route, filters, state]
-            properties:
-              key: { $ref: '#/components/schemas/SchoolWorkQueueKey' }
-              route: { type: string }
-              filters: { type: object, required: [asOf], properties: { asOf: { type: string, format: date } } }
-              state: { type: string, enum: [ready, unavailable] }
-              count: { type: integer, minimum: 0 }
+      oneOf:
+        - type: object
+          required: [asOf, today, timezone, queues]
+          properties:
+            asOf: { type: string, format: date }
+            today: { type: string, format: date }
+            timezone: { type: string }
+            setupRequired: { const: false }
+            queues:
+              type: array
+              items:
+                type: object
+                required: [key, route, filters, state]
+                properties:
+                  key: { $ref: '#/components/schemas/SchoolWorkQueueKey' }
+                  route: { type: string }
+                  filters: { type: object, required: [asOf], properties: { asOf: { type: string, format: date } } }
+                  state: { type: string, enum: [ready, unavailable] }
+                  count: { type: integer, minimum: 0 }
+        - type: object
+          required: [asOf, today, timezone, setupRequired, mayConfigure, queues]
+          properties:
+            asOf: { type: 'null' }
+            today: { type: 'null' }
+            timezone: { type: 'null' }
+            setupRequired: { const: true }
+            mayConfigure: { type: boolean }
+            queues: { type: array, maxItems: 0 }
     SchoolWorkQueueItem:
       type: object
       required: [id, titleAr, titleDe, detailAr, detailDe, target]
