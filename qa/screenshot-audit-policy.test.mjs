@@ -37,3 +37,18 @@ test('retry selection matches exact persona, locale, width and pathname', () => 
   assert.equal(selectRetryTargets(targets,'teacher','de','/de/school/more/homework',1280),false);
   assert.equal(selectRetryTargets(targets,'teacher','ar','/de/school/more/homework',390),false);
 });
+
+
+test('previously evidenced role denial is recorded separately during retry', () => {
+  const records=[captured('/de/school/home'),{route:'/de/school/more/bank',width:1280,httpStatus:404,error:'inaccessible or redirected for this persona'}];
+  const verifiedDenials=['/de/school/more/bank'];
+  const outcome=assertCompleteAudit(records,{expected:2,strictRetry:true,verifiedDenials});
+  assert.equal(outcome.captured,1);
+  assert.equal(outcome.denied,1);
+  assert.equal(outcome.failed,0);
+});
+
+test('unknown 404 on retry still fails even when unrelated route is verified', () => {
+  const records=[captured('/de/school/home'),{route:'/de/school/more/unknown',width:1280,httpStatus:404,error:'inaccessible'}];
+  assert.throws(()=>assertCompleteAudit(records,{expected:2,strictRetry:true,verifiedDenials:['/de/school/more/bank']}),/HTTP 404/);
+});
