@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { readdirSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,6 +87,21 @@ for (const role of roles) {
                   continue;
                 }
                 await page.waitForLoadState("networkidle", { timeout: 2_500 }).catch(() => undefined);
+                // Regression check: the visible child selector must stay inside a narrow viewport.
+                if (role.persona === "guardian" && width === 390 &&
+                    (route === "/school/more/homework" || route === "/school/more/exams")) {
+                  await page.locator("label.auth-card > select").first().waitFor({ state: "visible", timeout: 12_000 });
+                  const overflow = await page.evaluate(() => {
+                    const select = document.querySelector("label.auth-card > select");
+                    const content = document.querySelector(".school-content");
+                    if (!select || !content) return "child selector not present";
+                    const bounds = select.getBoundingClientRect();
+                    if (bounds.left < -1 || bounds.right > window.innerWidth + 1 ||
+                        content.scrollWidth > content.clientWidth + 2) return "child selector overflows mobile viewport";
+                    return null;
+                  });
+                  if (overflow) entry.error = overflow;
+                }
                 const slug = (route === "/" ? "root" : route.slice(1).replaceAll("/", "-")).replace(/[^a-zA-Z0-9_-]/g, "_");
                 const base = locale + "-" + slug + "-" + width;
                 const file = path.join(dest, base + ".png");
