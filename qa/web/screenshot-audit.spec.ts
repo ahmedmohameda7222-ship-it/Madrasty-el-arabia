@@ -39,6 +39,8 @@ const audit = inventory();
 const retryFile = process.env.QA_AUDIT_RETRY_TARGETS;
 const retryTargets: Record<string, { route: string; width: number }[]> | null = retryFile
   ? JSON.parse(readFileSync(path.resolve(retryFile), "utf8")) : null;
+const verifiedDenials: Record<string,string[]> = retryTargets && process.env.QA_AUDIT_VERIFIED_DENIALS
+  ? JSON.parse(readFileSync(path.resolve(process.env.QA_AUDIT_VERIFIED_DENIALS), "utf8")) : {};
 const roles: { persona: Persona; principal: "admin" | "teacher" | "guardian-ar" | "guardian-de" }[] = [
   { persona: "admin", principal: "admin" },
   { persona: "teacher", principal: "teacher" },
@@ -137,12 +139,12 @@ for (const role of roles) {
         }
       } finally {
         writeFileSync(path.join(dest, "manifest.json"), JSON.stringify({
-          ...output, coverage: summarizeCaptures(output.captures, { strictRetry: Boolean(retryTargets) }),
+          ...output, coverage: summarizeCaptures(output.captures, { strictRetry: Boolean(retryTargets), verifiedDenials: verifiedDenials[key] ?? [] }),
           expectedAttempts: expected,
         }, null, 2));
         await school.close();
       }
-      const result = assertCompleteAudit(output.captures, { expected, strictRetry: Boolean(retryTargets) });
+      const result = assertCompleteAudit(output.captures, { expected, strictRetry: Boolean(retryTargets), verifiedDenials: verifiedDenials[key] ?? [] });
       console.log(`Coverage ${key}: ${result.captured} captured, ${result.denied} denied, ${result.failed} failed / ${result.attempted} attempted`);
     });
   }
