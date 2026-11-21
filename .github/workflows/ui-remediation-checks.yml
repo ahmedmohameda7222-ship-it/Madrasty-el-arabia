@@ -28,3 +28,48 @@ jobs:
         run: pnpm check:types
       - name: Build web without deployment
         run: pnpm build:web
+
+  browser-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install workspace dependencies and Chromium
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Start isolated local Supabase
+        shell: bash
+        run: |
+          echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Start fixture web, then run UI regression
+        shell: bash
+        run: |
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          mkdir -p qa-artifacts/server
+          pwsh -NoProfile -File qa/local.ps1 -Serve > qa-artifacts/server/web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm exec playwright test --config qa/ui-remediation.config.ts
+      - name: Preserve isolated QA evidence (no secrets)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrasty-ui-fixture-qa
+          path: |
+            qa-artifacts/ui-fixture-results.json
+            qa-artifacts/ui-remediation-test-results/
+          if-no-files-found: warn
+          retention-days: 7
