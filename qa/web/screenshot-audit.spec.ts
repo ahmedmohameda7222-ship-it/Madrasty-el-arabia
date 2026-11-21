@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { readdirSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { schoolFixtures, type Persona } from "../fixtures/school";
 import { localOrigin } from "../support/target";
+import { assertCompleteAudit, selectRetryTargets, summarizeCaptures } from "../screenshot-audit-policy.mjs";
 
 // Screenshot-only audit. All identities and records come from the isolated QA fixture.
 // This suite MUST NOT authenticate against the deployed school or modify live data.
@@ -35,6 +36,9 @@ function inventory(): Inventory {
 }
 
 const audit = inventory();
+const retryFile = process.env.QA_AUDIT_RETRY_TARGETS;
+const retryTargets: Record<string, { route: string; width: number }[]> | null = retryFile
+  ? JSON.parse(readFileSync(path.resolve(retryFile), "utf8")) : null;
 const roles: { persona: Persona; principal: "admin" | "teacher" | "guardian-ar" | "guardian-de" }[] = [
   { persona: "admin", principal: "admin" },
   { persona: "teacher", principal: "teacher" },
@@ -43,6 +47,7 @@ const roles: { persona: Persona; principal: "admin" | "teacher" | "guardian-ar" 
 
 for (const role of roles) {
   for (const locale of ["ar", "de"] as const) {
+    if (retryTargets && !retryTargets[`${role.persona}-${locale}`]?.length) continue;
     test("Screenshots: " + role.persona + " / " + locale + " / 390px and 1280px", async ({ browser }) => {
       test.setTimeout(20 * 60_000);
       const school = schoolFixtures();
@@ -53,7 +58,7 @@ for (const role of roles) {
         persona: string; locale: string; source: string; dynamicTemplates: string[];
         captures: { route: string; width: number; httpStatus?: number; finalPath?: string; files?: string[]; error?: string }[];
       } = { persona: role.persona, locale, source: "isolated-local-qa", dynamicTemplates: audit.dynamicTemplates, captures: [] };
-      let count = 0;
+      const expected = retryTargets ? retryTargets[key].length : audit.routes.length * 2 + 1;
       try {
         await school.seed();
         const principal = role.persona === "guardian" && locale === "de" ? "guardian-de" : role.principal;
@@ -70,6 +75,7 @@ for (const role of roles) {
             await page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
             for (const route of audit.routes) {
               const pathname = "/" + locale + (route === "/" ? "" : route);
+              if (retryTargets && !selectRetryTargets(retryTargets, role.persona, locale, pathname, width)) continue;
               const entry: (typeof output.captures)[number] = { route: pathname, width };
               output.captures.push(entry);
               try {
@@ -86,7 +92,6 @@ for (const role of roles) {
                 const file = path.join(dest, base + ".png");
                 await page.screenshot({ path: file, fullPage: true, animations: "disabled", timeout: 20_000 });
                 entry.files = [path.relative("qa-artifacts", file)];
-                count++;
                 const main = page.locator("main").first();
                 if (await main.count()) {
                   const scroll = await main.evaluate(node => ({ height: node.scrollHeight, visible: node.clientHeight })).catch(() => ({ height: 0, visible: 0 }));
@@ -103,24 +108,27 @@ for (const role of roles) {
               }
             }
           }
-          // One extra dark-mode check for each persona's home screen.
+          // Preserve old dark-mode shots. The retry must only revisit selected routes.
+          if (!retryTargets) {
           await page.setViewportSize({ width: 390, height: 844 });
           await page.emulateMedia({ colorScheme: "dark" });
           await page.goto(localOrigin + "/" + locale + "/school/home", { waitUntil: "domcontentloaded" });
           const dark = path.join(dest, locale + "-home-dark-390.png");
           await page.screenshot({ path: dark, animations: "disabled" });
           output.captures.push({ route: "/" + locale + "/school/home", width: 390, files: [path.relative("qa-artifacts", dark)] });
-          count++;
+          }
         } finally {
           await context.close();
         }
       } finally {
-        writeFileSync(path.join(dest, "manifest.json"), JSON.stringify(output, null, 2));
+        writeFileSync(path.join(dest, "manifest.json"), JSON.stringify({
+          ...output, coverage: summarizeCaptures(output.captures, { strictRetry: Boolean(retryTargets) }),
+          expectedAttempts: expected,
+        }, null, 2));
         await school.close();
       }
-      expect(count, "No accessible screenshots were generated for " + key).toBeGreaterThan(0);
-      const serverErrors = output.captures.filter(entry => (entry.httpStatus ?? 0) >= 500);
-      expect(serverErrors, "Server-side failures in " + key).toHaveLength(0);
+      const result = assertCompleteAudit(output.captures, { expected, strictRetry: Boolean(retryTargets) });
+      console.log(`Coverage ${key}: ${result.captured} captured, ${result.denied} denied, ${result.failed} failed / ${result.attempted} attempted`);
     });
   }
 }
