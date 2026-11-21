@@ -80,6 +80,15 @@ button:disabled { cursor: default; }
 .brand { text-decoration: none; color: var(--ink); font-weight: 700; }
 .brand img { border-radius: 13px; }
 .header-actions { justify-content: flex-end; }
+/* One-row school header: flexible, ellipsized brand; fixed notification and locale actions.
+   The brand link retains its full accessible name via aria-label. */
+.school-shell > .school-header { flex-wrap: nowrap; min-inline-size: 0; }
+.school-shell > .school-header .brand { min-inline-size: 0; flex: 1 1 auto; flex-wrap: nowrap; }
+.school-shell > .school-header .brand img { flex: none; }
+.school-shell > .school-header .brand span {
+  min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.school-shell > .school-header .header-actions { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; }
 .plain-button, .primary-button, .hero-action {
   display: inline-flex; align-items: center; justify-content: center;
   min-inline-size: 44px; min-block-size: 44px; padding: 6px 12px;

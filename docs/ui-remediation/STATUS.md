@@ -26,7 +26,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-01 | 0 | Partial: pure capture-policy regression tests RED → GREEN locally; screenshot runner and browser checks pending | `node --test qa/screenshot-audit-policy.test.mjs` 5 expected RED failures against old policy, then 9/9 GREEN with new policy; browser and full fixture verification unverified |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
-| UIX-04 | 1 | Browser RED regression committed; result pending | Logo, title, bell, language alignment at 320/390/430 in Arabic and German |
+| UIX-04 | 1 | RED verified; flex sizing correction committed; GREEN pending | RED run 44894123403: German header centerline split by 54.64px at 320; all other tests 2 passed |
 | UIX-05 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-06 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -103,3 +103,7 @@ No command from the block above has been represented as successful in this docum
 ## UIX-03 GREEN checkpoint
 
 - [Run 44893854146](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44893854146) on eba9231a: isolated Chromium **2 passed / 0 failed**, 9 screenshot-policy unit tests, TypeScript check and web build passed. Physical touch device not verified.
+
+## UIX-04 RED checkpoint
+
+- [Run 44894123403](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44894123403), browser job 136816000892, RED 1 failing / 2 passing. At 320px German the actual logo center was y=34px, title y=88.64px and language link y=88.64px; assertion allowed <=20px and observed 54.64px. Evidence artifact 14703451938, isolated guardian test only. The fix constrains header flex children and retains the full accessible brand name. Browser GREEN and 200% text pending.
