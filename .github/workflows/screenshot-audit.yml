@@ -41,34 +41,34 @@ jobs:
           run-id: 44881108800
           github-token: ${{ github.token }}
           path: qa-artifacts/old-guardian
-      - name: Download retry ${name} evidence
+      - name: Download retry admin-de evidence
         uses: actions/download-artifact@v4
         with:
-          name: madrasty-ui-audit-retry-${name}
+          name: madrasty-ui-audit-retry-admin-de
           run-id: 44885864968
           github-token: ${{ github.token }}
-          path: qa-artifacts/retry-${name}
-      - name: Download retry ${name} evidence
+          path: qa-artifacts/retry-admin-de
+      - name: Download retry teacher-de evidence
         uses: actions/download-artifact@v4
         with:
-          name: madrasty-ui-audit-retry-${name}
+          name: madrasty-ui-audit-retry-teacher-de
           run-id: 44885864968
           github-token: ${{ github.token }}
-          path: qa-artifacts/retry-${name}
-      - name: Download retry ${name} evidence
+          path: qa-artifacts/retry-teacher-de
+      - name: Download retry guardian-ar evidence
         uses: actions/download-artifact@v4
         with:
-          name: madrasty-ui-audit-retry-${name}
+          name: madrasty-ui-audit-retry-guardian-ar
           run-id: 44885864968
           github-token: ${{ github.token }}
-          path: qa-artifacts/retry-${name}
-      - name: Download retry ${name} evidence
+          path: qa-artifacts/retry-guardian-ar
+      - name: Download retry guardian-de evidence
         uses: actions/download-artifact@v4
         with:
-          name: madrasty-ui-audit-retry-${name}
+          name: madrasty-ui-audit-retry-guardian-de
           run-id: 44885864968
           github-token: ${{ github.token }}
-          path: qa-artifacts/retry-${name}
+          path: qa-artifacts/retry-guardian-de
       - name: Verify all 112 archived retry attempts without browser recapture
         run: |
           node qa/verify-screenshot-retry.mjs \
