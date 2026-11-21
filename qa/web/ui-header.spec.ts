@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { mkdirSync } from "node:fs";
 import { schoolFixtures } from "../fixtures/school";
 import { localOrigin } from "../support/target";
 
@@ -28,6 +29,9 @@ test("school header stays in one row at normal mobile text size in both locales"
       await expect(header.locator(".brand")).toHaveAttribute("aria-label", /\S/);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `${locale} unexpected body scroll at ${width}px`).toBeLessThanOrEqual(1);
+      await page.locator("label.auth-card > select").first().waitFor({ state: "visible", timeout: 20_000 });
+      mkdirSync("qa-artifacts/ui-after", { recursive: true });
+      await page.screenshot({ path: `qa-artifacts/ui-after/UIX04-guardian-${locale}-homework-${width}-ready.png`, animations: "disabled" });
     }
   } finally {
     await school.close();

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { mkdirSync } from "node:fs";
 
 test("shared controls acknowledge touch immediately without removing keyboard focus", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -17,6 +18,8 @@ test("shared controls acknowledge touch immediately without removing keyboard fo
   const pressed = await pressable.evaluate((element) => getComputedStyle(element).transform);
   expect(pressed, "pointer-down must have perceptible visual feedback").not.toBe("none");
   await page.mouse.up();
+  mkdirSync("qa-artifacts/ui-after", { recursive: true });
+  await page.screenshot({ path: "qa-artifacts/ui-after/UIX03-sign-in-ar-390-light.png", animations: "disabled" });
 
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
   const duration = await pressable.evaluate((element) => getComputedStyle(element).transitionDuration);
@@ -29,4 +32,5 @@ test("shared controls acknowledge touch immediately without removing keyboard fo
   });
   expect(focusStyle.outlineStyle).not.toBe("none");
   expect(focusStyle.outlineWidth).not.toBe("0px");
+  await page.screenshot({ path: "qa-artifacts/ui-after/UIX03-sign-in-ar-390-dark-reduced-motion.png", animations: "disabled" });
 });

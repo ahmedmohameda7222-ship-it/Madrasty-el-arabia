@@ -26,8 +26,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-01 | 0 | Partial: policy 9/9 GREEN; QA-only dev-badge policy RED → GREEN; full screenshot runner still pending | Added `devIndicators` opt-out only under isolated `QA_SCREENSHOTS_ONLY=1`; no global hiding of error overlays |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
-| UIX-04 | 1 | RED verified; flex sizing correction committed; GREEN pending | RED run 44894123403: German header centerline split by 54.64px at 320; all other tests 2 passed |
-| UIX-05 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
+| UIX-05 | 1 | RED test committed; result pending | German visible 'Anwes.' with full aria-label 'Anwesenheit', 44px targets, 320/390, text 200%, Arabic counterpart |
 | UIX-06 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -112,3 +112,8 @@ No command from the block above has been represented as successful in this docum
 
 - Locally ran `node --test qa/qa-overlay-policy.test.mjs` against unchanged Next config: exit **1**, expected RED because no disposable-QA flag gated the Next dev badge. The same Node test after the conditional config: exit **0**, 1 passed. Logs in source handoff output archive. Conditional `devIndicators` only affects QA_SCREENSHOTS_ONLY=1; ordinary local dev and production config remain unchanged.
 - This does **not** finish UIX-01: terminal-state DOM classification, role-specific forbidden routes, full screenshot runner integration and visual acceptance remain pending.
+
+## UIX-04 GREEN checkpoint
+
+- [Run 44894423678](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44894423678) on d160f8be: 3/3 isolated Chromium regressions passed; 9 screenshot-policy and 1 QA-only-overlay Node tests, TypeScript check and web build passed. Brand name remains fully available through the existing aria-label; 200% zoom was not part of the UIX-04 GREEN browser assertion.
+- UIX-03/UIX-04 success screenshot paths and full isolated browser motion recordings are now captured automatically by the shared QA runner, never approved as golden references.
