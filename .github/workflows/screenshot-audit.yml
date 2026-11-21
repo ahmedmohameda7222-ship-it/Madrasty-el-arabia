@@ -1,6 +1,9 @@
 name: Isolated UI screenshot retry (failed routes only)
-# Rerun only on explicit dispatch; code fixes must not silently repeat the costly screenshot pass.
+# Verify archived evidence on branch pushes; expensive browser retries stay manual.
 on:
+  push:
+    branches:
+      - fix/ui-audit-coverage-mobile-2026-11-21
   workflow_dispatch:
 
 permissions:
@@ -12,7 +15,80 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  verify-saved-evidence:
+    name: Verify stored screenshot retry evidence
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify classification regression tests
+        run: node --test qa/screenshot-audit-policy.test.mjs qa/screenshot-retry-targets.test.mjs
+      - name: Download archived admin and teacher screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-screenshots
+          run-id: 44878617957
+          github-token: ${{ github.token }}
+          path: qa-artifacts/old-staff
+      - name: Download archived guardian screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-guardian-screenshots
+          run-id: 44881108800
+          github-token: ${{ github.token }}
+          path: qa-artifacts/old-guardian
+      - name: Download retry ${name} evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-retry-${name}
+          run-id: 44885864968
+          github-token: ${{ github.token }}
+          path: qa-artifacts/retry-${name}
+      - name: Download retry ${name} evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-retry-${name}
+          run-id: 44885864968
+          github-token: ${{ github.token }}
+          path: qa-artifacts/retry-${name}
+      - name: Download retry ${name} evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-retry-${name}
+          run-id: 44885864968
+          github-token: ${{ github.token }}
+          path: qa-artifacts/retry-${name}
+      - name: Download retry ${name} evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-retry-${name}
+          run-id: 44885864968
+          github-token: ${{ github.token }}
+          path: qa-artifacts/retry-${name}
+      - name: Verify all 112 archived retry attempts without browser recapture
+        run: |
+          node qa/verify-screenshot-retry.mjs \
+            qa-artifacts/old-staff \
+            qa-artifacts/old-guardian \
+            qa-artifacts/retry-admin-de \
+            qa-artifacts/retry-teacher-de \
+            qa-artifacts/retry-guardian-ar \
+            qa-artifacts/retry-guardian-de
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrasty-screenshot-retry-verification
+          path: qa-artifacts/retry-verification.json
+          if-no-files-found: warn
+          retention-days: 7
+
   screenshot-retry:
+    if: github.event_name == 'workflow_dispatch'
     name: retry-${{ matrix.suite }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
