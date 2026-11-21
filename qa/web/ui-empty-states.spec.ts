@@ -11,7 +11,7 @@ test("genuinely empty academic records announce a distinct, role-safe state in A
     await page.route("**/*",route=>new URL(route.request().url()).origin===localOrigin?route.continue():route.abort());
     for(const locale of ["de","ar"]) {
       await page.goto("/"+locale+"/school/more/homework");
-      const message=locale==="de"?"Es gibt noch keine Einträge":"لا توجد سجلات بعد";
+      const message=locale==="de"?"Für dieses Kind sind derzeit keine Hausaufgaben eingetragen.":"لا توجد واجبات مسجلة لهذا الطفل حاليًا.";
       const empty=page.locator(".school-content .notice").filter({hasText:message}).first();
       await expect(empty).toBeVisible({timeout:25_000});
       await expect(empty).toHaveAttribute("data-async-state","empty");
