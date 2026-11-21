@@ -22,10 +22,10 @@ export function AsyncSurface({ locale, state }: { locale: Locale; state: AsyncSt
   if (state.kind === "initialLoading") return <ColdLoad locale={locale} shape={state.shape} />;
   if (state.kind === "forbidden") return <Forbidden locale={locale} action={state.action} />;
   if (state.kind === "empty") return (
-    <div className="notice">{state.message ?? (state.filtered ? text.filteredEmpty : text.empty)}{state.action}</div>
+    <div className="notice" role="status" data-async-state={state.filtered ? "filtered-empty" : "empty"}>{state.message ?? (state.filtered ? text.filteredEmpty : text.empty)}{state.action}</div>
   );
   if (state.kind === "error" || state.kind === "offline") return (
-    <div className="notice">
+    <div className="notice" data-async-state={state.kind}>
       <p role="alert"><Icon name="warning" />{state.message ?? text[state.kind]}</p>
       <Retry locale={locale} retry={state.retry} />
     </div>
@@ -85,7 +85,7 @@ function Forbidden({ locale, action }: { locale: Locale; action?: ReactNode }) {
   const notice = useRef<HTMLDivElement>(null);
   useEffect(() => notice.current?.focus(), []);
   return (
-    <div className="notice" tabIndex={-1} ref={notice}>
+    <div className="notice" data-async-state="forbidden" tabIndex={-1} ref={notice}>
       <p><Icon name="lock" />{dictionary(locale).forbidden}</p>{action}
     </div>
   );

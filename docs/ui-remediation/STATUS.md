@@ -29,7 +29,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
 | UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
 | UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
-| UIX-07 | 2 | RED browser tests committed; await observed failure | Arabic/German empty academic rows must be explicit status; simulated HTTP503 must remain retryable error, neither success nor unauthorized CTA |
+| UIX-07 | 2 | RED verified for empty/error semantics; small AsyncSurface marker fix committed; GREEN pending | Run 44926833430: 2/2 new tests fail for missing data-async-state, prior 6 pass; no permission, data or retry logic changes |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-09 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-10 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -153,3 +153,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 ## UIX-01 pending-state GREEN checkpoint
 
 - [Run 44926490492](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44926490492) on b04b3cd6: 6/6 isolated Chromium tests passed, screenshot-policy Node tests passed, typecheck and web build passed. Test held /me/children so the loading marker was validated on a real unresolved asynchronous state. This verifies the state marker only, **not** complete screenshot terminal-state acceptance.
+
+## UIX-07 RED evidence
+
+- [Run 44926833430](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44926833430), isolated Chromium: six earlier tests passed; both new tests failed for the expected missing `data-async-state` attribute. Empty locale text was rendered in German, and a simulated `/api/v1/academics/homework` HTTP503 produced a notice with actual `role=alert`; neither error was misclassified as a network setup failure. Artifact 14715898338 has screenshot/video/trace.
+- Fix adds explicit empty/filtered-empty and error/offline/forbidden DOM state without changing API paths, retry handlers or the existing discriminated union. The empty notice retains its optional action slot; the two verified guardian states expose no unauthorized actions. GREEN pending.
