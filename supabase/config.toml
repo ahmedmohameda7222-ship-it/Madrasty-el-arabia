@@ -7,6 +7,7 @@ additional_redirect_urls = [
   "https://madrastyelarabia.vercel.app/de/invite",
   "https://madrastyelarabia.vercel.app/ar/apply/verify",
   "https://madrastyelarabia.vercel.app/de/apply/verify",
+  "https://madrastyelarabia.vercel.app/ar/account/security/activate",
   "https://madrastyelarabia.vercel.app/ar/account/security/recover",
   "https://madrastyelarabia.vercel.app/de/account/security/recover",
   "https://madrastyelarabia.vercel.app/ar/account/security/email",
