@@ -16,6 +16,15 @@ test("guardian's visible child names are human names, not QA identifiers", async
     await page.goto("/ar/school/home");
     const hero = page.locator(".role-hero h2");
     await expect(hero).toBeVisible({ timeout: 30_000 });
+    // The child list has no ordering contract; select the long case via the actual dialog.
+    await page.locator(".school-content .auth-card .plain-button").first().click();
+    const options = page.locator(".scope-sheet .group-row > bdi");
+    await expect(options.first()).toBeVisible();
+    const labels = await options.allTextContents();
+    const longIndex = labels.findIndex((label) => [...label.trim()].length >= 90);
+    expect(longIndex, "the linked long-name child exists").toBeGreaterThanOrEqual(0);
+    await page.locator(".scope-sheet .group-row").nth(longIndex).click();
+    await expect(hero).toHaveText(labels[longIndex].trim());
     const name = (await hero.textContent())?.trim() ?? "";
     expect(name, "fixture run ID must never be displayed as a child's name").not.toMatch(/qa-[a-f0-9]{32}/i);
     expect([...name].length, "long realistic name must be supplied through the fixture data boundary").toBeGreaterThanOrEqual(90);
