@@ -1,0 +1,29 @@
+name: Prelaunch web and contracts
+on:
+  push:
+    branches: ["implementation/prelaunch"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: prelaunch-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install pinned pnpm and workspace dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Check TypeScript
+        run: pnpm check:types
+      - name: Check dashboard wire states
+        run: pnpm exec tsx --test --test-name-pattern="dashboard wire contract" qa/contracts/api.test.ts
+      - name: Build web application
+        run: pnpm build:web

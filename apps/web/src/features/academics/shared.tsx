@@ -11,33 +11,34 @@ import { AsyncSurface } from "@/ui/AsyncSurface";
 const denied=(error:unknown)=>error instanceof ApiResponseError&&[401,403,404].includes(error.status);
 
 export function useAcademicPage<T>(path:`/${string}`|null,schema:z.ZodType<T[]>,refresh:number){
-  const {persona}=useAccountScope();
-  const [read,setRead]=useState<{path:string;refresh:number;items?:T[];cursor?:string;error?:unknown}>();
+  const {accountId,sessionId,persona}=useAccountScope();
+  const scope=JSON.stringify([accountId,sessionId,persona,path]);
+  const [read,setRead]=useState<{scope:string;refresh:number;items?:T[];cursor?:string;error?:unknown}>();
   const [retry,setRetry]=useState(0);
-  const [busy,setBusy]=useState(false);
-  const [notice,setNotice]=useState<unknown>();
-  const visible=read?.path===path?read:undefined;
+  const [busy,setBusy]=useState<string>();
+  const [notice,setNotice]=useState<{scope:string;error:unknown}>();
+  const visible=read?.scope===scope?read:undefined;
   useEffect(()=>{
     if(!path)return;
     const abort=new AbortController();
     requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}}).then(
-      ({data,meta})=>{if(!abort.signal.aborted)setRead({path,refresh,items:data,cursor:meta?.nextCursor});},
-      (error)=>{if(!abort.signal.aborted)setRead({path,refresh,error});},
+      ({data,meta})=>{if(!abort.signal.aborted)setRead({scope,refresh,items:data,cursor:meta?.nextCursor});},
+      (error)=>{if(!abort.signal.aborted)setRead({scope,refresh,error});},
     );
     return ()=>abort.abort();
-  },[path,persona,refresh,retry,schema]);
+  },[path,persona,refresh,retry,schema,scope]);
   async function more(){
-    if(!path||!visible?.cursor||busy)return;
-    setBusy(true);setNotice(undefined);
+    if(!path||!visible?.cursor||busy===scope)return;
+    setBusy(scope);setNotice(undefined);
     try{
       const {data,meta}=await requestApi(`${path}&cursor=${encodeURIComponent(visible.cursor)}`,schema,{headers:{"X-School-Persona":persona}});
-      setRead((old)=>old===visible?{path,refresh,items:[...(visible.items??[]),...data],cursor:meta?.nextCursor}:old);
+      setRead((old)=>old===visible?{scope,refresh,items:[...(visible.items??[]),...data],cursor:meta?.nextCursor}:old);
     }catch(error){
-      if(denied(error))setRead((old)=>old===visible?{path,refresh,error}:old);
-      else setNotice(error);
-    }finally{setBusy(false);}
+      if(denied(error))setRead((old)=>old===visible?{scope,refresh,error}:old);
+      else setNotice({scope,error});
+    }finally{setBusy(current=>current===scope?undefined:current);}
   }
-  return {visible,retry:()=>setRetry((count)=>count+1),more,busy,notice};
+  return {visible,retry:()=>setRetry((count)=>count+1),more,busy:busy===scope,notice:notice?.scope===scope?notice.error:undefined};
 }
 
 export function offeringText(value:CurriculumOffering,locale:Locale){

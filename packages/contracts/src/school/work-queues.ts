@@ -34,12 +34,21 @@ export const queueSummarySchema = z.discriminatedUnion("state",[
   queueTarget.extend({state:z.literal("ready"),count:z.int().nonnegative()}),
   queueTarget.extend({state:z.literal("unavailable")}),
 ]);
-export const workQueuesSchema = z.object({
-  asOf:schoolDateSchema.nullable(),
-  today:schoolDateSchema.nullable(),
-  timezone:z.string().nullable(),
-  setupRequired:z.boolean().optional(),
-  mayConfigure:z.boolean().optional(),
-  queues:queueSummarySchema.array(),
-});
+export const workQueuesSchema = z.union([
+  z.object({
+    asOf: schoolDateSchema,
+    today: schoolDateSchema,
+    timezone: z.string(),
+    setupRequired: z.literal(false).optional(),
+    queues: queueSummarySchema.array(),
+  }),
+  z.object({
+    asOf: z.null(),
+    today: z.null(),
+    timezone: z.null(),
+    setupRequired: z.literal(true),
+    mayConfigure: z.boolean(),
+    queues: z.tuple([]),
+  }),
+]);
 export const queuePageSchema = z.object({asOf:schoolDateSchema,items:queueItemSchema.array()});

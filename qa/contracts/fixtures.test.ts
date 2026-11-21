@@ -3,6 +3,29 @@ import { test } from "node:test";
 import { schoolFixtures, principals } from "../fixtures/school";
 import { fixtureApi } from "../support/api";
 
+test("an unconfigured school exposes setup only to the authorized administrator", async () => {
+  const school = schoolFixtures();
+  try {
+    await school.seed();
+    const admin = await school.bearer("admin", "admin");
+    const guardian = await school.bearer("guardian-ar", "guardian");
+    const settings = await fixtureApi(school, "/school/settings", {token: admin, persona: "admin"});
+    const status = await fixtureApi(school, "/school/work-queues", {token: admin, persona: "admin"});
+    const family = await fixtureApi(school, "/school/work-queues", {token: guardian, persona: "guardian"});
+    if (settings.payload.data === null) {
+      const setup = {asOf: null, today: null, timezone: null, setupRequired: true, queues: []};
+      assert.deepEqual(status.payload.data, {...setup, mayConfigure: true});
+      assert.deepEqual(family.payload.data, {...setup, mayConfigure: false});
+    } else {
+      assert.equal(status.payload.data.timezone, settings.payload.data.timezone);
+      assert.equal(family.payload.data.today, status.payload.data.today);
+      assert.deepEqual(family.payload.data.queues, []);
+    }
+  } finally {
+    await school.close();
+  }
+});
+
 test("two independent fixture runs coexist and cleanup removes only the unused run", async () => {
   const school = schoolFixtures();
   try {

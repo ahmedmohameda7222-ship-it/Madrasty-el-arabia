@@ -8,6 +8,8 @@ import { healthSchema, pageQuerySchema, successEnvelope } from "../../packages/c
 import { schoolResourceLinkSchema } from "../../packages/contracts/src/resourceLinks";
 import { candidate, fixtureEmail, localAuth, localOrigin, localProject, newRunId, publicRead, requireFixtureTarget } from "../support/target";
 
+import { workQueuesSchema } from "../../packages/contracts/src/school/work-queues";
+
 const source = readFileSync(new URL("../../packages/contracts/openapi.yaml", import.meta.url));
 const contract = parse(source.toString("utf8"));
 
@@ -95,4 +97,13 @@ test("an absent session produces the documented unauthorized envelope", async ()
   assert.equal(error.code, "unauthenticated");
   assert.equal(error.messageKey, "error.unauthenticated");
   assert.equal(error.requestId, response.headers.get("x-request-id"));
+});
+
+test("dashboard wire contract separates first-run setup and configured data", () => {
+  const setup = { asOf: null, today: null, timezone: null, setupRequired: true, mayConfigure: false, queues: [] };
+  const configured = { asOf: "2026-11-21", today: "2026-11-21", timezone: "Europe/Berlin", queues: [] };
+  assert.deepEqual(workQueuesSchema.parse(setup), setup);
+  assert.deepEqual(workQueuesSchema.parse(configured), configured);
+  assert.equal(workQueuesSchema.safeParse({ ...setup, setupRequired: false }).success, false);
+  assert.equal(workQueuesSchema.safeParse({ ...setup, today: configured.today }).success, false);
 });

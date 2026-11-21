@@ -56,7 +56,7 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
     </>;
   }
   return <TimetableRead locale={locale} result={result}>{(summary)=>{
-    if (summary.setupRequired || !summary.asOf) {
+    if (summary.setupRequired === true) {
       return <RoleHero persona="admin" title={text.work}
         detail={locale==="ar"?"إعدادات المدرسة مطلوبة قبل عرض المهام.":"Die Schule muss eingerichtet werden."}
         action={summary.mayConfigure
