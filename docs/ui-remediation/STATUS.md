@@ -27,7 +27,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
-| UIX-05 | 1 | RED test committed; result pending | German visible 'Anwes.' with full aria-label 'Anwesenheit', 44px targets, 320/390, text 200%, Arabic counterpart |
+| UIX-05 | 1 | RED verified in isolated Chromium; minimal visible label fix committed; GREEN pending | Run 44895089775: aria-label missing on the German attendance tab (1 expected failure, 3 earlier tests pass); adds visible `Anwes.` with complete screen-reader name |
 | UIX-06 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -117,3 +117,7 @@ No command from the block above has been represented as successful in this docum
 
 - [Run 44894423678](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44894423678) on d160f8be: 3/3 isolated Chromium regressions passed; 9 screenshot-policy and 1 QA-only-overlay Node tests, TypeScript check and web build passed. Brand name remains fully available through the existing aria-label; 200% zoom was not part of the UIX-04 GREEN browser assertion.
 - UIX-03/UIX-04 success screenshot paths and full isolated browser motion recordings are now captured automatically by the shared QA runner, never approved as golden references.
+
+## UIX-05 RED checkpoint
+
+- [Run 44895089775](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44895089775): browser-fixture 1 expected failure / 3 passes. On `/de/school/attendance`, selected tab `aria-current=page` worked, but `aria-label` was absent. Before screenshot + WebM + trace in artifact 14704010234. The visible title wraps in the source audit; proposed abbreviated label preserves `Anwesenheit` for assistive tech. This fix changes only the shared nav's German attendance tab and QA evidence capture; other nav destinations untouched. GREEN pending.
