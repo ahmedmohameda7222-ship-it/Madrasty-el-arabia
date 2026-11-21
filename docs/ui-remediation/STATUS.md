@@ -30,8 +30,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
 | UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
 | UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
-| UIX-08 | 2 | Four focused regressions GREEN; old generic-copy test outdated; updating and rerunning full targeted suite | Run 44932187563 11/12 browser passed (four new tests passed); one existing assertion still required generic copy now intentionally replaced; types/build passed |
-| UIX-09 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
+| UIX-09 | 2 | Four targeted RED browser tests authored; result pending | Guardian AR switch and DE first-load, unlinked 320px and invalid child deep-link; only synthetic data |
 | UIX-10 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-11 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-12 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -171,3 +171,7 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 ## UIX-08 initial GREEN run and stale assertion
 
 - [Run 44932187563](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44932187563): all four new role/locale empty-state tests passed in isolated Chromium; eight older tests included one failure because `ui-empty-states.spec.ts` asserted the **old generic string** that UIX-08 intentionally replaces. 11/12 browser passed, TypeScript and build passed. This is an assertion-contract change, not a working UI regression; the revised prior test asserts the new context-specific text with all ARIA/data-state/CTA checks preserved. Final GREEN rerun pending.
+
+## UIX-08 GREEN checkpoint
+
+- [Run 44932593380](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44932593380) on 1efe05ed: 12/12 Chromium tests passed, typecheck and build passed; four role-specific academic messages verified, four after-screenshots and interaction recordings included in artifact 14718287556. Diff limited to existing academic components, tests and status, no API/security/business changes. Filter/no-selected-child and permission states still need broader matrix acceptance (UIX-17).
