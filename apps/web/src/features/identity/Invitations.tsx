@@ -111,8 +111,8 @@ export function InvitationLanding({ locale }: { locale: Locale }) {
 const list = invitationSchema.array();
 const choices = batchChoiceSchema.array();
 
-export function InviteWorkspace({ locale, guardians, teachers, batchId }: {
-  locale: Locale; guardians: boolean; teachers: boolean; batchId?: string;
+export function InviteWorkspace({ locale, guardians, teachers, batchId, invitationId }: {
+  locale: Locale; guardians: boolean; teachers: boolean; batchId?: string; invitationId?: string;
 }) {
   const text = names[locale], command = useAdminCommand();
   const [rows, setRows] = useState<Invitation[]>([]);
@@ -127,7 +127,7 @@ export function InviteWorkspace({ locale, guardians, teachers, batchId }: {
   const [saved, setSaved] = useState("");
   const [change, setChange] = useState<Invitation>();
 
-  const endpoint = `/invitations?limit=25${filter ? `&status=${filter}` : ""}${batchId ? `&batchId=${batchId}` : ""}` as const;
+  const endpoint = `/invitations?limit=25${invitationId ? `&id=${invitationId}` : ""}${filter ? `&status=${filter}` : ""}${batchId ? `&batchId=${batchId}` : ""}` as const;
   useEffect(() => {
     const cancel = new AbortController();
     requestApi(endpoint, list, { signal: cancel.signal }).then(({ data, meta }) => { setRows(data); setNext(meta?.nextCursor); })

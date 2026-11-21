@@ -10,6 +10,11 @@ export type WorkQueueKey = z.infer<typeof workQueueKeySchema>;
 export type SchoolQueueKey = z.infer<typeof schoolQueueKeySchema>;
 
 const target = z.discriminatedUnion("kind",[
+  z.object({kind:z.literal("bounced_invite"),invitationId:z.uuid()}),
+  z.object({kind:z.literal("attendance_sheet"),classId:z.uuid(),date:schoolDateSchema}),
+  z.object({kind:z.literal("enrollment_stop"),requestId:z.uuid()}),
+  z.object({kind:z.literal("receipt_match"),receiptId:z.uuid()}),
+  z.object({kind:z.literal("delivery_review"),deliveryId:z.uuid()}),
   z.object({kind:z.literal("guardian_link"),guardianId:z.uuid(),linkId:z.uuid()}),
   z.object({kind:z.literal("family_import"),jobId:z.uuid()}),
   z.object({kind:z.literal("class_assignment"),classId:z.uuid(),yearId:z.uuid()}),
@@ -30,9 +35,11 @@ export const queueSummarySchema = z.discriminatedUnion("state",[
   queueTarget.extend({state:z.literal("unavailable")}),
 ]);
 export const workQueuesSchema = z.object({
-  asOf:schoolDateSchema,
-  today:schoolDateSchema,
-  timezone:z.string(),
+  asOf:schoolDateSchema.nullable(),
+  today:schoolDateSchema.nullable(),
+  timezone:z.string().nullable(),
+  setupRequired:z.boolean().optional(),
+  mayConfigure:z.boolean().optional(),
   queues:queueSummarySchema.array(),
 });
 export const queuePageSchema = z.object({asOf:schoolDateSchema,items:queueItemSchema.array()});

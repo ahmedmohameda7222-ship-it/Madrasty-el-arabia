@@ -11,6 +11,7 @@ export const candidate = {
   deployment: "dpl_CToF1pHubX6tBvSeWN7UqqRaQbPT",
   projectRef: schoolProject,
   openApiSha256: "cadfa05acf2604019d3c7acd05c35e4b2252cde92c197a3abf8dbc9070e77316",
+  apkBytes: 11_758_251,
   apkSha256: "d5ca02907bfaaa4604252603bbc8fd2a36b82d5eccf014ea11765051b4f8c99d",
   apkSignerSha256: "8cdd2ca77ae0051388be756512fdda8b50bfd2023b954d078f4079e8c2332fd3",
 } as const;

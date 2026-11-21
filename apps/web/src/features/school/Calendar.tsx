@@ -54,38 +54,56 @@ function useSave(locale: Locale) {
 
 export function SchoolCalendar({ locale }: { locale: Locale }) {
   const text = copies[locale];
-  const [data, setData] = useState<{ settings: Settings | null; years: SchoolYear[] }>();
-  const [failure, setFailure] = useState<unknown>();
-  const [generation, setGeneration] = useState(0);
+  const [settings, setSettings] = useState<Settings | null>();
+  const [years, setYears] = useState<SchoolYear[]>();
+  const [settingsError, setSettingsError] = useState<unknown>();
+  const [yearsError, setYearsError] = useState<unknown>();
+  const [settingsAttempt, setSettingsAttempt] = useState(0);
+  const [yearsAttempt, setYearsAttempt] = useState(0);
   const [selection, setSelection] = useState<string>();
+  const configured = Boolean(settings);
 
   useEffect(() => {
     const abort = new AbortController();
-    Promise.all([
-      requestApi("/school/settings", settingsSchema.nullable(), { signal: abort.signal }),
-      requestApi("/school/years", yearSchema.array(), { signal: abort.signal }),
-    ]).then(([settings, years]) => setData({ settings: settings.data, years: years.data }))
-      .catch((error) => { if (!abort.signal.aborted) setFailure(error); });
+    requestApi("/school/settings", settingsSchema.nullable(), { signal: abort.signal })
+      .then(({data}) => { if (!abort.signal.aborted) setSettings(data); })
+      .catch((error) => { if (!abort.signal.aborted) setSettingsError(error); });
     return () => abort.abort();
-  }, [generation]);
+  }, [settingsAttempt]);
 
-  const selected = data?.years.find(({ id }) => id === selection);
-  const content = data && (
+  useEffect(() => {
+    if (!configured) return;
+    const abort = new AbortController();
+    requestApi("/school/years", yearSchema.array(), { signal: abort.signal })
+      .then(({data}) => { if (!abort.signal.aborted) setYears(data); })
+      .catch((error) => { if (!abort.signal.aborted) setYearsError(error); });
+    return () => abort.abort();
+  }, [configured, yearsAttempt]);
+
+  function retrySettings() {
+    setSettingsError(undefined);
+    setSettingsAttempt((attempt) => attempt + 1);
+  }
+
+  function retryYears() {
+    setYearsError(undefined);
+    setYearsAttempt((attempt) => attempt + 1);
+  }
+
+  const selected = years?.find(({ id }) => id === selection);
+  const content = years && (
     <div className="calendar-layout">
-      <SettingsEditor locale={locale} initial={data.settings} />
       <section className="auth-card">
         <h2>{text.years}</h2>
         <div className="auth-form">
           <label>{text.choose}<select value={selection ?? ""} onChange={(event) => setSelection(event.target.value || undefined)}>
             <option value="">{text.newYear}</option>
-            {data.years.map((year) => <option value={year.id} key={year.id}>
+            {years.map((year) => <option value={year.id} key={year.id}>
               {formatSchoolDate(year.startsOn, locale)} – {formatSchoolDate(year.endsExclusive, locale)} · {text[year.state]}
             </option>)}
           </select></label>
           <YearEditor key={selected?.id ?? "new"} locale={locale} initial={selected} onSaved={(saved) => {
-            setData((current) => current && ({
-              ...current, years: [saved, ...current.years.filter(({ id }) => id !== saved.id)],
-            }));
+            setYears((current) => [saved, ...(current ?? []).filter(({ id }) => id !== saved.id)]);
             setSelection(saved.id);
           }} />
         </div>
@@ -93,16 +111,20 @@ export function SchoolCalendar({ locale }: { locale: Locale }) {
       {selected && <DaysEditor key={selected.id} locale={locale} year={selected} />}
     </div>
   );
-  const forbidden = failure instanceof ApiResponseError && (failure.status === 403 || failure.status === 401);
+  const forbidden = settingsError instanceof ApiResponseError && [401,403].includes(settingsError.status);
   return <>
     <h1>{text.title}</h1>
-    <AsyncSurface locale={locale} state={forbidden ? { kind: "forbidden" } : failure
-      ? { kind: "error", retry: () => { setFailure(undefined); setGeneration(generation + 1); }, message: showError(locale, failure) }
-      : data ? { kind: "ready", content } : { kind: "initialLoading" }} />
+    <AsyncSurface locale={locale} state={forbidden ? { kind: "forbidden" } : settingsError
+      ? { kind: "error", retry: retrySettings, message: showError(locale, settingsError) }
+      : settings === undefined ? { kind: "initialLoading" }
+      : { kind: "ready", content: <SettingsEditor locale={locale} initial={settings} onSaved={setSettings} /> }} />
+    {configured && <AsyncSurface locale={locale} state={yearsError
+      ? { kind: "error", retry: retryYears, message: showError(locale, yearsError) }
+      : years ? { kind: "ready", content } : { kind: "initialLoading" }} />}
   </>;
 }
 
-function SettingsEditor({ locale, initial }: { locale: Locale; initial: Settings | null }) {
+function SettingsEditor({ locale, initial, onSaved }: { locale: Locale; initial: Settings | null; onSaved: (settings:Settings)=>void }) {
   const text = copies[locale];
   const command = useAdminCommand();
   const { state, save } = useSave(locale);
@@ -116,6 +138,7 @@ function SettingsEditor({ locale, initial }: { locale: Locale; initial: Settings
       if (!values.success) throw new ApiResponseError(422, "validation", "error.validation");
       const result = await command("/school/settings", "PATCH", values.data, settingsSchema);
       setRevision(result.revision);
+      onSaved(result);
     });
   }
   return (

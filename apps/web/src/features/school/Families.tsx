@@ -133,7 +133,7 @@ function RecordPicker({ locale, mode, select }: { locale: Locale; mode: Mode; se
               <bdi>{row.displayName}</bdi>{"studentNumber" in row && <small><bdi dir="ltr">{row.studentNumber}</bdi></small>}
             </button>
           </li>)}</ul>
-        ) } : { kind: "empty", filtered: Boolean(filter) } : { kind: "initialLoading" }} />
+        ) } : { kind: "empty", filtered: Boolean(filter), message: filter ? undefined : mode === "students" ? (locale==="ar"?"أضف أول طالب أو استورد ملف الأسر.":"Legen Sie den ersten Schüler an oder importieren Sie Familien.") : (locale==="ar"?"سجّل أول أسرة واربطها بأبنائها.":"Legen Sie die erste Familie mit ihren Kindern an.") } : { kind: "initialLoading" }} />
       {state.next && <button className="plain-button" onClick={loadMore}>{text.moreRows}</button>}
     </div>
   );

@@ -39,9 +39,16 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
 
     const send = async (path: string, name: string, body: unknown, method: "POST" | "PUT" = "POST", status = 201) =>
       (await fixtureApi(school, path, { method, token: finance, persona: "admin", key: `${school.run}.${name}`, body, status })).payload.data;
-    await send("/finance/tariffs", "tariff", {
-      effectiveFromMonth: clock.month, dueDay: 25, lines: [{ titleAr: "رسوم اختبار", titleDe: "QA-Gebühr", amountMinor: 3200 }],
-    });
+    const tariffs = (await fixtureApi(school, "/finance/tariffs", {token:finance,persona:"admin"})).payload.data;
+    const existingTariff = tariffs.find((row: {effectiveFromMonth:string})=>row.effectiveFromMonth===clock.month);
+    if (existingTariff) {
+      assert.equal(existingTariff.dueDay,25);
+      assert.equal(existingTariff.lines.reduce((total: number, line: {amountMinor:number})=>total+line.amountMinor,0),3200);
+    } else {
+      await send("/finance/tariffs", "tariff", {
+        effectiveFromMonth: clock.month, dueDay: 25, lines: [{ titleAr: "QA fee", titleDe: "QA fee", amountMinor: 3200 }],
+      });
+    }
     for (const child of [ids.ahmed, ids.omar]) {
       const path = `/finance/children/${child}/payer`;
       const profile = (await fixtureApi(school, path, { token: finance })).payload.data;
@@ -82,6 +89,8 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     }));
     assert.equal(payment.state, "needs_matching");
     assert.equal(payment.remainderMinor, 4000);
+    const matching = await fixtureApi(school, `/school/work-queues/settlement_review?asOf=${clock.day}`, {token:admin,persona:"admin"});
+    assert.ok(matching.payload.data.items.some((entry: {target:{receiptId?: string}})=>entry.target.receiptId===payment.id));
     const allocated = receiptMutation.parse(await send(`/finance/receipts/${payment.id}/allocations`, "manual-allocation", {
       revision: payment.revision, lines: [{ invoiceId: omar.id, amountMinor: 1600, invoiceRevision: sibling.revision }],
     }));
@@ -102,11 +111,20 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       body: { studentId: ids.omar, lastAttendanceMonth: clock.month, duration: "one_month", reason: "Synthetic school break" },
     })).payload.data);
     assert.equal(stop.startMonth, "2026-12");
+    const dashboard = await fixtureApi(school, `/school/work-queues?asOf=${clock.day}`, {token:admin,persona:"admin"});
+    const pending = dashboard.payload.data.queues.find((row: {key:string}) => row.key==="noncontinuation_requests");
+    assert.equal(pending?.state, "ready");
+    assert.ok(pending.count > 0);
+    const queue = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${clock.day}`, {token:admin,persona:"admin"});
+    assert.ok(queue.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
+    await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${clock.day}`, {token:payer,persona:"guardian",status:404});
     const decision = enrollmentStop.parse((await fixtureApi(school, `/enrollment-stops/${stop.id}/decision`, {
       method: "POST", token: admin, persona: "admin", key: `${school.run}.approve-omar`,
       body: { decision: "approve", revision: stop.revision },
     })).payload.data);
     assert.equal(decision.state, "approved");
+    const resolved = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${clock.day}`, {token:admin,persona:"admin"});
+    assert.ok(!resolved.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
     const nextMonth = invoicePreview.parse(await send("/finance/invoice-previews", "next-month-preview", {
       ...selection, period: "2026-12",
     }));

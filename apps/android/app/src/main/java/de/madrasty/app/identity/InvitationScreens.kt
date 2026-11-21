@@ -109,14 +109,14 @@ private val delivery = mapOf("ready" to R.string.invite_ready, "queued" to R.str
 private typealias InvitationRows = AsyncState<WirePage<List<JSONObject>>>
 
 @Composable
-fun StaffInvitationsScreen(model: IdentityViewModel, teachers: Boolean, batch: String? = null, close: () -> Unit) {
+fun StaffInvitationsScreen(model: IdentityViewModel, teachers: Boolean, batch: String? = null, invitationId: String? = null, close: () -> Unit) {
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
     var generation by remember { mutableStateOf(0) }
     var rows by remember { mutableStateOf<InvitationRows>(AsyncState.InitialLoading()) }
     var filter by remember { mutableStateOf("") }
     var change by remember { mutableStateOf<JSONObject?>(null) }
     var currentPage by remember { mutableStateOf<WirePage<List<JSONObject>>?>(null) }
-    val query = "/invitations?limit=25" + (batch?.let { "&batchId=$it" } ?: "") + (filter.takeIf { it.isNotEmpty() }?.let { "&status=$it" } ?: "")
+    val query = "/invitations?limit=25" + (invitationId?.let { "&id=$it" } ?: "") + (batch?.let { "&batchId=$it" } ?: "") + (filter.takeIf { it.isNotEmpty() }?.let { "&status=$it" } ?: "")
 
     LaunchedEffect(generation, query) {
         rows = AsyncState.InitialLoading()

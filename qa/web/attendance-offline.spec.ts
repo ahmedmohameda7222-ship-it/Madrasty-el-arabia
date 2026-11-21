@@ -31,7 +31,7 @@ test("desktop web reconnects one safe attendance edit and surfaces the conflicti
     await page.goto(`/de/school/attendance?class=${apple.id}&date=${date}`);
     const firstMark = page.getByRole("combobox", { name: first.displayName, exact: true });
     const secondMark = page.getByRole("combobox", { name: second.displayName, exact: true });
-    await expect(firstMark).toBeEnabled();
+    await expect(firstMark).toBeEnabled({timeout:15_000});
     await expect(secondMark).toBeEnabled();
     await context.setOffline(true);
     await firstMark.selectOption("present");

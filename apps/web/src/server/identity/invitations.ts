@@ -79,7 +79,8 @@ export function listInvitations(ctx: ActorContext, query: z.infer<typeof invitat
     const rows = invitationSchema.array().parse(await tx`
       select result.* from (
         select ${projection(tx)} from app.invitation i
-        where (${query.batchId ?? null}::uuid is null or i.batch_id = ${query.batchId ?? null}::uuid)
+        where (${query.id ?? null}::uuid is null or i.id = ${query.id ?? null}::uuid)
+          and (${query.batchId ?? null}::uuid is null or i.batch_id = ${query.batchId ?? null}::uuid)
           and (${query.cursor ?? null}::uuid is null or i.id > ${query.cursor ?? null}::uuid)
       ) result where (${query.status ?? null}::text is null or result.validity = ${query.status ?? null})
       order by result.id limit ${query.limit + 1}

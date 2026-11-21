@@ -42,19 +42,24 @@ export function timetableError(locale: Locale, error: unknown) {
 }
 
 export function useTimetableRead<T>(path: `/${string}` | null, schema: ZodType<T>, refresh=0) {
-  const { persona }=useAccountScope();
-  const [value,setValue]=useState<{ path: string; data?:T; error?:unknown }>();
+  const { accountId,sessionId,persona }=useAccountScope();
+  const scope=JSON.stringify([accountId,sessionId,persona,path]);
+  const [value,setValue]=useState<{ scope: string; data?:T; confirmedAt?:string; error?:unknown }>();
   const [attempt,setAttempt]=useState(0);
   useEffect(()=>{
     if(!path)return;
     const abort=new AbortController();
     requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}}).then(
-      (reply)=>{if(!abort.signal.aborted)setValue({path,data:reply.data});},
-      (error)=>{if(!abort.signal.aborted)setValue({path,error});},
+      (reply)=>{if(!abort.signal.aborted)setValue({scope,data:reply.data,confirmedAt:new Date().toISOString()});},
+      (error)=>{
+        if(abort.signal.aborted)return;
+        const transient = !(error instanceof ApiResponseError) || error.status >= 500;
+        setValue(previous=>transient && previous?.scope===scope ? {...previous,error} : {scope,error});
+      },
     );
     return ()=>abort.abort();
-  },[attempt,path,persona,refresh,schema]);
-  return {value:value?.path===path?value:undefined,retry:()=>setAttempt((count)=>count+1)};
+  },[attempt,path,persona,refresh,schema,scope]);
+  return {value:value?.scope===scope?value:undefined,retry:()=>setAttempt((count)=>count+1)};
 }
 
 export function TimetableRead<T>({locale,result,children}:{
@@ -64,7 +69,9 @@ export function TimetableRead<T>({locale,result,children}:{
   const data=result.value?.data;
   return <AsyncSurface locale={locale} state={resultError
     ? resultError instanceof ApiResponseError && [401,403,404].includes(resultError.status)
-      ? {kind:"forbidden"} : {kind:"error",message:timetableError(locale,resultError),retry:result.retry}
+      ? {kind:"forbidden"} : data!==undefined && result.value?.confirmedAt
+        ? {kind:"stale",content:children(data),lastConfirmed:result.value.confirmedAt,retry:result.retry}
+        : {kind:"error",message:timetableError(locale,resultError),retry:result.retry}
     : data === undefined ? {kind:"initialLoading"} : {kind:"ready",content:children(data)} }/>;
 }
 

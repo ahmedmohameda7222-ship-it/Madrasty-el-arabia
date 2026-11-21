@@ -35,11 +35,30 @@ test("the desktop administrator can reach calendar and finances from the adminis
     const token = await school.bearer("admin", "admin");
     await context.addCookies([{ name: "madrasty-session", value: token, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
     await page.goto("/de/school/more");
-    await expect(page.getByRole("heading", { name: "Schulverwaltung" })).toBeVisible();
+    await page.getByText("Buchhaltung", { exact: true }).click();
     await expect(page.getByRole("link", { name: "Rechnungen", exact: true })).toBeVisible();
+    await page.getByText("Aufnahme und Schulverwaltung", { exact: true }).click();
     await page.getByRole("link", { name: "Schuljahr und Kalender" }).click();
     await expect(page).toHaveURL(/\/de\/school\/more\/calendar$/);
     await expect(page.getByRole("main")).toBeVisible();
+  } finally {
+    await school.close();
+  }
+});
+
+test("first-run administration exposes school setup and keeps the route while switching language", async ({page,context}) => {
+  const school=schoolFixtures();
+  try {
+    const token=await school.bearer("admin","admin");
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.route("**/api/v1/school/work-queues",route=>route.fulfill({json:{data:{
+      asOf:null,today:null,timezone:null,setupRequired:true,mayConfigure:true,queues:[],
+    }}}));
+    await page.goto("/ar/school/home");
+    await page.getByRole("link",{name:"إعداد المدرسة",exact:true}).click();
+    await expect(page).toHaveURL(/\/ar\/school\/more\/calendar$/);
+    await page.getByRole("link",{name:"Deutsch",exact:true}).click();
+    await expect(page).toHaveURL(/\/de\/school\/more\/calendar$/);
   } finally {
     await school.close();
   }

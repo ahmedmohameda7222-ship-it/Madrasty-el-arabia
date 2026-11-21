@@ -71,7 +71,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     </form>
     <div className="header-actions">{filters.map((filter)=><button className="plain-button" type="button" key={filter}
       aria-pressed={selected===filter} onClick={()=>setSelected(filter)}>{text[filter]}</button>)}</div>
-    <AcademicPageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((item)=><li key={item.id}>
+    <AcademicPageItems locale={locale} page={list} emptyMessage={term ? undefined : archived ? (locale==="ar"?"مفيش محادثات في الأرشيف.":"Keine archivierten Unterhaltungen.") : (locale==="ar"?"مفيش محادثات هنا. افتح دليل التواصل لبدء محادثة.":"Keine Unterhaltungen hier. Öffnen Sie das Kontaktverzeichnis, um eine zu beginnen.")}>{(rows)=><ul className="group-list">{rows.map((item)=><li key={item.id}>
       <Link className="group-row" href={`${root}?thread=${item.id}`}>
         <bdi>{title(locale,item)}</bdi>{item.inbox&&item.contactName&&<span>{text[item.inbox]}</span>}
         {item.caseStatus&&<span>{text[item.caseStatus]}</span>}

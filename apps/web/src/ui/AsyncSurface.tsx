@@ -11,7 +11,7 @@ export type AsyncState =
   | { kind: "ready"; content: ReactNode }
   | { kind: "refreshing"; content: ReactNode; lastConfirmed?: string }
   | { kind: "stale"; content: ReactNode; lastConfirmed: string; retry: () => void }
-  | { kind: "empty"; filtered?: boolean; action?: ReactNode }
+  | { kind: "empty"; message?: string; filtered?: boolean; action?: ReactNode }
   | { kind: "error" | "offline"; retry: () => void; message?: string }
   | { kind: "offlineDraft"; content: ReactNode; lastConfirmed?: string }
   | { kind: "conflict" | "readOnly"; content: ReactNode; message?: string }
@@ -22,7 +22,7 @@ export function AsyncSurface({ locale, state }: { locale: Locale; state: AsyncSt
   if (state.kind === "initialLoading") return <ColdLoad locale={locale} shape={state.shape} />;
   if (state.kind === "forbidden") return <Forbidden locale={locale} action={state.action} />;
   if (state.kind === "empty") return (
-    <div className="notice">{state.filtered ? text.filteredEmpty : text.empty}{state.action}</div>
+    <div className="notice">{state.message ?? (state.filtered ? text.filteredEmpty : text.empty)}{state.action}</div>
   );
   if (state.kind === "error" || state.kind === "offline") return (
     <div className="notice">

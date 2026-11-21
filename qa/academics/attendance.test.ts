@@ -22,6 +22,10 @@ test("an online guardian excuse locks their pupil, bulk marking skips it, and co
     const sheet = attendanceSheetSchema.parse(opened.payload.data);
     assert.equal(sheet.rows.length, 2);
     assert.equal(sheet.counts.unmarked, 2);
+    const queuePath = `/school/work-queues/unapproved_attendance?asOf=${clock.day}`;
+    const queueBefore = await fixtureApi(school, queuePath, {token:admin,persona:"admin"});
+    assert.ok(queueBefore.payload.data.items.some((entry: {id:string})=>entry.id===sheet.id));
+    await fixtureApi(school, queuePath, {token:teacher,persona:"teacher",status:404});
     const childPath = `/children/${ids.ahmed}/attendance/excuses`;
     const reason = "Synthetic QA excuse";
     await fixtureApi(school, childPath, {
@@ -59,6 +63,8 @@ test("an online guardian excuse locks their pupil, bulk marking skips it, and co
       body: { approvalRevision: final.approvalRevision, expectedRows: final.rows.map(({ id, revision }) => ({ rowId: id, revision })) },
     });
     assert.equal(attendanceSheetSchema.parse(approved.payload.data).state, "approved");
+    const queueAfter = await fixtureApi(school, queuePath, {token:admin,persona:"admin"});
+    assert.ok(!queueAfter.payload.data.items.some((entry: {id:string})=>entry.id===sheet.id));
     console.info("Attendance confirmation request", arrival.trace);
   } finally {
     await school.close();

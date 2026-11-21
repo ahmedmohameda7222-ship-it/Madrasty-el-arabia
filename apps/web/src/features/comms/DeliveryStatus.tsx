@@ -24,12 +24,12 @@ const copy={
 const rows=deliveryStatusItem.array();
 type Delivery=z.infer<typeof deliveryStatusItem>;
 
-export function DeliveryStatus({locale}:{locale:Locale}){
+export function DeliveryStatus({locale,job}:{locale:Locale;job?:string}){
   const text=copy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
   const [kind,setKind]=useState(""),[state,setState]=useState(""),[refresh,setRefresh]=useState(0);
   const [busy,setBusy]=useState<string>(),[error,setError]=useState(""),[ack,setAck]=useState(false);
   const selectedKind=deliveryKind.safeParse(kind),selectedState=deliveryState.safeParse(state);
-  const path=`/delivery-status?limit=30${selectedKind.success?"&kind="+selectedKind.data:""}${selectedState.success?"&state="+selectedState.data:""}` as const;
+  const path=`/delivery-status?limit=30${job?"&id="+job:""}${selectedKind.success?"&kind="+selectedKind.data:""}${selectedState.success?"&state="+selectedState.data:""}` as const;
   const page=useAcademicPage(path,rows,refresh);
   const time=(value:string)=>new Date(value).toLocaleString(locale==="de"?"de-DE":"ar");
   const number=new Intl.NumberFormat(locale);

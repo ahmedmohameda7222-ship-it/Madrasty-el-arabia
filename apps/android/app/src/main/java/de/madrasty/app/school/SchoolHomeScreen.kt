@@ -46,6 +46,11 @@ import java.util.Locale
 data class WorkQueueSelection(val key: String,val asOf: String)
 
 sealed interface SchoolWorkTarget {
+    data class BouncedInvite(val id:String):SchoolWorkTarget
+    data class AttendanceSheet(val classId:String,val date:String):SchoolWorkTarget
+    data class EnrollmentStop(val id:String):SchoolWorkTarget
+    data class ReceiptMatch(val id:String):SchoolWorkTarget
+    data class DeliveryReview(val id:String):SchoolWorkTarget
     data class GuardianLink(val guardianId: String,val linkId: String) : SchoolWorkTarget
     data class FamilyImport(val jobId: String) : SchoolWorkTarget
     data class ClassAssignment(val classId: String,val yearId: String) : SchoolWorkTarget
@@ -66,6 +71,7 @@ fun SchoolHomeScreen(
     changeWorkDate: (String) -> Unit,
     openQueue: (WorkQueueSelection) -> Unit,
     openDirectory: () -> Unit,
+    openSetup: () -> Unit,
     child: String?,
     pickChild: (String) -> Unit,
     openProfile: (String) -> Unit,
@@ -76,7 +82,7 @@ fun SchoolHomeScreen(
     val language = locales[0].language
     val refresh = foregroundVersion()
     when (persona) {
-        Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,language,refresh)
+        Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,openSetup,language,refresh)
         Persona.Teacher -> TeacherHome(model,openAttendance,openSchedule,language,refresh)
         Persona.Guardian -> GuardianHome(model,child,pickChild,openProfile,openSchedule,language,refresh)
     }
@@ -85,12 +91,20 @@ fun SchoolHomeScreen(
 @Composable
 private fun AdminHome(
     model: IdentityViewModel, workDate:String, changeWorkDate:(String)->Unit,
-    openQueue:(WorkQueueSelection)->Unit, directory:()->Unit, language:String, refresh:Int,
+    openQueue:(WorkQueueSelection)->Unit, directory:()->Unit, setup:()->Unit, language:String, refresh:Int,
 ) {
     var dateText by remember(workDate) { mutableStateOf(workDate) }
     val query = if (workDate.isNotEmpty()) "?asOf=$workDate" else ""
     val work = scheduleRead("/school/work-queues$query",refresh,model::timetableObject)
     AsyncSurface(work) { summary ->
+        if (summary.optBoolean("setupRequired")) {
+            val mayConfigure=summary.optBoolean("mayConfigure")
+            RoleHero(Persona.Admin,stringResource(R.string.queue_title),stringResource(R.string.school_setup_required),
+                stringResource(if(mayConfigure) R.string.school_calendar else R.string.directory_title)) {
+                if(mayConfigure)setup() else directory()
+            }
+            return@AsyncSurface
+        }
         val asOf = summary.getString("asOf")
         val queues = summary.getJSONArray("queues").tableRows().filter { it.getString("key") in queueLabels }
         val first = queues.firstOrNull { it.getString("state") == "ready" && it.optInt("count") > 0 }
@@ -177,6 +191,10 @@ private fun GuardianHome(
 private fun HomeSchedule(model: IdentityViewModel, child:String?, open:(String?)->Unit, language:String, refresh:Int) {
     val school = scheduleRead("/school/work-queues",refresh,model::timetableObject)
     AsyncSurface(school) { date ->
+        if(date.isNull("today")) {
+            Text(stringResource(R.string.school_setup_required))
+            return@AsyncSurface
+        }
         val today = date.getString("today")
         val week = scheduleRead("/school/timetable?weekOf=$today" + (child?.let { "&childId=$it" } ?: ""),refresh,model::timetableObject)
         AsyncSurface(week) { value ->
@@ -217,6 +235,11 @@ fun SchoolWorkQueueScreen(model: IdentityViewModel, selection: WorkQueueSelectio
             items.forEach { row ->
                 val target = row.getJSONObject("target")
                 val action = when (target.getString("kind")) {
+                    "bounced_invite" -> SchoolWorkTarget.BouncedInvite(target.getString("invitationId"))
+                    "attendance_sheet" -> SchoolWorkTarget.AttendanceSheet(target.getString("classId"),target.getString("date"))
+                    "enrollment_stop" -> SchoolWorkTarget.EnrollmentStop(target.getString("requestId"))
+                    "receipt_match" -> SchoolWorkTarget.ReceiptMatch(target.getString("receiptId"))
+                    "delivery_review" -> SchoolWorkTarget.DeliveryReview(target.getString("deliveryId"))
                     "guardian_link" -> SchoolWorkTarget.GuardianLink(target.getString("guardianId"),target.getString("linkId"))
                     "family_import" -> SchoolWorkTarget.FamilyImport(target.getString("jobId"))
                     "class_assignment" -> SchoolWorkTarget.ClassAssignment(target.getString("classId"),target.getString("yearId"))

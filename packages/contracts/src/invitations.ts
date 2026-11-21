@@ -12,6 +12,7 @@ export const invitationSchema = z.object({
   email: z.email(), expiresAt: z.iso.datetime(), revision: revisionSchema,
 });
 export const invitationListInput = pageQuerySchema.extend({
+  id: z.uuid().optional(),
   batchId: z.uuid().optional(), status: invitationState.optional(), cursor: z.uuid().optional(),
 });
 export const issueInvitationInput = z.object({ recipientId: z.uuid(), kind: invitationKind, locale: localeSchema });

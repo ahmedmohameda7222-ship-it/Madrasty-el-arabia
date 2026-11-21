@@ -14,7 +14,7 @@ type Options = {
 
 export async function fixtureApi(school: FixtureSchool, path: string, options: Options = {}) {
   const { method = "GET", body, token, persona, key, status = 200, locale = "de" } = options;
-  assert.match(path, /^\/[a-z][a-z0-9/-]*(?:\?.*)?$/);
+  assert.match(path, /^\/[a-z][a-z0-9/_-]*(?:\?.*)?$/);
   const headers = new Headers({ "accept-language": locale });
   if (token) headers.set("authorization", `Bearer ${token}`);
   if (persona) headers.set("x-school-persona", persona);

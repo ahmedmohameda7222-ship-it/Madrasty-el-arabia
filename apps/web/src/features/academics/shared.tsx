@@ -48,12 +48,12 @@ export function AcademicReadError({locale,error,retry}:{locale:Locale;error:unkn
   return <AsyncSurface locale={locale} state={denied(error)?{kind:"forbidden"}:{kind:"error",message:timetableError(locale,error),retry}}/>;
 }
 
-export function AcademicPageItems<T>({locale,page,children}:{locale:Locale;page:ReturnType<typeof useAcademicPage<T>>;children:(items:T[])=>ReactNode}){
+export function AcademicPageItems<T>({locale,page,children,emptyMessage}:{locale:Locale;emptyMessage?:string;page:ReturnType<typeof useAcademicPage<T>>;children:(items:T[])=>ReactNode}){
   const read=page.visible;
   if(read?.error)return <AcademicReadError locale={locale} error={read.error} retry={page.retry}/>;
   if(!read?.items)return <AsyncSurface locale={locale} state={{kind:"initialLoading"}}/>;
   return <>
-    {read.items.length?children(read.items):<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
+    {read.items.length?children(read.items):<AsyncSurface locale={locale} state={{kind:"empty",message:emptyMessage}}/>}
     {read.cursor&&<button className="plain-button" disabled={page.busy} onClick={()=>void page.more()}>{locale==="ar"?"عرض المزيد":"Weitere anzeigen"}</button>}
     {page.notice!==undefined&&<p role="alert">{timetableError(locale,page.notice)}</p>}
   </>;

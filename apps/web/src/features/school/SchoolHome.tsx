@@ -86,7 +86,7 @@ function TodayLessons({locale,refresh,child}:{locale:Locale;refresh:number;child
   const date=useTimetableRead("/school/work-queues",workQueuesSchema,refresh);
   const today=date.value?.data?.today;
   return <TimetableRead locale={locale} result={date}>{()=>{
-    if(!today)return null;
+    if(!today)return <p>{locale==="ar"?"هيظهر الجدول بعد ما إدارة المدرسة تكمّل الإعدادات.":"Der Stundenplan erscheint nach der Schuleinrichtung."}</p>;
     return <DaySchedule locale={locale} day={today} child={child} refresh={refresh}/>;
   }}</TimetableRead>;
 }

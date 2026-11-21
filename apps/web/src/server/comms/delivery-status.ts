@@ -35,7 +35,8 @@ export function listDeliveryStatus(actor:ActorContext,input:z.infer<typeof deliv
         to_char(j.due_at at time zone 'UTC',${time}) as "dueAt",to_char(j.created_at at time zone 'UTC',${time}) as "createdAt",
         to_char(j.changed_at at time zone 'UTC',${time}) as "updatedAt"
       from app.delivery_overview() j
-      where (${input.kind??null}::text is null or j.kind=${input.kind??null})
+      where (${input.id??null}::uuid is null or j.id=${input.id??null}::uuid)
+        and (${input.kind??null}::text is null or j.kind=${input.kind??null})
         and (${input.state??null}::text is null or j.state=${input.state??null})
         and (${cursor?.id??null}::uuid is null or (j.created_at,j.id)<(${cursor?.createdAt??null}::timestamptz,${cursor?.id??null}::uuid))
       order by j.created_at desc,j.id desc limit ${input.limit+1}`;

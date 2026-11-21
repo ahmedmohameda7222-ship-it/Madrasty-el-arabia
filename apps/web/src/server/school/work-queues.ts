@@ -7,88 +7,82 @@ import type { z } from "zod";
 import { ApiError } from "@/server/http";
 import { withActor, type ActorContext, type Transaction } from "@/server/db/scoped";
 
-type QueueSource = {
-  key: WorkQueueKey;
-  eligible: (tx: Transaction) => Promise<boolean>;
-  count: (tx: Transaction, asOf: string) => Promise<number>;
-};
+const eligibleSql = {
+  guardian_links: "students.manage",
+  family_imports: "students.manage",
+  class_assignments: null,
+  bounced_invites: null,
+  unapproved_attendance: "attendance.supervise",
+  noncontinuation_requests: null,
+  settlement_review: null,
+  failed_deliveries: null,
+} satisfies Record<WorkQueueKey,string|null>;
+const keys=Object.keys(eligibleSql) as WorkQueueKey[];
 
-function schoolQueue(key: SchoolQueueKey, eligibility: "students.manage" | "school") : QueueSource {
-  return {
-    key,
-    eligible: async (tx)=>{
-      const [result]=eligibility==="school"
-        ? await tx<{allowed:boolean}[]>`select app.staff_editor() as allowed`
-        : await tx<{allowed:boolean}[]>`select app.has_capability('students.manage') as allowed`;
-      return result.allowed;
-    },
-    count:async(tx,asOf)=>{
-      const [result]=await tx<{count:number}[]>`select count(*)::int as count from app.work_queue_items(${key},${asOf}::date)`;
-      return result.count;
-    },
-  };
+async function visibleKeys(tx:Transaction) {
+  const rows=await tx<{key:WorkQueueKey;allowed:boolean}[]>`
+    select candidate.key, case candidate.key
+      when 'class_assignments' then app.staff_editor()
+      when 'bounced_invites' then app.has_capability('students.manage') or app.has_capability('applications.manage')
+      when 'noncontinuation_requests' then app.enrollment_stop_staff()
+      when 'settlement_review' then app.finance_receipt_staff()
+      when 'failed_deliveries' then app.may_operate_delivery_queue()
+      else app.has_capability(candidate.capability)
+    end as allowed
+    from unnest(${tx.array(keys)}::text[],${tx.array(keys.map(key=>eligibleSql[key]))}::text[]) with ordinality as candidate(key,capability,ord)
+    order by candidate.ord`;
+  return rows.filter(entry=>entry.allowed).map(entry=>entry.key);
 }
 
-// D01 supplies eligible source queries for these module-owned queues. Missing queries remain hidden.
-export const moduleQueueSlots = {
-  bounced_invites: "identity",
-  unapproved_attendance: "attendance",
-  noncontinuation_requests: "enrollment",
-  settlement_review: "finance",
-  failed_deliveries: "communications",
-} as const;
-const integratedModuleQueues: QueueSource[]=[];
-const sources: QueueSource[]=[
-  schoolQueue("guardian_links","students.manage"),
-  schoolQueue("family_imports","students.manage"),
-  schoolQueue("class_assignments","school"),
-  ...integratedModuleQueues,
-];
+function source(tx:Transaction,key:WorkQueueKey,asOf:string) {
+  return schoolQueueKeySchema.safeParse(key).success
+    ? tx`app.work_queue_items(${key},${asOf}::date)`
+    : tx`app.dashboard_work_queue_items(${key},${asOf}::date)`;
+}
 
 async function schoolDate(tx: Transaction, requested?: string) {
   const [date]=await tx<{asOf:string;today:string;timezone:string}[]>`
     select coalesce(${requested??null}::date,app.school_today())::text as "asOf",
       app.school_today()::text as today,timezone from app.timetable_week_info(${requested??null}::date)`;
-  if(!date?.today)throw new ApiError("unavailable");
   return date;
 }
 
 export async function readWorkQueues(actor: ActorContext, asOf?: string) {
-  const summary=await withActor(actor,async(tx)=>{
+  return withActor(actor,async(tx)=>{
     const date=await schoolDate(tx,asOf);
-    const eligible:QueueSource[]=[];
-    if(actor.persona==="admin"){
-      for(const source of sources)if(await source.eligible(tx))eligible.push(source);
+    if(!date){
+      const [setup]=await tx<{allowed:boolean}[]>`select app.has_capability('school.manage') as allowed`;
+      return workQueuesSchema.parse({asOf:null,today:null,timezone:null,setupRequired:true,mayConfigure:setup.allowed,queues:[]});
     }
-    return {date,eligible};
+    const eligible=actor.persona==="admin"?await visibleKeys(tx):[];
+    const queues=[];
+    for(const key of eligible){
+      const target={key,route:`/school/home/queues/${key}`,filters:{asOf:date.asOf}};
+      try{
+        const count=await tx.savepoint(async scoped=>{
+          const [result]=await scoped<{count:number}[]>`select count(*)::int as count from ${source(scoped,key,date.asOf)}`;
+          return result.count;
+        });
+        queues.push({...target,state:"ready",count});
+      }catch{
+        queues.push({...target,state:"unavailable"});
+      }
+    }
+    return workQueuesSchema.parse({...date,queues});
   });
-  const queues=await Promise.all(summary.eligible.map(async(source)=>{
-    const target={key:source.key,route:`/school/home/queues/${source.key}`,filters:{asOf:summary.date.asOf}};
-    try{
-      const count=await withActor(actor,async(tx)=>{
-        if(!await source.eligible(tx))throw new ApiError("not_found");
-        return source.count(tx,summary.date.asOf);
-      });
-      return {...target,state:"ready",count};
-    }catch(error){
-      if(error instanceof ApiError && ["not_found","forbidden","unauthenticated"].includes(error.code))return null;
-      return {...target,state:"unavailable"};
-    }
-  }));
-  return workQueuesSchema.parse({...summary.date,queues:queues.filter((item)=>item!==null)});
 }
 
 export function readWorkQueue(actor: ActorContext,key: WorkQueueKey,input: z.infer<typeof queueListQuery>) {
   return withActor(actor,async(tx)=>{
-    const source=actor.persona==="admin"&&sources.find((candidate)=>candidate.key===key);
-    if(!source || !schoolQueueKeySchema.safeParse(key).success || !await source.eligible(tx))throw new ApiError("not_found");
+    if(actor.persona!=="admin" || !(await visibleKeys(tx)).includes(key))throw new ApiError("not_found");
     const date=await schoolDate(tx,input.asOf);
+    if(!date)throw new ApiError("not_found");
     const records=queueItemSchema.array().parse(await tx`
       select id,title_ar as "titleAr",title_de as "titleDe",detail_ar as "detailAr",detail_de as "detailDe",target
-      from app.work_queue_items(${key},${date.asOf}::date)
+      from ${source(tx,key,date.asOf)}
       where (${input.cursor??null}::uuid is null or id>${input.cursor??null}::uuid)
       order by id limit ${input.limit+1}`);
-    return { page:queuePageSchema.parse({asOf:date.asOf,items:records.slice(0,input.limit)}),
-      nextCursor:records.length>input.limit?records[input.limit-1].id:undefined };
+    return {page:queuePageSchema.parse({asOf:date.asOf,items:records.slice(0,input.limit)}),
+      nextCursor:records.length>input.limit?records[input.limit-1].id:undefined};
   });
 }

@@ -65,7 +65,7 @@ internal suspend fun IdentityViewModel.mayUseDeliveryStatus()=
     decodeData(schoolRequest("/delivery-status/access")){(it as JSONObject).getBoolean("allowed")}.data
 
 @Composable
-internal fun DeliveryStatus(model:IdentityViewModel,close:()->Unit){
+internal fun DeliveryStatus(model:IdentityViewModel,job:String?=null,close:()->Unit){
     var category by remember{mutableStateOf("")}
     var state by remember{mutableStateOf("")}
     var refresh by remember{mutableIntStateOf(0)}
@@ -73,7 +73,7 @@ internal fun DeliveryStatus(model:IdentityViewModel,close:()->Unit){
     val locale=Locale.forLanguageTag(language)
     val timestamp=DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(locale).withZone(ZoneId.systemDefault())
     val number=NumberFormat.getIntegerInstance(locale)
-    val query=(if(category.isEmpty())"" else "&kind=${Uri.encode(category)}")+(if(state.isEmpty())"" else "&state=${Uri.encode(state)}")
+    val query=(job?.let { "&id=${Uri.encode(it)}" } ?: "")+(if(category.isEmpty())"" else "&kind=${Uri.encode(category)}")+(if(state.isEmpty())"" else "&state=${Uri.encode(state)}")
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){

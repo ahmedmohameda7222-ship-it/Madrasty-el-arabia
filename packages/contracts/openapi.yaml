@@ -1071,6 +1071,7 @@ paths:
       operationId: listInvitations
       security: [{ webSession: [] }, { nativeBearer: [] }]
       parameters:
+        - { name: id, in: query, schema: { type: string, format: uuid } }
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
         - { name: batchId, in: query, schema: { type: string, format: uuid } }
@@ -3766,6 +3767,7 @@ paths:
       summary: Read permitted institutional delivery history
       security: [{ webSession: [] }, { nativeBearer: [] }]
       parameters:
+        - { name: id, in: query, schema: { type: string, format: uuid } }
         - {"$ref":"#/components/parameters/Limit"}
         - {"$ref":"#/components/parameters/Cursor"}
         - {"name":"kind","in":"query","required":false,"schema":{"type":"string","enum":["invite_guardian","invite_teacher","broadcast","attendance","academics","finance","school"]}}
@@ -4822,9 +4824,11 @@ components:
       type: object
       required: [asOf, today, timezone, queues]
       properties:
-        asOf: { type: string, format: date }
-        today: { type: string, format: date }
-        timezone: { type: string }
+        asOf: { type: [string, 'null'], format: date }
+        today: { type: [string, 'null'], format: date }
+        timezone: { type: [string, 'null'] }
+        setupRequired: { type: boolean }
+        mayConfigure: { type: boolean }
         queues:
           type: array
           items:
@@ -4847,6 +4851,11 @@ components:
         detailDe: { type: string }
         target:
           oneOf:
+            - {type: object, required: [kind, invitationId], properties: {kind: {const: bounced_invite}, invitationId: {type: string, format: uuid}}}
+            - {type: object, required: [kind, classId, date], properties: {kind: {const: attendance_sheet}, classId: {type: string, format: uuid}, date: {type: string, format: date}}}
+            - {type: object, required: [kind, requestId], properties: {kind: {const: enrollment_stop}, requestId: {type: string, format: uuid}}}
+            - {type: object, required: [kind, receiptId], properties: {kind: {const: receipt_match}, receiptId: {type: string, format: uuid}}}
+            - {type: object, required: [kind, deliveryId], properties: {kind: {const: delivery_review}, deliveryId: {type: string, format: uuid}}}
             - type: object
               required: [kind, guardianId, linkId]
               properties:

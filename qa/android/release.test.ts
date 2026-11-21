@@ -17,7 +17,7 @@ test("the school download matches the published bytes and trusted signing certif
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^application\/vnd\.android\.package-archive(?:;|$)/i);
   const bytes = Buffer.from(await response.arrayBuffer());
-  assert.equal(bytes.length, 11_758_251);
+  assert.equal(bytes.length, candidate.apkBytes);
   assert.equal(createHash("sha256").update(bytes).digest("hex"), candidate.apkSha256);
   const destination = await mkdtemp(join(tmpdir(), "madrasty-qa-apk-"));
   const apk = join(destination, "candidate.apk");

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { queuePageSchema, workQueuesSchema, type Locale, type QueueItem, type SchoolQueueKey, type WorkQueueKey } from "@madrasty/contracts";
+import { queuePageSchema, workQueuesSchema, type Locale, type QueueItem, type WorkQueueKey } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
@@ -29,7 +29,7 @@ const queueRoute=(locale:Locale,route:string,asOf:string)=>`/${locale}${route}${
 
 export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}){
   const text=copy[locale];
-  const [date,setDate]=useState(initialDay??"");
+  const [dateText,setDate]=useState(initialDay??"");
   const [asOf,setAsOf]=useState(initialDay);
   const [version,setVersion]=useState(0);
   const result=useTimetableRead(`/school/work-queues${query(asOf)}`,workQueuesSchema,version);
@@ -41,10 +41,10 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
 
   function update(){
     const url=new URL(window.location.href);
-    if(date)url.searchParams.set("asOf",date);
+    if(dateText)url.searchParams.set("asOf",dateText);
     else url.searchParams.delete("asOf");
     window.history.replaceState(null,"",url);
-    setAsOf(date||undefined);
+    setAsOf(dateText||undefined);
   }
 
   if (!result.value?.data) {
@@ -56,6 +56,14 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
     </>;
   }
   return <TimetableRead locale={locale} result={result}>{(summary)=>{
+    if (summary.setupRequired || !summary.asOf) {
+      return <RoleHero persona="admin" title={text.work}
+        detail={locale==="ar"?"إعدادات المدرسة مطلوبة قبل عرض المهام.":"Die Schule muss eingerichtet werden."}
+        action={summary.mayConfigure
+          ? {href:`/${locale}/school/more/calendar`,label:locale==="ar"?"إعداد المدرسة":"Schule einrichten"}
+          : {href:`/${locale}/directory`,label:text.directory}} />;
+    }
+    const date=summary.asOf;
     const first=summary.queues.find((row)=>row.state==="ready"&&row.count>0);
     const detail=first?queueLabels[locale][first.key]:summary.queues.some((row)=>row.state==="unavailable")?text.unavailable:text.empty;
     return <>
@@ -64,7 +72,7 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
           :{href:`/${locale}/directory`,label:text.directory}} />
       <section className="auth-card">
         <form className="auth-form" onSubmit={(event)=>{event.preventDefault();update();}}>
-          <label>{text.date}<input type="date" value={date||summary.asOf}
+          <label>{text.date}<input type="date" value={dateText||date}
             onChange={(event)=>setDate(event.target.value)}/></label>
           <button className="plain-button" type="submit">{text.apply}</button>
         </form>
@@ -83,10 +91,15 @@ function action(locale:Locale,entry:QueueItem) {
   const target=entry.target;
   if(target.kind==="guardian_link")return `${base}/students?guardian=${target.guardianId}&link=${target.linkId}`;
   if(target.kind==="family_import")return `${base}/students/import?job=${target.jobId}`;
+  if(target.kind==="enrollment_stop")return `${base}/more/enrollment-stops?request=${target.requestId}`;
+  if(target.kind==="attendance_sheet")return `${base}/more/attendance?class=${target.classId}&date=${target.date}`;
+  if(target.kind==="receipt_match")return `${base}/more/receipts?receipt=${target.receiptId}`;
+  if(target.kind==="delivery_review")return `${base}/more/delivery-status?job=${target.deliveryId}`;
+  if(target.kind==="bounced_invite")return `/${locale}/staff/invitations?invite=${target.invitationId}`;
   return `${base}/more/assignments?year=${target.yearId}&class=${target.classId}`;
 }
 
-export function WorkQueue({locale,queue,asOf}:{locale:Locale;queue:SchoolQueueKey;asOf?:string}){
+export function WorkQueue({locale,queue,asOf}:{locale:Locale;queue:WorkQueueKey;asOf?:string}){
   const text=copy[locale], actor=useAccountScope();
   const [generation,setGeneration]=useState(0);
   const [busy,setBusy]=useState(false);

@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
@@ -100,7 +102,7 @@ internal sealed interface WorkspacePage {
     data object Directory : WorkspacePage
     data class Thread(val id:String) : WorkspacePage
     data object MessageReports : WorkspacePage
-    data object Delivery : WorkspacePage
+    data class Delivery(val id: String? = null) : WorkspacePage
     data object Bank : WorkspacePage
     data class FeeSettings(val student: String? = null) : WorkspacePage
     data class IssueInvoices(val student: String? = null) : WorkspacePage
@@ -131,7 +133,7 @@ internal sealed interface WorkspacePage {
     data class Evaluations(val child:String?=null,val entry:String?=null) : WorkspacePage
     data class Exams(val child:String?=null,val entry:String?=null) : WorkspacePage
     data class Timetable(val child: String? = null) : WorkspacePage
-    data class Invitations(val batch: String? = null) : WorkspacePage
+    data class Invitations(val batch: String? = null, val id: String? = null) : WorkspacePage
     data class Import(val job: String? = null) : WorkspacePage
     data class Assignments(val classTarget: SchoolWorkTarget.ClassAssignment? = null) : WorkspacePage
     data class Family(val student: String? = null,val guardian: String? = null,val link: String? = null) : WorkspacePage
@@ -165,6 +167,11 @@ internal class SchoolNavigation {
     }
     fun openWork(target: SchoolWorkTarget) {
         open(when(target){
+            is SchoolWorkTarget.BouncedInvite -> WorkspacePage.Invitations(id=target.id)
+            is SchoolWorkTarget.AttendanceSheet -> WorkspacePage.AttendanceReview(target.classId,target.date)
+            is SchoolWorkTarget.EnrollmentStop -> WorkspacePage.Stops(id=target.id)
+            is SchoolWorkTarget.ReceiptMatch -> WorkspacePage.Receipts(id=target.id)
+            is SchoolWorkTarget.DeliveryReview -> WorkspacePage.Delivery(target.id)
             is SchoolWorkTarget.ClassAssignment -> WorkspacePage.Assignments(target)
             is SchoolWorkTarget.FamilyImport -> WorkspacePage.Import(target.jobId)
             is SchoolWorkTarget.GuardianLink -> WorkspacePage.Family(guardian=target.guardianId,link=target.linkId)
@@ -250,7 +257,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         WorkspacePage.Access -> access
         WorkspacePage.Audit -> audit
         WorkspacePage.MessageReports -> moderation
-        WorkspacePage.Delivery -> delivery
+        is WorkspacePage.Delivery -> delivery
         WorkspacePage.Bank -> bank
         is WorkspacePage.FeeSettings, is WorkspacePage.IssueInvoices -> billing
         is WorkspacePage.Invoices -> invoiceViewer
@@ -364,7 +371,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
         is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
-        WorkspacePage.Delivery -> DeliveryStatus(model,state::back)
+        is WorkspacePage.Delivery -> DeliveryStatus(model,page.id,state::back)
         WorkspacePage.Bank -> BankSettings(model,state::back)
         is WorkspacePage.FeeSettings -> FeeSettings(model,page.student,state::back)
         is WorkspacePage.IssueInvoices -> IssueInvoices(model,page.student,
@@ -426,7 +433,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Gradebook -> GradebookScreen(model,page.work,{state.open(WorkspacePage.Homework(work=it))},state::back)
         is WorkspacePage.Timetable -> TimetableScreen(model,session.actor.persona,page.child,state::back)
         is WorkspacePage.Assignments -> StaffAssignmentsScreen(model,page.classTarget,state::back)
-        is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.applications,page.batch,state::back)
+        is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.applications,page.batch,page.id,state::back)
         is WorkspacePage.Import -> ImportScreen(model,{state.open(WorkspacePage.Invitations(it))},page.job,state::back)
         is WorkspacePage.Family -> FamilyWorkspace(model,page,state::back)
         is WorkspacePage.Queue -> SchoolWorkQueueScreen(model,page.selection,state::openWork,state::back)
@@ -443,7 +450,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
             SchoolTab.Home -> SchoolHomeScreen(
                 model,session.actor.persona,state.workDate,{state.workDate=it},
                 openQueue={state.open(WorkspacePage.Queue(it))},
-                openDirectory={state.open(WorkspacePage.Directory)},
+                openDirectory={state.open(WorkspacePage.Directory)},openSetup={state.open(WorkspacePage.Calendar)},
                 child=state.child,pickChild={state.child=it},
                 openProfile={state.child=it;state.tab=SchoolTab.Children},
                 openAttendance={state.attendanceClass=it;state.tab=SchoolTab.Attendance},
@@ -535,7 +542,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         SettingsGroup(R.string.settings_group_access) {
             if(rights.access)OpenPage(state,WorkspacePage.Access,R.string.staff_access)
             if(rights.moderation)OpenPage(state,WorkspacePage.MessageReports,R.string.chat_reports)
-            if(rights.delivery)OpenPage(state,WorkspacePage.Delivery,R.string.delivery_status)
+            if(rights.delivery)OpenPage(state,WorkspacePage.Delivery(),R.string.delivery_status)
             if(rights.audit)TextButton(onClick={state.auditEntry=null;state.open(WorkspacePage.Audit)}){
                 Text(stringResource(R.string.audit_title))
             }
@@ -546,9 +553,10 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
 @Composable
 private fun SettingsGroup(label:Int, content:@Composable () -> Unit) {
     var expanded by rememberSaveable(label) { mutableStateOf(false) }
+    val groupState=stringResource(if(expanded) R.string.school_section_expanded else R.string.school_section_collapsed)
     ListItem(headlineContent={Text(stringResource(label),style=MaterialTheme.typography.titleMedium)},
-        trailingContent={Text(if(expanded) "−" else "+")},
-        modifier=Modifier.fillMaxWidth().clickable { expanded=!expanded })
+        trailingContent={Text(if(expanded) "−" else "+",Modifier.clearAndSetSemantics {})},
+        modifier=Modifier.fillMaxWidth().semantics { stateDescription=groupState }.clickable { expanded=!expanded })
     if(expanded) content()
     HorizontalDivider()
 }

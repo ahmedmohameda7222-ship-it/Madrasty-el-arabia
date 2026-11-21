@@ -120,7 +120,7 @@ export function NotificationCenter({locale,selected}:{locale:Locale;selected?:st
         {error&&<p role="alert">{error}</p>}
         <AcademicPageItems locale={locale} page={rows}>{(entries)=>{
           const visible=entries.filter((item)=>!onlyUnread||!read[item.id]);
-          if(!visible.length)return <AsyncSurface locale={locale} state={{kind:"empty"}}/>;
+          if(!visible.length)return <AsyncSurface locale={locale} state={{kind:"empty",message:locale==="ar"?"مفيش إشعارات في القائمة دي.":"In dieser Liste gibt es keine Benachrichtigungen."}}/>;
           return <ul className="group-list">{visible.map((entry)=>{
             const unread=!entry.readAt&&!read[entry.id]&&!entry.superseded;
             return <li key={entry.id} className="timetable-day">
