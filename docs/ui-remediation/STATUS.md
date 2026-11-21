@@ -23,13 +23,13 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | Task | Phase | Status | Verification / next gate |
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
-| UIX-01 | 0 | Screenshot policy 9/9 pass; pending-state browser RED verified; marker fix committed, GREEN pending | Run 44926108339: 1 expected failing missing `data-async-state`, other 5 browser tests passed; full screenshot runner still unverified |
+| UIX-01 | 0 | Policy/marker RED → GREEN verified; full screenshot runner still unverified | Run 44926490492 6/6 Chromium, TypeScript and build passed; terminal capture integration pending |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
 | UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
 | UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
-| UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-07 | 2 | RED browser tests committed; await observed failure | Arabic/German empty academic rows must be explicit status; simulated HTTP503 must remain retryable error, neither success nor unauthorized CTA |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-09 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-10 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -149,3 +149,7 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 ## UIX-01 loading-state RED evidence
 
 - [Run 44926108339](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44926108339), browser-fixture job 136912439167: `pnpm exec playwright test --config qa/ui-remediation.config.ts` 5 passed / 1 expected RED. The pending `p[role=status]` was present and contained `Wird geladen`, but the requested `data-async-state=loading` attribute was null. No timing, content, permission, or endpoint change is needed; adding just the state attribute allows the screenshot runner to reject unresolved loading frames. GREEN pending.
+
+## UIX-01 pending-state GREEN checkpoint
+
+- [Run 44926490492](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44926490492) on b04b3cd6: 6/6 isolated Chromium tests passed, screenshot-policy Node tests passed, typecheck and web build passed. Test held /me/children so the loading marker was validated on a real unresolved asynchronous state. This verifies the state marker only, **not** complete screenshot terminal-state acceptance.
