@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="queue_title">Aufgaben der Schule</string>
+    <string name="queue_date">Aufgaben bis zum Datum (YYYY-MM-DD)</string>
+    <string name="queue_filter">Aufgaben anzeigen</string>
+    <string name="queue_open">Aufgaben öffnen</string>
+    <string name="queue_empty">Für dieses Datum liegen keine offenen Aufgaben vor.</string>
+    <string name="queue_unavailable">Anzahl nicht verfügbar</string>
+    <string name="queue_guardian_links">Familienverknüpfungen zur Prüfung</string>
+    <string name="queue_family_imports">Offene Familienimporte</string>
+    <string name="queue_class_assignments">Klassen mit fehlendem Einsatz</string>
+    <string name="queue_bounced_invites">Nicht zugestellte Einladungen</string>
+    <string name="queue_unapproved_attendance">Offene Anwesenheitsfreigaben</string>
+    <string name="queue_noncontinuation">Anträge zur Abmeldung</string>
+    <string name="queue_settlements">Zahlungen zur Prüfung</string>
+    <string name="queue_failed_deliveries">Fehlgeschlagene Zustellungen</string>
+    <string name="home_attendance_action">Anwesenheit öffnen</string>
+    <string name="home_child_action">Kind öffnen</string>
+    <string name="home_lessons_today">Unterricht heute</string>
+    <string name="home_no_lessons">Für heute sind keine Stunden geplant.</string>
+</resources>

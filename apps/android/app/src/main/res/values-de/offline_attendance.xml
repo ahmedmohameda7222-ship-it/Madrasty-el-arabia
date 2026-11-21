@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="drafts_on_device">Anwesenheitsentwürfe auf dem Gerät</string>
+    <string name="offline_copy">Auf diesem Gerät gespeicherte Liste</string>
+    <string name="offline_confirmed">Zuletzt von der Schule bestätigt</string>
+    <string name="offline_unsent">Ungesendete Änderungen: %1$d</string>
+    <string name="offline_no_roster">Verbinden Sie sich mit der Schule, bevor Sie eine neue Liste öffnen.</string>
+    <string name="offline_purge_confirm">Beim Abmelden werden die ungesendeten Entwürfe von diesem Gerät entfernt.</string>
+    <string name="offline_storage_failed">Der Entwurf konnte auf dem Gerät nicht gespeichert werden.</string>
+    <string name="offline_queued">Der Entwurf wurde auf dem Gerät gespeichert und wartet auf Abgleich.</string>
+    <string name="offline_closed_drafts">Die Liste ist geschlossen. Ungesendete Änderungen werden nicht bei der Schule gespeichert.</string>
+</resources>

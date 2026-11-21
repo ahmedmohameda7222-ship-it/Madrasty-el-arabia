@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="drafts_on_device">مسودات الحضور على الجهاز</string>
+    <string name="offline_copy">نسخة محفوظة على الجهاز</string>
+    <string name="offline_confirmed">آخر تأكيد من المدرسة</string>
+    <string name="offline_unsent">تعديلات غير مُرسلة: %1$d</string>
+    <string name="offline_no_roster">اتّصل بالمدرسة قبل فتح كشف جديد.</string>
+    <string name="offline_purge_confirm">تسجيل الخروج هيمسح المسودات غير المُرسلة من الجهاز.</string>
+    <string name="offline_storage_failed">تعذّر حفظ المسودة على الجهاز.</string>
+    <string name="offline_queued">المسودة محفوظة على الجهاز وبانتظار المزامنة.</string>
+    <string name="offline_closed_drafts">الكشف مقفول. أي تعديلات غير مُرسلة لن تُحفظ عند المدرسة.</string>
+</resources>

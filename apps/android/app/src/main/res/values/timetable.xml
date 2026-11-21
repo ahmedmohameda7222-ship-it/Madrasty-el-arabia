@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timetable_title">الجدول الأسبوعي</string>
+    <string name="timetable_child">اختر طالب</string>
+    <string name="timetable_previous">الأسبوع السابق</string>
+    <string name="timetable_current">هذا الأسبوع</string>
+    <string name="timetable_next">الأسبوع التالي</string>
+    <string name="timetable_date">الأسبوع الذي يتضمن (YYYY-MM-DD)</string>
+    <string name="timetable_open_week">عرض الأسبوع</string>
+    <string name="timetable_all_classes">كل الفصول</string>
+    <string name="timetable_build">إعداد الجدول</string>
+    <string name="timetable_edit">تعديل موعد</string>
+    <string name="timetable_empty">ما فيش دروس مجدولة في الأسبوع ده.</string>
+    <string name="timetable_closed">عطلة أو يوم بدون تدريس</string>
+    <string name="timetable_substitute">مدرس بديل</string>
+    <string name="timetable_assignment">تكليف المادة</string>
+    <string name="timetable_room">القاعة</string>
+    <string name="timetable_rooms">القاعات</string>
+    <string name="timetable_weekday">اليوم</string>
+    <string name="timetable_start">بداية الحصة (HH:MM)</string>
+    <string name="timetable_end">نهاية الحصة (HH:MM)</string>
+    <string name="timetable_from">أول يوم في الفترة (YYYY-MM-DD)</string>
+    <string name="timetable_until">آخر الفترة، غير مشمول (YYYY-MM-DD)</string>
+    <string name="timetable_add">أضف الموعد للمراجعة</string>
+    <string name="timetable_queued">المواعيد للمراجعة</string>
+    <string name="timetable_remove">حذف من المسودة</string>
+    <string name="timetable_review">مراجعة التعارضات</string>
+    <string name="timetable_ready">المواعيد جاهزة للحفظ.</string>
+    <string name="timetable_save">حفظ الجدول</string>
+    <string name="timetable_cancel">إلغاء الموعد المتكرر</string>
+    <string name="timetable_confirm_cancel">اعتماد الإلغاء</string>
+    <string name="timetable_new_room">إضافة قاعة</string>
+    <string name="timetable_room_code">رمز القاعة</string>
+    <string name="timetable_save_room">حفظ القاعة</string>
+    <string name="timetable_interval">راجع الوقت أو فترة سريان التكليف.</string>
+    <string name="timetable_unavailable">القيمة المختارة لم تعد متاحة.</string>
+    <string name="timetable_clash">الموعد يتعارض مع موعد آخر.</string>
+</resources>

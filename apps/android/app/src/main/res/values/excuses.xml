@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="excuse_title">عذر الغياب</string>
+    <string name="excuse_date">يوم الغياب (YYYY-MM-DD)</string>
+    <string name="excuse_reason">سبب الغياب</string>
+    <string name="excuse_draft">عذر غير مُرسل</string>
+    <string name="excuse_send">إرسال العذر للمدرسة</string>
+    <string name="excuse_received">تم استلام العذر</string>
+    <string name="excuse_withdraw">سحب العذر</string>
+    <string name="excuse_withdraw_confirm">تأكيد السحب</string>
+    <string name="excuse_withdrawn">تم سحب العذر</string>
+    <string name="excuse_closed">لا يمكن إرسال عذر لليوم ده.</string>
+    <string name="excuse_history">أعذار اليوم</string>
+    <string name="attendance_row_details">تفاصيل الحالة</string>
+    <string name="attendance_actual">تأكيد الحضور الفعلي</string>
+    <string name="attendance_actual_present">وصل في الموعد</string>
+    <string name="attendance_actual_late">وصل متأخر</string>
+    <string name="attendance_actual_save">سجّل الحضور الفعلي</string>
+    <string name="attendance_arrival_retry">الحالة اتغيّرت. راجعها وأكّد الحضور مرة تانية.</string>
+</resources>

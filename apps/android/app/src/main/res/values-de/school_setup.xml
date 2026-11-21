@@ -1,0 +1,5 @@
+<resources>
+    <string name="school_setup_required">Die Schule muss eingerichtet werden.</string>
+    <string name="school_section_expanded">Abschnitt geöffnet</string>
+    <string name="school_section_collapsed">Abschnitt geschlossen</string>
+</resources>

@@ -1,0 +1,366 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1792" viewBox="0 0 960 1792" role="img" aria-labelledby="title desc">
+<title id="title">Role homes · Arabic iPhone and German Android</title>
+<desc id="desc">Six static home-screen schematics for administration, teacher and guardian. Each row pairs a right-to-left iPhone home-screen web app with a left-to-right native Android screen.</desc>
+<rect x="0" y="0" width="960" height="1792" rx="0" fill="#EEF3F6" stroke="none"/>
+<text x="44" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">MADRASA PULSE   /   MOBILE DESIGN</text>
+<text x="916" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#425B69" text-anchor="end" direction="ltr">01   /   ROLE HOMES</text>
+<text x="42" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="44" font-weight="750" fill="#172C37" text-anchor="start" direction="ltr">The school day by role</text>
+<text x="45" y="137" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#425B69" text-anchor="start" direction="ltr">One task leads each home. The second group opens real, role-scoped school records.</text>
+<path d="M44 161h872" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="45" y="195" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">iPhone   ·   العربية   ·   RTL</text>
+<text x="512" y="195" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">Android   ·   Deutsch   ·   LTR</text>
+<g transform="translate(0 218)">
+<text x="44" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">01</text>
+<text x="87" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">School administration</text>
+<text x="915" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Delivery exceptions and school operations</text>
+<g transform="translate(45 40)">
+<rect x="0" y="0" width="400" height="466" rx="35" fill="#273540" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="31" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<text x="371" y="55" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="650" fill="#076E61" text-anchor="start" direction="rtl" xml:lang="ar">الإدارة</text>
+<text x="371" y="87" font-family="Tahoma, Arial, sans-serif" font-size="26" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">متابعة المدرسة</text>
+<rect x="20" y="103" width="360" height="128" rx="24" fill="#2355A0" stroke="none"/>
+<g transform="translate(34 123) rotate(-9 40 48)">
+<rect x="8" y="4" width="68" height="87" rx="8" fill="#123F48" stroke="none"/>
+<rect x="5" y="0" width="68" height="87" rx="8" fill="#FFFFFF" stroke="none"/>
+<rect x="5" y="0" width="68" height="17" rx="7" fill="#FFCA56" stroke="none"/>
+<path d="M19 9V-4M38 9V-4M57 9V-4" fill="none" stroke="#15494C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 32h39m-39 11h26m-26 12h35m-35 10h17" fill="none" stroke="#BED4D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="73" r="15" fill="#C1EDFF"/>
+<path d="m62 73 5 5 11-12" fill="none" stroke="#19594C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-4 25l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFCF69" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="364" y="140" font-family="Tahoma, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="start" direction="rtl" xml:lang="ar">دعوات مرتدّة</text>
+<text x="364" y="166" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="start" direction="rtl" xml:lang="ar">دعوتان تحتاجان مراجعة</text>
+<rect x="210" y="179" width="154" height="38" rx="13" fill="#FFFFFF" stroke="none"/>
+<text x="287" y="204" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="700" fill="#172C37" text-anchor="middle" direction="rtl" xml:lang="ar">مراجعة الدعوات</text>
+<text x="371" y="261" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">قائمة العمل</text>
+<rect x="20" y="274" width="360" height="93" rx="16" fill="#FFFFFF" stroke="#D1DEE5"/>
+<path d="M31 320h338" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="362" y="304" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">روابط أسر معلّقة</text>
+<g transform="translate(34 287) scale(0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="362" y="350" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">فصول بلا تكليف</text>
+<g transform="translate(34 333) scale(0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="4" y="385" width="392" height="58" rx="0" fill="#fff" stroke="none"/>
+<path d="M5 385h390" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(337 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M2 11 12 3l10 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="347" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#076E61" text-anchor="middle" direction="rtl" xml:lang="ar">الرئيسية</text>
+<g transform="translate(239 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 21v-2q0-5 6-5t6 5v2M11 4q5 0 5 4 0 3-3 4M16 15q5 0 5 5M9 5a3 3 0 1 0 .1 0" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="249" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">الطلبة</text>
+<g transform="translate(141 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 4h18v13h-9l-5 4v-4H3z" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="151" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">الرسائل</text>
+<g transform="translate(43 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M4 12h1m6 0h1m6 0h1" fill="none" stroke="#425B69" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="53" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">المزيد</text>
+</g>
+<g transform="translate(512 40)">
+<rect x="0" y="0" width="400" height="466" rx="22" fill="#24373B" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="18" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<text x="29" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="650" fill="#076E61" text-anchor="start" direction="ltr">Schulverwaltung</text>
+<text x="29" y="87" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Schulbetrieb</text>
+<rect x="20" y="103" width="360" height="128" rx="18" fill="#2355A0" stroke="none"/>
+<g transform="translate(283 123) rotate(-9 40 48)">
+<rect x="8" y="4" width="68" height="87" rx="8" fill="#123F48" stroke="none"/>
+<rect x="5" y="0" width="68" height="87" rx="8" fill="#FFFFFF" stroke="none"/>
+<rect x="5" y="0" width="68" height="17" rx="7" fill="#FFCA56" stroke="none"/>
+<path d="M19 9V-4M38 9V-4M57 9V-4" fill="none" stroke="#15494C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 32h39m-39 11h26m-26 12h35m-35 10h17" fill="none" stroke="#BED4D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="73" r="15" fill="#C1EDFF"/>
+<path d="m62 73 5 5 11-12" fill="none" stroke="#19594C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-4 25l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFCF69" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="36" y="140" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="start" direction="ltr">Unzustellbare Post</text>
+<text x="36" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="start" direction="ltr">2 Einladungen prüfen</text>
+<rect x="35" y="179" width="154" height="38" rx="19" fill="#FFFFFF" stroke="none"/>
+<text x="112" y="204" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#172C37" text-anchor="middle" direction="ltr">Einladungen öffnen</text>
+<text x="29" y="261" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Aufgaben</text>
+<rect x="20" y="274" width="360" height="93" rx="12" fill="#FFFFFF" stroke="#D1DEE5"/>
+<path d="M31 320h338" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="37" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Ausstehende Familienlinks</text>
+<g transform="translate(359 287) scale(-0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="37" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Klassen ohne Lehrkraft</text>
+<g transform="translate(359 333) scale(-0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="4" y="385" width="392" height="58" rx="0" fill="#E8F1F0" stroke="none"/>
+<path d="M5 385h390" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="26" y="391" width="54" height="24" rx="12" fill="#C3EBDD" stroke="none"/>
+<g transform="translate(43 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M2 11 12 3l10 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="53" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#076E61" text-anchor="middle" direction="ltr">Start</text>
+<g transform="translate(141 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 21v-2q0-5 6-5t6 5v2M11 4q5 0 5 4 0 3-3 4M16 15q5 0 5 5M9 5a3 3 0 1 0 .1 0" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="151" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Schüler</text>
+<g transform="translate(239 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 4h18v13h-9l-5 4v-4H3z" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="249" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Nachrichten</text>
+<g transform="translate(337 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M4 12h1m6 0h1m6 0h1" fill="none" stroke="#425B69" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="347" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Mehr</text>
+</g>
+</g>
+<g transform="translate(0 740)">
+<text x="44" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">02</text>
+<text x="87" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Teacher</text>
+<text x="915" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Today’s class and teaching assignments</text>
+<g transform="translate(45 40)">
+<rect x="0" y="0" width="400" height="466" rx="35" fill="#273540" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="31" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<text x="371" y="55" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="650" fill="#076E61" text-anchor="start" direction="rtl" xml:lang="ar">هيئة التدريس</text>
+<text x="371" y="87" font-family="Tahoma, Arial, sans-serif" font-size="26" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">جدول اليوم</text>
+<rect x="20" y="103" width="360" height="128" rx="24" fill="#096656" stroke="none"/>
+<g transform="translate(34 123) rotate(-9 40 48)">
+<rect x="8" y="4" width="68" height="87" rx="8" fill="#123F48" stroke="none"/>
+<rect x="5" y="0" width="68" height="87" rx="8" fill="#FFFFFF" stroke="none"/>
+<rect x="5" y="0" width="68" height="17" rx="7" fill="#FFCA56" stroke="none"/>
+<path d="M19 9V-4M38 9V-4M57 9V-4" fill="none" stroke="#15494C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 32h39m-39 11h26m-26 12h35m-35 10h17" fill="none" stroke="#BED4D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="73" r="15" fill="#D6F668"/>
+<path d="m62 73 5 5 11-12" fill="none" stroke="#19594C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-4 25l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFCF69" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="364" y="140" font-family="Tahoma, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="start" direction="rtl" xml:lang="ar">الحضور اليوم</text>
+<text x="364" y="166" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="start" direction="rtl" xml:lang="ar">الصف الثاني · المجموعة أ</text>
+<rect x="210" y="179" width="154" height="38" rx="13" fill="#D6F668" stroke="none"/>
+<text x="287" y="204" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="700" fill="#164839" text-anchor="middle" direction="rtl" xml:lang="ar">فتح الكشف</text>
+<text x="371" y="261" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">حصصي اليوم</text>
+<rect x="20" y="274" width="360" height="93" rx="16" fill="#FFFFFF" stroke="#D1DEE5"/>
+<path d="M31 320h338" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="362" y="304" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">الفقه · الصف الثاني</text>
+<g transform="translate(34 287) scale(0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="362" y="350" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">الحديث · الصف الثالث</text>
+<g transform="translate(34 333) scale(0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="4" y="385" width="392" height="58" rx="0" fill="#fff" stroke="none"/>
+<path d="M5 385h390" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(337 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M2 11 12 3l10 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="347" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#076E61" text-anchor="middle" direction="rtl" xml:lang="ar">الرئيسية</text>
+<g transform="translate(239 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M5 4h14v17H5zM8 9h8m-8 4h8m-8 4h5" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="249" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">الحضور</text>
+<g transform="translate(141 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 4h18v13h-9l-5 4v-4H3z" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="151" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">الرسائل</text>
+<g transform="translate(43 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M4 12h1m6 0h1m6 0h1" fill="none" stroke="#425B69" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="53" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">المزيد</text>
+</g>
+<g transform="translate(512 40)">
+<rect x="0" y="0" width="400" height="466" rx="22" fill="#24373B" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="18" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<text x="29" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="650" fill="#076E61" text-anchor="start" direction="ltr">Lehrkraft</text>
+<text x="29" y="87" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Heute im Unterricht</text>
+<rect x="20" y="103" width="360" height="128" rx="18" fill="#096656" stroke="none"/>
+<g transform="translate(283 123) rotate(-9 40 48)">
+<rect x="8" y="4" width="68" height="87" rx="8" fill="#123F48" stroke="none"/>
+<rect x="5" y="0" width="68" height="87" rx="8" fill="#FFFFFF" stroke="none"/>
+<rect x="5" y="0" width="68" height="17" rx="7" fill="#FFCA56" stroke="none"/>
+<path d="M19 9V-4M38 9V-4M57 9V-4" fill="none" stroke="#15494C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 32h39m-39 11h26m-26 12h35m-35 10h17" fill="none" stroke="#BED4D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="73" r="15" fill="#D6F668"/>
+<path d="m62 73 5 5 11-12" fill="none" stroke="#19594C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-4 25l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFCF69" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="36" y="140" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="start" direction="ltr">Anwesenheit</text>
+<text x="36" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="start" direction="ltr">Klasse 2 · Gruppe A</text>
+<rect x="35" y="179" width="154" height="38" rx="19" fill="#D6F668" stroke="none"/>
+<text x="112" y="204" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#164839" text-anchor="middle" direction="ltr">Klassenliste öffnen</text>
+<text x="29" y="261" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Mein Unterricht</text>
+<rect x="20" y="274" width="360" height="93" rx="12" fill="#FFFFFF" stroke="#D1DEE5"/>
+<path d="M31 320h338" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="37" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Fiqh · Klasse 2</text>
+<g transform="translate(359 287) scale(-0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="37" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Hadith · Klasse 3</text>
+<g transform="translate(359 333) scale(-0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="4" y="385" width="392" height="58" rx="0" fill="#E8F1F0" stroke="none"/>
+<path d="M5 385h390" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="26" y="391" width="54" height="24" rx="12" fill="#C3EBDD" stroke="none"/>
+<g transform="translate(43 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M2 11 12 3l10 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="53" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#076E61" text-anchor="middle" direction="ltr">Start</text>
+<g transform="translate(141 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M5 4h14v17H5zM8 9h8m-8 4h8m-8 4h5" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="151" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Anwesenheit</text>
+<g transform="translate(239 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 4h18v13h-9l-5 4v-4H3z" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="249" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Nachrichten</text>
+<g transform="translate(337 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M4 12h1m6 0h1m6 0h1" fill="none" stroke="#425B69" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="347" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Mehr</text>
+</g>
+</g>
+<g transform="translate(0 1262)">
+<text x="44" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#076E61" text-anchor="start" direction="ltr">03</text>
+<text x="87" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Guardian</text>
+<text x="915" y="22" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="450" fill="#425B69" text-anchor="end" direction="ltr">Selected child and family actions</text>
+<g transform="translate(45 40)">
+<rect x="0" y="0" width="400" height="466" rx="35" fill="#273540" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="31" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<text x="371" y="55" font-family="Tahoma, Arial, sans-serif" font-size="13" font-weight="650" fill="#076E61" text-anchor="start" direction="rtl" xml:lang="ar">الأسرة</text>
+<text x="371" y="87" font-family="Tahoma, Arial, sans-serif" font-size="26" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">أبنائي اليوم</text>
+<rect x="20" y="103" width="360" height="128" rx="24" fill="#A84647" stroke="none"/>
+<g transform="translate(34 123) rotate(-9 40 48)">
+<rect x="8" y="4" width="68" height="87" rx="8" fill="#123F48" stroke="none"/>
+<rect x="5" y="0" width="68" height="87" rx="8" fill="#FFFFFF" stroke="none"/>
+<rect x="5" y="0" width="68" height="17" rx="7" fill="#FFCA56" stroke="none"/>
+<path d="M19 9V-4M38 9V-4M57 9V-4" fill="none" stroke="#15494C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 32h39m-39 11h26m-26 12h35m-35 10h17" fill="none" stroke="#BED4D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="73" r="15" fill="#FFE69B"/>
+<path d="m62 73 5 5 11-12" fill="none" stroke="#19594C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-4 25l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFCF69" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="364" y="140" font-family="Tahoma, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="start" direction="rtl" xml:lang="ar">جدول مريم</text>
+<text x="364" y="166" font-family="Tahoma, Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="start" direction="rtl" xml:lang="ar">الصف الثاني · المجموعة أ</text>
+<rect x="210" y="179" width="154" height="38" rx="13" fill="#FFFFFF" stroke="none"/>
+<text x="287" y="204" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="700" fill="#172C37" text-anchor="middle" direction="rtl" xml:lang="ar">عرض الجدول</text>
+<text x="371" y="261" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">مريم · الصف الثاني</text>
+<rect x="20" y="274" width="360" height="93" rx="16" fill="#FFFFFF" stroke="#D1DEE5"/>
+<path d="M31 320h338" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="362" y="304" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">الواجبات</text>
+<g transform="translate(34 287) scale(0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="362" y="350" font-family="Tahoma, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="rtl" xml:lang="ar">الفواتير والإيصالات</text>
+<g transform="translate(34 333) scale(0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="4" y="385" width="392" height="58" rx="0" fill="#fff" stroke="none"/>
+<path d="M5 385h390" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(337 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M2 11 12 3l10 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="347" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#076E61" text-anchor="middle" direction="rtl" xml:lang="ar">الرئيسية</text>
+<g transform="translate(239 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 21v-2q0-5 6-5t6 5v2M11 4q5 0 5 4 0 3-3 4M16 15q5 0 5 5M9 5a3 3 0 1 0 .1 0" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="249" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">أبنائي</text>
+<g transform="translate(141 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 4h18v13h-9l-5 4v-4H3z" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="151" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">الرسائل</text>
+<g transform="translate(43 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M4 12h1m6 0h1m6 0h1" fill="none" stroke="#425B69" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="53" y="435" font-family="Tahoma, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="rtl" xml:lang="ar">المزيد</text>
+</g>
+<g transform="translate(512 40)">
+<rect x="0" y="0" width="400" height="466" rx="22" fill="#24373B" stroke="none"/>
+<rect x="4" y="4" width="392" height="458" rx="18" fill="#F7F9FC" stroke="none"/>
+<text x="25" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650" fill="#172C37" text-anchor="start" direction="ltr">09:41</text>
+<rect x="348" y="14" width="23" height="9" rx="2" fill="none" stroke="#172C37"/>
+<rect x="350" y="16" width="17" height="5" rx="1" fill="#172C37" stroke="none"/>
+<rect x="372" y="17" width="2" height="4" rx="1" fill="#172C37" stroke="none"/>
+<path d="M321 20q7-7 14 0m-11 2q4-4 8 0" fill="none" stroke="#172C37" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="149" y="453" width="102" height="4" rx="2" fill="#172C37" stroke="none"/>
+<text x="29" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="650" fill="#076E61" text-anchor="start" direction="ltr">Familie</text>
+<text x="29" y="87" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Meine Kinder</text>
+<rect x="20" y="103" width="360" height="128" rx="18" fill="#A84647" stroke="none"/>
+<g transform="translate(283 123) rotate(-9 40 48)">
+<rect x="8" y="4" width="68" height="87" rx="8" fill="#123F48" stroke="none"/>
+<rect x="5" y="0" width="68" height="87" rx="8" fill="#FFFFFF" stroke="none"/>
+<rect x="5" y="0" width="68" height="17" rx="7" fill="#FFCA56" stroke="none"/>
+<path d="M19 9V-4M38 9V-4M57 9V-4" fill="none" stroke="#15494C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 32h39m-39 11h26m-26 12h35m-35 10h17" fill="none" stroke="#BED4D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="70" cy="73" r="15" fill="#FFE69B"/>
+<path d="m62 73 5 5 11-12" fill="none" stroke="#19594C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-4 25l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFCF69" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="36" y="140" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="start" direction="ltr">Maryams Schultag</text>
+<text x="36" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="start" direction="ltr">Klasse 2 · Gruppe A</text>
+<rect x="35" y="179" width="154" height="38" rx="19" fill="#FFFFFF" stroke="none"/>
+<text x="112" y="204" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#172C37" text-anchor="middle" direction="ltr">Stundenplan öffnen</text>
+<text x="29" y="261" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#172C37" text-anchor="start" direction="ltr">Maryam · Klasse 2</text>
+<rect x="20" y="274" width="360" height="93" rx="12" fill="#FFFFFF" stroke="#D1DEE5"/>
+<path d="M31 320h338" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="37" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Hausaufgaben</text>
+<g transform="translate(359 287) scale(-0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="37" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="550" fill="#172C37" text-anchor="start" direction="ltr">Rechnungen und Belege</text>
+<g transform="translate(359 333) scale(-0.6666666666666666 0.6666666666666666)">
+<path d="M14 5 7 12l7 7" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="4" y="385" width="392" height="58" rx="0" fill="#E8F1F0" stroke="none"/>
+<path d="M5 385h390" fill="none" stroke="#D1DEE5" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="26" y="391" width="54" height="24" rx="12" fill="#C3EBDD" stroke="none"/>
+<g transform="translate(43 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M2 11 12 3l10 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="#076E61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="53" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#076E61" text-anchor="middle" direction="ltr">Start</text>
+<g transform="translate(141 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 21v-2q0-5 6-5t6 5v2M11 4q5 0 5 4 0 3-3 4M16 15q5 0 5 5M9 5a3 3 0 1 0 .1 0" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="151" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Kinder</text>
+<g transform="translate(239 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M3 4h18v13h-9l-5 4v-4H3z" fill="none" stroke="#425B69" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="249" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Nachrichten</text>
+<g transform="translate(337 393) scale(0.8333333333333334 0.8333333333333334)">
+<path d="M4 12h1m6 0h1m6 0h1" fill="none" stroke="#425B69" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="347" y="435" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650" fill="#425B69" text-anchor="middle" direction="ltr">Mehr</text>
+</g>
+</g>
+</svg>

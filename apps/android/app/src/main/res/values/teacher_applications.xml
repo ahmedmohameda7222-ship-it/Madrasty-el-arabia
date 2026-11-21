@@ -1,0 +1,21 @@
+<resources>
+    <string name="teacher_apply">طلب مدرس</string>
+    <string name="teacher_apps">طلبات المدرسين</string>
+    <string name="applicant_verify">تحقق من البريد الإلكتروني</string>
+    <string name="applicant_send_link">إرسال رابط التحقق</string>
+    <string name="applicant_link_sent">راجع بريدك الإلكتروني. أصحاب الحسابات الحالية يقدروا يسجلوا الدخول.</string>
+    <string name="applicant_signin">دخول المتقدم</string>
+    <string name="applicant_signout">إنهاء جلسة المتقدم</string>
+    <string name="applicant_contact">وسيلة تواصل للعمل</string>
+    <string name="applicant_subjects">المواد المقترحة، مفصولة بفواصل</string>
+    <string name="applicant_submit">إرسال الطلب</string>
+    <string name="applicant_submitted">قيد المراجعة</string>
+    <string name="applicant_approved">مقبول</string>
+    <string name="applicant_declined">مرفوض</string>
+    <string name="applicant_message">رسالة للمتقدم (اختياري)</string>
+    <string name="applicant_approve">قبول</string>
+    <string name="applicant_decline">رفض</string>
+    <string name="applicant_refresh">تحديث الحالة</string>
+    <string name="applicant_submitted_at">تاريخ التقديم</string>
+    <string name="applicant_decided_at">تاريخ القرار</string>
+</resources>

@@ -1,0 +1,58 @@
+name: Prelaunch web and contracts
+on:
+  push:
+    branches: ["implementation/prelaunch"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: prelaunch-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install pinned pnpm and workspace dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Check TypeScript
+        run: pnpm check:types
+      - name: Check dashboard wire states
+        run: pnpm exec tsx --test --test-name-pattern="dashboard wire contract" qa/contracts/api.test.ts
+      - name: Build web application
+        run: pnpm build:web
+  dashboard-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Set disposable runner workspace
+        run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install pinned pnpm and workspace dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Prepare disposable synthetic database
+        run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Check first-run setup, queues and protected finance records
+        shell: bash
+        run: |
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-qa-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 15 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test --test-name-pattern="unconfigured school" qa/contracts/fixtures.test.ts
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/academics/attendance.test.ts
+          pnpm qa:finance

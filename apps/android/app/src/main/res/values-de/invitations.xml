@@ -1,0 +1,28 @@
+<resources>
+    <string name="invite_title">Einladungen</string>
+    <string name="invite_landing">Einladung zu Madrasty El Arabia</string>
+    <string name="invite_continue">Einladung öffnen</string>
+    <string name="invite_new_password">Neues Passwort</string>
+    <string name="invite_repeat_password">Passwort wiederholen</string>
+    <string name="invite_activate">Konto aktivieren</string>
+    <string name="invite_have_account">Ich habe bereits ein Konto</string>
+    <string name="invite_confirm">Einladung bestätigen</string>
+    <string name="invite_invalid">Die Einladung ist nicht verfügbar. Bitten Sie die Schule um einen neuen Link.</string>
+    <string name="invite_success">Die Einladung wurde aktiviert. Melden Sie sich an.</string>
+    <string name="invite_teacher">Lehrkraft einladen</string>
+    <string name="invite_queue">Einladung zum Versand vormerken</string>
+    <string name="invite_batch">Einladungen aus dem Familienimport</string>
+    <string name="invite_reissue">Neu ausstellen</string>
+    <string name="invite_correct">Korrigierte Adresse (optional)</string>
+    <string name="invite_ready">Bereit</string>
+    <string name="invite_queued">In der Warteschlange</string>
+    <string name="invite_sent">Vom E-Mail-Anbieter angenommen</string>
+    <string name="invite_bounced">Unzustellbar</string>
+    <string name="invite_pending">Aktivierbar</string>
+    <string name="invite_expired">Abgelaufen</string>
+    <string name="invite_replaced">Ersetzt</string>
+    <string name="invite_revoked">Widerrufen</string>
+    <string name="invite_activated">Aktiviert</string>
+    <string name="invite_any">Alle</string>
+    <string name="invite_count">Neue Einladungen: %1$d · Vorhandene Einladungen: %2$d</string>
+</resources>

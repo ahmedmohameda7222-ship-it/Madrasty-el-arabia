@@ -1,0 +1,30 @@
+<resources>
+    <string name="school_calendar">Schuljahr und Kalender</string>
+    <string name="school_settings">Schuleinstellungen</string>
+    <string name="school_name_ar">Schulname auf Arabisch</string>
+    <string name="school_name_de">Schulname auf Deutsch</string>
+    <string name="school_timezone">Zeitzone (IANA)</string>
+    <string name="school_currency">Währungscode</string>
+    <string name="school_due">Monatlicher Fälligkeitstag</string>
+    <string name="school_years">Schuljahre</string>
+    <string name="school_new_year">Schuljahr hinzufügen</string>
+    <string name="school_start">Erster Tag (JJJJ-MM-TT)</string>
+    <string name="school_end">Erster Tag nach Ende (JJJJ-MM-TT)</string>
+    <string name="school_weekdays">Reguläre Unterrichtstage</string>
+    <string name="school_draft">Entwurf</string>
+    <string name="school_active">Aktiv</string>
+    <string name="school_closed">Abgeschlossen</string>
+    <string name="school_exceptions">Abweichende Unterrichtstage</string>
+    <string name="school_day">Datum (JJJJ-MM-TT)</string>
+    <string name="school_reason">Grund für die Abweichung</string>
+    <string name="school_teaching">Unterricht</string>
+    <string name="school_cancelled">Unterricht fällt aus</string>
+    <string name="school_save">Speichern</string>
+    <string name="school_week_1">Montag</string>
+    <string name="school_week_2">Dienstag</string>
+    <string name="school_week_3">Mittwoch</string>
+    <string name="school_week_4">Donnerstag</string>
+    <string name="school_week_5">Freitag</string>
+    <string name="school_week_6">Samstag</string>
+    <string name="school_week_7">Sonntag</string>
+</resources>

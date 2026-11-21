@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="queue_title">مهام المدرسة</string>
+    <string name="queue_date">المهام حتى تاريخ (YYYY-MM-DD)</string>
+    <string name="queue_filter">عرض المهام</string>
+    <string name="queue_open">فتح المهام</string>
+    <string name="queue_empty">ما فيش مهام مفتوحة في التاريخ ده.</string>
+    <string name="queue_unavailable">تعذّر تحميل العدد</string>
+    <string name="queue_guardian_links">روابط الأسر للمراجعة</string>
+    <string name="queue_family_imports">دفعات استيراد مفتوحة</string>
+    <string name="queue_class_assignments">فصول ينقصها تكليف</string>
+    <string name="queue_bounced_invites">دعوات تعذّر تسليمها</string>
+    <string name="queue_unapproved_attendance">حضور بانتظار الاعتماد</string>
+    <string name="queue_noncontinuation">طلبات وقف القيد</string>
+    <string name="queue_settlements">مدفوعات للمراجعة</string>
+    <string name="queue_failed_deliveries">إرسال تعذّر تسليمه</string>
+    <string name="home_attendance_action">افتح الحضور</string>
+    <string name="home_child_action">افتح بيانات الطفل</string>
+    <string name="home_lessons_today">دروس اليوم</string>
+    <string name="home_no_lessons">ما فيش دروس مواعيدها النهارده.</string>
+</resources>

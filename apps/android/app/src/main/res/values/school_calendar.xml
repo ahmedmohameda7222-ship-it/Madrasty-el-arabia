@@ -1,0 +1,30 @@
+<resources>
+    <string name="school_calendar">السنة الدراسية والتقويم</string>
+    <string name="school_settings">إعدادات المدرسة</string>
+    <string name="school_name_ar">اسم المدرسة بالعربية</string>
+    <string name="school_name_de">اسم المدرسة بالألمانية</string>
+    <string name="school_timezone">المنطقة الزمنية (IANA)</string>
+    <string name="school_currency">رمز العملة</string>
+    <string name="school_due">يوم استحقاق الفاتورة</string>
+    <string name="school_years">السنوات الدراسية</string>
+    <string name="school_new_year">إضافة سنة دراسية</string>
+    <string name="school_start">أول يوم (YYYY-MM-DD)</string>
+    <string name="school_end">أول يوم بعد النهاية (YYYY-MM-DD)</string>
+    <string name="school_weekdays">أيام الدراسة الأسبوعية</string>
+    <string name="school_draft">مسودة</string>
+    <string name="school_active">نشطة</string>
+    <string name="school_closed">مغلقة</string>
+    <string name="school_exceptions">استثناءات أيام الدراسة</string>
+    <string name="school_day">تاريخ اليوم (YYYY-MM-DD)</string>
+    <string name="school_reason">سبب الاستثناء</string>
+    <string name="school_teaching">يوم دراسة</string>
+    <string name="school_cancelled">يوم ملغى</string>
+    <string name="school_save">حفظ</string>
+    <string name="school_week_1">الإثنين</string>
+    <string name="school_week_2">الثلاثاء</string>
+    <string name="school_week_3">الأربعاء</string>
+    <string name="school_week_4">الخميس</string>
+    <string name="school_week_5">الجمعة</string>
+    <string name="school_week_6">السبت</string>
+    <string name="school_week_7">الأحد</string>
+</resources>

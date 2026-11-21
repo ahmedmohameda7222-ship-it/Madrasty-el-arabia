@@ -1,0 +1,35 @@
+<resources>
+    <string name="staff_access">صلاحيات الموظفين</string>
+    <string name="choose_staff">اختر موظفًا</string>
+    <string name="staff_more">عرض المزيد</string>
+    <string name="access_roles">الأدوار</string>
+    <string name="access_permissions">الصلاحيات</string>
+    <string name="access_inboxes">الصناديق الرسمية</string>
+    <string name="access_save">حفظ الصلاحيات</string>
+    <string name="staff_suspend">تعطيل صلاحيات الموظف</string>
+    <string name="account_suspend">تعطيل الحساب بالكامل</string>
+    <string name="suspend_reason">سبب التعطيل</string>
+    <string name="suspendconfirm">تأكيد التعطيل</string>
+    <string name="access_start">بداية الصلاحية (UTC)</string>
+    <string name="access_end">انتهاء الصلاحية (UTC)</string>
+    <string name="mfa_enabled">التحقق بخطوتين مفعّل</string>
+    <string name="mfa_disabled">التحقق بخطوتين غير مفعّل</string>
+    <string name="access_reauth">أعد تأكيد تطبيق المصادقة قبل حفظ الصلاحيات.</string>
+    <string name="suspendfamily">تعطيل صلاحيات الموظف يُبقي صلاحية ولي الأمر لو موجودة.</string>
+    <string name="accesschanged">تم حفظ التغييرات</string>
+    <string name="permission_access_manage">إدارة الصلاحيات</string>
+    <string name="permission_school_manage">إعدادات المدرسة والفصول</string>
+    <string name="permission_students_manage">شؤون الطلبة والأسر</string>
+    <string name="permission_applications_manage">طلبات المدرسين</string>
+    <string name="permission_attendance_supervise">الإشراف على الحضور</string>
+    <string name="permission_academics_supervise">الإشراف على التعليم والنتائج</string>
+    <string name="permission_comms_publish">النشر والإعلانات</string>
+    <string name="permission_finance_read">عرض حسابات الرسوم</string>
+    <string name="permission_finance_issue">إصدار الفواتير</string>
+    <string name="permission_finance_post">تسجيل المدفوعات</string>
+    <string name="permission_finance_export">تصدير الحسابات</string>
+    <string name="permission_bank_configure">تغيير حساب التحصيل</string>
+    <string name="permission_audit_read">عرض سجل العمليات</string>
+    <string name="permission_student_affairs">صندوق شؤون الطلبة</string>
+    <string name="permission_accounts">صندوق الحسابات</string>
+</resources>

@@ -1,0 +1,30 @@
+<resources>
+    <string name="enrollments">Klassen und Einschreibungen</string>
+    <string name="choose_year">Schuljahr auswählen</string>
+    <string name="choose_class">Klasse auswählen</string>
+    <string name="new_class">Klasse hinzufügen</string>
+    <string name="class_code">Klassencode</string>
+    <string name="class_cap">Plätze</string>
+    <string name="class_roster">Klassenliste</string>
+    <string name="open_roster">Liste öffnen</string>
+    <string name="place_students">Schüler zuweisen</string>
+    <string name="enrollment_from">Gültig ab (JJJJ-MM-TT)</string>
+    <string name="transfer_student">Versetzen</string>
+    <string name="withdraw_student">Einschreibung beenden</string>
+    <string name="destination_class">Zielklasse</string>
+    <string name="enrollment_history">Einschreibungsverlauf</string>
+    <string name="year_rollover">Schuljahreswechsel</string>
+    <string name="rollover_target">Zielschuljahr</string>
+    <string name="rollover_preview">Übernahme prüfen</string>
+    <string name="rollover_confirm">Übernahme bestätigen und Schuljahr abschließen</string>
+    <string name="rollover_place">Nach Klasse</string>
+    <string name="rollover_repeat">Jahr wiederholen</string>
+    <string name="rollover_skip">Überspringen</string>
+    <string name="rollover_override">Andere Klasse</string>
+    <string name="rollover_count">Zuordnungen: %1$d · Konflikte: %2$d · Ohne Zuordnung: %3$d</string>
+    <string name="enrollment_conflict">Bereits im Zieljahr eingeschrieben</string>
+    <string name="enrollment_inactive">Schüler inaktiv</string>
+    <string name="enrollment_no_target">Zielklasse fehlt</string>
+    <string name="enrollment_class_full">Klasse ausgelastet</string>
+    <string name="whole_school">Ganze Schule</string>
+</resources>

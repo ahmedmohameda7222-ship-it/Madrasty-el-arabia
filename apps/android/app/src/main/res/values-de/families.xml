@@ -1,0 +1,28 @@
+<resources>
+    <string name="families">Familien</string>
+    <string name="student_profile">Schülerprofil</string>
+    <string name="guardian_profile">Profil der Sorgeberechtigten</string>
+    <string name="add_student">Schüler hinzufügen</string>
+    <string name="add_guardian">Sorgeberechtigte hinzufügen</string>
+    <string name="family_query">Nach Name oder Schülernummer suchen</string>
+    <string name="search_family">Suchen</string>
+    <string name="student_number">Schülernummer</string>
+    <string name="family_name">Name</string>
+    <string name="guardian_email">E-Mail-Adresse</string>
+    <string name="guardian_phone">Telefonnummer</string>
+    <string name="guardian_locale">Sprache für Mitteilungen</string>
+    <string name="record_active">Aktiv</string>
+    <string name="record_inactive">Inaktiv</string>
+    <string name="approved_link">Bestätigt</string>
+    <string name="pending_link">Zur Prüfung</string>
+    <string name="revoked_link">Widerrufen</string>
+    <string name="family_links">Verknüpfte Kinder</string>
+    <string name="create_link">Kind zuordnen</string>
+    <string name="approve_link">Verknüpfung bestätigen</string>
+    <string name="revoke_link">Verknüpfung widerrufen</string>
+    <string name="link_reason">Grund</string>
+    <string name="immediate_link">Verknüpfung sofort bestätigen</string>
+    <string name="submit_link">Zur Prüfung einreichen</string>
+    <string name="activated_email">Die E-Mail-Adresse eines aktiven Kontos wird in den Sicherheitseinstellungen geändert.</string>
+    <string name="selected_child">Ausgewähltes Kind</string>
+</resources>

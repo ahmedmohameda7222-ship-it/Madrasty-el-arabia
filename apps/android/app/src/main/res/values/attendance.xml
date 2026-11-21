@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attendance_review">مراجعة الحضور</string>
+    <string name="attendance_date">يوم الحضور (YYYY-MM-DD)</string>
+    <string name="attendance_day_action">اعرض اليوم</string>
+    <string name="attendance_pending_sheets">كشوف بانتظار الاعتماد</string>
+    <string name="attendance_no_pending">ما فيش كشوف بانتظار الاعتماد في اليوم ده.</string>
+    <string name="attendance_open">افتح كشف الحضور</string>
+    <string name="attendance_draft">مسودة الحضور</string>
+    <string name="attendance_approved">تم اعتماد الكشف</string>
+    <string name="attendance_unstarted">الكشف لسه ما اتفتحش.</string>
+    <string name="attendance_closed">اليوم مغلق للتسجيل أو الاعتماد.</string>
+    <string name="attendance_incomplete">سجّل حالة كل طالب قبل الاعتماد.</string>
+    <string name="attendance_present">حاضر</string>
+    <string name="attendance_late">متأخر</string>
+    <string name="attendance_absent_unexcused">غائب بدون عذر</string>
+    <string name="attendance_absent_excused">غائب بعذر</string>
+    <string name="attendance_unmarked">بدون تسجيل</string>
+    <string name="attendance_mark_all">سجّل الحضور للي لسه من غير حالة</string>
+    <string name="attendance_confirm_bulk">تأكيد التسجيل الجماعي</string>
+    <string name="attendance_save">حفظ المسودة</string>
+    <string name="attendance_approve">اعتماد الحضور</string>
+    <string name="attendance_confirm_approval">اعتماد الكشف النهائي</string>
+    <string name="attendance_locked">الحالة مقفولة بسبب عذر الأسرة.</string>
+    <string name="attendance_arrival">حضور فعلي مؤكد</string>
+    <string name="attendance_stale">تغيّرت الحالة على الخادم.</string>
+    <string name="attendance_outside">الطالب خرج من كشف الفصل لليوم ده.</string>
+    <string name="attendance_use_server">استخدم الحالة المحفوظة</string>
+    <string name="attendance_reapply">احتفظ بتعديلي بالمراجعة الجديدة</string>
+    <string name="attendance_refresh">تحديث الكشف</string>
+    <string name="attendance_conflicts">بعض الحالات تحتاج مراجعة.</string>
+    <string name="attendance_skipped">صفوف مقفولة لم تتغيّر: %1$d</string>
+</resources>

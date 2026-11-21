@@ -1,0 +1,14 @@
+<resources>
+    <string name="security">أمان الحساب</string>
+    <string name="recovery">استعادة كلمة السر</string>
+    <string name="mfa_title">التحقق بخطوتين</string>
+    <string name="mfa_setup">إعداد تطبيق المصادقة</string>
+    <string name="mfa_hint">أضف المفتاح لتطبيق المصادقة، ثم أدخل الرمز من ٦ أرقام.</string>
+    <string name="mfa_code">رمز تطبيق المصادقة</string>
+    <string name="verified">تم التحقق</string>
+    <string name="mfa_required">تحقّق بخطوتين للدخول إلى الإدارة.</string>
+    <string name="email_change">تغيير البريد الإلكتروني</string>
+    <string name="new_email">البريد الإلكتروني الجديد</string>
+    <string name="email_sent">راجع بريدك الإلكتروني لتأكيد العنوان.</string>
+    <string name="send_link">إرسال رابط</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_preferences">تفضيلات الحساب</string>
+    <string name="account_ui_language">لغة التطبيق</string>
+    <string name="account_mail_language">لغة مراسلات المدرسة</string>
+    <string name="account_appearance">المظهر</string>
+    <string name="account_theme_system">حسب الجهاز</string>
+    <string name="account_theme_light">فاتح</string>
+    <string name="account_theme_dark">داكن</string>
+    <string name="account_save">حفظ التفضيلات</string>
+    <string name="account_reload">تحديث التفضيلات</string>
+    <string name="account_notifications">إشعارات الجهاز</string>
+    <string name="account_device_settings">فتح إعدادات الإشعارات</string>
+    <string name="directory_title">دليل التواصل</string>
+    <string name="directory_query">الاسم أو الوظيفة</string>
+    <string name="directory_all">الكل</string>
+    <string name="directory_empty">ما فيش جهات اتصال مطابقة.</string>
+    <string name="directory_mail">إرسال بريد لجهة العمل</string>
+    <string name="directory_call">اتصال بهاتف العمل</string>
+    <string name="directory_external_unavailable">فتح التطبيق المناسب غير متاح على الجهاز.</string>
+</resources>

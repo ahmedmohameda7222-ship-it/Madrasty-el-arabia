@@ -1,0 +1,14 @@
+# Preserve the exact bytes of the supplied reference artifact on every platform.
+docs/reference/OPEN_PREVIEW.html -text -diff
+
+# Keep authored planning material portable across Windows and Linux.
+docs/**/*.md text eol=lf
+docs/**/*.svg text eol=lf
+/AGENTS.md text eol=lf
+/PROGRESS.md text eol=lf
+/PLANS.md text eol=lf
+
+# Wrapper entry points must preserve their platform line endings.
+/apps/android/gradlew text eol=lf
+/apps/android/gradlew.bat text eol=crlf
+/apps/web/public/templates/*.csv text eol=crlf
