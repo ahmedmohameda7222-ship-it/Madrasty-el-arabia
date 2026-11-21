@@ -2,6 +2,7 @@ import "server-only";
 import {z} from "zod";
 import {Webhook} from "svix";
 import {ApiError} from "@/server/http";
+import {brevoConfigured,sendBrevoEmail,verifyBrevoEmailEvent} from "./brevo";
 import {providerDelay,type TransportResult} from "./result";
 
 export type MailEnvelope={to:string;subject:string;text:string};
@@ -22,10 +23,12 @@ const eventState={
 } as const;
 
 export function emailProviderConfigured(){
+  if(process.env.SCHOOL_EMAIL_PROVIDER==="brevo")return brevoConfigured();
   return Boolean(process.env.RESEND_API_KEY&&process.env.RESEND_FROM);
 }
 
 export async function sendEmail(jobId:string,envelope:MailEnvelope,key:string):Promise<TransportResult>{
+  if(process.env.SCHOOL_EMAIL_PROVIDER==="brevo")return sendBrevoEmail(jobId,envelope);
   const apiKey=process.env.RESEND_API_KEY,from=process.env.RESEND_FROM;
   if(!apiKey||!from)return {state:"failed",failure:"provider_config",retryable:true};
   try{
@@ -46,11 +49,7 @@ export async function sendEmail(jobId:string,envelope:MailEnvelope,key:string):P
   }catch{return {state:"uncertain",failure:"confirmation_lost"};}
 }
 
-export async function verifyEmailEvent(request:Request){
-  const secret=process.env.RESEND_WEBHOOK_SECRET;
-  if(!secret)throw new ApiError("unavailable");
-  const key=request.headers.get("svix-id"),timestamp=request.headers.get("svix-timestamp"),signature=request.headers.get("svix-signature");
-  if(!key||key.length>160||!timestamp||!signature||signature.length>8192)throw new ApiError("unauthenticated");
+async function readEventBody(request:Request){
   const reader=request.body?.getReader();
   if(!reader)throw new ApiError("bad_request");
   const decoder=new TextDecoder("utf-8",{fatal:true});
@@ -69,6 +68,16 @@ export async function verifyEmailEvent(request:Request){
     body+=decoder.decode();
   }catch(error){throw error instanceof ApiError?error:new ApiError("bad_request");}
   finally{reader.releaseLock();}
+  return body;
+}
+
+export async function verifyEmailEvent(request:Request){
+  if(process.env.SCHOOL_EMAIL_PROVIDER==="brevo")return verifyBrevoEmailEvent(request,()=>readEventBody(request));
+  const secret=process.env.RESEND_WEBHOOK_SECRET;
+  if(!secret)throw new ApiError("unavailable");
+  const key=request.headers.get("svix-id"),timestamp=request.headers.get("svix-timestamp"),signature=request.headers.get("svix-signature");
+  if(!key||key.length>160||!timestamp||!signature||signature.length>8192)throw new ApiError("unauthenticated");
+  const body=await readEventBody(request);
   let verified:unknown;
   try{verified=new Webhook(secret).verify(body,{"svix-id":key,"svix-timestamp":timestamp,"svix-signature":signature});}
   catch{throw new ApiError("unauthenticated");}

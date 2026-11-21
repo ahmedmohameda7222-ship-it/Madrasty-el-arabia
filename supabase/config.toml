@@ -22,3 +22,15 @@ uri = "pg-functions://postgres/app/block_revoked_auth_refresh"
 double_confirm_changes = true
 enable_confirmations = true
 secure_password_change = true
+
+[auth.email.template.invite]
+subject = "Madrasty El Arabia — تفعيل طلب التدريس / Lehrkraftbewerbung aktivieren"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Madrasty El Arabia — استرجاع كلمة المرور / Passwort zurücksetzen"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Madrasty El Arabia — تأكيد تغيير البريد / E-Mail-Adresse bestätigen"
+content_path = "./supabase/templates/email-change.html"
