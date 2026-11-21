@@ -97,7 +97,10 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
               aria-current={active === tab ? "page" : undefined}
               aria-label={locale === "de" && tab === "attendance" ? text[tab] : undefined}>
               <Icon name={tab} />
-              <span>{locale === "de" && tab === "attendance" ? "Anwes." : text[tab]}</span>
+              {locale === "de" && tab === "attendance" ? <>
+                <span className="nav-label-mobile" aria-hidden="true">Anwes.</span>
+                <span className="nav-label-desktop" aria-hidden="true">{text[tab]}</span>
+              </> : <span>{text[tab]}</span>}
             </Link>
           ))}
           {secondary && (

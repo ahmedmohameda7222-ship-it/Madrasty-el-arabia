@@ -27,7 +27,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
-| UIX-05 | 1 | Mobile RED → GREEN verified; desktop preservation RED regression pending | Run 44924309807: 4/4 browser tests and static checks pass; follow-up checks full visible desktop label after mobile-only shortening |
+| UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
 | UIX-06 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -123,3 +123,9 @@ No command from the block above has been represented as successful in this docum
 - [Run 44895089775](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44895089775): browser-fixture 1 expected failure / 3 passes. On `/de/school/attendance`, selected tab `aria-current=page` worked, but `aria-label` was absent. Before screenshot + WebM + trace in artifact 14704010234. The visible title wraps in the source audit; proposed abbreviated label preserves `Anwesenheit` for assistive tech. This fix changes only the shared nav's German attendance tab and QA evidence capture; other nav destinations untouched. GREEN pending.
 
 UIX-05 desktop-preservation ruling: The approved change addresses the cramped mobile navigation; the normal 1024px rail must retain full `Anwesenheit`. The first green browser check only checked mobile; a separate RED/GREEN regression prevents an accidental desktop UI change.
+
+## UIX-05 desktop RED evidence and QA repair
+
+- [RED run 44924619647](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44924619647): browser 2 failed / 2 passed. The desktop nav test received Anwes. instead of Anwesenheit at 1024px.
+- The long-name fixture test also failed because the default first child was the valid short name نور (three characters). Child ordering is not guaranteed. The repaired test selects the long name via the actual scope dialog rather than changing the expected length or mocking DOM data.
+- Implementation preserves Anwes. below 960px, displays the full term in the desktop rail, and keeps the accessible name across both widths. GREEN verification pending.

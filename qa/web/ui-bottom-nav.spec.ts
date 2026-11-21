@@ -17,8 +17,10 @@ test("German attendance bottom tab remains readable while exposing its full acce
       const attendance = links.nth(1);
       await expect(attendance).toHaveAttribute("aria-current", "page");
       await expect(attendance).toHaveAttribute("aria-label", "Anwesenheit");
-      await expect(attendance.locator("span")).toHaveText("Anwes.");
-      const lines = await attendance.locator("span").evaluate((element) => {
+      await expect(attendance.locator(".nav-label-mobile")).toHaveText("Anwes.");
+      await expect(attendance.locator(".nav-label-mobile")).toBeVisible();
+      await expect(attendance.locator(".nav-label-desktop")).toBeHidden();
+      const lines = await attendance.locator(".nav-label-mobile").evaluate((element) => {
         const box = element.getBoundingClientRect();
         const style = getComputedStyle(element);
         const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.3;
@@ -39,7 +41,10 @@ test("German attendance bottom tab remains readable while exposing its full acce
     // The mobile abbreviation must not replace the established full label on desktop.
     await page.setViewportSize({ width: 1024, height: 900 });
     await page.goto("/de/school/attendance");
-    const desktopLabel = page.locator(".school-nav > a").nth(1).locator("span");
+    const desktopTab = page.locator(".school-nav > a").nth(1);
+    const desktopLabel = desktopTab.locator(".nav-label-desktop");
+    await expect(desktopTab.locator(".nav-label-mobile")).toBeHidden();
+    await expect(desktopLabel).toBeVisible();
     await expect(desktopLabel).toHaveText("Anwesenheit");
     await page.screenshot({ path: "qa-artifacts/ui-after/UIX05-teacher-de-attendance-1024-200pct-text.png", animations: "disabled" });
     await page.setViewportSize({ width: 430, height: 844 });
