@@ -1,8 +1,6 @@
 name: Isolated UI screenshot retry (failed routes only)
+# Rerun only on explicit dispatch; code fixes must not silently repeat the costly screenshot pass.
 on:
-  push:
-    branches:
-      - fix/ui-audit-coverage-mobile-2026-11-21
   workflow_dispatch:
 
 permissions:
@@ -25,6 +23,7 @@ jobs:
     env:
       QA_SCREENSHOTS_ONLY: "1"
       QA_AUDIT_RETRY_TARGETS: qa-artifacts/retry-targets.json
+      QA_AUDIT_VERIFIED_DENIALS: qa-artifacts/verified-denials.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -107,6 +106,7 @@ jobs:
           path: |
             qa-artifacts/screenshots/
             qa-artifacts/retry-targets.json
+            qa-artifacts/verified-denials.json
             qa-artifacts/playwright-results.json
             qa-artifacts/test-results/
             qa-artifacts/server/
