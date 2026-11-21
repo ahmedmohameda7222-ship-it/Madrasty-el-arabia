@@ -23,7 +23,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | Task | Phase | Status | Verification / next gate |
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
-| UIX-01 | 0 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-01 | 0 | Partial: pure capture-policy regression tests RED → GREEN locally; screenshot runner and browser checks pending | `node --test qa/screenshot-audit-policy.test.mjs` 5 expected RED failures against old policy, then 9/9 GREEN with new policy; browser and full fixture verification unverified |
 | UIX-02 | 0 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-03 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-04 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -75,3 +75,10 @@ pnpm qa:all
 ```
 
 No command from the block above has been represented as successful in this document. Before declaring a task done, record actual command, output/exit status, role, locale, width, state, capture/video and SHA. GitHub CI, when present, does not substitute for physical-device verification.
+
+## UIX-01 policy-only regression evidence
+
+- Local scratch files were verified byte-identical to the GitHub blobs (`git hash-object` matched the uploaded blob SHA for both files).
+- `node --test qa/screenshot-audit-policy.test.mjs` on the prior screenshot policy: exit **1**, 5 intended RED cases failed and 4 passed (loading accepted; terminal state absent; unverified 404 accepted; wrong-width attempt overlooked; redirect accepted).
+- Same command on the corrected policy: exit **0**, **9 passed**, **0 failed**; `node --check` succeeded for both files. The two complete logs are retained in the conversation output artifacts.
+- This verifies **pure Node classification logic only**, not the Playwright screenshot runner nor page readiness, component behavior, CI, types/build or device UX. The runner must populate real terminal state and exact target pairs before this policy can govern visual acceptance.
