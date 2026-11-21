@@ -28,7 +28,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
 | UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
-| UIX-06 | 1 | RED regression authored, browser result pending | Uses actual 90+ character synthetic child via ScopeSheet and checks hero, CTA and native select at 320/390/430 in ar/de, 200% text |
+| UIX-06 | 1 | RED verified; previously reviewed CSS selector fix committed; GREEN pending | Run 44925417089: child select left=-364px at 320px; first 3 UIX-06 assertions reached and 4 existing browser regressions passed |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-09 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -129,3 +129,9 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 - [RED run 44924619647](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44924619647): browser 2 failed / 2 passed. The desktop nav test received Anwes. instead of Anwesenheit at 1024px.
 - The long-name fixture test also failed because the default first child was the valid short name نور (three characters). Child ordering is not guaranteed. The repaired test selects the long name via the actual scope dialog rather than changing the expected length or mocking DOM data.
 - Implementation preserves Anwes. below 960px, displays the full term in the desktop rail, and keeps the accessible name across both widths. GREEN verification pending.
+
+## UIX-06 RED evidence and targeted fix
+
+- [RED run 44925417089](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44925417089): Playwright browser 1 expected failure and 4 previous tests passed. The actual native child select at 320px RTL had `left=-364px` (expected >=-1px); artifact 14715134191 includes screenshot, video and trace.
+- The first hero checks (long name via real scope sheet, aria-label, hero viewport bounds, CTA, main overflow) had passed before the select failure. The fix ports the independently reviewed `label.auth-card` grid and select min-inline-size rules from the prior QA branch without modifying any academic or auth logic.
+- The task remains pending until the complete ar/de/320/390/430/200% browser regression and affected static checks pass.
