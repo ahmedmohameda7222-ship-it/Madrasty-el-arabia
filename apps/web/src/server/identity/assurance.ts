@@ -12,10 +12,15 @@ const factorSchema = z.object({
   status: z.enum(["verified", "unverified"]),
 });
 const enrolledFactorSchema = z.object({
-  id: z.uuid(), totp: z.object({ secret: z.string(), uri: z.string().startsWith("otpauth://") }),
+  id: z.uuid(),
+  totp: z.object({
+    secret: z.string(), uri: z.string().startsWith("otpauth://"),
+    qr_code: z.string().max(65536).regex(/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i),
+  }),
 });
 const challengeSchema = z.object({ id: z.uuid(), expires_at: z.number() });
 const tokenResponse = z.object({ access_token: z.string(), refresh_token: z.string(), expires_in: z.number() });
+const authenticatorName = "Madrasty El Arabia";
 
 export async function providerRequest(path: string, access: string, options = {} as RequestInit): Promise<unknown> {
   const origin = process.env.SUPABASE_URL;
@@ -51,12 +56,22 @@ export async function enrollFactor(access: string) {
   const session = await resolveSchoolSession(access);
   if (session.activePersona !== "admin") throw new ApiError("forbidden");
   const registered = await factors(access);
-  if (registered.some((factor) => factor.status === "verified") && session.assurance !== "aal2") {
-    throw new ApiError("forbidden");
+  if (session.assurance === "aal1") {
+    if (registered.some((factor) => factor.status === "verified")) throw new ApiError("forbidden");
+    const unfinished = registered.find((factor) => factor.friendly_name === authenticatorName)
+      ?? registered.find((factor) => !factor.friendly_name);
+    if (unfinished?.status === "unverified") {
+      await providerRequest(`/factors/${unfinished.id}`, access, { method: "DELETE" });
+    }
   }
-  return enrolledFactorSchema.parse(await providerRequest("/factors", access, {
-    method: "POST", body: JSON.stringify({ factor_type: "totp", issuer: "Madrasty El Arabia" }),
+  const { id, totp } = enrolledFactorSchema.parse(await providerRequest("/factors", access, {
+    method: "POST",
+    body: JSON.stringify({ factor_type: "totp", issuer: authenticatorName, friendly_name: authenticatorName }),
   }));
+  return { id, totp: {
+    secret: totp.secret, uri: totp.uri,
+    qrCode: `data:image/svg+xml;base64,${Buffer.from(totp.qr_code).toString("base64")}`,
+  } };
 }
 
 export async function makeChallenge(access: string, factorId: string) {

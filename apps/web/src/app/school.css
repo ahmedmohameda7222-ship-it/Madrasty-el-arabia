@@ -149,6 +149,7 @@ button:disabled { cursor: default; }
 
 .auth-card { padding: 24px; margin-block: 24px; border-radius: 24px; background: var(--card); border: 1px solid var(--rule); }
 .auth-form { display: grid; gap: 8px; margin-block-start: 16px; }
+.auth-qr { display: block; inline-size: min(100%, 240px); block-size: auto; padding: 16px; margin-block: 12px; background: #fff; }
 .auth-form input, .session-controls select { min-block-size: 48px; min-inline-size: 0; border-radius: 12px; padding: 8px 12px; background: var(--canvas); color: var(--ink); border: 1px solid var(--rule); }
 .auth-form [role=alert], .session-controls [role=alert] { color: var(--ink); border-inline-start: 3px solid var(--coral); padding-inline-start: 8px; }
 .password-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }

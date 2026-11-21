@@ -250,7 +250,7 @@ paths:
           description: Accepted and scoped response
           content:
             application/json:
-              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","totp":{"secret":"EXAMPLE","uri":"otpauth://totp/example"}}}
+              example: {"data":{"id":"2d71a427-2ffa-4740-bfa4-308f34973fd0","totp":{"secret":"EXAMPLE","uri":"otpauth://totp/example","qrCode":"data:image/svg+xml;base64,PHN2Zy8+"}}}
         default:
           $ref: '#/components/responses/AuthError'
   /auth/mfa/challenge:

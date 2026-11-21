@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { sessionSchema, type Persona, type Locale } from "@madrasty/contracts";
@@ -13,7 +14,8 @@ const labels = {
     security: "أمان الحساب", reset: "استعادة كلمة السر", activate: "تفعيل حساب الإدارة", verify: "التحقق بخطوتين",
     email: "البريد الإلكتروني", newEmail: "البريد الإلكتروني الجديد", newPassword: "كلمة السر الجديدة",
     currentPassword: "كلمة السر الحالية", send: "إرسال رابط", sent: "لو الحساب متاح، هيوصلك رابط على البريد الإلكتروني.",
-    authApp: "أضف المفتاح لتطبيق المصادقة ثم أدخل الرمز من ٦ أرقام.", code: "رمز تطبيق المصادقة",
+    authApp: "امسح رمز QR بتطبيق المصادقة، ثم أدخل الرمز من ٦ أرقام.", code: "رمز تطبيق المصادقة",
+    qrLabel: "رمز QR لإعداد التحقق بخطوتين", manualKey: "إدخال مفتاح الإعداد يدويًا",
     enroll: "إعداد تطبيق المصادقة", confirm: "تأكيد", signin: "تسجيل الدخول", verified: "تم التحقق",
     address: "تغيير البريد الإلكتروني", activated: "الحساب جاهز لتسجيل الدخول", expired: "الرابط غير متاح. اطلب رابطًا جديدًا.",
   },
@@ -21,14 +23,17 @@ const labels = {
     security: "Kontosicherheit", reset: "Passwort zurücksetzen", activate: "Verwaltungskonto aktivieren", verify: "Zwei-Faktor-Verifizierung",
     email: "E-Mail-Adresse", newEmail: "Neue E-Mail-Adresse", newPassword: "Neues Passwort",
     currentPassword: "Aktuelles Passwort", send: "Link senden", sent: "Falls das Konto verfügbar ist, erhalten Sie einen Link per E-Mail.",
-    authApp: "Fügen Sie den Schlüssel in Ihrer Authenticator-App hinzu und geben Sie den sechsstelligen Code ein.", code: "Authenticator-Code",
+    authApp: "Scannen Sie den QR-Code mit Ihrer Authenticator-App und geben Sie den sechsstelligen Code ein.", code: "Authenticator-Code",
+    qrLabel: "QR-Code für die Zwei-Faktor-Verifizierung", manualKey: "Einrichtungsschlüssel manuell eingeben",
     enroll: "Authenticator einrichten", confirm: "Bestätigen", signin: "Anmelden", verified: "Verifiziert",
     address: "E-Mail-Adresse ändern", activated: "Sie können sich jetzt anmelden", expired: "Der Link ist ungültig. Fordern Sie einen neuen Link an.",
   },
 } as const;
 
 const factor = z.object({ id: z.uuid(), status: z.enum(["verified", "unverified"]) });
-const enrollment = z.object({ id: z.uuid(), totp: z.object({ secret: z.string(), uri: z.string() }) });
+const enrollment = z.object({
+  id: z.uuid(), totp: z.object({ secret: z.string(), qrCode: z.string().startsWith("data:image/svg+xml;base64,") }),
+});
 const challenge = z.object({ challengeId: z.uuid() });
 const accepted = z.object({ accepted: z.literal(true) });
 
@@ -161,7 +166,11 @@ export function AccountSecurity({ locale, persona, assured }: { locale: Locale; 
           {!candidate && factors && <button className="primary-button" disabled={pending} onClick={() => void run(async () => {
             setSetup((await requestApi("/auth/mfa/enroll", enrollment, requestBody({}))).data);
           })}>{text.enroll}</button>}
-          {setup && <div><p>{text.authApp}</p><bdi dir="ltr">{setup.totp.secret}</bdi></div>}
+          {setup && <div>
+            <p>{text.authApp}</p>
+            <Image src={setup.totp.qrCode} alt={text.qrLabel} width={240} height={240} unoptimized className="auth-qr" />
+            <details><summary>{text.manualKey}</summary><bdi dir="ltr">{setup.totp.secret}</bdi></details>
+          </div>}
           {candidate && <form className="auth-form" onSubmit={verify}>
             <label>{text.code}<input name="code" dir="ltr" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" required /></label>
             <button className="primary-button" disabled={pending}>{text.confirm}</button>
