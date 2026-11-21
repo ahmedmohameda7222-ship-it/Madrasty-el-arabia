@@ -25,8 +25,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
 | UIX-01 | 0 | Partial: pure capture-policy regression tests RED → GREEN locally; screenshot runner and browser checks pending | `node --test qa/screenshot-audit-policy.test.mjs` 5 expected RED failures against old policy, then 9/9 GREEN with new policy; browser and full fixture verification unverified |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
-| UIX-03 | 1 | RED verified in Chromium; CSS correction committed, GREEN pending | RED run 44893561314: `touch-action` expected `manipulation`, computed `auto`, fixture test passed; visual interaction/physical device pending |
-| UIX-04 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
+| UIX-04 | 1 | Browser RED regression committed; result pending | Logo, title, bell, language alignment at 320/390/430 in Arabic and German |
 | UIX-05 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-06 | 1 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -99,3 +99,7 @@ No command from the block above has been represented as successful in this docum
 
 - GitHub Actions run [44893561314](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44893561314), browser job `136814333012`. `pnpm exec playwright test --config qa/ui-remediation.config.ts`: **1 expected UIX-03 failure, 1 UIX-02 regression passed**. The computed native control style on `/ar/account/sign-in` was `touch-action: auto` instead of `manipulation`. The run retained screenshot, WebM and Playwright trace (artifact `14703231543`).
 - The fix adds scoped 120ms pointer press feedback, preserves focus/selection semantics, gates hover by pointer precision, provides reduced-motion override, and leaves generic content selectable. CI GREEN and real-device tap feel are not yet established.
+
+## UIX-03 GREEN checkpoint
+
+- [Run 44893854146](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44893854146) on eba9231a: isolated Chromium **2 passed / 0 failed**, 9 screenshot-policy unit tests, TypeScript check and web build passed. Physical touch device not verified.
