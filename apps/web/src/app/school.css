@@ -20,6 +20,7 @@
   --sky: #74c4fd;
   --violet: #a492f6;
   --page-inset: clamp(16px, 4vw, 32px);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 100%;
 }
@@ -86,8 +87,34 @@ button:disabled { cursor: default; }
 }
 .plain-button { background: var(--inset); color: var(--ink); }
 .primary-button { min-block-size: 48px; background: var(--primary); color: var(--on-primary); }
+/* Immediate, reversible press feedback for controls; never suppress text selection on content. */
+button, a, [role="button"], .more-group summary { touch-action: manipulation; }
+.plain-button, .primary-button, .hero-action, .group-row, .school-nav a, .more-row {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform 120ms var(--ease-out), background-color 120ms ease;
+}
+.plain-button:not(:disabled):active,
+.primary-button:not(:disabled):active,
+.hero-action:active,
+.group-row:not(:disabled):active,
+.school-nav a:active,
+.more-row:active { transform: scale(.97); }
+.plain-button:focus-visible:active,
+.primary-button:focus-visible:active,
+.hero-action:focus-visible:active,
+.group-row:focus-visible:active,
+.school-nav a:focus-visible:active,
+.more-row:focus-visible:active { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .plain-button, .primary-button, .hero-action, .group-row, .school-nav a, .more-row { transition: none; }
+  .plain-button:active, .primary-button:active, .hero-action:active,
+  .group-row:active, .school-nav a:active, .more-row:active { transform: none; }
+}
+
 .school-body { min-block-size: 0; flex: 1; display: flex; flex-direction: column-reverse; }
-.school-content { flex: 1; min-block-size: 0; overflow: auto; padding: 24px var(--page-inset); }
+.school-content { flex: 1; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 24px var(--page-inset); }
 .school-content > * + * { margin-block-start: 16px; }
 .school-nav {
   flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -203,5 +230,5 @@ button:disabled { cursor: default; }
 [dir=rtl] .more-row::after {transform:rotate(-45deg)}
 .more-group :focus-visible {outline:2px solid var(--primary);outline-offset:-3px}
 .more-group .header-actions {padding:12px 16px}
-@media (hover:hover) {.more-row:hover,.more-group summary:hover {background:var(--inset,ButtonFace)}}
+@media (hover: hover) and (pointer: fine) {.more-row:hover,.more-group summary:hover {background:var(--inset,ButtonFace)}}
 @media (prefers-reduced-motion:no-preference) {.more-group[open] .more-rows {animation:more-enter 140ms ease-out}@keyframes more-enter {from {opacity:.65;transform:translateY(-3px)} to {opacity:1;transform:none}}}
