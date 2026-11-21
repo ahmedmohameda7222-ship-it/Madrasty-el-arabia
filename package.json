@@ -10,9 +10,23 @@
     "generate:contracts": "node scripts/generate-contracts.mjs",
     "check:types": "pnpm -r check:types",
     "build:web": "pnpm --filter @madrasty/web build",
-    "build:android": "node scripts/build-android.mjs"
+    "build:android": "node scripts/build-android.mjs",
+    "qa:contracts": "tsx --env-file-if-exists=qa/.env.local --test --test-concurrency=1 qa/contracts/*.test.ts",
+    "qa:school": "tsx --env-file-if-exists=qa/.env.local --test --test-concurrency=1 qa/school/*.test.ts",
+    "qa:policy": "tsx --env-file-if-exists=qa/.env.local --test qa/policy/*.test.ts",
+    "qa:academics": "tsx --env-file-if-exists=qa/.env.local --test --test-concurrency=1 qa/academics/*.test.ts",
+    "qa:android": "tsx --test qa/android/*.test.ts && pwsh -NoProfile -File qa/android/toolchain.ps1",
+    "qa:web": "playwright test --config qa/playwright.config.ts",
+    "qa:communication": "tsx --env-file-if-exists=qa/.env.local --test --test-concurrency=1 qa/communication/*.test.ts",
+    "qa:finance": "tsx --env-file-if-exists=qa/.env.local --test qa/finance/*.test.ts",
+    "qa:ops": "tsx --env-file-if-exists=qa/.env.local --test qa/ops/*.test.ts && pwsh -NoProfile -File qa/ops/restore.ps1",
+    "qa:all": "pwsh -NoProfile -File qa/run-all.ps1"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "fflate": "0.8.2",
+    "postgres": "3.4.9",
+    "tsx": "4.23.15",
     "yaml": "2.9.1"
   }
 }

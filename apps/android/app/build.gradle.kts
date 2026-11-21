@@ -69,4 +69,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
