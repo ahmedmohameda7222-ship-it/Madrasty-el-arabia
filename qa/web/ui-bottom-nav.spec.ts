@@ -36,6 +36,13 @@ test("German attendance bottom tab remains readable while exposing its full acce
     await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
     const zoomedOverflow = await page.locator(".school-nav").evaluate(el => el.scrollWidth - el.clientWidth);
     expect(zoomedOverflow, "200%-text zoom must not push navigation beyond its own viewport").toBeLessThanOrEqual(1);
+    // The mobile abbreviation must not replace the established full label on desktop.
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto("/de/school/attendance");
+    const desktopLabel = page.locator(".school-nav > a").nth(1).locator("span");
+    await expect(desktopLabel).toHaveText("Anwesenheit");
+    await page.screenshot({ path: "qa-artifacts/ui-after/UIX05-teacher-de-attendance-1024-200pct-text.png", animations: "disabled" });
+    await page.setViewportSize({ width: 430, height: 844 });
     await page.goto("/ar/school/attendance");
     await expect(page.locator(".school-nav > a").nth(1)).toHaveAttribute("aria-current", "page");
     await page.screenshot({ path: "qa-artifacts/ui-after/UIX05-teacher-ar-attendance-430-200pct-text.png", animations: "disabled" });
