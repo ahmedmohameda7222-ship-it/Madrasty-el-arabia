@@ -34,8 +34,8 @@ The operation IDs and paths are enumerated in [OpenAPI](../../packages/contracts
 |---|---|
 | Supabase project | School connection, ref `ycsyghyigkadtugluugm`, region `eu-west-1`, PostgreSQL 17.12. Initial inventory found no user data. All 39 migrations have been applied and matched the local ledger. |
 | Supabase migration access | CLI 2.121.0 uses the default school login. The three restricted pooled roles are configured. The site URL, exact redirect list and refresh hook are bound through `supabase/config.toml`. |
-| Vercel | Created dedicated pre-launch project `madrasty-el-arabia-prelaunch` (`prj_lB5FQ4zDGXQk9Qf9pMrIVACah0lY`) in `ahmed-s-projectssasa` and confirmed Node `24.x`. The owner selected `https://madrastyelarabia.vercel.app` as the initial origin, and Vercel verified the binding. That project uses a production alias at the hosting layer and `SCHOOL_ENVIRONMENT=prelaunch` with an application-level synthetic account allowlist. Release build `dpl_BoRYBe6LqE5uPxLwAZxfRaVmbL2t` uses source `b298cf7591cf8d2ff4b7b931606232696b9f1cfe`. Vercel reports READY and lists the approved alias on this deployment. |
-| Delivery | VAPID, worker authorization, the invitation envelope secret and the approved synthetic recipient allowlist are bound. The first synthetic administrator is pending activation. Supabase Cron dispatch and cleanup jobs are configured and paused, with the worker bearer in Vault. SMTP and the transactional provider remain unbound. The owner deferred Resend for now. Supabase Free rejected custom templates with its default mail service. The Arabic/German templates in `supabase/templates` need publishing after custom SMTP is set. No provider delivery has been initiated. |
+| Vercel | Dedicated pre-launch project `madrasty-el-arabia-prelaunch` (`prj_lB5FQ4zDGXQk9Qf9pMrIVACah0lY`) runs on Node `24.x`. Vercel reports Ready and lists the owner-selected `https://madrastyelarabia.vercel.app` alias. The hosting target is named `production` and the application runs with `SCHOOL_ENVIRONMENT=prelaunch` and the synthetic account allowlist. |
+| Delivery | The owner verified the school sender in Brevo. Supabase Auth uses the dedicated Brevo SMTP credential and the published Arabic/German templates for invitations, recovery and email changes. Vercel uses a separate API key restricted to transactional email with no fixed expiry. The authenticated Brevo callback is Active. Supabase Cron dispatch and cleanup jobs are enabled with their bearer in Vault. VAPID and FCM are bound. The first synthetic administrator remains pending activation. Email delivery evidence is pending Q02/Q05. |
 | Firebase | `madrasty-elarabia-prelaunch`, Android app `1:419353957533:android:7d180a6f665f872efc7074`, package `de.madrasty.app`. The signed release certificate is registered. FCM HTTP v1 is enabled. A dedicated notification-only identity holds the Firebase Cloud Messaging API Admin role. Vercel stores the five `FCM_*` bindings, including the server credential as sensitive. Device delivery remains Q05/Q06 work. |
 | Android custody | Package `de.madrasty.app` uses the owner-approved new school signer. Both builds pin the approved Vercel origin. Adding a custom hostname to a later APK requires the same package and signer and a higher version code. Signing custody is outside Git in the school operator’s Windows profile, protected by DPAPI. Portable backup and recovery custody remain pending. |
 
@@ -55,4 +55,24 @@ The SHA-256 of the signer certificate is `8cdd2ca77ae0051388be756512fdda8b50bfd2
 
 The local contract contains 200 paths and 259 operations. The 39 migration sources have distinct versions. The local unsigned release is `apps/android/app/build/outputs/apk/release/app-release-unsigned.apk` (11,745,955 bytes, SHA-256 `a0e5eecd58cd2226034fac869f09ab444e3f673441f6d4db5faf021f2e108294`). This path records assembly evidence.
 
-D05 records the full source commit, the ordered applied migration ledger, Vercel deployment ID and origin, OpenAPI SHA-256, APK size/hash/version/public signing certificate, worker revision, recovery pointer and the operational contact. The [encrypted local recovery checkpoint](operations.md#pre-launch-recovery-checkpoint) is available. The previous web deployment is dpl_6x7Y3vf8sbCAZzSEK6hmxQq8dpWr. It uses the same source and downloadable APK but predates the Firebase bindings. The complete candidate and Q01 entry gate are pending.
+The candidate below was frozen on 2026-11-21 before any final QA was written or run. The school owner operates the provider accounts and holds the recovery artifacts. The authorized test recipient is stored in Vercel's staging allowlist. Physical device evidence is due in Q06.
+
+| Candidate field | Frozen value |
+|---|---|
+| Web, API and worker source | `56bb0332ee88e8f949ce325bfa2908bcdbd92075` |
+| Vercel deployment and origin | `dpl_ANyRP974jpyEwyBGofGMSBxJhV5o`, `https://madrastyelarabia.vercel.app` |
+| Supabase | `ycsyghyigkadtugluugm`, 39 remote versions matched the local filenames in the order below |
+| OpenAPI SHA-256 | `a7b97021fded2ebd3da5f8046fe791251654741059ac009f04617c3abd512c9f` |
+| Android | Signed APK 0.1.1/2 and signer above. The Android source remains `b298cf7591cf8d2ff4b7b931606232696b9f1cfe`. The new web deployment adds mail-provider application code. |
+| Recovery | [Encrypted local freeze export](operations.md#pre-launch-recovery-checkpoint), with the two Cron jobs enabled after capture. Previous web deployment `dpl_BoRYBe6LqE5uPxLwAZxfRaVmbL2t` retains the same signed APK. |
+
+```text
+20261119195638 20261119200552 20261119201757 20261119202435 20261119203129
+20261119203840 20261119204640 20261119205739 20261119210903 20261119211920
+20261119212628 20261119213839 20261120005023 20261120010556 20261120011714
+20261120012806 20261120013955 20261120021306 20261120022545 20261120023628
+20261120024817 20261120025437 20261120030521 20261120131033 20261120132359
+20261120133251 20261120134323 20261120135539 20261120142131 20261120143042
+20261120144518 20261120150142 20261120181622 20261120182810 20261120190740
+20261120194810 20261120201320 20261120202600 20261120205130
+```
