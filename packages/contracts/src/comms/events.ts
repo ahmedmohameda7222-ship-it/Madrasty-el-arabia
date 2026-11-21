@@ -2,6 +2,7 @@ import {z} from "zod";
 import {revisionSchema,schoolDateSchema} from "../http";
 import {billingMonth} from "../finance/invoices";
 import {stopState} from "../finance/stops";
+import {sequenceSchema} from "./messages";
 
 const id=z.uuid(),revision=revisionSchema,schoolDate=schoolDateSchema;
 const attendanceStatus=z.enum(["present","late","absent_unexcused","absent_excused"]);
@@ -30,7 +31,10 @@ export const communicationPayloads={
   "attendance.corrected":z.object({...attendance,priorStatus:attendanceStatus,status:attendanceStatus,priorEventId:id.nullable(),
     calendarCancelled:z.boolean()}).strict(),
   "broadcast.published":z.object({broadcastId:id}).strict(),
-  "chat.message_created":z.object({threadId:id,messageId:id,sequence:z.int().positive(),source:z.literal("human")}).strict(),
+  "chat.message_created":z.object({
+    threadId:id,messageId:id,sequence:sequenceSchema.refine((value)=>value!=="0").or(z.int().positive()),
+    source:z.literal("human"),
+  }).strict(),
   "exam.published":z.object({examId:id,announcementId:id,priorAnnouncementId:id.nullable(),classId:id,offeringId:id,date:schoolDate,
     time:z.string().nullable(),revision,change:z.enum(["initial","reschedule"])}).strict(),
   "result.published":publishedResult,
