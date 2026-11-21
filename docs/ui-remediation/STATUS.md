@@ -23,12 +23,12 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | Task | Phase | Status | Verification / next gate |
 |---|---|---|---|
 | UIX-00 | 0 | Inventory recorded; browser/local-worktree gates unavailable | GitHub branch refs and archive inventory verified; see logs; full local status unavailable |
-| UIX-01 | 0 | Partial: policy 9/9 GREEN; QA-only dev-badge policy RED → GREEN; full screenshot runner still pending | Added `devIndicators` opt-out only under isolated `QA_SCREENSHOTS_ONLY=1`; no global hiding of error overlays |
+| UIX-01 | 0 | Policy 9/9 passed; pending/loading browser marker RED test committed; full runner remains open | New isolated test deliberately holds /me/children and requires a machine-readable loading marker; duplicate draft-PR QA run removed |
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
 | UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
-| UIX-06 | 1 | RED verified; previously reviewed CSS selector fix committed; GREEN pending | Run 44925417089: child select left=-364px at 320px; first 3 UIX-06 assertions reached and 4 existing browser regressions passed |
+| UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
 | UIX-07 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-09 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -135,3 +135,13 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 - [RED run 44925417089](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44925417089): Playwright browser 1 expected failure and 4 previous tests passed. The actual native child select at 320px RTL had `left=-364px` (expected >=-1px); artifact 14715134191 includes screenshot, video and trace.
 - The first hero checks (long name via real scope sheet, aria-label, hero viewport bounds, CTA, main overflow) had passed before the select failure. The fix ports the independently reviewed `label.auth-card` grid and select min-inline-size rules from the prior QA branch without modifying any academic or auth logic.
 - The task remains pending until the complete ar/de/320/390/430/200% browser regression and affected static checks pass.
+
+## UIX-06 GREEN checkpoint
+
+- [Push run 44925691878](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44925691878) on 8e405a74: 5/5 Chromium tests, TypeScript and web build passed. UIX-06 test covered 320/390/430 Arabic/German and 200%-text selector containment. Component-only hero/select images and WebM in artifact 14715478555.
+- Separate pull_request run 44925696556 failed during local Supabase startup before any browser test. Push run on the same commit passed all five tests. Because the feature branch's push already exercises the same isolated check, the duplicate pull_request trigger is removed. This changes CI test scheduling, not hosting, application performance or production behavior.
+
+## UIX-01 terminal-state follow-up
+
+- Existing accepted screenshot examples include a guardian-home skeleton and an attendance error state despite filenames containing `ready`; these are diagnostic captures only. Their terminal-state acceptance remains blocked until state is machine-readable and the runner checks it.
+- The new browser RED test holds a synthetic /me/children response and requires AsyncSurface to expose loading state before screenshot capture. Add the smallest DOM marker after the expected RED result, then rerun affected tests.
