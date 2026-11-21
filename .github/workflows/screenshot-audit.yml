@@ -1,23 +1,30 @@
-name: Isolated UI screenshot audit
+name: Isolated UI screenshot retry (failed routes only)
 on:
   push:
     branches:
-      - audit/playwright-screenshots-2026-11-21
+      - fix/ui-audit-coverage-mobile-2026-11-21
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: screenshot-audit-${{ github.ref }}
+  group: ui-retry-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  screenshots:
+  screenshot-retry:
+    name: retry-${{ matrix.suite }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [admin-de, teacher-de, guardian-ar, guardian-de]
     env:
       QA_SCREENSHOTS_ONLY: "1"
+      QA_AUDIT_RETRY_TARGETS: qa-artifacts/retry-targets.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,60 +37,76 @@ jobs:
         run: |
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
-      - name: Install headless Chromium with Linux dependencies
+      - name: Test QA failure classification and retry selection
+        run: node --test qa/screenshot-audit-policy.test.mjs qa/screenshot-retry-targets.test.mjs
+      - name: Download saved admin and teacher results (do not recapture successful pages)
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-screenshots
+          run-id: 44878617957
+          github-token: ${{ github.token }}
+          path: qa-artifacts/previous-admin-teacher
+      - name: Download saved guardian results (do not recapture successful pages)
+        uses: actions/download-artifact@v4
+        with:
+          name: madrasty-ui-audit-guardian-screenshots
+          run-id: 44881108800
+          github-token: ${{ github.token }}
+          path: qa-artifacts/previous-guardian
+      - name: Generate exact retry list from archived manifests
+        run: |
+          node qa/screenshot-retry-targets.mjs qa-artifacts/retry-targets.json             qa-artifacts/previous-admin-teacher/screenshots/*/manifest.json             qa-artifacts/previous-guardian/screenshots/*/manifest.json
+          node -e 'const t=require("./qa-artifacts/retry-targets.json"); const n=Object.values(t).flat().length; if(n!==112) throw new Error("Expected 108 archived failures plus 4 mobile regression views; got "+n); console.log("Targeted attempts:",n)'
+      - name: Install headless Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Start isolated fixture Supabase (not the live school)
+      - name: Start isolated synthetic Supabase
         shell: bash
         run: |
           echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
           export LOCALAPPDATA="$RUNNER_TEMP"
           pwsh -NoProfile -File qa/start-stack.ps1
-      - name: Start local Next.js server with synthetic fixture bindings
+      - name: Start Next.js fixture web server
         shell: bash
         run: |
           export LOCALAPPDATA="$RUNNER_TEMP"
           pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-screenshot-server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/madrasty-screenshot-server.pid"
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
-      # The admin/teacher captures are preserved in artifact 14697767436
-      # of run 44878617957; intentionally do not re-run those 4 suites.
-      - name: Capture guardian pages only (Arabic and German)
+      - name: Capture only the selected retry group
         shell: bash
         run: |
           export LOCALAPPDATA="$RUNNER_TEMP"
-          set +e
-          pnpm exec playwright test --config qa/screenshot-audit.config.ts --grep "Screenshots: guardian"
-          status=$?
-          set -e
-          if [ "$status" -ne 0 ]; then
-            echo "Guardian screenshot suite failed with exit code $status"
-            curl -fsS --max-time 8 http://127.0.0.1:4300/api/v1/health || echo "Local QA web server unavailable during failure inspection"
-          fi
-          exit "$status"
-      - name: Preserve local server diagnostics, even after a failed test
+          case "${{ matrix.suite }}" in
+            admin-de) pattern="Screenshots: admin / de" ;;
+            teacher-de) pattern="Screenshots: teacher / de" ;;
+            guardian-ar) pattern="Screenshots: guardian / ar" ;;
+            guardian-de) pattern="Screenshots: guardian / de" ;;
+            *) echo "Unsupported suite" >&2; exit 1 ;;
+          esac
+          pnpm exec playwright test --config qa/screenshot-audit.config.ts --grep "$pattern"
+      - name: Preserve local server diagnostics
         if: always()
         shell: bash
         run: |
           mkdir -p qa-artifacts/server
           if [ -f "$RUNNER_TEMP/madrasty-screenshot-server.log" ]; then
             cp "$RUNNER_TEMP/madrasty-screenshot-server.log" qa-artifacts/server/next-server.log
-            echo "Server diagnostics retained in artifact (synthetic local QA only)."
           else
             echo "Server log was not created" > qa-artifacts/server/next-server.log
           fi
           if curl -fsS --max-time 8 http://127.0.0.1:4300/api/v1/health > qa-artifacts/server/last-health.json; then
-            echo "Final local server health: reachable"
+            echo "Local server still healthy"
           else
-            echo "Final local server health: unreachable"
             printf '%s\n' '{"status":"unreachable"}' > qa-artifacts/server/last-health.json
           fi
-      - name: Upload guardian-only screenshots and failure diagnostics
+      - name: Upload only retried screenshots, manifests, and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: madrasty-ui-audit-guardian-screenshots
+          name: madrasty-ui-audit-retry-${{ matrix.suite }}
           path: |
             qa-artifacts/screenshots/
+            qa-artifacts/retry-targets.json
             qa-artifacts/playwright-results.json
             qa-artifacts/test-results/
             qa-artifacts/server/
