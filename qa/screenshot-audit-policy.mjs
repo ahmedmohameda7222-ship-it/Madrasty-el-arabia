@@ -1,10 +1,10 @@
 /** Keep screenshot evidence separate from role-denied routes and navigation failures. */
-export function summarizeCaptures(records, {strictRetry = false} = {}) {
+export function summarizeCaptures(records, {strictRetry = false, verifiedDenials = []} = {}) {
   const summary = {attempted: records.length, captured: 0, denied: 0, failed: 0, failures: []};
   for (const entry of records) {
     const id = `${entry.route} (${entry.width}px)`;
     if (entry.httpStatus === 403 || entry.httpStatus === 404) {
-      if (!strictRetry) { summary.denied++; continue; }
+      if (!strictRetry || verifiedDenials.includes(entry.route)) { summary.denied++; continue; }
       summary.failed++;
       summary.failures.push(`${id}: HTTP ${entry.httpStatus} (was a network failure in prior run)`);
       continue;
@@ -30,8 +30,8 @@ export function summarizeCaptures(records, {strictRetry = false} = {}) {
 }
 
 /** Fails a suite if its declared attempt count differs or any target failed. */
-export function assertCompleteAudit(records, {expected, strictRetry = false} = {}) {
-  const summary = summarizeCaptures(records, {strictRetry});
+export function assertCompleteAudit(records, {expected, strictRetry = false, verifiedDenials = []} = {}) {
+  const summary = summarizeCaptures(records, {strictRetry, verifiedDenials});
   if (expected !== undefined && expected !== summary.attempted) {
     throw new Error(`Expected ${expected} route attempts, got ${summary.attempted}`);
   }
