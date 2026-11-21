@@ -29,8 +29,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
 | UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
 | UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
-| UIX-07 | 2 | RED verified for empty/error semantics; small AsyncSurface marker fix committed; GREEN pending | Run 44926833430: 2/2 new tests fail for missing data-async-state, prior 6 pass; no permission, data or retry logic changes |
-| UIX-08 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
+| UIX-08 | 2 | Focused RED academic empty-state tests committed; browser result pending | Four isolated guardian/teacher/admin Arabic/German scenarios asserting contextual empty copy and no unauthorized action |
 | UIX-09 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-10 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-11 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -158,3 +158,7 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44926833430](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44926833430), isolated Chromium: six earlier tests passed; both new tests failed for the expected missing `data-async-state` attribute. Empty locale text was rendered in German, and a simulated `/api/v1/academics/homework` HTTP503 produced a notice with actual `role=alert`; neither error was misclassified as a network setup failure. Artifact 14715898338 has screenshot/video/trace.
 - Fix adds explicit empty/filtered-empty and error/offline/forbidden DOM state without changing API paths, retry handlers or the existing discriminated union. The empty notice retains its optional action slot; the two verified guardian states expose no unauthorized actions. GREEN pending.
+
+## UIX-07 GREEN checkpoint
+
+- [GitHub Actions run 44927327255](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44927327255) on d81db860: isolated Chromium **8 passed**, static unit tests, TypeScript and web build passed. Scope: one real empty academic path (Arabic and German) and one synthetic HTTP503 retry error; not proof of every error/permission state. Tests and changes in QA-only branch.
