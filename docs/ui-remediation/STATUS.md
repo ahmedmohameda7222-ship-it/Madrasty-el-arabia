@@ -31,8 +31,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
 | UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
 | UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
-| UIX-09 | 2 | Four RED cases confirmed; minimal Children first-selection/empty/invalid fix committed, GREEN pending | Run 44932927033: 4 expected failures (first-load AR/DE, no-linked, invalid deep link), 12 earlier tests passed; no data/auth changes |
-| UIX-10 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-09 | 2 | RED → GREEN verified in isolated browser | Run 44933487892: 16/16 Chromium, typecheck and build passed; first-child AR/DE, switch, zero children, invalid child deep-link |
+| UIX-10 | 2 | Two focused mobile inbox RED tests authored; verification pending | Admin AR 390 + Guardian DE 320: one-row search, scrollable selected filters, accessible archive, shortcut disclosure, no clipping, early results |
 | UIX-11 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-12 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-13 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -180,3 +180,7 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44932927033](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44932927033) on dc6c1897: four new Playwright tests failed for expected missing child context, with all prior 12 tests passing; screenshots and traces in artifact 14718497766. First-load detail was absent for Guardian AR (390px) and DE (1280px); simulated no-linked Guardian DE had a generic empty notice; invalid valid-UUID child deep-link silently showed no forbidden state.
 - The fix limits automatic selection to the first member of the authorized `available.data` list and only if there was no requested child. An explicit but invalid child ID does not fall back to another child's private details. Empty list copy explains the next safe offline step without creating permissions or new routes. GREEN pending.
+
+## UIX-09 GREEN checkpoint
+
+- [Run 44933487892](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44933487892) on 9e0a3e35: 16/16 Chromium, types and build passed. UIX-09 four RED cases all GREEN in fresh isolated QA. Artifact 14717954494 includes screenshots and videos; no production user data touched. Invalid deep-link remains forbidden and no other child's detail leaks.

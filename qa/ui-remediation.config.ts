@@ -5,7 +5,7 @@ import { localOrigin } from "./support/target";
 loadEnvFile("qa/.env.local");
 export default defineConfig({
   testDir: "./web",
-  testMatch: ["ui-fixture-names.spec.ts", "ui-native-controls.spec.ts", "ui-header.spec.ts", "ui-bottom-nav.spec.ts", "ui-long-names.spec.ts", "ui-terminal-state.spec.ts", "ui-empty-states.spec.ts", "ui-academic-empty.spec.ts", "ui-guardian-children.spec.ts"],
+  testMatch: ["ui-fixture-names.spec.ts", "ui-native-controls.spec.ts", "ui-header.spec.ts", "ui-bottom-nav.spec.ts", "ui-long-names.spec.ts", "ui-terminal-state.spec.ts", "ui-empty-states.spec.ts", "ui-academic-empty.spec.ts", "ui-guardian-children.spec.ts", "ui-thread-inbox.spec.ts"],
   workers: 1,
   retries: 0,
   timeout: 120_000,
