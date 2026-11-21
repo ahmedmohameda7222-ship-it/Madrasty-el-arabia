@@ -284,15 +284,16 @@ export function Children({ locale, initialChild }: { locale: Locale; initialChil
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [available]);
-  const selected = available.data?.find(({ id }) => id === chosen);
+  const selected = available.data?.find(({ id }) => id === chosen) ?? (!chosen ? available.data?.[0] : undefined);
   return <AsyncSurface locale={locale} state={available.error
     ? { kind: "error", retry: available.retry, message: errorText(locale, available.error) }
-    : !available.data ? { kind: "initialLoading" } : !available.data.length ? { kind: "empty" }
+    : !available.data ? { kind: "initialLoading" } : !available.data.length ? { kind: "empty", message: locale==="ar"?"لا يوجد أبناء مرتبطون بحسابك حاليًا. تواصل مع إدارة المدرسة لربط بياناتهم.":"Mit Ihrem Konto sind derzeit keine Kinder verknüpft. Wenden Sie sich für die Zuordnung an die Schule." }
     : { kind: "ready", content: (
       <section className="auth-card">
         <ScopeSheet locale={locale} selectedId={selected?.id} choices={available.data.map((item) =>
           ({ id: item.id, label: item.displayName, detail: item.currentClass?.code ?? item.studentNumber }))} select={setChosen} />
-        {selected && <ChildDetail key={selected.id} locale={locale} id={selected.id} />}
+        {selected ? <ChildDetail key={selected.id} locale={locale} id={selected.id} />
+          : chosen && <AsyncSurface locale={locale} state={{kind:"forbidden"}}/>}
       </section>
     ) }} />;
 }
