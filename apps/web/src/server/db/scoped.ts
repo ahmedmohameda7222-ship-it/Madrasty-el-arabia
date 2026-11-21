@@ -22,9 +22,10 @@ function database(role:DatabaseRole) {
   if(existing)return existing;
   const url=process.env[databaseKeys[role]];
   if(!url)throw new ApiError("unavailable");
+  const ca=process.env.DATABASE_TLS_CA_PEM;
   const connection=postgres(url,{
     prepare:false,
-    ssl:process.env.NODE_ENV==="production"?"verify-full":undefined,
+    ssl:ca?{ca,rejectUnauthorized:true}:process.env.NODE_ENV==="production"?"verify-full":undefined,
     max:role==="app_runtime"?4:2,
     idle_timeout:20,
     connect_timeout:8,
@@ -52,7 +53,9 @@ async function withRole<T>(role:DatabaseRole,work:(tx:Transaction)=>Promise<T>):
       if (error.code === "57014" || error.code.startsWith("08")) throw new ApiError("unavailable");
     }
     if (error && typeof error === "object" && "code" in error &&
-      ["CONNECT_TIMEOUT", "CONNECTION_CLOSED", "ECONNREFUSED", "ETIMEDOUT"].includes(String(error.code))) {
+      ["CONNECT_TIMEOUT", "CONNECTION_CLOSED", "ECONNREFUSED", "ETIMEDOUT", "SELF_SIGNED_CERT_IN_CHAIN",
+        "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "UNABLE_TO_GET_ISSUER_CERT_LOCALLY", "ERR_TLS_CERT_ALTNAME_INVALID",
+        "CERT_HAS_EXPIRED"].includes(String(error.code))) {
       throw new ApiError("unavailable");
     }
     throw error;

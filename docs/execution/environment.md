@@ -34,6 +34,7 @@ The Android Java namespace is `de.madrasty.app`. The provisional local applicati
 | `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` | Supabase Auth origin and publishable identifier; grant no application data access. Android release configuration receives only public authentication configuration. |
 | `SUPABASE_AUTH_ADMIN_KEY` | Restricted server Auth administration adapter. |
 | `DATABASE_URL` | Server-only pooled connection for the non-owner, non-BYPASSRLS runtime role. |
+| `DATABASE_TLS_CA_PEM` | The public CA certificate from the linked Supabase project's Database Settings. Trusts the Supabase pooler for the runtime and both worker connections while requiring a valid chain and matching hostname. |
 | `SCHOOL_WORKER_SECRET` | Server and scheduler only, protecting delivery-worker invocation. |
 
 ## Foundation integration
