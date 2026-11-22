@@ -244,8 +244,10 @@ export function SchoolCalendar({ locale }: { locale: Locale }) {
     if (!selectedState) return;
     setDraftTeaching(selectedState.teaching);
     setDraftReason(direct?.reason ?? "");
-    setError(""); setSuccess("");
   }, [selectedDate, scope, direct?.id, direct?.revision, selectedState?.teaching]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setError(""); setSuccess("");
+  }, [selectedDate, scope]);
 
   function chooseYear(year: SchoolYear) {
     setYearId(year.id); setModal(null); setModalError(""); setError(""); setSuccess("");
