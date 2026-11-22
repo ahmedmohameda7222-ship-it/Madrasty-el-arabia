@@ -54,12 +54,29 @@ for(const scenario of acceptanceScenarios){
       const capture=async(route:string,width:number,mode:"standard"|"dark-reduced"|"text-200")=>{
         await page.setViewportSize({width,height:844});
         await page.emulateMedia({colorScheme:mode==="standard"?"light":"dark",reducedMotion:mode==="standard"?"no-preference":"reduce"});
+        // The synthetic fixture has no school calendar yet. Teacher attendance is
+        // an explicit service-unavailable acceptance state, NOT a verified ready sheet.
+        // Keep the strict ready/forbidden gate on every other page.
+        const expectedAttendanceError=scenario.persona==="teacher"&&route==="attendance";
+        const attendanceResponse=expectedAttendanceError
+          ? page.waitForResponse(response=>new URL(response.url()).pathname==="/api/v1/attendance/classes"&&response.status()===503)
+          : null;
         await page.goto("/"+scenario.locale+"/school/"+route);
         await expect(page).toHaveURL(new RegExp("/"+scenario.locale+"/school/"+route.replaceAll("/","\\/")+"(?:\\?.*)?$"));
         const main=page.locator(".school-content");
         await expect(main).toBeVisible({timeout:30000});
         await expect(main.locator('[data-async-state="loading"]')).toHaveCount(0,{timeout:30000});
-        await expect(main.locator('[data-async-state="error"],[data-async-state="forbidden"]')).toHaveCount(0);
+        if(expectedAttendanceError){
+          const response=await attendanceResponse!;
+          const payload=await response.json() as {error?:{code?:string}};
+          expect(payload.error?.code,"only the specific unconfigured-school error is expected").toBe("unavailable");
+          await expect(main.locator('[data-async-state="error"]')).toBeVisible();
+          await expect(main.locator('[data-async-state="forbidden"]')).toHaveCount(0);
+          await expect(main.getByRole("alert")).toBeVisible();
+          await expect(main.getByRole("button",{name:scenario.locale==="ar"?"إعادة المحاولة":"Erneut versuchen"})).toBeVisible();
+        }else{
+          await expect(main.locator('[data-async-state="error"],[data-async-state="forbidden"]')).toHaveCount(0);
+        }
         await expect(page.locator("html")).toHaveAttribute("dir",scenario.locale==="ar"?"rtl":"ltr");
         if(mode==="text-200"){
           await page.evaluate(()=>document.documentElement.style.fontSize="200%");
@@ -78,8 +95,11 @@ for(const scenario of acceptanceScenarios){
         expect(horizontal,"document horizontal overflow "+suiteLabel+" "+route+" "+width+" "+mode).toBeLessThanOrEqual(1);
         const state=await main.evaluate(el=>{
           const empty=el.querySelector('[data-async-state="empty"],[data-async-state="filtered-empty"]');
+          if(el.querySelector('[data-async-state="error"]'))return "error-unconfigured-school-calendar";
           return empty?"empty":"ready";
         });
+        expect(state,"teacher attendance must never be falsely marked ready").toBe(expectedAttendanceError?"error-unconfigured-school-calendar":state);
+        if(!expectedAttendanceError)expect(state).not.toBe("error-unconfigured-school-calendar");
         const path="qa-artifacts/ui-after/UIX17-"+suiteLabel+"-"+route.replaceAll("/","-")+"-"+width+"-"+mode+".png";
         await page.screenshot({path,animations:"disabled"});
         captures.push({sha:process.env.GITHUB_SHA??"local",role:scenario.persona,locale:scenario.locale,route,width,mode,state,path});
