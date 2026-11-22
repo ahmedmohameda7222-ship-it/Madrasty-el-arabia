@@ -16,6 +16,7 @@ import { dictionary, localizedError } from "@/i18n";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { InviteGuardianButton } from "@/features/identity/Invitations";
 import { ScopeSheet } from "@/ui/Shell";
+import { readDirectorySearch, writeDirectorySearch } from "./directory-filter-state";
 
 const copy = {
   ar: {
@@ -97,7 +98,7 @@ export function Families({ locale }: { locale: Locale }) {
       <div className={target ? "calendar-layout" : "calendar-layout family-single-panel"}>
         <section className="auth-card">
           <h2>{mode === "students" ? dictionary(locale).students : text.family}</h2>
-          <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={id => select(mode,id)} />
+          <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={id => select(mode,id)} persistSearch />
           <button className="primary-button" onClick={() => select(mode,"new")}>{mode === "students" ? text.createPupil : text.createAdult}</button>
         </section>
         {target && <RecordEditor locale={locale} mode={mode} target={target} key={`${mode}:${target}:${forStudent ?? ""}`} initialLink={initialLink} forStudent={forStudent}
@@ -107,9 +108,17 @@ export function Families({ locale }: { locale: Locale }) {
   );
 }
 
-function RecordPicker({ locale, mode, select }: { locale: Locale; mode: Mode; select: (id: string) => void }) {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("");
+function RecordPicker({ locale, mode, select, persistSearch = false }: { locale: Locale; mode: Mode; select: (id: string) => void; persistSearch?: boolean }) {
+  const params = useSearchParams();
+  const storedQuery = persistSearch ? readDirectorySearch(params, mode) : "";
+  const [query, setQuery] = useState(storedQuery);
+  const [filter, setFilter] = useState(storedQuery);
+  useEffect(() => {
+    if (persistSearch) {
+      setQuery(storedQuery);
+      setFilter(storedQuery);
+    }
+  }, [persistSearch, storedQuery]);
   const [state, setState] = useState<{ rows?: (Student | Guardian)[]; next?: string; error?: unknown }>({});
   const [generation, setGeneration] = useState(0);
   const text = copy[locale];
@@ -127,7 +136,13 @@ function RecordPicker({ locale, mode, select }: { locale: Locale; mode: Mode; se
   const retry = () => { setState({}); setGeneration(generation + 1); };
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFilter(query.trim());
+    const nextQuery = query.trim();
+    setFilter(nextQuery);
+    if (persistSearch) {
+      const url = new URL(window.location.href);
+      url.search = writeDirectorySearch(url.searchParams, mode, nextQuery).toString();
+      window.history.replaceState(null, "", url);
+    }
     retry();
   };
   const loadMore = async () => {
