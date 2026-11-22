@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import { setUpCalendar } from "../fixtures/calendar";
 import { schoolFixtures } from "../fixtures/school";
 import { localOrigin } from "../support/target";
 
@@ -10,6 +11,9 @@ test("UIX17 teacher attendance is READY in Arabic and German with a real synthet
   const captures: {sha:string;role:string;locale:string;route:string;width:number;state:string;path:string}[] = [];
   try {
     await school.seed();
+    // Only the loopback QA database is configured, after the independent 503 test.
+    const admin = await school.bearer("admin", "admin");
+    await setUpCalendar(school, admin);
     const token = await school.bearer("teacher", "teacher");
     await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
