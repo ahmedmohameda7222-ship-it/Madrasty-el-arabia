@@ -9,6 +9,7 @@ test("admin calendar uses the approved visual workflow and can reset a school-wi
   test.setTimeout(90_000);
   const school = schoolFixtures();
   try {
+    await school.seed();
     const admin = await school.bearer("admin", "admin");
     const { year } = await setUpCalendar(school, admin);
     await context.addCookies([
