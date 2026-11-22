@@ -73,5 +73,6 @@ jobs:
             qa-artifacts/ui-fixture-results.json
             qa-artifacts/ui-remediation-test-results/
             qa-artifacts/ui-after/
+            qa-artifacts/ui-manifests/
           if-no-files-found: warn
           retention-days: 7

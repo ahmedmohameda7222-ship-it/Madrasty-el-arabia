@@ -39,7 +39,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
 | UIX-15 | 3 | RED → GREEN verified; whole-web CSS negative checks and token consistency | Run 45025131948 on 8f67d62a: 35/35 isolated Chromium, TypeScript/build; no new animation library, 140ms shared ease-out, reduced-motion |
 | UIX-16 | 3 | Verified no-change preservation: 39/39 isolated Chromium, TypeScript/build | Run 45025567730 on 253d371d: native Android source contracts and web viewport/dark/reduced at 320/390/430 passed; hardware/IME unverified |
-| UIX-17 | 4 | First narrow-screen RED verified, localized nav fix committed, GREEN pending; broad visual matrix not yet done | Run 45026033637: 39 previous tests pass, German Guardian 320 message label was 36.19px high vs one-line threshold 20.10; full accessible label required |
+| UIX-17 | 4 | German 320px RED → GREEN 40/40 verified; broader six-role/locale × six-width capture tests committed, verification pending | Run 45026514391 on fd961721: 40/40 browser + type/build; full shell and role-screen acceptance matrix with terminal-state/overflow/44px/nav checks and screenshot manifests added |
 | UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 
 ## Verification taxonomy
@@ -258,3 +258,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 45026033637](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45026033637) on 491e0a53: 39 earlier Chromium regressions passed; only new German 320px bottom-nav message label failed as predicted (visible span 36.19px high for 18.10px line height). Issue was hard mid-word wrapping, not body horizontal overflow or backend. Static checks and build pass.
 - Scoped remedy reuses existing German attendance nav compact-label pattern for messages: mobile visible `Nachr.`, desktop visible `Nachrichten`, link `aria-label="Nachrichten"`; unchanged route, icon, keyboard, RTL, other locales, no CSS or route contract changes. GREEN screenshot and full UIX-17 acceptance matrix still pending.
+
+## UIX-17 initial GREEN and broad acceptance matrix
+
+- [Run 45026514391](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45026514391) on fd961721: 40/40 isolated Chromium, TypeScript and web build passed, including German 320px message-tab single-line accessible-name fix. Artifact 14755747826.
+- New matrix checks all 6 persona×locale combinations (Admin, Teacher, Guardian × Arabic/German). Each suite captures More at 320/390/430/768/1024/1280; Home/role-specific screens at 390/1280; inbox at 320/390/430; plus 200% root text on Home at 390 and dark/reduced motion on More at 430. Requires settled `loading` marker, correct route/role, no error/forbidden masquerading as ready, document overflow <=1 CSS px, and all four nav targets >=44px. Captures are diagnostic, not golden or owner-approved. CI manifests include SHA/browser/state/route/width/mode. Full isolated QA, physical-device checks and role-specific permission variants remain separately reported.
