@@ -35,7 +35,7 @@ test("homework distinguishes a recorded zero, a half-point score and an unmarked
   withResultsFixture(async ({ school, offering, ids, teacher, parent, write }) => {
     const created = await fixtureApi(school, "/academics/homework", write("POST", {
       offeringId: offering.offeringId, title: "QA homework", instructions: "Read the synthetic lesson",
-      lessonId: null, issuedOn: clock.day, dueOn: "2026-11-28",
+      lessonId: null, issuedOn: clock.day, dueOn: clock.homeworkDue,
     }, 201));
     const path = `/academics/homework/${created.payload.data.id}`;
     const roster = homeworkGradeRow.array().parse((await fixtureApi(school, `${path}/grades`, { token: teacher })).payload.data);

@@ -5,7 +5,7 @@ import { localOrigin } from "./support/target";
 loadEnvFile("qa/.env.local");
 export default defineConfig({
   testDir:"./web",
-  testMatch:"ui-attendance-ready.spec.ts",
+  testMatch:["ui-attendance-ready.spec.ts","ui-work-queues-ready.spec.ts"],
   workers:1,
   retries:0,
   timeout:180_000,

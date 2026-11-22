@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   attendanceChanges, attendanceClasses, attendancePendingSchema, attendanceSheetSchema, attendanceStatus,
@@ -17,6 +18,7 @@ import { useLiveAttendance } from "./LiveAttendance";
 import { CachedAttendance } from "./CachedAttendance";
 import { sheetSlot } from "./draft-store";
 import { useAttendanceDrafts } from "./useAttendanceDrafts";
+import {readDailyAttendanceContext,writeDailyAttendanceContext,type DailyAttendanceContext} from "./daily-context";
 
 const words={
   ar:{title:"الحضور اليومي",date:"يوم الحضور",apply:"اعرض اليوم",select:"اختر الفصل",pending:"كشوف بانتظار الاعتماد",
@@ -52,10 +54,20 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
   locale:Locale;initialClass?:string;initialDate?:string;
 }){
   const text=words[locale],{persona}=useAccountScope();
+  const routeParams=useSearchParams();
   const [selected,setSelected]=useState(initialClass??"");
   const [date,setDate]=useState(initialDate??"");
   const [dateInput,setDateInput]=useState(initialDate??"");
   const [version,setVersion]=useState(0);
+  const paramClass=routeParams.get("class")??"";
+  const paramDate=routeParams.get("date")??"";
+  useEffect(()=>{setSelected(paramClass);},[paramClass]);
+  useEffect(()=>{setDate(paramDate);setDateInput(paramDate);},[paramDate]);
+  function persist(patch:Partial<DailyAttendanceContext>){
+    const next=writeDailyAttendanceContext(new URLSearchParams(routeParams.toString()),patch);
+    window.history.replaceState(null,"",window.location.pathname+(next.size?`?${next}`:"")+window.location.hash);
+  }
+  function chooseClass(id:string){setSelected(id);persist({classId:id});}
   const classes=useTimetableRead(`/attendance/classes${date?`?date=${date}`:""}`,attendanceClasses,version);
   const chosen=classes.value?.data?.classes.find((row)=>row.id===selected);
   const exactDay=classes.value?.data?.date;
@@ -76,7 +88,10 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
 
   return <>
     <section className="auth-card">
-      <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setDate(dateInput||exactDay||"");}}>
+      <form className="auth-form" onSubmit={(event)=>{
+        event.preventDefault();const next=dateInput||exactDay||"";
+        setDate(next);persist({date:next});
+      }}>
         <label>{text.date}<input type="date" aria-describedby="date-format-attendance-day" value={dateInput||exactDay||""} onChange={(event)=>setDateInput(event.target.value)}/>
           <small className="date-format-hint" id="date-format-attendance-day">{locale==="ar"
             ?"تنسيق التاريخ المعروض يعتمد على المتصفح. مثال: ٣١/١٢/٢٠٢٦؛ يمكنك الاختيار من التقويم."
@@ -88,12 +103,12 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
         {locale==="ar"?"تاريخ الحضور":"Anwesenheitsverlauf"}
       </Link>
       <TimetableRead locale={locale} result={classes}>{(catalog)=>catalog.classes.length?
-        <label>{text.select}<select value={chosen?.id??""} onChange={(event)=>setSelected(event.target.value)}>
+        <label>{text.select}<select value={chosen?.id??""} onChange={(event)=>chooseClass(event.target.value)}>
           <option value="">{text.select}</option>
           {catalog.classes.map((room)=><option value={room.id} key={room.id}>{room.code} · {locale==="ar"?room.nameAr:room.nameDe}</option>)}
         </select></label>:<AsyncSurface locale={locale} state={{kind:"empty"}}/>}</TimetableRead>
     </section>
-    {persona==="admin"&&exactDay&&<Pending locale={locale} day={exactDay} version={version} choose={setSelected}/>}
+    {persona==="admin"&&exactDay&&<Pending locale={locale} day={exactDay} version={version} choose={chooseClass}/>}
     {chosen&&exactDay&&<Sheet key={`${chosen.id}/${exactDay}`} locale={locale} classId={chosen.id} day={exactDay}
       version={version} update={refresh}/>}
   </>;

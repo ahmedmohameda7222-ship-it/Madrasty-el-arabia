@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
 import {useState,type FormEvent} from "react";
 import {billingMonth,financeReportQuery,financeReportStatus,financeReportSummary,financeStatementEntry,type FinanceReportQuery,type FinanceStatementEntry,type Locale} from "@madrasty/contracts";
 import {webHeaders} from "@/api/client-headers";
@@ -10,6 +11,7 @@ import {useAccountScope} from "@/ui/AccountScope";
 import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,financeAmount} from "./invoice-ui";
 import {receiptCopy} from "./receipt-ui";
+import {readFinanceReportContext,writeFinanceReportContext} from "./report-context";
 
 const copy={
   ar:{
@@ -46,8 +48,13 @@ function queryString(filters:FinanceReportQuery){
 
 export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boolean;initial:FinanceReportQuery}){
   const text=copy[locale];
-  const [filters,setFilters]=useState(initial);
-  const [draft,edit]=useState(initial);
+  const routeParams=useSearchParams();
+  const [filters,setFilters]=useState(()=>({...initial,...readFinanceReportContext(routeParams)}));
+  const [draft,edit]=useState(()=>({...initial,...readFinanceReportContext(routeParams)}));
+  function persist(next:FinanceReportQuery){
+    const params=writeFinanceReportContext(new URLSearchParams(routeParams.toString()),next);
+    window.history.replaceState(null,"",window.location.pathname+(params.size?`?${params}`:"")+window.location.hash);
+  }
   const [refresh,update]=useState(0);
   const summary=useTimetableRead(`/finance/reports/summary?${queryString(filters)}`,financeReportSummary,refresh);
   function patch<Key extends keyof FinanceReportQuery>(field:Key,value:FinanceReportQuery[Key]){
@@ -56,11 +63,11 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
   function apply(event:FormEvent){
     event.preventDefault();
     const checked=financeReportQuery.safeParse({...draft,cutoff:undefined});
-    if(checked.success){setFilters(checked.data);update((n)=>n+1);}
+    if(checked.success){setFilters(checked.data);persist(checked.data);update((n)=>n+1);}
   }
   function focus(values:Partial<FinanceReportQuery>){
     const next={...filters,...values};
-    setFilters(next);edit(next);update((n)=>n+1);
+    setFilters(next);edit(next);persist(next);update((n)=>n+1);
   }
   const classChoices=summary.value?.data?.classes??[];
   return <section className="auth-card auth-form">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   approvedAttendanceEntry, attendanceCancellationSchema, attendanceCorrectionSchema, attendanceRevisionHistory, attendanceStatus,
@@ -14,6 +15,7 @@ import { dictionary,localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { TimetableRead,useTimetableRead } from "@/features/school/timetable/shared";
+import {readAttendanceHistoryFilters,writeAttendanceHistoryFilters} from "./history-context";
 
 const copy={
   ar:{title:"تاريخ الحضور",from:"من تاريخ",to:"إلى تاريخ",filter:"عرض السجل",status:"حالة الحضور",all:"كل الحالات",child:"الطفل",
@@ -37,7 +39,7 @@ const copy={
 } as const;
 
 type Filters={from:string;to:string;status:string};
-const initial={from:"",to:"",status:""};
+
 const childrenSchema=childSummarySchema.array();
 const staffRows=approvedAttendanceEntry.array();
 const affected=(error:unknown)=>error instanceof ApiResponseError&&[401,403,404].includes(error.status);
@@ -50,13 +52,18 @@ export function AttendanceHistory({locale,childId,classId,rowId}:{
   locale:Locale;childId?:string;classId?:string;rowId?:string;
 }){
   const text=copy[locale],{persona}=useAccountScope();
+  const routeParams=useSearchParams();
   const [child,setChild]=useState(childId??"");
   const [row,setRow]=useState(rowId);
-  const [draft,setDraft]=useState(initial);
-  const [filter,setFilter]=useState(initial);
+  const [draft,setDraft]=useState(()=>readAttendanceHistoryFilters(routeParams));
+  const [filter,setFilter]=useState(()=>readAttendanceHistoryFilters(routeParams));
   const [validation,setValidation]=useState("");
   const guardian=persona==="guardian";
   const [refresh,setRefresh]=useState(0);
+  useEffect(()=>{
+    const restored=readAttendanceHistoryFilters(routeParams);
+    setDraft(restored);setFilter(restored);
+  },[routeParams]);
   const childOptions=useTimetableRead(guardian?"/me/children?limit=100":null,childrenSchema,refresh);
   useEffect(()=>{
     const reload=()=>setRefresh((count)=>count+1);
@@ -78,7 +85,11 @@ export function AttendanceHistory({locale,childId,classId,rowId}:{
       <form className="auth-card auth-form" onSubmit={(event)=>{
         event.preventDefault();
         const query=staffAttendanceQuery.safeParse({from:draft.from||undefined,to:draft.to||undefined,status:draft.status||undefined});
-        if(query.success){setFilter(draft);setValidation("");}
+        if(query.success){
+          setFilter(draft);setValidation("");
+          const next=writeAttendanceHistoryFilters(new URLSearchParams(routeParams.toString()),draft);
+          window.history.replaceState(null,"",window.location.pathname+(next.size?`?${next}`:"")+window.location.hash);
+        }
         else setValidation(dictionary(locale)["error.validation"]);
       }}>
         {guardian&&<TimetableRead locale={locale} result={childOptions}>{(values)=><label>{text.child}

@@ -1,7 +1,7 @@
 name: UI remediation - isolated static verification
 on:
   push:
-    branches: ["fix/emil-ui-motion-audit-2026-11-21"]
+    branches: ["fix/emil-ui-motion-audit-2026-11-21", "fix/workflow-remediation-2026-11-22"]
   # Feature-branch push already covers draft PR updates; avoid duplicate disposable Supabase jobs.
 permissions:
   contents: read
@@ -83,3 +83,35 @@ jobs:
             qa-artifacts/ui-manifests/
           if-no-files-found: warn
           retention-days: 7
+  browser-cross-platform:
+    needs: browser-fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Bind isolated QA workspace
+        shell: bash
+        run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: '2.121.0'
+      - name: Install dependencies and cross-browser engines
+        shell: bash
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps firefox webkit
+      - name: Start disposable school and check mobile admin queues
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/start-stack.ps1
+          mkdir -p qa-artifacts/server
+          pwsh -NoProfile -File qa/local.ps1 -Serve > qa-artifacts/server/compat-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm exec playwright test --config qa/ui-compatibility.config.ts

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
+import {z} from "zod";
 import { useEffect,useState,type FormEvent } from "react";
 import {
   curriculumOffering,homeworkEntry,homeworkGradeBulkInput,homeworkGradeBulkReceipt,homeworkGradeCorrection,homeworkGradeInput,
@@ -13,6 +15,7 @@ import { dictionary,localizedError } from "@/i18n";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AcademicPageItems,offeringText,useAcademicPage } from "./shared";
+import {readGradebookContext,writeGradebookContext,type GradebookContext} from "./gradebook-context";
 
 const copy={
   ar:{title:"تصحيح الواجبات",class:"الفصل",all:"كل فصولي",roster:"كشف التصحيح",details:"تفاصيل الواجب",back:"رجوع للتصحيح",
@@ -30,8 +33,20 @@ const offerings=curriculumOffering.array(),homework=homeworkGradingItem.array(),
 
 export function Gradebook({locale,initial}:{locale:Locale;initial?:string}){
   const text=copy[locale];
+  const routeParams=useSearchParams();
   const [id,setId]=useState(initial);
-  const [classId,setClassId]=useState("");
+  const [classId,setClassId]=useState(()=>readGradebookContext(routeParams).classId);
+  useEffect(()=>{
+    const restored=readGradebookContext(routeParams);
+    setClassId(restored.classId);
+    setId(z.uuid().safeParse(restored.workId).data);
+  },[routeParams]);
+  function navigate(patch:Partial<GradebookContext>,push=false){
+    const next=writeGradebookContext(new URLSearchParams(routeParams.toString()),patch);
+    const url=window.location.pathname+(next.size?`?${next}`:"")+window.location.hash;
+    if(push)window.history.pushState(null,"",url);
+    else window.history.replaceState(null,"",url);
+  }
   const [version,setVersion]=useState(0);
   useEffect(()=>{
     const refresh=()=>setVersion((n)=>n+1);
@@ -43,20 +58,20 @@ export function Gradebook({locale,initial}:{locale:Locale;initial?:string}){
   const item=useTimetableRead(id?`/academics/homework/${id}`:null,homeworkEntry,version);
   if(id)return <>
     <h1>{text.roster}</h1>
-    <button type="button" className="plain-button" onClick={()=>{setId(undefined);setVersion((n)=>n+1);}}>{text.back}</button>
+    <button type="button" className="plain-button" onClick={()=>{setId(undefined);navigate({workId:""});setVersion((n)=>n+1);}}>{text.back}</button>
     <TimetableRead locale={locale} result={item}>{(value)=><GradeSheet key={id} locale={locale} item={value} version={version}/>}</TimetableRead>
   </>;
   return <>
     <h1>{text.title}</h1>
     <TimetableRead locale={locale} result={choices}>{(options)=>{
       const classrooms=[...new Map(options.filter((entry)=>entry.canGrade).map((option)=>[option.classId,option])).values()];
-      return <label className="auth-card">{text.class}<select value={classId} onChange={(event)=>setClassId(event.target.value)}>
+      return <label className="auth-card">{text.class}<select value={classId} onChange={(event)=>{setClassId(event.target.value);navigate({classId:event.target.value});}}>
         <option value="">{text.all}</option>{classrooms.map((option)=><option key={option.classId} value={option.classId}>{offeringText(option,locale)}</option>)}
       </select></label>;
     }}</TimetableRead>
     <section className="auth-card">
       <AcademicPageItems locale={locale} page={page}>{(rows)=><ul className="group-list">{rows.map((value)=><li key={value.homeworkId}>
-        <button type="button" className="group-row" onClick={()=>setId(value.homeworkId)}>
+        <button type="button" className="group-row" onClick={()=>{setId(value.homeworkId);navigate({workId:value.homeworkId},true);}}>
           <bdi>{value.title}</bdi><bdi>{value.classCode} · {locale==="ar"?value.subjectNameAr:value.subjectNameDe}</bdi>
           <span>{text.graded} · <bdi>{new Intl.NumberFormat(locale).format(value.graded)} / {new Intl.NumberFormat(locale).format(value.total)}</bdi></span>
         </button>
