@@ -81,7 +81,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       <button className="plain-button" type="submit">{text.find}</button>
     </form>
     <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>{filters.map((filter)=><button className="plain-button" type="button" key={filter}
-      aria-pressed={selected===filter} onClick={()=>patch({filter})>{text[filter]}</button>)}</div>
+      aria-pressed={selected===filter} onClick={()=>patch({filter})}>{text[filter]}</button>)}</div>
     <div className="inbox-mobile-actions">
       <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>patch({archived:!archived})}>{text.archived}</button>
       <details className="inbox-mobile-shortcuts">
