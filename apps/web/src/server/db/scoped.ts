@@ -41,8 +41,7 @@ async function withRole<T>(role:DatabaseRole,work:(tx:Transaction)=>Promise<T>):
         select not (rolsuper or rolbypassrls) as restricted from pg_roles where rolname = session_user
       `;
       if (!login?.restricted) throw new ApiError("unavailable");
-      await tx`set local role ${tx(role)}`;
-      await tx`set local statement_timeout = '8000ms'`;
+      await tx`select set_config('role', ${role}, true), set_config('statement_timeout', '8000ms', true)`;
       return work(tx);
     }) as T;
   } catch (error) {
@@ -75,13 +74,14 @@ export function withActor<T>(ctx: ActorContext, work: (tx: Transaction) => Promi
              set_config('app.request_id', ${ctx.requestId}, true),
              set_config('app.assurance', ${ctx.assurance}, true)
     `;
-    const [guard] = await tx<{ allowed: boolean }[]>`select app.guard_actor() as allowed`;
+    const [guard] = await tx<{ allowed: boolean }[]>`
+      select case
+        when app.guard_actor() is not true then false
+        when ${ctx.persona === "admin"} then ${ctx.assurance === "aal2"} and app.has_verified_factor(${ctx.accountId})
+        else true
+      end as allowed
+    `;
     if (!guard.allowed) throw new ApiError("forbidden");
-    if (ctx.persona === "admin") {
-      if (ctx.assurance !== "aal2") throw new ApiError("forbidden");
-      const [factor] = await tx<{ verified: boolean }[]>`select app.has_verified_factor(${ctx.accountId}) as verified`;
-      if (!factor.verified) throw new ApiError("forbidden");
-    }
     return work(tx);
   });
 }

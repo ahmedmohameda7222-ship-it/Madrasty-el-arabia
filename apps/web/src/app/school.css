@@ -136,6 +136,11 @@ button, a, [role="button"], .more-group summary { touch-action: manipulation; }
   text-align: center; font-size: .78rem; font-weight: 600; overflow-wrap: anywhere;
 }
 .school-nav a[aria-current] { color: var(--primary); border-radius: 12px; background: var(--inset); }
+.school-link { position: relative; }
+.school-link-pending {
+  position: absolute; inset-inline: 12px; inset-block-end: 2px; block-size: 2px;
+  border-radius: 1px; background: var(--primary); pointer-events: none;
+}
 .school-nav .nav-label-desktop { display: none; }
 .school-secondary { display: none; }
 

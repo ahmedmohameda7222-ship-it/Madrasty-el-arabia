@@ -1,18 +1,15 @@
-import Link from "next/link";
-import {mayManageStops} from "@/server/finance/stops";
+import { SchoolLink as Link } from "@/ui/SchoolLink";
 import { notFound, redirect } from "next/navigation";
 import { schoolDateSchema, type Locale } from "@madrasty/contracts";
 import { z } from "zod";
 import { SchoolHome } from "@/features/school/SchoolHome";
 import { webSchoolSession } from "@/server/identity/web-session";
-import { menuCapabilities, mayUse } from "@/server/access/capabilities";
+import { schoolMenuAccess, mayUse } from "@/server/access/capabilities";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
 import { Children, Families } from "@/features/school/Families";
 import { dictionary } from "@/i18n";
 import { ThreadInbox } from "@/features/comms/ThreadInbox";
 import { SessionControls } from "@/features/identity/SessionControls";
-import { mayManageMessageReports } from "@/server/comms/moderation";
-import { mayViewDeliveryStatus } from "@/server/comms/delivery-status";
 
 const tabs = ["home", "students", "attendance", "children", "messages", "more"] as const;
 type Tab = typeof tabs[number];
@@ -29,10 +26,10 @@ export default async function SchoolPage({ params, searchParams }: {
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
   const menuKeys = ["access.manage","school.manage","students.manage","applications.manage","academics.supervise","audit.read","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
-  const [allowed, moderation, delivery, stopManager] = tab === "more"
-    ? await Promise.all([menuCapabilities(session,[...menuKeys]),mayManageMessageReports(session),mayViewDeliveryStatus(session),mayManageStops(session)])
-    : [new Set<string>(),false,false,false] as const;
-  const [access, calendar, placement, invites, academic, audit, attendance, bank, billing, finance, posting] = menuKeys.map(key=>allowed.has(key));
+  const { capabilities, moderation, delivery, stopManager } = tab === "more"
+    ? await schoolMenuAccess(session, menuKeys)
+    : { capabilities: [], moderation: false, delivery: false, stopManager: false };
+  const [access, calendar, placement, invites, academic, audit, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
   return (

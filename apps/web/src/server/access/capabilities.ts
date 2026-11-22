@@ -1,5 +1,5 @@
 import "server-only";
-import { accessSummarySchema, accessTargetsSchema, type AccessEdit } from "@madrasty/contracts";
+import { accessSummarySchema, accessTargetsSchema, type AccessEdit, type Capability, type SchoolSession } from "@madrasty/contracts";
 import { withActor, type ActorContext, type Transaction } from "@/server/db/scoped";
 import { appendAudit, appendEvent } from "@/server/db/outbox";
 import { ApiError } from "@/server/http";
@@ -48,7 +48,7 @@ export function replaceAccess(ctx: ActorContext, id: string, edit: AccessEdit) {
   });
 }
 
-export function mayUse(session: import("@madrasty/contracts").SchoolSession, key: import("@madrasty/contracts").Capability) {
+export function mayUse(session: SchoolSession, key: Capability) {
   if (session.activePersona !== "admin" || session.assurance !== "aal2") return Promise.resolve(false);
   return withActor({
     requestId: crypto.randomUUID(), accountId: session.accountId, sessionId: session.sessionId,
@@ -59,14 +59,25 @@ export function mayUse(session: import("@madrasty/contracts").SchoolSession, key
   });
 }
 
-/** Evaluate menu visibility in a single actor-scoped transaction. Route handlers still authorize writes independently. */
-export async function menuCapabilities(session: import("@madrasty/contracts").SchoolSession, keys: import("@madrasty/contracts").Capability[]) {
-  if (session.activePersona !== "admin" || session.assurance !== "aal2") return new Set<string>();
-  const rows = await withActor({
+/** Read the school menu's permissions together using the same policies as the destination routes. */
+export async function schoolMenuAccess(session: SchoolSession, keys: readonly Capability[]) {
+  const isAdmin = session.activePersona === "admin";
+  if (session.activePersona === "guardian" || (isAdmin && session.assurance !== "aal2")) {
+    return { capabilities: [] as Capability[], moderation: false, delivery: false, stopManager: false };
+  }
+  const [access] = await withActor({
     requestId: crypto.randomUUID(), accountId: session.accountId, sessionId: session.sessionId,
     persona: session.activePersona, assurance: session.assurance,
-  }, tx => tx<{key:string}[]>`select key from unnest(${tx.array(keys)}::text[]) as item(key) where app.has_capability(key)`);
-  return new Set(rows.map(row => row.key));
+  }, tx => tx<{ capabilities: Capability[]; moderation: boolean; delivery: boolean; stopManager: boolean }[]>`
+    select
+      case when ${isAdmin} then array(
+        select key from unnest(${tx.array([...keys])}::text[]) as item(key) where app.has_capability(key)
+      ) else array[]::text[] end as capabilities,
+      case when ${isAdmin} then app.can_manage_chat_reports() else false end as moderation,
+      app.may_operate_delivery_queue() as delivery,
+      case when ${isAdmin} then app.enrollment_stop_staff() else false end as "stopManager"
+  `);
+  return access;
 }
 
 export const mayManageAccess = (session: import("@madrasty/contracts").SchoolSession) => mayUse(session, "access.manage");

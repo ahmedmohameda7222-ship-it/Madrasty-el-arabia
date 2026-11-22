@@ -8,6 +8,7 @@ import { dictionary } from "@/i18n";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
+import { SchoolLink } from "./SchoolLink";
 import { NotificationLink } from "@/features/comms/NotificationCenter";
 
 type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
@@ -93,7 +94,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation}>
           {destinations.map((tab) => (
-            <Link key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
+            <SchoolLink key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
               aria-current={active === tab ? "page" : undefined}
               aria-label={locale === "de" && (tab === "attendance" || tab === "messages") ? text[tab] : undefined}>
               <Icon name={tab} />
@@ -101,11 +102,11 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
                 <span className="nav-label-mobile" aria-hidden="true">{tab === "attendance" ? "Anwes." : "Nachr."}</span>
                 <span className="nav-label-desktop" aria-hidden="true">{text[tab]}</span>
               </> : <span>{text[tab]}</span>}
-            </Link>
+            </SchoolLink>
           ))}
           {secondary && (
             <div className="school-secondary">
-              {secondary.map(({ href, label }) => <Link key={href} href={href} scroll={false}>{label}</Link>)}
+              {secondary.map(({ href, label }) => <SchoolLink key={href} href={href} scroll={false}>{label}</SchoolLink>)}
             </div>
           )}
         </nav>
