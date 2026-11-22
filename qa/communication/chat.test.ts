@@ -15,7 +15,7 @@ test("a guardian and teacher exchange one private message, read and react withou
       school.bearer("guardian-ar", "guardian"), school.bearer("teacher", "teacher"), school.bearer("finance", "admin"),
     ]);
     const directory = (await fixtureApi(school, "/directory", { token: guardian })).payload.data;
-    const staff = directory.find((contact: { displayName: string }) => contact.displayName === `${school.run} teacher`);
+    const staff = directory.find((contact: { displayName: string }) => contact.displayName === "يوسف عبد الرحمن محمود");
     assert.ok(staff?.target);
     const thread = await fixtureApi(school, "/threads", {
       token: guardian, persona: "guardian", method: "POST", key: `${school.run}.teacher-chat`, body: { target: staff.target },
