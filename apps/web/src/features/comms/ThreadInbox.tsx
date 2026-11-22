@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect,useState,type FormEvent } from "react";
 import {
   caseStatus,inboxSchema,officeCase,officeCaseInput,threadDetail,threadSummary,type Locale,type ThreadReferenceView,type ThreadSummary,
@@ -11,6 +12,7 @@ import { dictionary } from "@/i18n";
 import { AcademicPageItems,useAcademicPage } from "@/features/academics/shared";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
 import { Conversation } from "./Conversation";
+import { readInboxContext, writeInboxContext, withInboxThread, type InboxContext } from "./inbox-context";
 
 const copy={
   ar:{heading:"المحادثات",directory:"دليل التواصل",all:"الكل",direct:"المحادثات الخاصة",office:"المكاتب",student_affairs:"شؤون الطلبة",accounts:"الحسابات",
@@ -31,9 +33,11 @@ function title(locale:Locale,item:ThreadSummary){
 
 export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   const text=copy[locale];
-  const [selected,setSelected]=useState<Filter>("all");
+  const routeParams=useSearchParams();
+  const {filter:selected,search:term,archived}=readInboxContext(routeParams,filters);
   const [version,setVersion]=useState(0);
-  const [search,setSearch]=useState(""),[term,setTerm]=useState(""),[archived,setArchived]=useState(false);
+  const [search,setSearch]=useState(term);
+  useEffect(()=>setSearch(term),[term]);
   const reload=()=>setVersion((n)=>n+1);
   useEffect(()=>{
     const focus=()=>setVersion((n)=>n+1);
@@ -45,8 +49,15 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   const list=useAcademicPage(thread?null:`/threads?limit=30${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version);
   const detail=useTimetableRead(thread?`/threads/${thread}`:null,threadDetail,version);
   const root=`/${locale}/school/messages`;
+  const backParams=withInboxThread(routeParams).toString();
+  const backHref=backParams?`${root}?${backParams}`:root;
+  const patch=(changes:Partial<InboxContext>)=>{
+    const url=new URL(window.location.href);
+    url.search=writeInboxContext(url.searchParams,changes).toString();
+    window.history.replaceState(null,"",url);
+  };
   if(thread)return <>
-    <Link className="plain-button" href={root}>{text.back}</Link>
+    <Link className="plain-button" href={backHref}>{text.back}</Link>
     <TimetableRead locale={locale} result={detail}>{(value)=><section className="auth-card auth-form">
       <h2><bdi>{title(locale,value)}</bdi></h2>
       {value.inbox&&value.contactName&&<p>{text[value.inbox]}</p>}
@@ -63,16 +74,16 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     <div className="header-actions inbox-desktop-shortcuts">
       <Link className="plain-button" href={`/${locale}/directory`}>{text.directory}</Link>
       <Link className="plain-button" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
-      <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>setArchived((old)=>!old)}>{text.archived}</button>
+      <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>patch({archived:!archived})}>{text.archived}</button>
     </div>
-    <form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();setTerm(search.trim());}}>
+    <form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();patch({search});}}>
       <label>{text.search}<input type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/></label>
       <button className="plain-button" type="submit">{text.find}</button>
     </form>
     <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>{filters.map((filter)=><button className="plain-button" type="button" key={filter}
-      aria-pressed={selected===filter} onClick={()=>setSelected(filter)}>{text[filter]}</button>)}</div>
+      aria-pressed={selected===filter} onClick={()=>patch({filter})>{text[filter]}</button>)}</div>
     <div className="inbox-mobile-actions">
-      <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>setArchived((old)=>!old)}>{text.archived}</button>
+      <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>patch({archived:!archived})}>{text.archived}</button>
       <details className="inbox-mobile-shortcuts">
         <summary>{locale==="ar"?"روابط أخرى":"Weitere Links"}</summary>
         <div className="inbox-shortcut-links">
@@ -82,7 +93,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       </details>
     </div>
     <AcademicPageItems locale={locale} page={list} emptyMessage={term ? undefined : archived ? (locale==="ar"?"مفيش محادثات في الأرشيف.":"Keine archivierten Unterhaltungen.") : (locale==="ar"?"مفيش محادثات هنا. افتح دليل التواصل لبدء محادثة.":"Keine Unterhaltungen hier. Öffnen Sie das Kontaktverzeichnis, um eine zu beginnen.")}>{(rows)=><ul className="group-list">{rows.map((item)=><li key={item.id}>
-      <Link className="group-row" href={`${root}?thread=${item.id}`}>
+      <Link className="group-row" href={`${root}?${withInboxThread(routeParams,item.id).toString()}`}>
         <bdi>{title(locale,item)}</bdi>{item.inbox&&item.contactName&&<span>{text[item.inbox]}</span>}
         {item.caseStatus&&<span>{text[item.caseStatus]}</span>}
         {item.latestPreview&&<span dir="auto">{item.latestPreview}</span>}
