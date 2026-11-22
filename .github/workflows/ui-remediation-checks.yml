@@ -1,7 +1,7 @@
 name: UI remediation - isolated static verification
 on:
   push:
-    branches: ["fix/emil-ui-motion-audit-2026-11-21"]
+    branches: ["fix/emil-ui-motion-audit-2026-11-21", "fix/workflow-remediation-2026-11-22"]
   # Feature-branch push already covers draft PR updates; avoid duplicate disposable Supabase jobs.
 permissions:
   contents: read
