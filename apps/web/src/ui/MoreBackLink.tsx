@@ -6,11 +6,16 @@ import { dictionary } from "@/i18n";
 import { Icon } from "./Icon";
 import { SchoolLink } from "./SchoolLink";
 
-export function MoreBackLink({ locale }: { locale: Locale }) {
+export function MoreBackLink({ locale, child, schoolClass }: { locale: Locale; child?: string; schoolClass?: { year:string; id:string } }) {
+  const base = `/${locale}/school`;
+  const href = child ? `${base}/children?child=${child}` : schoolClass
+    ? `${base}/more/classes?year=${schoolClass.year}&class=${schoolClass.id}` : `${base}/more`;
+  const label = child ? (locale === "ar" ? "رجوع لملف الطفل" : "Zurück zum Kinderprofil") : schoolClass
+    ? (locale === "ar" ? "رجوع للفصل" : "Zurück zur Klasse") : dictionary(locale).backToMore;
   return (
-    <SchoolLink className="plain-button more-back-link" href={`/${locale}/school/more`} replace>
+    <SchoolLink className="plain-button more-back-link" href={href} replace>
       <Icon name="back" />
-      {dictionary(locale).backToMore}
+      {label}
     </SchoolLink>
   );
 }

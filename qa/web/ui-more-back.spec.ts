@@ -19,6 +19,7 @@ test("Arabic More pages return to the menu from a link or direct visit", async (
     await expect(back).toBeVisible();
     await back.press("Enter");
     await expect(page).toHaveURL("/ar/school/more");
+    await expect(page.locator("details").filter({hasText:"التعليم والحضور"})).toHaveAttribute("open","");
 
     for (const route of ["/ar/school/more/calendar", "/ar/staff/access", "/ar/account/security", "/ar/account/preferences"]) {
       await page.goto(route);

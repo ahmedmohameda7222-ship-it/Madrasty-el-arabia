@@ -10,6 +10,7 @@ import { Children, Families } from "@/features/school/Families";
 import { dictionary } from "@/i18n";
 import { ThreadInbox } from "@/features/comms/ThreadInbox";
 import { SessionControls } from "@/features/identity/SessionControls";
+import { MoreGroup } from "@/ui/MoreGroup";
 
 const tabs = ["home", "students", "attendance", "children", "messages", "more"] as const;
 type Tab = typeof tabs[number];
@@ -37,11 +38,11 @@ export default async function SchoolPage({ params, searchParams }: {
       <h1>{text[tab as Tab]}</h1>
       {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
-      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} initialStudent={z.uuid().safeParse(search.student).data} initialGuardian={z.uuid().safeParse(search.guardian).data} initialLink={z.uuid().safeParse(search.link).data} /></>}
+      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} /></>}
       {tab === "children" && <Children locale={locale} initialChild={z.uuid().safeParse(search.child).data} />}
       {tab === "attendance" && session.activePersona === "teacher" && <DailyAttendance locale={locale} initialClass={z.uuid().safeParse(search.class).data} initialDate={schoolDateSchema.safeParse(search.date).data} />}
       {tab === "more" && <div className="more-index">
-        {(session.activePersona !== "admin" || calendar || academic || attendance) && <details className="more-group">
+        {(session.activePersona !== "admin" || calendar || academic || attendance) && <MoreGroup group="learning">
           <summary>{locale === "ar" ? "التعليم والحضور" : "Unterricht und Anwesenheit"}</summary>
           <div className="more-rows">
             {(session.activePersona==="teacher"||academic)&&<Link className="more-row" href={`/${locale}/school/more/grading`}>{locale==="ar"?"تصحيح الواجبات":"Hausaufgaben korrigieren"}</Link>}
@@ -55,16 +56,16 @@ export default async function SchoolPage({ params, searchParams }: {
             {(session.activePersona !== "admin" || calendar || academic) && <Link className="more-row"
               href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
             {attendance && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
-          </div></details>}
-        {(invites || placement || calendar || session.activePersona==="guardian") && <details className="more-group"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
+          </div></MoreGroup>}
+        {(invites || placement || calendar || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
             {invites && <Link className="more-row" href={`/${locale}/staff/applications`}>{locale === "ar" ? "طلبات المدرسين" : "Bewerbungen von Lehrkräften"}</Link>}
             {(placement || invites) && <Link className="more-row" href={`/${locale}/staff/invitations`}>{locale === "ar" ? "الدعوات" : "Einladungen"}</Link>}
             {(calendar || placement) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
             {calendar && <Link className="more-row" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
             {session.activePersona === "guardian" && <Link className="more-row" href={`/${locale}/apply?from=more`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
           </div>
-        </details>}
-        {(finance||billing||posting||stopManager||session.activePersona==="guardian")&&<details className="more-group">
+        </MoreGroup>}
+        {(finance||billing||posting||stopManager||session.activePersona==="guardian")&&<MoreGroup group="finance">
           <summary>{locale==="ar"?"الحسابات":"Buchhaltung"}</summary>
           <div className="more-rows">
             {(finance||billing||posting||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/invoices`}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>}
@@ -77,8 +78,8 @@ export default async function SchoolPage({ params, searchParams }: {
             {billing&&<Link className="more-row" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"إصدار الفواتير":"Rechnungen ausstellen"}</Link>}
             {billing&&<Link className="more-row" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الرسوم":"Gebühreneinstellungen"}</Link>}
           </div>
-        </details>}
-        {(access || audit || moderation || delivery || bank) && <details className="more-group">
+        </MoreGroup>}
+        {(access || audit || moderation || delivery || bank) && <MoreGroup group="permissions">
           <summary>{locale === "ar" ? "الصلاحيات والتدقيق" : "Berechtigungen und Protokoll"}</summary>
           <div className="more-rows">
             {access && <Link className="more-row" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
@@ -87,21 +88,21 @@ export default async function SchoolPage({ params, searchParams }: {
             {delivery&&<Link className="more-row" href={`/${locale}/school/more/delivery-status`}>{locale==="ar"?"حالة التوصيل":"Zustellstatus"}</Link>}
             {bank&&<Link className="more-row" href={`/${locale}/school/more/bank`}>{locale==="ar"?"حساب التحصيل":"Zahlungskonto"}</Link>}
           </div>
-        </details>}
-        <details className="more-group"><summary>{locale==="ar"?"التواصل والنشر":"Kommunikation"}</summary><div className="more-rows">
+        </MoreGroup>}
+        <MoreGroup group="communication"><summary>{locale==="ar"?"التواصل والنشر":"Kommunikation"}</summary><div className="more-rows">
             <Link className="more-row" href={`/${locale}/directory`}>{locale === "ar" ? "دليل التواصل" : "Kontaktverzeichnis"}</Link>
             <Link className="more-row" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
             <Link className="more-row" href={`/${locale}/school/more/news`}>{locale==="ar"?"أخبار المدرسة":"Schulnachrichten"}</Link>
             <Link className="more-row" href={`/${locale}/school/more/events`}>{locale==="ar"?"تقويم الأحداث":"Veranstaltungskalender"}</Link>
-        </div></details>
-        <details className="more-group">
+        </div></MoreGroup>
+        <MoreGroup group="account">
           <summary>{locale === "ar" ? "الحساب والجهاز" : "Konto und Gerät"}</summary>
           <div className="more-rows">
             <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "تفضيلات الحساب والإشعارات" : "Konto und Benachrichtigungen"}</Link>
             <Link className="more-row" href={`/${locale}/account/security`}>{locale === "ar" ? "الأمان والاسترجاع" : "Sicherheit und Wiederherstellung"}</Link>
           </div>
           <SessionControls locale={locale} session={session} />
-        </details>
+        </MoreGroup>
       </div>}
     </>
   );

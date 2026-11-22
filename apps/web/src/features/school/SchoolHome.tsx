@@ -14,9 +14,11 @@ import { minutes, TimetableRead, useTimetableRead } from "./timetable/shared";
 
 const copy={
   ar:{today:"دروس اليوم",schedule:"افتح الجدول",attendance:"افتح الحضور",assignments:"تكليفاتي الحالية",
+    next:"الحصة التالية",
     noAssignment:"ما فيش تكليفات سارية اليوم.",noLessons:"ما فيش دروس مواعيدها النهارده.",profile:"افتح بيانات الطفل",
     substitute:"مدرس بديل",children:"أبنائي",subject:"مدرس مادة",primary:"مسؤول الحضور"},
   de:{today:"Unterricht heute",schedule:"Wochenplan öffnen",attendance:"Anwesenheit öffnen",assignments:"Meine aktuellen Einsätze",
+    next:"Nächste Unterrichtsstunde",
     noAssignment:"Heute gibt es keine laufenden Einsätze.",noLessons:"Für heute sind keine Stunden geplant.",profile:"Kind öffnen",
     substitute:"Vertretung",children:"Kinder",subject:"Fachunterricht",primary:"Anwesenheitsverantwortung"},
 } as const;
@@ -41,14 +43,10 @@ function useHomeRefresh(){
 function TeacherHome({locale}:{locale:Locale}){
   const text=copy[locale], refresh=useHomeRefresh(), base=`/${locale}/school`;
   const assignments=useTimetableRead("/me/teaching",myTeaching,refresh);
-  const first=assignments.value?.data?.[0];
-  const firstName=first&&(locale==="ar"?first.classNameAr:first.classNameDe);
 
   return <>
-    {first&&firstName&&<RoleHero persona="teacher" title={firstName}
-      detail={first.substitute?text.substitute:first.kind==="primary"?text.primary:text.subject}
-      action={first.kind==="primary"?{href:`${base}/attendance?class=${first.classId}`,label:text.attendance}
-        :{href:`${base}/more/timetable`,label:text.schedule}} />}
+    <TodayLessons locale={locale} refresh={refresh} attendanceClasses={assignments.value?.data
+      ?.filter(item=>item.kind==="primary").map(item=>item.classId) ?? []} />
     <TimetableRead locale={locale} result={assignments}>{(rows)=><section className="auth-card">
       <h2>{text.assignments}</h2>
       {rows.length===0&&<p>{text.noAssignment}</p>}
@@ -59,7 +57,6 @@ function TeacherHome({locale}:{locale:Locale}){
         </Link>
       </li>)}</ul>
     </section>}</TimetableRead>
-    <TodayLessons locale={locale} refresh={refresh} />
   </>;
 }
 
@@ -82,21 +79,30 @@ function GuardianHome({locale}:{locale:Locale}){
   }}</TimetableRead>;
 }
 
-function TodayLessons({locale,refresh,child}:{locale:Locale;refresh:number;child?:string}){
+function TodayLessons({locale,refresh,child,attendanceClasses}:{locale:Locale;refresh:number;child?:string;attendanceClasses?:string[]}){
   const date=useTimetableRead("/school/work-queues",workQueuesSchema,refresh);
   const today=date.value?.data?.today;
   return <TimetableRead locale={locale} result={date}>{()=>{
     if(!today)return <p>{locale==="ar"?"هيظهر الجدول بعد ما إدارة المدرسة تكمّل الإعدادات.":"Der Stundenplan erscheint nach der Schuleinrichtung."}</p>;
-    return <DaySchedule locale={locale} day={today} child={child} refresh={refresh}/>;
+    return <DaySchedule locale={locale} day={today} child={child} refresh={refresh} attendanceClasses={attendanceClasses}/>;
   }}</TimetableRead>;
 }
 
-function DaySchedule({locale,day,child,refresh}:{locale:Locale;day:string;child?:string;refresh:number}){
+function DaySchedule({locale,day,child,refresh,attendanceClasses}:{locale:Locale;day:string;child?:string;refresh:number;attendanceClasses?:string[]}){
   const text=copy[locale], suffix=child?`?child=${child}`:"";
   const result=useTimetableRead(`/school/timetable?weekOf=${day}${child?`&childId=${child}`:""}`,timetableWeekSchema,refresh);
   return <TimetableRead locale={locale} result={result}>{(week:TimetableWeek)=>{
-    const lessons=week.slots.filter((row)=>row.date===day&&row.teaching);
-    return <section className="auth-card">
+    const lessons=week.slots.filter((row)=>row.date===day&&row.teaching).sort((a,b)=>a.start-b.start);
+    const time = new Intl.DateTimeFormat("en-GB",{timeZone:week.timezone,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date());
+    const [hours, minute] = time.split(":").map(Number);
+    const next = attendanceClasses && lessons.find(row => row.start >= hours * 60 + minute);
+    return <>
+    {next && <RoleHero persona="teacher" title={text.next}
+      detail={`${minutes(next.start)} · ${locale==="ar"?next.classNameAr:next.classNameDe} · ${locale==="ar"?next.subjectNameAr:next.subjectNameDe}`}
+      action={attendanceClasses?.includes(next.classId)
+        ? {href:`/${locale}/school/attendance?class=${next.classId}&date=${day}`,label:text.attendance}
+        : {href:`/${locale}/school/more/timetable`,label:text.schedule}} />}
+    <section className="auth-card">
       <h2>{text.today}</h2>
       {!lessons.length&&<p>{text.noLessons}</p>}
       <ul className="group-list">{lessons.map((row)=><li className="timetable-session" key={row.id}>
@@ -106,6 +112,6 @@ function DaySchedule({locale,day,child,refresh}:{locale:Locale;day:string;child?
         {row.substitute&&<small>{text.substitute}</small>}
       </li>)}</ul>
       <Link className="plain-button" href={`/${locale}/school/more/timetable${suffix}`}>{text.schedule}</Link>
-    </section>;
+    </section></>;
   }}</TimetableRead>;
 }

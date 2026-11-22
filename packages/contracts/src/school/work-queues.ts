@@ -40,6 +40,13 @@ export const workQueuesSchema = z.union([
     today: schoolDateSchema,
     timezone: z.string(),
     setupRequired: z.literal(false).optional(),
+    overview: z.object({
+      students: z.int().nonnegative().nullable(),
+      classes: z.int().nonnegative().nullable(),
+      teachers: z.int().nonnegative().nullable(),
+      mayPublish: z.boolean(),
+      mayIssue: z.boolean(),
+    }).optional(),
     queues: queueSummarySchema.array(),
   }),
   z.object({

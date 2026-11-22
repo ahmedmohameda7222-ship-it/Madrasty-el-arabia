@@ -4829,6 +4829,15 @@ components:
             today: { type: string, format: date }
             timezone: { type: string }
             setupRequired: { const: false }
+            overview:
+              type: object
+              required: [students, classes, teachers, mayPublish, mayIssue]
+              properties:
+                students: { type: [integer, 'null'], minimum: 0 }
+                classes: { type: [integer, 'null'], minimum: 0 }
+                teachers: { type: [integer, 'null'], minimum: 0 }
+                mayPublish: { type: boolean }
+                mayIssue: { type: boolean }
             queues:
               type: array
               items:

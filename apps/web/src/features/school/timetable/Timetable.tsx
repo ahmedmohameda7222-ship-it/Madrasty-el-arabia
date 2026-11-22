@@ -22,11 +22,11 @@ function dayLabel(date: string, locale: Locale) {
     .format(new Date(date+"T00:00:00Z"));
 }
 
-export function Timetable({ locale, child }: {locale:Locale;child?:string}) {
+export function Timetable({ locale, child, initialClass }: {locale:Locale;child?:string;initialClass?:string}) {
   const text=timetableWords[locale], {persona}=useAccountScope();
   const [selection,setSelection]=useState(child ?? "");
   const [date,setDate]=useState("");
-  const [classId,setClassId]=useState("");
+  const [classId,setClassId]=useState(initialClass ?? "");
   const [reload,setReload]=useState(0);
   const [editId,setEditId]=useState<string>();
   const [editor,setEditor]=useState(false);

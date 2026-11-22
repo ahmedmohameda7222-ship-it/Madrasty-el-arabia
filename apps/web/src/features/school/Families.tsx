@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
@@ -63,27 +64,44 @@ const guardianList = guardianSchema.array();
 const childrenSchema = childSummarySchema.array();
 const studentReader = z.union([studentList, guardianList]);
 
-export function Families({ locale, initialGuardian, initialStudent, initialLink }: { locale: Locale; initialGuardian?:string; initialStudent?:string; initialLink?:string }) {
+const recordId = z.uuid();
+
+export function Families({ locale }: { locale: Locale }) {
   const text = copy[locale];
-  const [mode, setMode] = useState<Mode>(initialGuardian?"guardians":"students");
-  const [target, setTarget] = useState<string | "new" | null>(initialGuardian??initialStudent??null);
+  const search = useSearchParams();
+  const guardian = recordId.safeParse(search.get("guardian")).data;
+  const student = recordId.safeParse(search.get("student")).data;
+  const initialLink = recordId.safeParse(search.get("link")).data;
+  const forStudent = recordId.safeParse(search.get("forStudent")).data;
+  const add = search.get("add");
+  const mode: Mode = guardian || add === "guardian" || search.get("view") === "guardians" ? "guardians" : "students";
+  const target = add === "guardian" || add === "student" ? "new" : (mode === "guardians" ? guardian : student);
   const [refresh, setRefresh] = useState(0);
+  function select(nextMode: Mode, id?: string) {
+    const url = new URL(window.location.href);
+    for (const key of ["guardian","student","link","add","view"]) url.searchParams.delete(key);
+    if (nextMode === "guardians") url.searchParams.set("view", "guardians");
+    else url.searchParams.delete("forStudent");
+    if (id === "new") url.searchParams.set("add", nextMode === "guardians" ? "guardian" : "student");
+    else if (id) url.searchParams.set(nextMode === "guardians" ? "guardian" : "student", id);
+    window.history.replaceState(null, "", url);
+  }
   return (
     <>
       <div className="header-actions family-tabs">
         <button type="button" className="plain-button" aria-pressed={mode === "students"}
-          onClick={() => { setMode("students"); setTarget(null); }}>{dictionary(locale).students}</button>
+          onClick={() => select("students")}>{dictionary(locale).students}</button>
         <button type="button" className="plain-button" aria-pressed={mode === "guardians"}
-          onClick={() => { setMode("guardians"); setTarget(null); }}>{text.family}</button>
+          onClick={() => select("guardians")}>{text.family}</button>
       </div>
       <div className={target ? "calendar-layout" : "calendar-layout family-single-panel"}>
         <section className="auth-card">
           <h2>{mode === "students" ? dictionary(locale).students : text.family}</h2>
-          <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={setTarget} />
-          <button className="primary-button" onClick={() => setTarget("new")}>{mode === "students" ? text.createPupil : text.createAdult}</button>
+          <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={id => select(mode,id)} />
+          <button className="primary-button" onClick={() => select(mode,"new")}>{mode === "students" ? text.createPupil : text.createAdult}</button>
         </section>
-        {target && <RecordEditor locale={locale} mode={mode} target={target} key={`${mode}:${target}`} initialLink={initialLink}
-          saved={(id) => { setTarget(id); setRefresh(refresh + 1); }} />}
+        {target && <RecordEditor locale={locale} mode={mode} target={target} key={`${mode}:${target}:${forStudent ?? ""}`} initialLink={initialLink} forStudent={forStudent}
+          saved={(id) => { select(mode,id); setRefresh(value => value + 1); }} />}
       </div>
     </>
   );
@@ -140,8 +158,8 @@ function RecordPicker({ locale, mode, select }: { locale: Locale; mode: Mode; se
 }
 
 const recordSchema = z.union([studentSchema, guardianDetailSchema]);
-function RecordEditor({ locale, mode, target, initialLink, saved }: {
-  locale: Locale; mode: Mode; target: string; initialLink?:string; saved: (id: string) => void;
+function RecordEditor({ locale, mode, target, initialLink, forStudent, saved }: {
+  locale: Locale; mode: Mode; target: string; initialLink?:string; forStudent?:string; saved: (id: string) => void;
 }) {
   const reload = useRead(target === "new" ? null : `/school/${mode}/${target}`, recordSchema);
   const text = copy[locale];
@@ -153,7 +171,16 @@ function RecordEditor({ locale, mode, target, initialLink, saved }: {
           saved={(id) => { saved(id); if (id === target) reload.retry(); }} />
       ) : <AsyncSurface locale={locale} state={reload.error
         ? { kind: "error", retry: reload.retry, message: errorText(locale, reload.error) } : { kind: "initialLoading" }} />}
-      {reload.data && "links" in reload.data && <Relationships locale={locale} record={reload.data} initialLink={initialLink} changed={reload.retry} />}
+      {reload.data && "studentNumber" in reload.data && <div className="header-actions">
+        <Link className="plain-button" href={`/${locale}/school/students?view=guardians&forStudent=${target}`}>
+          {locale === "ar" ? "اربط بولي أمر" : "Sorgeberechtigte zuordnen"}
+        </Link>
+        <Link className="plain-button" href={`/${locale}/school/more/classes?student=${target}`}>
+          {locale === "ar" ? "سكّن في فصل" : "In eine Klasse einschreiben"}
+        </Link>
+      </div>}
+      {reload.data && "links" in reload.data && <Relationships locale={locale} record={reload.data} initialLink={initialLink}
+        forStudent={forStudent} changed={reload.retry} />}
     </section>
   );
 }
@@ -216,15 +243,17 @@ function ProfileForm({ locale, mode, record, saved }: {
   );
 }
 
-function Relationships({ locale, record, initialLink, changed }: { locale: Locale; record: z.infer<typeof guardianDetailSchema>; initialLink?:string; changed: () => void }) {
+function Relationships({ locale, record, initialLink, forStudent, changed }: { locale: Locale; record: z.infer<typeof guardianDetailSchema>; initialLink?:string; forStudent?:string; changed: () => void }) {
   const text = copy[locale];
-  const [pupil, setPupil] = useState("");
-  const [picker, setPicker] = useState(false);
+  const [pupil, setPupil] = useState(forStudent ?? "");
+  const [picker, setPicker] = useState(Boolean(forStudent));
   const [immediate, setImmediate] = useState(false);
   const [action, setAction] = useState<{ link: ChildLink; type: "approve" | "revoke" }>();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const command = useAdminCommand();
+  const chosen = useRead(pupil && picker && !action ? `/school/students/${pupil}` : null, studentSchema);
+  const selected = chosen.data?.id === pupil ? chosen.data : undefined;
   useEffect(()=>{
     if(initialLink) document.getElementById(`guardian-link-${initialLink}`)?.focus();
   },[initialLink]);
@@ -243,6 +272,7 @@ function Relationships({ locale, record, initialLink, changed }: { locale: Local
       setAction(undefined);
       setPupil("");
       setPicker(false);
+      setImmediate(false);
       changed();
     } catch (cause) { setError(errorText(locale, cause)); }
     finally { setPending(false); }
@@ -261,23 +291,31 @@ function Relationships({ locale, record, initialLink, changed }: { locale: Local
           onClick={() => setAction({ link, type: "revoke" })}>{text.revoke}</button>}
       </li>)}
     </ul>
-    <button type="button" className="plain-button" onClick={() => { setPicker(!picker); setAction(undefined); }}>
+    <button type="button" className="plain-button" onClick={() => { setPicker(!picker); setAction(undefined); setPupil(""); setImmediate(false); }}>
       {picker ? dictionary(locale).close : text.newLink}
     </button>
-    {picker && !action && <RecordPicker locale={locale} mode="students" select={setPupil} />}
+    {picker && !action && <RecordPicker locale={locale} mode="students" select={id => { setPupil(id); setImmediate(false); }} />}
     {(action || picker && pupil) && <form key={action?.link.id ?? pupil} className="auth-form" onSubmit={submit} aria-busy={pending}>
       {action && <p><bdi>{action.link.studentName}</bdi> · {text[action.type]}</p>}
+      {!action && selected && <p>{text.chosenChild}: <bdi>{selected.displayName}</bdi> · <bdi dir="ltr">{selected.studentNumber}</bdi></p>}
+      {!action && chosen.error != null && <p role="alert">{errorText(locale, chosen.error)}</p>}
       {!action && <label className="access-check"><input type="checkbox" checked={immediate} onChange={(event) => setImmediate(event.target.checked)} />{text.immediate}</label>}
       {(action || immediate) && <label>{text.reason}<input name="reason" required maxLength={400} /></label>}
       {error && <p role="alert">{error}</p>}
-      <button className="primary-button" disabled={pending}>{action ? text[action.type] : immediate ? text.approve : text.submitLink}</button>
+      <button className="primary-button" disabled={pending || (!action && !selected)}>{action ? text[action.type] : immediate ? text.approve : text.submitLink}</button>
       {action && <button type="button" className="plain-button" onClick={() => setAction(undefined)}>{dictionary(locale).close}</button>}
     </form>}
   </section>;
 }
 
 export function Children({ locale, initialChild }: { locale: Locale; initialChild?:string }) {
-  const [chosen, setChosen] = useState(initialChild);
+  const search = useSearchParams();
+  const chosen = recordId.safeParse(search.get("child")).data ?? initialChild;
+  function setChosen(id: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("child",id);
+    window.history.replaceState(null,"",url);
+  }
   const available = useRead("/me/children?limit=100", childrenSchema);
   useEffect(() => {
     const onFocus = () => available.retry();
@@ -300,26 +338,34 @@ export function Children({ locale, initialChild }: { locale: Locale; initialChil
 
 function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
   const record = useRead(`/me/children/${id}`, childSummarySchema);
+  const school = `/${locale}/school`;
+  function childLink(path: string, scope?: "child" | "student") {
+    const search = new URLSearchParams({returnChild:id});
+    if (scope) search.set(scope,id);
+    return `${school}/${path}?${search}`;
+  }
   return <AsyncSurface locale={locale} state={record.error
     ? (record.error instanceof ApiResponseError && [401,403,404].includes(record.error.status)
       ? { kind: "forbidden" } : { kind: "error", retry: record.retry, message: errorText(locale, record.error) })
     : record.data ? { kind: "ready", content: <>
       <h2><bdi>{record.data.displayName}</bdi></h2>
       <p>{copy[locale].number} <bdi dir="ltr">{record.data.studentNumber}</bdi></p>
-      <Link className="plain-button" href={`/${locale}/school/more/timetable?child=${id}`}>
+      <Link className="plain-button" href={childLink("more/timetable","child")}>
         {locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}
       </Link>
-      <Link className="plain-button" href={`/${locale}/school/more/reports?child=${id}`}>{locale==="ar"?"التقرير الأكاديمي":"Lernbericht"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/exams?child=${id}`}>{locale==="ar"?"الامتحانات":"Prüfungen"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/evaluations?child=${id}`}>{locale==="ar"?"التقييمات الدورية":"Regelmäßige Beurteilungen"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/homework?child=${id}`}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/academics?child=${id}`}>{locale==="ar"?"الأنشطة والتقييم":"Bewertete Aktivitäten"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/curriculum?child=${id}`}>{locale==="ar"?"المواد والدروس":"Fächer und Unterricht"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/children/${id}/attendance`}>{locale==="ar"?"تاريخ الحضور":"Anwesenheitsverlauf"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/children/${id}/excuse`}>{locale==="ar"?"عذر الغياب":"Abwesenheit entschuldigen"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/invoices?student=${id}`}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/finance-reports?student=${id}`}>{locale==="ar"?"كشف الحساب":"Gebührenübersicht"}</Link>
-      <Link className="plain-button" href={`/${locale}/school/more/enrollment-stops?student=${id}`}>{locale==="ar"?"وقف القيد":"Teilnahmepause"}</Link>
+      <Link className="plain-button" href={childLink("more/reports","child")}>{locale==="ar"?"التقرير الأكاديمي":"Lernbericht"}</Link>
+      <Link className="plain-button" href={childLink("more/exams","child")}>{locale==="ar"?"الامتحانات":"Prüfungen"}</Link>
+      <Link className="plain-button" href={childLink("more/evaluations","child")}>{locale==="ar"?"التقييمات الدورية":"Regelmäßige Beurteilungen"}</Link>
+      <Link className="plain-button" href={childLink("more/homework","child")}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>
+      <Link className="plain-button" href={childLink("more/academics","child")}>{locale==="ar"?"الأنشطة والتقييم":"Bewertete Aktivitäten"}</Link>
+      <Link className="plain-button" href={childLink("more/curriculum","child")}>{locale==="ar"?"المواد والدروس":"Fächer und Unterricht"}</Link>
+      <Link className="plain-button" href={childLink(`children/${id}/attendance`)}>{locale==="ar"?"تاريخ الحضور":"Anwesenheitsverlauf"}</Link>
+      <Link className="plain-button" href={childLink(`children/${id}/excuse`)}>{locale==="ar"?"عذر الغياب":"Abwesenheit entschuldigen"}</Link>
+      <Link className="plain-button" href={childLink("more/invoices","student")}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>
+      <Link className="plain-button" href={childLink("more/finance-reports","student")}>{locale==="ar"?"كشف الحساب":"Gebührenübersicht"}</Link>
+      <Link className="plain-button" href={childLink("more/enrollment-stops","student")}>{locale==="ar"?"وقف القيد":"Teilnahmepause"}</Link>
+      <Link className="plain-button" href={childLink("more/news")}>{locale==="ar"?"أخبار المدرسة":"Schulnachrichten"}</Link>
+      <Link className="plain-button" href={childLink("more/events")}>{locale==="ar"?"تقويم الأحداث":"Veranstaltungskalender"}</Link>
       {record.data.currentClass && <p><bdi dir="ltr">{record.data.currentClass.code}</bdi> · <bdi>{locale === "ar" ? record.data.currentClass.nameAr : record.data.currentClass.nameDe}</bdi></p>}
     </> } : { kind: "initialLoading" }} />;
 }

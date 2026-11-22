@@ -128,11 +128,15 @@ button, a, [role="button"], .more-group summary { touch-action: manipulation; }
 .school-body { min-block-size: 0; flex: 1; display: flex; flex-direction: column-reverse; }
 .school-content { flex: 1; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 24px var(--page-inset); }
 .school-content > * + * { margin-block-start: 16px; }
+.school-overview-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; margin-block: .75rem 0; }
+.school-overview-metrics > div { background: var(--inset); border-radius: 12px; padding: .75rem; }
+.school-overview-metrics dd { margin: 0; font-size: 1.5rem; font-weight: 700; }
 .school-nav {
   flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   border-block-start: 1px solid var(--rule); background: var(--card);
   padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
 }
+.school-nav[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .school-nav a {
   display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px;
   min-block-size: 52px; padding: 4px; color: var(--muted); text-decoration: none;

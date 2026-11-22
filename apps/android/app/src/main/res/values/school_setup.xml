@@ -1,4 +1,7 @@
 <resources>
+    <string name="choose_guardian_for_student">اربط بولي أمر</string>
+    <string name="home_next_lesson">الحصة التالية</string>
+    <string name="home_open_lesson">افتح الحصة</string>
     <string name="school_setup_required">إعدادات المدرسة مطلوبة.</string>
     <string name="school_section_expanded">القسم مفتوح</string>
     <string name="school_section_collapsed">القسم مقفول</string>

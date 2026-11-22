@@ -40,13 +40,19 @@ private typealias Picker = AsyncState<WirePage<List<JSONObject>>>
 
 @Composable
 fun FamiliesScreen(model: IdentityViewModel, initialStudent: String? = null,
-    initialGuardian: String? = null, initialLink: String? = null,
+    initialGuardian: String? = null, initialLink: String? = null, addGuardian: Boolean = false,
+    openEnrollment: (String)->Unit = {},
 ) {
-    var mode by remember(initialGuardian) { mutableStateOf(if (initialGuardian == null) "students" else "guardians") }
-    var target by remember(initialGuardian,initialStudent) { mutableStateOf(initialGuardian ?: initialStudent) }
+    var mode by androidx.compose.runtime.saveable.rememberSaveable(initialGuardian, addGuardian) {
+        mutableStateOf(if (initialGuardian != null || addGuardian) "guardians" else "students")
+    }
+    var target by androidx.compose.runtime.saveable.rememberSaveable(initialGuardian,initialStudent,addGuardian) {
+        mutableStateOf(if(addGuardian) "new" else initialGuardian ?: initialStudent)
+    }
     var run by remember { mutableStateOf(0) }
+    var forStudent by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
-    FilterChip(mode == "students", onClick = { mode = "students"; target = null },
+    FilterChip(mode == "students", onClick = { mode = "students"; target = null; forStudent = null },
         label = { Text(stringResource(R.string.nav_students)) })
     FilterChip(mode == "guardians", onClick = { mode = "guardians"; target = null },
         label = { Text(stringResource(R.string.families)) })
@@ -59,7 +65,8 @@ fun FamiliesScreen(model: IdentityViewModel, initialStudent: String? = null,
     target?.let { id ->
         HorizontalDivider()
         key(mode, id) {
-            FamilyRecord(model, mode, id, requests, initialLink) { updated ->
+            FamilyRecord(model, mode, id, requests, initialLink, forStudent, openEnrollment,
+                pickGuardian={forStudent=id;mode="guardians";target=null}) { updated ->
                 target = updated
                 run++
             }
@@ -110,7 +117,8 @@ private fun RecordPicker(model: IdentityViewModel, mode: String, select: (JSONOb
 
 @Composable
 private fun FamilyRecord(model: IdentityViewModel, mode: String, id: String,
-    requests: MutableMap<String, Pair<String, String>>, focusLink: String?, saved: (String) -> Unit,
+    requests: MutableMap<String, Pair<String, String>>, focusLink: String?, forStudent:String?,
+    openEnrollment:(String)->Unit, pickGuardian:()->Unit, saved: (String) -> Unit,
 ) {
     var generation by remember { mutableStateOf(0) }
     var value by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -136,7 +144,11 @@ private fun FamilyRecord(model: IdentityViewModel, mode: String, id: String,
                 if (!new) generation++
             }
         }
-        if (!new && !isStudent) RelationshipEditor(model, record, requests, focusLink) { generation++ }
+        if (!new && isStudent) {
+            TextButton(onClick=pickGuardian) { Text(stringResource(R.string.choose_guardian_for_student)) }
+            TextButton(onClick={openEnrollment(id)}) { Text(stringResource(R.string.place_students)) }
+        }
+        if (!new && !isStudent) RelationshipEditor(model, record, requests, focusLink,forStudent) { generation++ }
     }
 }
 
@@ -178,13 +190,22 @@ private fun ProfileForm(record: JSONObject, student: Boolean, new: Boolean, comm
 
 @Composable
 private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
-    requests: MutableMap<String, Pair<String, String>>, focusLink: String?, changed: () -> Unit,
+    requests: MutableMap<String, Pair<String, String>>, focusLink: String?, forStudent:String?, changed: () -> Unit,
 ) {
     var picker by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
     var dialog by remember { mutableStateOf<Pair<JSONObject, String>?>(null) }
     var reason by remember { mutableStateOf("") }
     var immediate by remember { mutableStateOf(false) }
+    LaunchedEffect(forStudent) {
+        if (forStudent != null) {
+            try {
+                selected = item(model,"/school/students/$forStudent")
+                picker = true
+            } catch (error: CancellationException) { throw error }
+            catch (_: Exception) { picker = true }
+        }
+    }
 
     Text(stringResource(R.string.family_links), style = MaterialTheme.typography.titleLarge)
     val records = record.getJSONArray("links").objects().sortedBy { it.getString("id") != focusLink }
@@ -217,6 +238,7 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
         val student = selected
         if (student != null) {
             Text(isolate(student.getString("displayName")))
+            Text(isolate(student.getString("studentNumber")))
             FilterChip(immediate, onClick = { immediate = !immediate },
                 label = { Text(stringResource(R.string.immediate_link)) })
             if (immediate) Field(R.string.link_reason, reason) { reason = it }
@@ -226,6 +248,7 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
                 model.schoolCommand(requests, "/school/guardian-links", "POST", data)
                 picker = false
                 selected = null
+                immediate = false
                 changed()
             }
         }
@@ -254,6 +277,7 @@ private fun RelationshipEditor(model: IdentityViewModel, record: JSONObject,
 @Composable
 fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -> Unit,
     openTimetable: (String) -> Unit, openExcuse: (String) -> Unit, openHistory: (String) -> Unit, openCurriculum:(String)->Unit, openActivities:(String)->Unit, openHomework:(String)->Unit, openEvaluations:(String)->Unit, openExams:(String)->Unit, openReport:(String)->Unit, openInvoices:(String)->Unit, openFinance:(String)->Unit, openStop:(String)->Unit,
+    openNews:()->Unit, openEvents:()->Unit,
 ) {
     var state by remember { mutableStateOf<Picker>(AsyncState.InitialLoading()) }
     var selected by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -300,6 +324,8 @@ fun ChildrenScreen(model: IdentityViewModel, chosen: String?, choose: (String) -
                 TextButton(onClick = { openInvoices(child.getString("id")) }) { Text(stringResource(R.string.fee_invoices)) }
                 TextButton(onClick = { openFinance(child.getString("id")) }) { Text(stringResource(R.string.finance_report_title)) }
                 TextButton(onClick = { openStop(child.getString("id")) }) { Text(stringResource(R.string.stop_title)) }
+                TextButton(onClick = openNews) { Text(stringResource(R.string.school_news)) }
+                TextButton(onClick = openEvents) { Text(stringResource(R.string.school_events)) }
             }
         }
     }

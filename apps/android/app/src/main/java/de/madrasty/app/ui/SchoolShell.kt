@@ -72,10 +72,12 @@ fun SchoolShell(
     choices: List<ScopeOption> = emptyList(),
     selectScope: (String) -> Unit = {},
     notificationAction: @Composable () -> Unit = {},
+    mayManageStudents: Boolean = true,
     content: @Composable (SchoolTab) -> Unit,
 ) {
     key(actor.accountId, actor.sessionId, actor.persona) {
-        val tabs = tabsFor(actor.persona)
+        val tabs = tabsFor(actor.persona).filter { it != SchoolTab.Students || mayManageStudents }
+        val active = selected.takeIf { it in tabs } ?: SchoolTab.Home
         var pickerVisible by rememberSaveable { mutableStateOf(false) }
         val states = rememberSaveableStateHolder()
         BackHandler(enabled = selected != SchoolTab.Home && !pickerVisible) { changeTab(SchoolTab.Home) }
@@ -103,7 +105,7 @@ fun SchoolShell(
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     tabs.forEach { tab ->
                         NavigationBarItem(
-                            selected = selected == tab,
+                            selected = active == tab,
                             onClick = { changeTab(tab) },
                             icon = { SchoolIcon(tab.icon) },
                             label = { Text(stringResource(tab.label), softWrap = true) },
@@ -113,11 +115,11 @@ fun SchoolShell(
             },
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets).imePadding()) {
-                states.SaveableStateProvider(selected.name) {
+                states.SaveableStateProvider(active.name) {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         selectedScope?.let { Text(isolate(it.label), style = MaterialTheme.typography.bodySmall) }
-                        content(selected)
+                        content(active)
                     }
                 }
             }

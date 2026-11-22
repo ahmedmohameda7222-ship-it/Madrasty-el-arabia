@@ -55,17 +55,17 @@ function activeOn(entry:PublishingEntry,day:string){
   return day<end.date||day===end.date&&!allDay&&end.time!=="00:00";
 }
 
-export function SchoolPublishing({locale,kind,selected}:{locale:Locale;kind:Kind;selected?:string}){
+export function SchoolPublishing({locale,kind,selected,create}:{locale:Locale;kind:Kind;selected?:string;create?:boolean}){
   const options=useTimetableRead("/school/publishing-options",publishingOptions);
-  return <TimetableRead locale={locale} result={options}>{(value)=><PublishingPanel key={kind+":"+selected}
-    locale={locale} kind={kind} selected={selected} options={value}/>}</TimetableRead>;
+  return <TimetableRead locale={locale} result={options}>{(value)=><PublishingPanel key={`${kind}:${selected}:${create}`}
+    locale={locale} kind={kind} selected={selected} create={create} options={value}/>}</TimetableRead>;
 }
-function PublishingPanel({locale,kind,selected,options}:{locale:Locale;kind:Kind;selected?:string;options:PublishingOptions}){
+function PublishingPanel({locale,kind,selected,create,options}:{locale:Locale;kind:Kind;selected?:string;create?:boolean;options:PublishingOptions}){
   const text=words[locale],url=endpoint(kind);
   const canWrite=options.schoolWide||options.classes.some((item)=>item.canWrite);
   const [view,setView]=useState<"feed"|"managed">("feed"),[refresh,setRefresh]=useState(0);
   const [month,setMonth]=useState(options.schoolDate.slice(0,7)),[day,setDay]=useState<string>();
-  const [classId,setClass]=useState(""),[editor,setEditor]=useState<"new"|"edit">();
+  const [classId,setClass]=useState(""),[editor,setEditor]=useState<"new"|"edit"|undefined>(create&&!selected&&canWrite?"new":undefined);
   const query=`${url}?limit=60&view=${view}${classId?"&classId="+classId:""}${kind==="event"?"&month="+month:""}` as const;
   const page=useAcademicPage(!selected&&!editor?query:null,records,refresh);
   const detail=useTimetableRead(selected?`${url}/${selected}`:null,schoolPublishingEntry,refresh);

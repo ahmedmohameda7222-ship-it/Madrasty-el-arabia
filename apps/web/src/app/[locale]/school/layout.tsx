@@ -4,6 +4,7 @@ import { localeSchema } from "@madrasty/contracts";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { schoolPreferences } from "@/server/identity/preferences";
 import { SchoolShell } from "@/ui/Shell";
+import { schoolMenuAccess } from "@/server/access/capabilities";
 
 export default async function SchoolLayout({ children, params }: {
   children: ReactNode;
@@ -16,6 +17,20 @@ export default async function SchoolLayout({ children, params }: {
   if (!session) redirect(`/${locale}/account/sign-in`);
   if (session.activePersona === "admin" && session.assurance !== "aal2") redirect(`/${locale}/account/security`);
   const actor = { accountId: session.accountId, sessionId: session.sessionId, persona: session.activePersona, expiresAt:session.expiresAt };
-  const settings = await schoolPreferences(session, locale);
-  return <SchoolShell actor={actor} locale={locale} theme={settings.theme}>{children}</SchoolShell>;
+  const [settings, access] = await Promise.all([
+    schoolPreferences(session, locale),
+    session.activePersona === "admin" ? schoolMenuAccess(session, ["students.manage","school.manage","attendance.supervise","finance.read","finance.post","audit.read"]) : null,
+  ]);
+  const capabilities = new Set(access?.capabilities);
+  const base = `/${locale}/school/more`;
+  const ar = locale === "ar";
+  const secondary = [
+    {show:capabilities.has("school.manage"), href:`${base}/calendar`, label:ar?"السنة الدراسية":"Schuljahr"},
+    {show:capabilities.has("students.manage")||capabilities.has("school.manage"), href:`${base}/classes`, label:ar?"الفصول والقيد":"Klassen und Einschreibungen"},
+    {show:capabilities.has("attendance.supervise"), href:`${base}/attendance`, label:ar?"مراجعة الحضور":"Anwesenheit prüfen"},
+    {show:capabilities.has("finance.read")||capabilities.has("finance.post"), href:`${base}/finance-reports`, label:ar?"كشف الحساب":"Gebührenübersicht"},
+    {show:capabilities.has("audit.read"), href:`${base}/audit`, label:ar?"سجل التدقيق":"Änderungsprotokoll"},
+  ].filter(item=>item.show);
+  return <SchoolShell actor={actor} locale={locale} theme={settings.theme} mayManageStudents={capabilities.has("students.manage")}
+    secondary={secondary.length ? secondary : undefined}>{children}</SchoolShell>;
 }

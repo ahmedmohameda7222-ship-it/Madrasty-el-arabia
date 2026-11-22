@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { z } from "zod";
 import {
@@ -106,6 +107,9 @@ export function SchoolCalendar({ locale }: { locale: Locale }) {
             setYears((current) => [saved, ...(current ?? []).filter(({ id }) => id !== saved.id)]);
             setSelection(saved.id);
           }} />
+          {selected && selected.state !== "closed" && <Link className="plain-button" href={`/${locale}/school/more/classes?year=${selected.id}`}>
+            {locale === "ar" ? "جهّز فصول السنة" : "Klassen für das Schuljahr einrichten"}
+          </Link>}
         </div>
       </section>
       {selected && <DaysEditor key={selected.id} locale={locale} year={selected} />}

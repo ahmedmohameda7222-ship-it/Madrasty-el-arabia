@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { z } from "zod";
 import { dictionary } from "@/i18n";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
@@ -14,6 +15,7 @@ import { NotificationLink } from "@/features/comms/NotificationCenter";
 
 type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
+const childScope = z.uuid();
 
 export function SchoolHeader({ locale, children, alternateHref }: { locale: Locale; children?: ReactNode; alternateHref?: string }) {
   const text = dictionary(locale);
@@ -41,6 +43,7 @@ export function SchoolShell(props: {
   selectedScope?: ScopeChoice;
   scopePicker?: ReactNode;
   secondary?: { href: string; label: string }[];
+  mayManageStudents?: boolean;
 }) {
   return (
     <AccountScope actor={props.actor} locale={props.locale}>
@@ -49,17 +52,24 @@ export function SchoolShell(props: {
   );
 }
 
-function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary }: Parameters<typeof SchoolShell>[0]) {
+function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary, mayManageStudents }: Parameters<typeof SchoolShell>[0]) {
   const text = dictionary(locale);
   const pathname = usePathname();
-  const search = useSearchParams().toString();
+  const routeParams = useSearchParams();
+  const search = routeParams.toString();
   const main = useRef<HTMLElement>(null);
   const positions = useRef(new Map<string, { top: number; focus: string | null }>());
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
   const showMoreBack = pathname.startsWith(`${root}/more/`) ||
     pathname === `/${locale}/directory` || pathname === `/${locale}/account/preferences`;
-  const destinations: Destination[] = ["home", roleTab[actor.persona], "messages", "more"];
+  const returnChild = actor.persona === "guardian" ? childScope.safeParse(routeParams.get("returnChild")).data : undefined;
+  const year = childScope.safeParse(routeParams.get("year")).data;
+  const classId = childScope.safeParse(routeParams.get("class")).data;
+  const returnClass = actor.persona === "admin" && routeParams.get("returnToClass")==="1" && year && classId
+    ? {year,id:classId} : undefined;
+  const destinations: Destination[] = ["home", "messages", "more"];
+  if (actor.persona !== "admin" || mayManageStudents) destinations.splice(1,0,roleTab[actor.persona]);
   const active = destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
 
   useLayoutEffect(() => {
@@ -95,7 +105,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
       <a className="skip-link" href="#school-content">{text.skip}</a>
       <SchoolHeader locale={locale} alternateHref={pathname.replace(/^\/(ar|de)(?=\/|$)/, locale === "ar" ? "/de" : "/ar") + (search ? "?" + search : "")}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
-        <nav className="school-nav" aria-label={text.navigation}>
+        <nav className="school-nav" aria-label={text.navigation} data-columns={destinations.length}>
           {destinations.map((tab) => (
             <SchoolLink key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
               aria-current={active === tab ? "page" : undefined}
@@ -114,7 +124,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           )}
         </nav>
         <main id="school-content" ref={main} className="school-content" tabIndex={-1}>
-          {showMoreBack && <MoreBackLink locale={locale} />}
+          {(showMoreBack || returnChild && pathname.startsWith(`${root}/children/`)) && <MoreBackLink locale={locale} child={returnChild} schoolClass={returnClass} />}
           {selectedScope && <p className="scope-label"><bdi>{selectedScope.label}</bdi>{selectedScope.detail && <> · <bdi>{selectedScope.detail}</bdi></>}</p>}
           {children}
         </main>

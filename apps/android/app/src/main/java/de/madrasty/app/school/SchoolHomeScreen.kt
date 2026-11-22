@@ -41,6 +41,8 @@ import de.madrasty.app.ui.isolate
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
+import java.time.LocalTime
+import java.time.ZoneId
 import java.util.Locale
 
 data class WorkQueueSelection(val key: String,val asOf: String)
@@ -72,17 +74,24 @@ fun SchoolHomeScreen(
     openQueue: (WorkQueueSelection) -> Unit,
     openDirectory: () -> Unit,
     openSetup: () -> Unit,
+    openMore: () -> Unit,
+    addGuardian: () -> Unit,
+    openEvents: () -> Unit,
+    openNews: () -> Unit,
+    openIssue: () -> Unit,
+    openAnnouncement: () -> Unit,
     child: String?,
     pickChild: (String) -> Unit,
     openProfile: (String) -> Unit,
-    openAttendance: (String) -> Unit,
+    openAttendance: (String, String?) -> Unit,
     openSchedule: (String?) -> Unit,
 ) {
     val locales = LocalConfiguration.current.locales
     val language = locales[0].language
     val refresh = foregroundVersion()
     when (persona) {
-        Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,openSetup,language,refresh)
+        Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,openSetup,
+            openMore,addGuardian,openEvents,openNews,openIssue,openAnnouncement,language,refresh)
         Persona.Teacher -> TeacherHome(model,openAttendance,openSchedule,language,refresh)
         Persona.Guardian -> GuardianHome(model,child,pickChild,openProfile,openSchedule,language,refresh)
     }
@@ -91,7 +100,9 @@ fun SchoolHomeScreen(
 @Composable
 private fun AdminHome(
     model: IdentityViewModel, workDate:String, changeWorkDate:(String)->Unit,
-    openQueue:(WorkQueueSelection)->Unit, directory:()->Unit, setup:()->Unit, language:String, refresh:Int,
+    openQueue:(WorkQueueSelection)->Unit, directory:()->Unit, setup:()->Unit,
+    more:()->Unit, addGuardian:()->Unit, events:()->Unit, news:()->Unit, issue:()->Unit, announce:()->Unit,
+    language:String, refresh:Int,
 ) {
     var dateText by remember(workDate) { mutableStateOf(workDate) }
     val query = if (workDate.isNotEmpty()) "?asOf=$workDate" else ""
@@ -114,14 +125,26 @@ private fun AdminHome(
             else -> R.string.queue_empty
         }
         RoleHero(Persona.Admin,stringResource(R.string.queue_title),stringResource(detail),
-            stringResource(if (first == null) R.string.directory_title else R.string.queue_open)) {
-            if (first == null) directory() else openQueue(WorkQueueSelection(first.getString("key"),asOf))
+            stringResource(if (first == null) R.string.nav_more else R.string.queue_open)) {
+            if (first == null) more() else openQueue(WorkQueueSelection(first.getString("key"),asOf))
         }
+        val numbers = NumberFormat.getIntegerInstance(Locale.forLanguageTag(language))
+        val overview = summary.optJSONObject("overview")
+        if (overview != null) {
+            listOf("students" to R.string.nav_students,"classes" to R.string.enrollments,"teachers" to R.string.staff_profiles)
+                .filter { (key,_) -> !overview.isNull(key) }.forEach { (key,label) ->
+                    Text("${stringResource(label)} · ${numbers.format(overview.getInt(key))}")
+                }
+            if (!overview.isNull("students")) TextButton(onClick=addGuardian) { Text(stringResource(R.string.add_guardian)) }
+            if (overview.optBoolean("mayIssue")) TextButton(onClick=issue) { Text(stringResource(R.string.fee_issue)) }
+            if (overview.optBoolean("mayPublish")) TextButton(onClick=announce) { Text(stringResource(R.string.broadcast_title)) }
+        }
+        TextButton(onClick=news) { Text(stringResource(R.string.school_news)) }
+        TextButton(onClick=events) { Text(stringResource(R.string.school_events)) }
         Text(isolate(asOf))
         Field(R.string.queue_date,dateText) { dateText = it.take(10) }
         TextButton(enabled = timetableDate(dateText),onClick = { changeWorkDate(dateText) }) { Text(stringResource(R.string.queue_filter)) }
         TextButton(enabled = workDate.isNotEmpty(),onClick = { changeWorkDate("") }) { Text(stringResource(R.string.timetable_current)) }
-        val numbers = NumberFormat.getIntegerInstance(Locale.forLanguageTag(language))
         queues.forEach { record ->
             val key = record.getString("key")
             val label = stringResource(queueLabels.getValue(key))
@@ -133,19 +156,14 @@ private fun AdminHome(
 }
 
 @Composable
-private fun TeacherHome(model: IdentityViewModel, attendance: (String)->Unit, schedule:(String?)->Unit, language:String, refresh:Int) {
+private fun TeacherHome(model: IdentityViewModel, attendance: (String,String?)->Unit, schedule:(String?)->Unit, language:String, refresh:Int) {
     val assignments = scheduleRead("/me/teaching",refresh,model::records)
     val suffix = if (language == "de") "De" else "Ar"
     AsyncSurface(assignments) { rows ->
-        val first = rows.firstOrNull()
-        if (first != null) {
-            val primary = first.getString("kind") == "primary"
-            RoleHero(Persona.Teacher,first.getString("className$suffix"),
-                stringResource(if (first.getBoolean("substitute")) R.string.assignment_substitute
-                else if (primary) R.string.assignment_primary else R.string.assignment_subject),
-                stringResource(if (primary) R.string.home_attendance_action else R.string.timetable_title)) {
-                if (primary) attendance(first.getString("classId")) else schedule(null)
-            }
+        val primaryClasses = rows.filter { it.getString("kind") == "primary" }.map { it.getString("classId") }.toSet()
+        HomeSchedule(model,null,schedule,language,refresh) { lesson,date ->
+            if (lesson.getString("classId") in primaryClasses) attendance(lesson.getString("classId"),date)
+            else schedule(null)
         }
         Text(stringResource(R.string.teaching_overview),style=MaterialTheme.typography.titleLarge)
         if (rows.isEmpty()) Text(stringResource(R.string.no_teaching_assignments))
@@ -156,12 +174,11 @@ private fun TeacherHome(model: IdentityViewModel, attendance: (String)->Unit, sc
                 primary -> stringResource(R.string.assignment_primary)
                 else -> row.getString("subjectName$suffix")
             }
-            TextButton(onClick = { if (primary) attendance(row.getString("classId")) else schedule(null) }) {
+            TextButton(onClick = { if (primary) attendance(row.getString("classId"),null) else schedule(null) }) {
                 Text("${isolate(row.getString("className$suffix"))} · ${isolate(detail)}")
             }
         }
     }
-    HomeSchedule(model,null,schedule,language,refresh)
 }
 
 @Composable
@@ -188,7 +205,8 @@ private fun GuardianHome(
 }
 
 @Composable
-private fun HomeSchedule(model: IdentityViewModel, child:String?, open:(String?)->Unit, language:String, refresh:Int) {
+private fun HomeSchedule(model: IdentityViewModel, child:String?, open:(String?)->Unit, language:String, refresh:Int,
+    nextLesson: ((JSONObject,String)->Unit)? = null) {
     val school = scheduleRead("/school/work-queues",refresh,model::timetableObject)
     AsyncSurface(school) { date ->
         if(date.isNull("today")) {
@@ -200,6 +218,14 @@ private fun HomeSchedule(model: IdentityViewModel, child:String?, open:(String?)
         AsyncSurface(week) { value ->
             val suffix = if (language == "de") "De" else "Ar"
             val lessons = value.getJSONArray("slots").tableRows().filter { it.getString("date") == today && it.getBoolean("teaching") }
+                .sortedBy { it.getInt("start") }
+            if (nextLesson != null) {
+                val time = LocalTime.now(ZoneId.of(value.getString("timezone")))
+                val next = lessons.firstOrNull { it.getInt("start") >= time.hour * 60 + time.minute }
+                if (next != null) RoleHero(Persona.Teacher,stringResource(R.string.home_next_lesson),
+                    "${formatMinutes(next.getInt("start"))} · ${next.getString("className$suffix")} · ${next.getString("subjectName$suffix")}",
+                    stringResource(R.string.home_open_lesson)) { nextLesson(next,today) }
+            }
             Text(stringResource(R.string.home_lessons_today),style=MaterialTheme.typography.titleLarge)
             if (lessons.isEmpty()) Text(stringResource(R.string.home_no_lessons))
             lessons.forEach { row ->

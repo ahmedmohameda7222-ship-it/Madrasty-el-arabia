@@ -39,7 +39,7 @@ import org.json.JSONObject
 import java.time.LocalDate
 
 @Composable
-fun EnrollmentScreen(model: IdentityViewModel, manageClasses: Boolean, manageEnrollment: Boolean, close: () -> Unit) {
+fun EnrollmentScreen(model: IdentityViewModel, manageClasses: Boolean, manageEnrollment: Boolean, close: () -> Unit, student:String?=null) {
     val requests = remember { mutableMapOf<String, Pair<String, String>>() }
     var years by remember { mutableStateOf<AsyncState<List<JSONObject>>>(AsyncState.InitialLoading()) }
     var generation by remember { mutableStateOf(0) }
@@ -104,7 +104,7 @@ fun EnrollmentScreen(model: IdentityViewModel, manageClasses: Boolean, manageEnr
                 }
                 if (manageEnrollment && current != null) key(selectedClass) {
                     HorizontalDivider()
-                    ClassRoster(model, requests, current, available, locale, editable)
+                    ClassRoster(model, requests, current, available, locale, editable,student)
                 }
                 if (manageEnrollment && editable) TextButton(onClick = { rollover = !rollover }) {
                     Text(stringResource(R.string.year_rollover))
@@ -139,7 +139,7 @@ private fun ClassForm(current: JSONObject?, year: String, save: suspend (JSONObj
 
 @Composable
 private fun ClassRoster(model: IdentityViewModel, requests: SchoolCommandAttempts, current: JSONObject,
-    classes: List<JSONObject>, locale: String, editable: Boolean,
+    classes: List<JSONObject>, locale: String, editable: Boolean, student:String?,
 ) {
     val id = current.getString("id")
     var date by remember { mutableStateOf("") }
@@ -152,6 +152,17 @@ private fun ClassRoster(model: IdentityViewModel, requests: SchoolCommandAttempt
     var entry by remember { mutableStateOf<Pair<JSONObject, String>?>(null) }
     var history by remember { mutableStateOf(emptyList<JSONObject>()) }
     var from by remember { mutableStateOf("") }
+    var pupil by remember(student) { mutableStateOf<AsyncState<JSONObject>?>(null) }
+    LaunchedEffect(student,editable) {
+        if (student != null && editable) {
+            pupil = load({}) { decodeData(model.schoolRequest("/school/students/$student")) { it as JSONObject }.data }
+            val data = (pupil as? AsyncState.Ready<JSONObject>)?.content
+            if (data != null && data.getString("state") == "active") {
+                students = listOf(data)
+                selected = setOf(student)
+            }
+        }
+    }
 
     suspend fun read(day: String, after: String? = null) {
         val page = decodeData(model.schoolRequest("/school/classes/$id/roster?date=$day" +

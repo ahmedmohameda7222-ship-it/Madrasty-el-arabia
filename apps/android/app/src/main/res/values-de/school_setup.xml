@@ -1,4 +1,7 @@
 <resources>
+    <string name="choose_guardian_for_student">Sorgeberechtigte zuordnen</string>
+    <string name="home_next_lesson">Nächste Unterrichtsstunde</string>
+    <string name="home_open_lesson">Unterrichtsstunde öffnen</string>
     <string name="school_setup_required">Die Schule muss eingerichtet werden.</string>
     <string name="school_section_expanded">Abschnitt geöffnet</string>
     <string name="school_section_collapsed">Abschnitt geschlossen</string>

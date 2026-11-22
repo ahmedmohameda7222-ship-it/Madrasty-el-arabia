@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { queuePageSchema, workQueuesSchema, type Locale, type QueueItem, type WorkQueueKey } from "@madrasty/contracts";
+import { queuePageSchema, schoolPublishingEntry, workQueuesSchema, type Locale, type QueueItem, type WorkQueueKey } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
@@ -26,6 +26,36 @@ const copy={
 } as const;
 const query=(asOf?:string)=>asOf?`?asOf=${asOf}`:"";
 const queueRoute=(locale:Locale,route:string,asOf:string)=>`/${locale}${route}${query(asOf)}`;
+const publications = schoolPublishingEntry.array();
+const overviewCopy = {
+  ar: {title:"المدرسة في أرقام", quick:"إجراءات سريعة", students:"الطلبة", classes:"الفصول", teachers:"المدرسون",
+    guardian:"إضافة ولي أمر", event:"إضافة حدث", invoice:"إصدار فاتورة", announcement:"إرسال إعلان",
+    news:"آخر أخبار المدرسة", events:"الأحداث", allNews:"أخبار المدرسة", addStudent:"إضافة طالب", school:"أقسام المدرسة"},
+  de: {title:"Die Schule auf einen Blick", quick:"Schnellzugriff", students:"Schüler", classes:"Klassen", teachers:"Lehrkräfte",
+    guardian:"Sorgeberechtigte hinzufügen", event:"Neue Veranstaltung", invoice:"Rechnungen ausstellen", announcement:"Mitteilung senden",
+    news:"Aktuelles aus der Schule", events:"Veranstaltungen", allNews:"Schulnachrichten", addStudent:"Schüler hinzufügen", school:"Schulbereiche"},
+} as const;
+
+function SchoolUpdates({locale,today,version}:{locale:Locale;today:string;version:number}) {
+  const labels = overviewCopy[locale], base = `/${locale}/school/more`;
+  const news = useTimetableRead("/news?limit=3",publications,version);
+  const events = useTimetableRead(`/events?month=${today.slice(0,7)}&limit=60`,publications,version);
+  const recent = news.value?.data ?? [];
+  const upcoming = events.value?.data?.filter(item => item.kind === "event" &&
+    (item.timing.end?.date ?? item.timing.start.date) >= today).slice(0,2) ?? [];
+  return <section className="auth-card">
+    <h2>{labels.news}</h2>
+    <ul className="group-list">{[...recent,...upcoming].map(item => <li key={item.id}>
+      <Link className="group-row" href={`${base}/${item.kind === "news" ? "news" : "events"}?item=${item.id}`}>
+        {(item.copy[locale] ?? item.copy[item.sourceLocale])?.title}
+      </Link>
+    </li>)}</ul>
+    <div className="header-actions">
+      <Link className="plain-button" href={`${base}/news`}>{labels.allNews}</Link>
+      <Link className="plain-button" href={`${base}/events`}>{labels.events}</Link>
+    </div>
+  </section>;
+}
 
 export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}){
   const text=copy[locale];
@@ -66,10 +96,29 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
     const date=summary.asOf;
     const first=summary.queues.find((row)=>row.state==="ready"&&row.count>0);
     const detail=first?queueLabels[locale][first.key]:summary.queues.some((row)=>row.state==="unavailable")?text.unavailable:text.empty;
+    const overview=summary.overview, labels=overviewCopy[locale], base=`/${locale}/school`;
+    const metrics=(["students","classes","teachers"] as const).filter(key=>overview?.[key] != null);
+    const formatter=new Intl.NumberFormat(locale);
     return <>
       <RoleHero persona="admin" title={text.work} detail={detail}
         action={first?{href:queueRoute(locale,first.route,first.filters.asOf),label:text.open}
-          :{href:`/${locale}/directory`,label:text.directory}} />
+          :overview?.students != null ? {href:`${base}/students?add=student`,label:labels.addStudent}
+          :{href:`${base}/more`,label:labels.school}} />
+      {metrics.length>0&&<section className="auth-card">
+        <h2>{labels.title}</h2>
+        <dl className="school-overview-metrics">{metrics.map(key=><div key={key}>
+          <dt>{labels[key]}</dt><dd>{formatter.format(overview![key]!)}</dd>
+        </div>)}</dl>
+      </section>}
+      {overview&&(overview.students != null||overview.mayIssue||overview.mayPublish)&&<section className="auth-card">
+        <h2>{labels.quick}</h2>
+        <div className="header-actions">
+          {overview.students != null&&<Link className="plain-button" href={`${base}/students?add=guardian`}>{labels.guardian}</Link>}
+          {overview.mayPublish&&<><Link className="plain-button" href={`${base}/more/events?add=1`}>{labels.event}</Link>
+            <Link className="plain-button" href={`${base}/more/broadcasts`}>{labels.announcement}</Link></>}
+          {overview.mayIssue&&<Link className="plain-button" href={`${base}/more/issue-invoices`}>{labels.invoice}</Link>}
+        </div>
+      </section>}
       <section className="auth-card">
         <form className="auth-form" onSubmit={(event)=>{event.preventDefault();update();}}>
           <label>{text.date}<input type="date" value={dateText||date}
@@ -82,6 +131,7 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
           </Link>:<div className="group-row"><span>{queueLabels[locale][entry.key]}</span><small>{text.unavailable}</small></div>}
         </li>)}</ul>
       </section>
+      <SchoolUpdates locale={locale} today={summary.today} version={version} />
     </>;
   }}</TimetableRead>;
 }

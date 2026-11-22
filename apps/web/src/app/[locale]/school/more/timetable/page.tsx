@@ -6,13 +6,15 @@ import { Timetable } from "@/features/school/timetable/Timetable";
 import { webSchoolSession } from "@/server/identity/web-session";
 
 export default async function TimetablePage({params,searchParams}:{
-  params:Promise<{locale:Locale}>;searchParams:Promise<{child?:string}>;
+  params:Promise<{locale:Locale}>;searchParams:Promise<{child?:string;class?:string}>;
 }) {
-  const [{locale},{child},session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   if(session.activePersona==="admin"){
     if(session.assurance!=="aal2")redirect(`/${locale}/account/security`);
     if(!await mayUse(session,"school.manage")&&!await mayUse(session,"academics.supervise"))notFound();
   }
-  return <Timetable locale={locale} child={z.uuid().safeParse(child).data}/>;
+  const id = z.uuid();
+  return <Timetable locale={locale} child={id.safeParse(query.child).data}
+    initialClass={session.activePersona==="admin"?id.safeParse(query.class).data:undefined}/>;
 }

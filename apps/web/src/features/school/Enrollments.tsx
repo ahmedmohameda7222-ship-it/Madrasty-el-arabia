@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { z } from "zod";
 import {
@@ -65,17 +67,29 @@ function useAction(locale: Locale) {
 const name = (item: SchoolClass, locale: Locale) => `${item.code} · ${locale === "ar" ? item.nameAr : item.nameDe}`;
 const period = (year: SchoolYear) => `${year.startsOn} – ${year.endsExclusive}`;
 
-export function ClassWorkspace({ locale, manageClasses, manageEnrollment }: {
+const routeId = z.uuid();
+
+export function ClassWorkspace({ locale, manageClasses, manageEnrollment, student }: {
   locale: Locale; manageClasses: boolean; manageEnrollment: boolean;
+  student?: string;
 }) {
   const text = labels[locale];
   const [years, setYears] = useState<SchoolYear[]>();
-  const [yearId, setYear] = useState("");
+  const params = useSearchParams();
+  const yearId = routeId.safeParse(params.get("year")).data ?? "";
   const [classes, setClasses] = useState<SchoolClass[]>();
-  const [classId, setClass] = useState("");
+  const classId = routeId.safeParse(params.get("class")).data ?? "";
   const [failure, setFailure] = useState<unknown>();
   const [reload, setReload] = useState(0);
   const [rollover, showRollover] = useState(false);
+  function choose(year: string, schoolClass = "") {
+    const url = new URL(window.location.href);
+    for (const [key,value] of [["year",year],["class",schoolClass]]) {
+      if (value) url.searchParams.set(key,value);
+      else url.searchParams.delete(key);
+    }
+    window.history.replaceState(null,"",url);
+  }
 
   useEffect(() => {
     const request = new AbortController();
@@ -98,24 +112,31 @@ export function ClassWorkspace({ locale, manageClasses, manageEnrollment }: {
   if (years) content = <>
     <section className="auth-card class-year-panel">
       <label className="auth-form">{text.year}<select value={yearId} onChange={(event) => {
-        setYear(event.target.value); setClass(""); setClasses(undefined); showRollover(false);
+        choose(event.target.value); setClasses(undefined); showRollover(false);
       }}>
         <option value="">{text.choose}</option>{years.map((row) => <option value={row.id} key={row.id}>{period(row)}</option>)}
       </select></label>
       {year && classes && <div className="auth-form">
-        <label>{text.classes}<select value={classId} onChange={(event) => setClass(event.target.value)}>
+        <label>{text.classes}<select value={classId} onChange={(event) => choose(yearId,event.target.value)}>
           <option value="">{manageClasses && year.state !== "closed" ? text.newClass : text.classes}</option>
           {classes.map((row) => <option value={row.id} key={row.id}>{name(row, locale)}</option>)}
         </select></label>
         {manageClasses && year.state !== "closed" && <ClassForm key={current?.id ?? "new"} locale={locale} initial={current} yearId={year.id}
           saved={(value) => {
-            setClass(value.id);
+            choose(yearId,value.id);
             setClasses((rows) => [value, ...(rows ?? []).filter((row) => row.id !== value.id)]);
           }} />}
         {manageEnrollment && year.state !== "closed" && <button className="plain-button" onClick={() => showRollover(!rollover)}>{text.rollover}</button>}
+        {current && manageClasses && <Link className="plain-button" href={`/${locale}/school/more/assignments?year=${yearId}&class=${current.id}&returnToClass=1`}>
+          {locale === "ar" ? "عيّن المدرسين للفصل" : "Lehrkräfte für die Klasse zuweisen"}
+        </Link>}
+        {current && manageClasses && <Link className="plain-button" href={`/${locale}/school/more/timetable?year=${yearId}&class=${current.id}&returnToClass=1`}>
+          {locale === "ar" ? "افتح جدول الفصل" : "Wochenplan der Klasse öffnen"}
+        </Link>}
       </div>}
     </section>
-    {current && classes && manageEnrollment && <Roster key={current.id} locale={locale} schoolClass={current} classes={classes} editable={year?.state !== "closed"} />}
+    {current && classes && manageEnrollment && <Roster key={`${current.id}:${student ?? ""}`} locale={locale} schoolClass={current} classes={classes}
+      editable={year?.state !== "closed"} student={student} />}
     {rollover && year && classes && <Rollover key={year.id} locale={locale} source={year} years={years}
       classes={classes} confirmable={manageClasses} onConfirmed={() => setReload(reload + 1)} />}
   </>;
@@ -149,8 +170,8 @@ function ClassForm({ locale, initial, yearId, saved }: {
   </form>;
 }
 
-function Roster({ locale, schoolClass, classes, editable }: {
-  locale: Locale; schoolClass: SchoolClass; classes: SchoolClass[]; editable: boolean;
+function Roster({ locale, schoolClass, classes, editable, student }: {
+  locale: Locale; schoolClass: SchoolClass; classes: SchoolClass[]; editable: boolean; student?: string;
 }) {
   const text = labels[locale];
   const [date, setDate] = useState("");
@@ -162,6 +183,17 @@ function Roster({ locale, schoolClass, classes, editable }: {
   const [move, setMove] = useState<{ record: Enrollment; action: "transfer" | "withdraw" }>();
   const [history, setHistory] = useState<Enrollment[]>([]);
   const action = useAction(locale), command = useAdminCommand();
+  const [studentError,setStudentError] = useState<unknown>();
+  useEffect(() => {
+    if (!student || !editable) return;
+    const controller = new AbortController();
+    requestApi(`/school/students/${student}`,studentSchema,{signal:controller.signal}).then(({data}) => {
+      if (controller.signal.aborted || data.state !== "active") return;
+      setStudents([data]);
+      setPicked([data.id]);
+    }).catch(error => { if (!controller.signal.aborted) setStudentError(error); });
+    return () => controller.abort();
+  }, [student,editable]);
 
   async function load(day: string, nextCursor?: string) {
     const page = await requestApi(`/school/classes/${schoolClass.id}/roster?date=${day}${nextCursor ? `&cursor=${nextCursor}` : ""}`, rosterSchema);
@@ -222,6 +254,7 @@ function Roster({ locale, schoolClass, classes, editable }: {
     </form>}
     {editable && <>
       <h3>{text.place}</h3>
+      {studentError != null && <p role="alert">{requestProblem(locale,studentError)}</p>}
       <form className="auth-form" onSubmit={(event) => runSubmit(event, async () => {
         setStudents((await requestApi(`/school/students?query=${encodeURIComponent(query)}&limit=100`, studentsSchema)).data);
       })}>

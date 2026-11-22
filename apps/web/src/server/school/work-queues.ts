@@ -18,6 +18,10 @@ const eligibleSql = {
   failed_deliveries: null,
 } satisfies Record<WorkQueueKey,string|null>;
 const keys=Object.keys(eligibleSql) as WorkQueueKey[];
+const priority = [
+  "unapproved_attendance", "bounced_invites", "failed_deliveries", "noncontinuation_requests",
+  "settlement_review", "guardian_links", "class_assignments", "family_imports",
+] satisfies WorkQueueKey[];
 
 async function visibleKeys(tx:Transaction) {
   const rows=await tx<{key:WorkQueueKey;allowed:boolean}[]>`
@@ -30,7 +34,7 @@ async function visibleKeys(tx:Transaction) {
       else app.has_capability(candidate.capability)
     end as allowed
     from unnest(${tx.array(keys)}::text[],${tx.array(keys.map(key=>eligibleSql[key]))}::text[]) with ordinality as candidate(key,capability,ord)
-    order by candidate.ord`;
+    order by array_position(${tx.array(priority)}::text[], candidate.key)`;
   return rows.filter(entry=>entry.allowed).map(entry=>entry.key);
 }
 
@@ -68,7 +72,20 @@ export async function readWorkQueues(actor: ActorContext, asOf?: string) {
         queues.push({...target,state:"unavailable"});
       }
     }
-    return workQueuesSchema.parse({...date,queues});
+    const [overview] = actor.persona === "admin" ? await tx`
+      select
+        case when app.has_capability('students.manage') then
+          (select count(*)::int from app.student where state = 'active') end as students,
+        case when app.staff_editor() or app.has_capability('students.manage') then
+          (select count(*)::int from app.school_class c join app.school_year y on y.id = c.year_id
+           where ${date.today}::date >= y.starts_on and ${date.today}::date < y.ends_exclusive and y.state <> 'closed') end as classes,
+        case when app.staff_editor() then
+          (select count(*)::int from app.staff_profile p where p.role = 'teacher' and p.disabled_at is null
+           and p.active_from <= ${date.today}::date and (p.active_until is null or ${date.today}::date < p.active_until)) end as teachers,
+        app.has_capability('comms.publish') as "mayPublish",
+        app.has_capability('finance.issue') as "mayIssue"
+    ` : [];
+    return workQueuesSchema.parse({...date,queues,overview});
   });
 }
 
