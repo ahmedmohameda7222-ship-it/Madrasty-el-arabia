@@ -1,7 +1,7 @@
 import "server-only";
 import type { z } from "zod";
 import { dayExceptionSchema, settingsSchema, yearSchema,
-  type dayInput, type settingsInput, type yearChangeInput, type yearInput } from "@madrasty/contracts";
+  type dayInput, type dayDeleteInput, type settingsInput, type yearChangeInput, type yearInput } from "@madrasty/contracts";
 import { ApiError } from "@/server/http";
 import { withActor, type ActorContext, type Transaction } from "@/server/db/scoped";
 import { commitCommand, hashCommand, requireRevision } from "@/server/db/commands";
@@ -144,6 +144,38 @@ export function putDay(ctx: ActorContext, yearId: string, date: string, key: str
       const day = dayExceptionSchema.parse(saved);
       await appendAudit(tx, { action: "school.day_changed", aggregateId: day.id, metadata: { revision: day.revision } });
       return day;
+    },
+  });
+}
+
+
+export function deleteDay(ctx: ActorContext, yearId: string, date: string, key: string | null, input: z.infer<typeof dayDeleteInput>) {
+  return commitCommand(ctx, "school.day.delete", key, hashCommand({ ...input, date, yearId }), {
+    authorize: async (tx) => { await permitsCalendar(ctx)(tx); await selectYear(tx, yearId); },
+    mutate: async (tx) => {
+      await tx`select app.lock_school_calendar()`;
+      const year = await selectYear(tx, yearId);
+      if (year.state === "closed" || date < year.startsOn || date >= year.endsExclusive)
+        throw new ApiError("validation");
+      const [current] = await tx<{ id: string; revision: number }[]>`
+        select id, revision::integer from app.day_exception
+        where year_id = ${yearId} and school_date = ${date}::date
+          and class_id is not distinct from ${input.classId ?? null}::uuid
+      `;
+      if (!current) throw new ApiError("not_found");
+      requireRevision(current.revision, input.revision);
+      await tx`delete from app.day_exception where id = ${current.id}`;
+      // A reset must never silently contradict an already approved attendance sheet.
+      const [conflict] = await tx`
+        select 1 from app.attendance_sheet s
+        where s.year_id = ${yearId} and s.state = 'approved' and s.school_date = ${date}::date
+          and (${input.classId ?? null}::uuid is null or s.class_id = ${input.classId ?? null}::uuid)
+          and (s.calendar_cancelled_at is null) is distinct from app.is_teaching_day(s.class_id, s.school_date)
+        limit 1
+      `;
+      if (conflict) throw new ApiError("conflict");
+      await appendAudit(tx, { action: "school.day_changed", aggregateId: current.id, metadata: { removed: true } });
+      return { id: current.id, deleted: true };
     },
   });
 }

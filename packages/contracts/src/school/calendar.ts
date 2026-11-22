@@ -31,6 +31,7 @@ export type SchoolYear = z.infer<typeof yearSchema>;
 
 const dayFields = z.object({ classId: z.uuid().nullable().optional(), teaching: z.boolean(), reason: text(400) });
 export const dayInput = dayFields.extend({ revision: initialRevision });
+export const dayDeleteInput = z.object({ classId: z.uuid().nullable().optional(), revision: revisionSchema });
 export const dayExceptionSchema = dayFields.extend({
   id: z.uuid(), yearId: z.uuid(), schoolDate: schoolDateSchema, revision: revisionSchema,
 });

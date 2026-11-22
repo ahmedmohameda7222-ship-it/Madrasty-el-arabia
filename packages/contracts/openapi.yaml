@@ -479,6 +479,24 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","yearId":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","schoolDate":"2026-11-19","classId":null,"teaching":false,"reason":"Calendar exception","revision":1}}
         default:
           $ref: '#/components/responses/AuthError'
+    delete:
+      operationId: deleteSchoolDayException
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [revision], properties: {classId: {type: [string, 'null'], format: uuid}, revision: {type: integer, minimum: 0}}}
+      responses:
+        '200':
+          description: School-day override removed; original weekly calendar applies
+          content:
+            application/json:
+              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","deleted":true}}
+        default:
+          $ref: '#/components/responses/AuthError'
   /school/students:
     get:
       operationId: listStudents
