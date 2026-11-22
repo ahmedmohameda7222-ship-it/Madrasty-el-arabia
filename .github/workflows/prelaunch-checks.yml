@@ -85,7 +85,7 @@ jobs:
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
           failures=0
-          for suite in contracts school policy academics communication finance; do
+          for suite in contracts school policy academics communication finance ops recovery-email; do
             echo "::group::qa:$suite"
             if pnpm "qa:$suite"; then
               echo "::notice::qa:$suite passed"
@@ -97,3 +97,24 @@ jobs:
           done
           echo "Domain suite failures: $failures"
           test "$failures" -eq 0
+  android-debug:
+    if: github.ref == 'refs/heads/fix/workflow-remediation-2026-11-22'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install required Android 37 platform and build tools
+        shell: bash
+        run: |
+          sdkmanager --install "platforms;android-37" "build-tools;37.0.0" || \
+            sdkmanager --install "platforms;android-37.0" "build-tools;37.0.0"
+      - name: Kotlin JVM tests and Android debug package
+        shell: bash
+        run: |
+          chmod +x apps/android/gradlew
+          ./apps/android/gradlew -p apps/android :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
