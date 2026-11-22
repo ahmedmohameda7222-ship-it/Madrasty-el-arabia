@@ -52,7 +52,7 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     for (const child of [ids.ahmed, ids.omar]) {
       const path = `/finance/children/${child}/payer`;
       const profile = (await fixtureApi(school, path, { token: finance })).payload.data;
-      const guardian = profile.choices.find((entry: { displayName: string }) => entry.displayName === `${school.run} guardian-ar`);
+      const guardian = profile.choices.find((entry: { displayName: string }) => entry.displayName === "سلمى عبد الرحمن محمد");
       assert.ok(guardian?.id);
       await send(path, `payer-${child}`, { guardianId: guardian.id, effectiveFromMonth: clock.month, revision: 0 }, "PUT", 200);
     }
