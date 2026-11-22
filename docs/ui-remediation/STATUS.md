@@ -39,7 +39,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
 | UIX-15 | 3 | RED → GREEN verified; whole-web CSS negative checks and token consistency | Run 45025131948 on 8f67d62a: 35/35 isolated Chromium, TypeScript/build; no new animation library, 140ms shared ease-out, reduced-motion |
 | UIX-16 | 3 | Verified no-change preservation: 39/39 isolated Chromium, TypeScript/build | Run 45025567730 on 253d371d: native Android source contracts and web viewport/dark/reduced at 320/390/430 passed; hardware/IME unverified |
-| UIX-17 | 4 | First targeted 320px German tab clipping RED regression committed; browser result pending; broader role×locale×viewport matrix follows | Direct inspection of UIX-14 German Guardian 320 screenshot shows `Nachrichten` split inside word; role/locale screenshot and accessible label test |
+| UIX-17 | 4 | First narrow-screen RED verified, localized nav fix committed, GREEN pending; broad visual matrix not yet done | Run 45026033637: 39 previous tests pass, German Guardian 320 message label was 36.19px high vs one-line threshold 20.10; full accessible label required |
 | UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 
 ## Verification taxonomy
@@ -253,3 +253,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 45025567730](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45025567730) on 253d371d: 39/39 isolated Chromium passed, types/build green. Four native-preservation tests verify web viewport/safe-area/RTL-LTR/44px, and static presence of Android Compose Scaffold, NavigationBar, ModalBottomSheet and IME handling. No production code modified. This is **not** Android APK compile or physical-device proof.
 - UIX-17 begins with a fresh, objective test based on a real 320px German Guardian More screenshot captured in UIX-14: the `Nachrichten` navigation label splits inside the word. Test measures rendered line height and, if corrected to a shorter visual label, requires the full screen-reader name. Then broaden to all roles × locales × six viewport widths and target states; no golden auto-approval.
+
+## UIX-17 first RED checkpoint
+
+- [Run 45026033637](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45026033637) on 491e0a53: 39 earlier Chromium regressions passed; only new German 320px bottom-nav message label failed as predicted (visible span 36.19px high for 18.10px line height). Issue was hard mid-word wrapping, not body horizontal overflow or backend. Static checks and build pass.
+- Scoped remedy reuses existing German attendance nav compact-label pattern for messages: mobile visible `Nachr.`, desktop visible `Nachrichten`, link `aria-label="Nachrichten"`; unchanged route, icon, keyboard, RTL, other locales, no CSS or route contract changes. GREEN screenshot and full UIX-17 acceptance matrix still pending.
