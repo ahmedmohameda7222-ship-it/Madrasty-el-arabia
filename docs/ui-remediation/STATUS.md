@@ -36,7 +36,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-11 | 2 | RED → GREEN verified in isolated Chromium (25/25), screenshot review done | Run 44973086473 on dde92394: 25/25 browser tests, TypeScript/build passed; Students, class-year and child-detail width fixes. Child action links remain densely packed (separate visual finding) |
 | UIX-12 | 2 | RED → GREEN verified in Chromium (28/28), screenshots captured | Run 44973950376 on fe2edfaa: three date/locale tests passed, ISO unchanged, TypeScript/build and prior 25 pass; native placeholders remain browser-dependent |
 | UIX-13 | 3 | Verified no-change: native sheet passed 2/2 targeted tests; full 30/30 Chromium | Run 44974444576, Arabic 390 and German 320, repeat/ESC/focus/select/reduced motion; no interaction defect requiring custom animation |
-| UIX-14 | 3 | Three RED disclosure motion tests committed; result pending | Admin AR 390, Guardian DE 320, Admin DE 1280; native summary keyboard/toggle, no entry keyframe, arrow reversible, reduced-motion |
+| UIX-14 | 3 | RED confirmed 3/3 on old CSS; scoped disclosure arrow correction committed, GREEN pending | Run 44974843209: prior 30 tests passed, all 3 new cases failed because computed `.more-rows` animationName was `more-enter`; TypeScript/build pass |
 | UIX-15 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-16 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-17 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -228,3 +228,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 ## UIX-13 verification and no-change ruling
 
 - [Run 44974444576](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44974444576): 30/30 isolated Chromium, TypeScript/build passed. Two new modal behavior tests passed *without modifying product code*. Semantic `<dialog>`, Escape, close-form button, focus restoration after selection and repeated opening, bottom placement, reduced motion all verified. Artifact 14735490373 screenshots reviewed; backdrop and safe-area placement appear correct. Ruling: do not introduce extra motion without demonstrated benefit; tests preserve correct native behavior. Physical device and IME interactions unverified.
+
+## UIX-14 RED checkpoint
+
+- [Run 44974843209](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44974843209) on ec2b7f75: 30 previous Chromium tests passed; 3 new disclosure checks failed on the expected `animationName=more-enter` across AR admin 390, DE guardian 320 and DE admin 1280. TypeScript/build passed. Root cause was CSS entry-only keyframes, which re-trigger at each opening without corresponding close motion.
+- Scoped fix removes the `more-enter` keyframe and instead transitions only the existing disclosure arrow's transform for 140ms; reduced-motion disables this transition. Native `<details>` toggle, keyboard/links, colors, hit targets and layout unchanged. Fresh GREEN and visual review pending.
