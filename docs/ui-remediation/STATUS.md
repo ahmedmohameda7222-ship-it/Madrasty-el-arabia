@@ -38,8 +38,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-13 | 3 | Verified no-change: native sheet passed 2/2 targeted tests; full 30/30 Chromium | Run 44974444576, Arabic 390 and German 320, repeat/ESC/focus/select/reduced motion; no interaction defect requiring custom animation |
 | UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
 | UIX-15 | 3 | RED → GREEN verified; whole-web CSS negative checks and token consistency | Run 45025131948 on 8f67d62a: 35/35 isolated Chromium, TypeScript/build; no new animation library, 140ms shared ease-out, reduced-motion |
-| UIX-16 | 3 | Negative preservation tests committed; browser/source result pending, no product change | Web viewport-fit cover, 100dvh, four safe-area insets, 44px controls, RTL/LTR; Android source Scaffold/NavigationBar/ModalBottomSheet; 320/390/430 role smoke |
-| UIX-17 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-16 | 3 | Verified no-change preservation: 39/39 isolated Chromium, TypeScript/build | Run 45025567730 on 253d371d: native Android source contracts and web viewport/dark/reduced at 320/390/430 passed; hardware/IME unverified |
+| UIX-17 | 4 | First targeted 320px German tab clipping RED regression committed; browser result pending; broader role×locale×viewport matrix follows | Direct inspection of UIX-14 German Guardian 320 screenshot shows `Nachrichten` split inside word; role/locale screenshot and accessible label test |
 | UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 
 ## Verification taxonomy
@@ -248,3 +248,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 45025131948](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45025131948) on 8f67d62a: 35/35 isolated Chromium, TypeScript/build passed. The source-scan negative test and browser's computed shared easing both green; artifact 14755398519 includes UIX-15 screenshot, video, trace-on-failure policy. No extra animations or libraries, no dashboard motion.
 - UIX-16 preservation gate is explicitly web browser plus Android *source-level only*. Native APK build, iOS Safari physical safe area, Android device interaction and keyboard IME behavior remain **UNVERIFIED** until those environments are exercised. No native shell code modification authorized by a passing negative check.
+
+## UIX-16 complete; UIX-17 first visual finding
+
+- [Run 45025567730](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45025567730) on 253d371d: 39/39 isolated Chromium passed, types/build green. Four native-preservation tests verify web viewport/safe-area/RTL-LTR/44px, and static presence of Android Compose Scaffold, NavigationBar, ModalBottomSheet and IME handling. No production code modified. This is **not** Android APK compile or physical-device proof.
+- UIX-17 begins with a fresh, objective test based on a real 320px German Guardian More screenshot captured in UIX-14: the `Nachrichten` navigation label splits inside the word. Test measures rendered line height and, if corrected to a shorter visual label, requires the full screen-reader name. Then broaden to all roles × locales × six viewport widths and target states; no golden auto-approval.
