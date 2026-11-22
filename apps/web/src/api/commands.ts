@@ -8,7 +8,7 @@ import { webHeaders } from "@/features/identity/SessionControls";
 
 export function useSchoolCommand(persona: Persona) {
   const attempted = useRef(new Map<string, { body: string; key: string }>());
-  return async <T>(path: `/${string}`, method: "POST" | "PATCH" | "PUT", input: unknown, output: ZodType<T>) => {
+  return async <T>(path: `/${string}`, method: "POST" | "PATCH" | "PUT" | "DELETE", input: unknown, output: ZodType<T>) => {
     const body = JSON.stringify(input);
     const operation = `${persona}:${method}:${path}`;
     const previous = attempted.current.get(operation);
