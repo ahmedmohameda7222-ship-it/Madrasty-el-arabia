@@ -28,7 +28,7 @@ test("configured administrator sees scoped queue counts and opens every authoriz
     for(const row of summary.queues){
       if(row.state!=="ready")continue;
       const url=`/ar${row.route}?asOf=${row.filters.asOf}`;
-      const link=main.locator(`section a[href="${url}"]`);
+      const link=main.locator(`a.group-row[href="${url}"]`);
       await expect(link).toBeVisible();
       await expect(link.locator("output")).toHaveText(new Intl.NumberFormat("ar").format(row.count));
       const detail=await fixtureApi(school,`/school/work-queues/${row.key}?asOf=${row.filters.asOf}&limit=25`,{
