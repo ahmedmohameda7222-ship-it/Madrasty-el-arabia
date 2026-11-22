@@ -271,7 +271,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .more-group summary,.more-row {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;min-block-size:48px;box-sizing:border-box;text-align:start}
 .more-group summary {font-weight:700;cursor:pointer;list-style:none}
 .more-group summary::-webkit-details-marker {display:none}
-.more-group summary::after {content:"";flex:none;inline-size:9px;block-size:9px;border-inline-end:2px solid var(--primary);border-block-end:2px solid var(--primary);transform:rotate(45deg);transition:transform 140ms ease-out}
+.more-group summary::after {content:"";flex:none;inline-size:9px;block-size:9px;border-inline-end:2px solid var(--primary);border-block-end:2px solid var(--primary);transform:rotate(45deg);transition:transform 140ms var(--ease-out)}
 .more-group[open] summary::after {transform:rotate(225deg)}
 .more-row {border-block-start:1px solid var(--rule);text-decoration:none;color:inherit}
 .more-row::after {content:"";flex:none;inline-size:7px;block-size:7px;border-inline-end:2px solid var(--primary);border-block-start:2px solid var(--primary);transform:rotate(45deg)}

@@ -37,7 +37,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-12 | 2 | RED → GREEN verified in Chromium (28/28), screenshots captured | Run 44973950376 on fe2edfaa: three date/locale tests passed, ISO unchanged, TypeScript/build and prior 25 pass; native placeholders remain browser-dependent |
 | UIX-13 | 3 | Verified no-change: native sheet passed 2/2 targeted tests; full 30/30 Chromium | Run 44974444576, Arabic 390 and German 320, repeat/ESC/focus/select/reduced motion; no interaction defect requiring custom animation |
 | UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
-| UIX-15 | 3 | Motion negative checks and token consistency RED tests committed; result pending | Whole-web school.css source + actual AR Admin 390 computed easing; prohibited transitions/keyframes and reduced-motion |
+| UIX-15 | 3 | RED observed on easing mismatch; scoped reuse of existing token committed, GREEN pending | Run 45024782971: 34 prior+negative checks pass; one RED expected `ease-out` vs existing `cubic-bezier(0.23,1,0.32,1)`; types/build passed |
 | UIX-16 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-17 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -238,3 +238,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [UIX-14 run 45024262605](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45024262605): 33/33 isolated Chromium tests (30 prior + 3 targeted), TypeScript and web build passed on 5323788e. Artifact 14755556508 contains screenshots and interaction videos. DE Guardian 320 screenshot directly reviewed: disclosure rows visible, arrow orientation clear, keyboard tests passed. The screenshot also shows bottom-nav German `Nachrichten` broken across two lines at 320; record for UIX-17, do not silently call the entire shared shell accepted.
 - UIX-15 code audit follows the source of `emilkowalski/skills/skills/review-animations/STANDARDS.md`: purposeful feedback, no frequently repeated entry keyframes, under-300ms UI, strong shared ease-out, no layout-property animation, reduced-motion fallback. Existing `--ease-out` is custom cubic-bezier; UIX-14 arrow currently uses built-in `ease-out`, so browser RED test compares computed easing against the existing token. Other negative checks should pass with no product change.
+
+## UIX-15 RED checkpoint
+
+- [Run 45024782971](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45024782971) on f407c598: 34/35 isolated Chromium tests passed, including negative source motion scan; targeted computed CSS check RED because More arrow used built-in `ease-out` rather than existing shared `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)`. No unintended `transition:all`, zero-scale entry, ungated row keyframe, or new library found. TypeScript/build passed.
+- Minimal change updates only the `.more-group summary::after` easing to the existing token, retaining 140ms duration, reduced-motion cutoff and no row motion. Fresh browser GREEN pending; no animation added to dashboards.
