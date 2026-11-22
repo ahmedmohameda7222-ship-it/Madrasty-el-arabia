@@ -64,9 +64,12 @@ export function AcademicReport({locale,initial,initialPeriod}:{locale:Locale;ini
           {options.map((item)=><option value={item.id} key={item.id}>{item.displayName}</option>)}
         </select>
       </label>:<AsyncSurface locale={locale} state={{kind:"empty"}}/>}</TimetableRead>}
-      <label>{text.from}<input type="date" required value={filter.from} onChange={(event)=>setFilter({...filter,from:event.target.value})}/></label>
-      <label>{text.to}<input type="date" required value={filter.to} min={filter.from||undefined}
+      <label>{text.from}<input type="date" aria-describedby="date-format-academic-day" required value={filter.from} onChange={(event)=>setFilter({...filter,from:event.target.value})}/></label>
+      <label>{text.to}<input type="date" aria-describedby="date-format-academic-day" required value={filter.to} min={filter.from||undefined}
         onChange={(event)=>setFilter({...filter,to:event.target.value})}/></label>
+      <small className="date-format-hint" id="date-format-academic-day">{locale==="ar"
+        ?"تنسيق التاريخ المعروض يعتمد على المتصفح. مثال: ٣١/١٢/٢٠٢٦؛ يمكنك الاختيار من التقويم."
+        :"Das angezeigte Datumsformat hängt vom Browser ab. Beispiel: 31.12.2026; Datum im Kalender wählen."}</small>
       <button type="submit" className="primary-button" disabled={!valid}>{guardian?text.show:text.period}</button>
     </form>
     {!guardian&&period&&<PupilSearch locale={locale} period={period} revision={revision} selected={pupil} choose={setPupil}/>}

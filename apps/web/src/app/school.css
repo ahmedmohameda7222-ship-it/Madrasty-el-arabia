@@ -20,6 +20,7 @@
   --sky: #74c4fd;
   --violet: #a492f6;
   --page-inset: clamp(16px, 4vw, 32px);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 100%;
 }
@@ -79,6 +80,15 @@ button:disabled { cursor: default; }
 .brand { text-decoration: none; color: var(--ink); font-weight: 700; }
 .brand img { border-radius: 13px; }
 .header-actions { justify-content: flex-end; }
+/* One-row school header: flexible, ellipsized brand; fixed notification and locale actions.
+   The brand link retains its full accessible name via aria-label. */
+.school-shell > .school-header { flex-wrap: nowrap; min-inline-size: 0; }
+.school-shell > .school-header .brand { min-inline-size: 0; flex: 1 1 auto; flex-wrap: nowrap; }
+.school-shell > .school-header .brand img { flex: none; }
+.school-shell > .school-header .brand span {
+  min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.school-shell > .school-header .header-actions { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; }
 .plain-button, .primary-button, .hero-action {
   display: inline-flex; align-items: center; justify-content: center;
   min-inline-size: 44px; min-block-size: 44px; padding: 6px 12px;
@@ -86,8 +96,34 @@ button:disabled { cursor: default; }
 }
 .plain-button { background: var(--inset); color: var(--ink); }
 .primary-button { min-block-size: 48px; background: var(--primary); color: var(--on-primary); }
+/* Immediate, reversible press feedback for controls; never suppress text selection on content. */
+button, a, [role="button"], .more-group summary { touch-action: manipulation; }
+.plain-button, .primary-button, .hero-action, .group-row, .school-nav a, .more-row {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform 120ms var(--ease-out), background-color 120ms ease;
+}
+.plain-button:not(:disabled):active,
+.primary-button:not(:disabled):active,
+.hero-action:active,
+.group-row:not(:disabled):active,
+.school-nav a:active,
+.more-row:active { transform: scale(.97); }
+.plain-button:focus-visible:active,
+.primary-button:focus-visible:active,
+.hero-action:focus-visible:active,
+.group-row:focus-visible:active,
+.school-nav a:focus-visible:active,
+.more-row:focus-visible:active { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .plain-button, .primary-button, .hero-action, .group-row, .school-nav a, .more-row { transition: none; }
+  .plain-button:active, .primary-button:active, .hero-action:active,
+  .group-row:active, .school-nav a:active, .more-row:active { transform: none; }
+}
+
 .school-body { min-block-size: 0; flex: 1; display: flex; flex-direction: column-reverse; }
-.school-content { flex: 1; min-block-size: 0; overflow: auto; padding: 24px var(--page-inset); }
+.school-content { flex: 1; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 24px var(--page-inset); }
 .school-content > * + * { margin-block-start: 16px; }
 .school-nav {
   flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -100,12 +136,15 @@ button:disabled { cursor: default; }
   text-align: center; font-size: .78rem; font-weight: 600; overflow-wrap: anywhere;
 }
 .school-nav a[aria-current] { color: var(--primary); border-radius: 12px; background: var(--inset); }
+.school-nav .nav-label-desktop { display: none; }
 .school-secondary { display: none; }
 
 @media (min-width: 960px) {
   .school-body { flex-direction: row; }
   .school-nav { display: flex; flex-direction: column; gap: 4px; overflow: auto; inline-size: 15rem; border-inline-end: 1px solid var(--rule); border-block-start: 0; padding: 16px; }
   .school-nav a { flex-direction: row; justify-content: flex-start; gap: 12px; padding-inline: 12px; text-align: start; font-size: 1rem; }
+  .school-nav .nav-label-mobile { display: none; }
+  .school-nav .nav-label-desktop { display: inline; }
   .school-secondary { display: grid; gap: 4px; border-block-start: 1px solid var(--rule); padding-block-start: 12px; margin-block-start: 12px; }
 }
 .scope-label, .status { color: var(--muted); font-size: .875rem; }
@@ -148,6 +187,10 @@ button:disabled { cursor: default; }
 }
 
 .auth-card { padding: 24px; margin-block: 24px; border-radius: 24px; background: var(--card); border: 1px solid var(--rule); }
+/* UIX-06: keep legitimate long child names inside intrinsic mobile form width. */
+.school-content > h1 { overflow-wrap: anywhere; }
+label.auth-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-inline-size: 0; max-inline-size: 100%; }
+label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-size: 100%; text-overflow: ellipsis; }
 .auth-form { display: grid; gap: 8px; margin-block-start: 16px; }
 .auth-qr { display: block; inline-size: min(100%, 240px); block-size: auto; padding: 16px; margin-block: 12px; background: #fff; }
 .auth-form input, .session-controls select { min-block-size: 48px; min-inline-size: 0; border-radius: 12px; padding: 8px 12px; background: var(--canvas); color: var(--ink); border: 1px solid var(--rule); }
@@ -158,6 +201,7 @@ button:disabled { cursor: default; }
 .session-controls { display: grid; gap: 16px; justify-items: start; }
 .session-controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .auth-form label { display: grid; gap: 4px; }
+.date-format-hint { display: block; color: var(--muted); font-size: .8rem; line-height: 1.35; overflow-wrap: anywhere; }
 
 .auth-form select { min-block-size: 44px; background: var(--canvas); color: var(--ink); }
 .auth-form fieldset { min-inline-size: 0; border: 1px solid var(--rule); border-radius: 12px; }
@@ -169,6 +213,12 @@ button:disabled { cursor: default; }
 
 .calendar-layout { display: grid; gap: 16px; }
 .calendar-layout .auth-card { margin: 0; }
+/* UIX-11: constrain short desktop forms, not data-heavy pages or side-by-side editors. */
+@media (min-width: 1100px) {
+  .calendar-layout.family-single-panel { grid-template-columns: minmax(0, 1fr); max-inline-size: 48rem; margin-inline: auto; }
+  .class-year-panel { max-inline-size: 46rem; margin-inline: auto; }
+  .guardian-child-panel { max-inline-size: 52rem; margin-inline: auto; }
+}
 @media (min-width: 1100px) { .calendar-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
 
 .import-row { padding: 12px 16px; }
@@ -191,17 +241,42 @@ button:disabled { cursor: default; }
 .school-month-dot { font-size: .6rem; }
 
 /* Role-scoped disclosure navigation shared by desktop and installed web. */
+/* UIX-10: keep mobile inbox searches and conversation rows ahead of secondary links. */
+.inbox-panel { min-inline-size: 0; }
+.inbox-search { grid-template-columns: minmax(0, 1fr) auto; align-items: end; margin-block-start: 0; }
+.inbox-search label { min-inline-size: 0; }
+.inbox-search input { inline-size: 100%; }
+.inbox-search > button { align-self: end; }
+.inbox-filter-strip { display: flex; flex-wrap: nowrap; gap: 8px; min-inline-size: 0; max-inline-size: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; padding-block-end: 3px; }
+.inbox-filter-strip > button { flex: 0 0 auto; white-space: nowrap; }
+.inbox-filter-strip > button[aria-pressed='true'] { background: var(--primary); color: var(--on-primary); }
+.inbox-desktop-shortcuts { display: none; }
+.inbox-mobile-actions { display: flex; justify-content: space-between; align-items: start; gap: 8px; min-inline-size: 0; }
+.inbox-mobile-shortcuts { min-inline-size: 0; }
+.inbox-mobile-shortcuts summary { display: flex; align-items: center; justify-content: center; min-block-size: 44px; padding: 6px 12px; border-radius: 12px; background: var(--inset); color: var(--ink); font-weight: 600; cursor: pointer; }
+.inbox-mobile-shortcuts summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.inbox-shortcut-links { display: grid; gap: 8px; margin-block-start: 8px; }
+.inbox-shortcut-links > .plain-button { inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; overflow-wrap: anywhere; white-space: normal; }
+@media (max-width: 959px) {
+  .inbox-panel { padding: 16px; margin-block: 12px; gap: 8px; }
+}
+@media (min-width: 960px) {
+  .inbox-desktop-shortcuts { display: flex; }
+  .inbox-mobile-actions { display: none; }
+  .inbox-filter-strip { flex-wrap: wrap; overflow-x: visible; }
+}
+
 .more-index {display:grid;gap:12px;max-inline-size:58rem;margin-inline:auto}
 .more-group {background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:16px;overflow:hidden}
 .more-group summary,.more-row {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;min-block-size:48px;box-sizing:border-box;text-align:start}
 .more-group summary {font-weight:700;cursor:pointer;list-style:none}
 .more-group summary::-webkit-details-marker {display:none}
-.more-group summary::after {content:"";flex:none;inline-size:9px;block-size:9px;border-inline-end:2px solid var(--primary);border-block-end:2px solid var(--primary);transform:rotate(45deg)}
+.more-group summary::after {content:"";flex:none;inline-size:9px;block-size:9px;border-inline-end:2px solid var(--primary);border-block-end:2px solid var(--primary);transform:rotate(45deg);transition:transform 140ms var(--ease-out)}
 .more-group[open] summary::after {transform:rotate(225deg)}
 .more-row {border-block-start:1px solid var(--rule);text-decoration:none;color:inherit}
 .more-row::after {content:"";flex:none;inline-size:7px;block-size:7px;border-inline-end:2px solid var(--primary);border-block-start:2px solid var(--primary);transform:rotate(45deg)}
 [dir=rtl] .more-row::after {transform:rotate(-45deg)}
 .more-group :focus-visible {outline:2px solid var(--primary);outline-offset:-3px}
 .more-group .header-actions {padding:12px 16px}
-@media (hover:hover) {.more-row:hover,.more-group summary:hover {background:var(--inset,ButtonFace)}}
-@media (prefers-reduced-motion:no-preference) {.more-group[open] .more-rows {animation:more-enter 140ms ease-out}@keyframes more-enter {from {opacity:.65;transform:translateY(-3px)} to {opacity:1;transform:none}}}
+@media (hover: hover) and (pointer: fine) {.more-row:hover,.more-group summary:hover {background:var(--inset,ButtonFace)}}
+@media (prefers-reduced-motion:reduce) {.more-group summary::after {transition:none}}

@@ -77,7 +77,10 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
   return <>
     <section className="auth-card">
       <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setDate(dateInput||exactDay||"");}}>
-        <label>{text.date}<input type="date" value={dateInput||exactDay||""} onChange={(event)=>setDateInput(event.target.value)}/></label>
+        <label>{text.date}<input type="date" aria-describedby="date-format-attendance-day" value={dateInput||exactDay||""} onChange={(event)=>setDateInput(event.target.value)}/>
+          <small className="date-format-hint" id="date-format-attendance-day">{locale==="ar"
+            ?"تنسيق التاريخ المعروض يعتمد على المتصفح. مثال: ٣١/١٢/٢٠٢٦؛ يمكنك الاختيار من التقويم."
+            :"Das angezeigte Datumsformat hängt vom Browser ab. Beispiel: 31.12.2026; Datum im Kalender wählen."}</small></label>
         <button type="submit" className="plain-button">{text.apply}</button>
       </form>
       <a className="plain-button" href="/offline/attendance.html">{text.offline}</a>

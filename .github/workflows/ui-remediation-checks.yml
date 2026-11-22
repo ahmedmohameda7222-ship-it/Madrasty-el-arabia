@@ -1,0 +1,85 @@
+name: UI remediation - isolated static verification
+on:
+  push:
+    branches: ["fix/emil-ui-motion-audit-2026-11-21"]
+  # Feature-branch push already covers draft PR updates; avoid duplicate disposable Supabase jobs.
+permissions:
+  contents: read
+concurrency:
+  group: emil-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install pinned dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Test terminal-state and screenshot coverage gate
+        run: node --test qa/screenshot-audit-policy.test.mjs
+      - name: Test QA-only dev-badge policy
+        run: node --test qa/qa-overlay-policy.test.mjs
+      - name: Verify TypeScript
+        run: pnpm check:types
+      - name: Build web without deployment
+        run: pnpm build:web
+
+  browser-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install workspace dependencies and Chromium
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Start isolated local Supabase
+        shell: bash
+        run: |
+          echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Start fixture web, then run UI regression
+        shell: bash
+        run: |
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          mkdir -p qa-artifacts/server
+          pwsh -NoProfile -File qa/local.ps1 -Serve > qa-artifacts/server/web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm exec playwright test --config qa/ui-remediation.config.ts
+      # Separate second phase: the 46-test matrix first verifies the unconfigured
+      # 503/Retry state. The positive READY-state fixture may then add a calendar.
+      - name: Verify configured teacher attendance ready state
+        shell: bash
+        run: pnpm exec playwright test --config qa/ui-attendance-ready.config.ts
+      - name: Preserve isolated QA evidence (no secrets)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrasty-ui-fixture-qa
+          path: |
+            qa-artifacts/ui-fixture-results.json
+            qa-artifacts/ui-attendance-ready-results.json
+            qa-artifacts/ui-attendance-ready-test-results/
+            qa-artifacts/ui-remediation-test-results/
+            qa-artifacts/ui-after/
+            qa-artifacts/ui-manifests/
+          if-no-files-found: warn
+          retention-days: 7

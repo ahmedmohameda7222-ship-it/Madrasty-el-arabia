@@ -59,18 +59,28 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       <button type="button" className="plain-button" onClick={reload}>{text.refresh}</button>
     </section>}</TimetableRead>
   </>;
-  return <section className="auth-card auth-form">
-    <div className="header-actions">
+  return <section className="auth-card auth-form inbox-panel">
+    <div className="header-actions inbox-desktop-shortcuts">
       <Link className="plain-button" href={`/${locale}/directory`}>{text.directory}</Link>
       <Link className="plain-button" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
       <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>setArchived((old)=>!old)}>{text.archived}</button>
     </div>
-    <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setTerm(search.trim());}}>
+    <form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();setTerm(search.trim());}}>
       <label>{text.search}<input type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/></label>
       <button className="plain-button" type="submit">{text.find}</button>
     </form>
-    <div className="header-actions">{filters.map((filter)=><button className="plain-button" type="button" key={filter}
+    <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>{filters.map((filter)=><button className="plain-button" type="button" key={filter}
       aria-pressed={selected===filter} onClick={()=>setSelected(filter)}>{text[filter]}</button>)}</div>
+    <div className="inbox-mobile-actions">
+      <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>setArchived((old)=>!old)}>{text.archived}</button>
+      <details className="inbox-mobile-shortcuts">
+        <summary>{locale==="ar"?"روابط أخرى":"Weitere Links"}</summary>
+        <div className="inbox-shortcut-links">
+          <Link className="plain-button" href={`/${locale}/directory`}>{text.directory}</Link>
+          <Link className="plain-button" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
+        </div>
+      </details>
+    </div>
     <AcademicPageItems locale={locale} page={list} emptyMessage={term ? undefined : archived ? (locale==="ar"?"مفيش محادثات في الأرشيف.":"Keine archivierten Unterhaltungen.") : (locale==="ar"?"مفيش محادثات هنا. افتح دليل التواصل لبدء محادثة.":"Keine Unterhaltungen hier. Öffnen Sie das Kontaktverzeichnis, um eine zu beginnen.")}>{(rows)=><ul className="group-list">{rows.map((item)=><li key={item.id}>
       <Link className="group-row" href={`${root}?thread=${item.id}`}>
         <bdi>{title(locale,item)}</bdi>{item.inbox&&item.contactName&&<span>{text[item.inbox]}</span>}
