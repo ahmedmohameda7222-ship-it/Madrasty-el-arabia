@@ -32,8 +32,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
 | UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
 | UIX-09 | 2 | RED → GREEN verified in isolated browser | Run 44933487892: 16/16 Chromium, typecheck and build passed; first-child AR/DE, switch, zero children, invalid child deep-link |
-| UIX-10 | 2 | Core 18/18 GREEN; new visual RED verified 3 expected failures, minimal CSS fix committed; final GREEN pending | Run 44972014383: 16 prior tests pass, two invisible selected-state tests and one long German label containment test fail; no logic changes |
-| UIX-11 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-10 | 2 | RED → GREEN verified incl. visual follow-up in isolated Chromium | Run 44972314607: 19/19 tests, typecheck/build; 320px German long shortcut contained and pressed-filter visually distinct, screenshots inspected |
+| UIX-11 | 2 | Focused desktop RED regressions authored; await observed browser result | Admin AR students at 768/1024/1280, Admin DE class-year 1280, Guardian DE children 1280; guardian AR home width preservation |
 | UIX-12 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-13 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-14 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -199,3 +199,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44972014383](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44972014383), browser: 16 prior tests passed, three expected visual regressions failed. Arabic/German selected filter and inactive filter both had `rgb(237, 242, 248)` backgrounds; `Kontaktverzeichnis` text started at x=118.58 while its touch target starts at x=134.31. The test verifies visual contrast and real text DOMRange containment (not source matching). No product/backend code changed during RED.
 - Scoped CSS now styles the selected chip with theme tokens and lets long shortcut labels wrap inside their own accessible targets. Focus/target sizes unchanged. Await GREEN on fresh isolated browser evidence and screenshot review.
+
+## UIX-10 final GREEN and visual review
+
+- [Run 44972314607](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44972314607) on d832267c: 19/19 isolated Chromium tests, TypeScript and build succeeded. The two AR/DE visual-state tests and German DOMRange containment now pass; last screenshot inspected and visible selected green filter, long strings within gray buttons. Artifact 14734376836; behavior tested only Chromium 390 AR Admin / 320 DE Guardian, not physical devices or full matrix.
+- One additional nuance: test screenshots are taken after archive toggling and expanding shortcuts, so archive and initial inbox state screenshots should be separately recorded at UIX-17. No production message query or permission contract changed.
