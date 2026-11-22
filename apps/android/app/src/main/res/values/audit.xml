@@ -22,7 +22,6 @@
     <string name="audit_area_family">الأسر والقيد</string>
     <string name="audit_area_imports">استيراد الأسر</string>
     <string name="audit_area_invitation">الدعوات</string>
-    <string name="audit_area_application">طلبات المدرسين</string>
     <string name="audit_area_timetable">الجدول الدراسي</string>
     <string name="audit_area_attendance">الحضور</string>
     <string name="audit_area_academics">التعلّم والدرجات</string>

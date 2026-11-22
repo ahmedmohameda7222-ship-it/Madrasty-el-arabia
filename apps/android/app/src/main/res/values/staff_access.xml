@@ -20,7 +20,7 @@
     <string name="permission_access_manage">إدارة الصلاحيات</string>
     <string name="permission_school_manage">إعدادات المدرسة والفصول</string>
     <string name="permission_students_manage">شؤون الطلبة والأسر</string>
-    <string name="permission_applications_manage">طلبات المدرسين</string>
+    <string name="permission_staff_invite">دعوات المدرسين</string>
     <string name="permission_attendance_supervise">الإشراف على الحضور</string>
     <string name="permission_academics_supervise">الإشراف على التعليم والنتائج</string>
     <string name="permission_comms_publish">النشر والإعلانات</string>

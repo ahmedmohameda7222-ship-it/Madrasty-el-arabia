@@ -26,11 +26,12 @@ export default async function SchoolPage({ params, searchParams }: {
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const menuKeys = ["access.manage","school.manage","students.manage","applications.manage","academics.supervise","audit.read","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
+  const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","audit.read","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
   const { capabilities, moderation, delivery, stopManager } = tab === "more"
     ? await schoolMenuAccess(session, menuKeys)
     : { capabilities: [], moderation: false, delivery: false, stopManager: false };
-  const [access, calendar, placement, invites, academic, audit, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
+  const [access, calendar, placement, teacherInvites, academic, audit, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
+  const invites = teacherInvites || placement;
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
   return (
@@ -58,11 +59,9 @@ export default async function SchoolPage({ params, searchParams }: {
             {attendance && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
           </div></MoreGroup>}
         {(invites || placement || calendar || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
-            {invites && <Link className="more-row" href={`/${locale}/staff/applications`}>{locale === "ar" ? "طلبات المدرسين" : "Bewerbungen von Lehrkräften"}</Link>}
             {(placement || invites) && <Link className="more-row" href={`/${locale}/staff/invitations`}>{locale === "ar" ? "الدعوات" : "Einladungen"}</Link>}
             {(calendar || placement) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
             {calendar && <Link className="more-row" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
-            {session.activePersona === "guardian" && <Link className="more-row" href={`/${locale}/apply?from=more`}>{locale === "ar" ? "طلب مدرس" : "Als Lehrkraft bewerben"}</Link>}
           </div>
         </MoreGroup>}
         {(finance||billing||posting||stopManager||session.activePersona==="guardian")&&<MoreGroup group="finance">

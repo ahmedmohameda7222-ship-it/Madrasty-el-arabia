@@ -609,7 +609,6 @@
     <string name="stop_reallocation">إعادة تخصيص مثبتة</string>
     <string name="stop_proof_required">راجع كل إيصال وأضف إثبات للمبلغ المخصص منه بالكامل.</string>
     <string name="stop_stale">الطلب أو الرصيد اتغير. راجع البيانات المحدّثة.</string>
-    <string name="applicant_decision_notice">المدرسة سجّلت قرار بشأن طلبك.</string>
     <string name="android_upgrade_required">حدّث التطبيق علشان تقدر تكمّل.</string>
     <string name="android_upgrade_available">في إصدار أحدث من تطبيق المدرسة.</string>
     <string name="android_upgrade_download">تنزيل التحديث من المدرسة</string>

@@ -15,7 +15,7 @@ export default async function StaffInvitations({ params, searchParams }: {
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);
   const [guardians, teachers] = await Promise.all([
-    mayUse(session, "students.manage"), mayUse(session, "applications.manage"),
+    mayUse(session, "students.manage"), mayUse(session, "staff.invite"),
   ]);
   if (!guardians && !teachers) notFound();
   const batch = z.uuid().safeParse(search.batchId);

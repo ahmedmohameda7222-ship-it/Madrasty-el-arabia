@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import type { Locale } from "@madrasty/contracts";
 import { z } from "zod";
 import { SchoolHeader } from "@/ui/Shell";
-import { ApplyLink } from "@/features/identity/TeacherApplications";
 import { RecoveryLink } from "@/features/identity/SecurityForms";
 import {safeSchoolResourceReturn} from "@/features/school/resourceDestination";
 import { SignInForm } from "@/features/identity/SessionControls";
@@ -29,7 +28,6 @@ export default async function SignIn({ params, searchParams }: {
         : "Öffnen Sie den Link in der App auf dem ursprünglichen Gerät oder melden Sie sich hier an."}</p>}
       <SignInForm locale={locale} destination={destination} refreshable={refreshable} />
       <RecoveryLink locale={locale} />
-      <ApplyLink locale={locale} />
     </main>
   );
 }

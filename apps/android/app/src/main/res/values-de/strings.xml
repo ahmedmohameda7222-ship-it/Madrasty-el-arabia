@@ -609,7 +609,6 @@
     <string name="stop_reallocation">Belegte Neuzuordnung</string>
     <string name="stop_proof_required">Für jeden Beleg den gesamten zugeordneten Betrag nachweisen.</string>
     <string name="stop_stale">Antrag oder Saldo hat sich geändert. Bitte erneut prüfen.</string>
-    <string name="applicant_decision_notice">Die Schule hat über deinen Antrag entschieden.</string>
     <string name="android_upgrade_required">Zum Fortfahren die App aktualisieren.</string>
     <string name="android_upgrade_available">Eine neue App-Version ist verfügbar.</string>
     <string name="android_upgrade_download">Update über die Schule laden</string>

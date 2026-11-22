@@ -22,7 +22,6 @@
     <string name="audit_area_family">Familien und Einschreibung</string>
     <string name="audit_area_imports">Familienimporte</string>
     <string name="audit_area_invitation">Einladungen</string>
-    <string name="audit_area_application">Bewerbungen von Lehrkräften</string>
     <string name="audit_area_timetable">Stundenplan</string>
     <string name="audit_area_attendance">Anwesenheit</string>
     <string name="audit_area_academics">Unterricht und Noten</string>

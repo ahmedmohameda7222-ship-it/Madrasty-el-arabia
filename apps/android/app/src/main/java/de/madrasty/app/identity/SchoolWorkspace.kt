@@ -96,7 +96,6 @@ import org.json.JSONObject
 
 internal sealed interface WorkspacePage {
     data object Tabs : WorkspacePage
-    data object Apply : WorkspacePage
     data object Account : WorkspacePage
     data object Security : WorkspacePage
     data object Directory : WorkspacePage
@@ -119,7 +118,6 @@ internal sealed interface WorkspacePage {
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data class Enrollment(val student:String?=null) : WorkspacePage
-    data object Applications : WorkspacePage
     data class AttendanceReview(val classId:String?=null,val date:String?=null) : WorkspacePage
     data class AttendanceHistory(val child:String?=null,val classId:String?=null,val rowId:String?=null) : WorkspacePage
     data object OfflineAttendance : WorkspacePage
@@ -195,7 +193,6 @@ internal class SchoolNavigation {
             "evaluation"->WorkspacePage.Evaluations(childId,id)
             "activity"->WorkspacePage.AcademicWork(childId,id)
             "homework"->WorkspacePage.Homework(childId,id)
-            "application"->WorkspacePage.Apply
             "invoice"->WorkspacePage.Invoices(id=id)
             "receipt"->WorkspacePage.Receipts(id=id)
             "fee_stop"->WorkspacePage.Stops(id=id)
@@ -229,7 +226,6 @@ internal class SchoolNavigation {
             }
             "timetable" -> WorkspacePage.Timetable()
             "invitations" -> WorkspacePage.Invitations()
-            "applications" -> WorkspacePage.Applications
             "import" -> WorkspacePage.Import(target.id ?: return)
             "student" -> WorkspacePage.Family(student=target.id ?: return)
             "guardian" -> WorkspacePage.Family(guardian=target.id ?: return,link=target.linkId)
@@ -242,7 +238,7 @@ internal class SchoolNavigation {
 private data class SchoolRights(val persona: Persona,val keys: Set<String>,val moderation:Boolean,val delivery:Boolean,val stopManager:Boolean) {
     val school = "school.manage" in keys
     val students = "students.manage" in keys
-    val applications = "applications.manage" in keys
+    val teacherInvites = "staff.invite" in keys
     val academic = "academics.supervise" in keys
     val attendance = "attendance.supervise" in keys
     val access = "access.manage" in keys
@@ -268,12 +264,11 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         is WorkspacePage.StopReviews -> receiptViewer
         WorkspacePage.Calendar -> school
         is WorkspacePage.Enrollment -> school || students
-        WorkspacePage.Applications -> applications
         is WorkspacePage.AttendanceReview -> attendance
         is WorkspacePage.AttendanceHistory -> if(page.child!=null)persona==Persona.Guardian else persona==Persona.Teacher||attendance
         is WorkspacePage.Assignments -> school || academic
         is WorkspacePage.Import,is WorkspacePage.Family -> students
-        is WorkspacePage.Invitations -> students || applications
+        is WorkspacePage.Invitations -> students || teacherInvites
         is WorkspacePage.Queue -> persona == Persona.Admin
         is WorkspacePage.Gradebook -> persona==Persona.Teacher||academic
         is WorkspacePage.Homework -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
@@ -365,7 +360,6 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
     }
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)
-        WorkspacePage.Apply -> Unit
         WorkspacePage.Account -> AccountScreen(model,state::back) { state.open(WorkspacePage.Security) }
         WorkspacePage.Security -> SecurityScreen(model,session,state::back)
         WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
@@ -412,7 +406,6 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         is WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back,page.student)
-        WorkspacePage.Applications -> TeacherApplicationReview(model,state::back)
         is WorkspacePage.AttendanceReview -> SupervisorAttendanceScreen(model,page.classId,page.date,
             openOffline={state.open(WorkspacePage.OfflineAttendance)},openHistory={classId,rowId->
                 state.open(WorkspacePage.AttendanceHistory(classId=classId,rowId=rowId))},close=state::back)
@@ -433,7 +426,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Gradebook -> GradebookScreen(model,page.work,{state.open(WorkspacePage.Homework(work=it))},state::back)
         is WorkspacePage.Timetable -> TimetableScreen(model,session.actor.persona,page.child,state::back)
         is WorkspacePage.Assignments -> StaffAssignmentsScreen(model,page.classTarget,state::back)
-        is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.applications,page.batch,page.id,state::back)
+        is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.teacherInvites,page.batch,page.id,state::back)
         is WorkspacePage.Import -> ImportScreen(model,{state.open(WorkspacePage.Invitations(it))},page.job,state::back)
         is WorkspacePage.Family -> FamilyWorkspace(model,page,state::back) { state.open(WorkspacePage.Enrollment(it)) }
         is WorkspacePage.Queue -> SchoolWorkQueueScreen(model,page.selection,state::openWork,state::back)
@@ -515,7 +508,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         OpenPage(state,WorkspacePage.Publication(PublicationSection.Events),R.string.school_events)
         OpenPage(state,WorkspacePage.Notifications(),R.string.notices_title)
     }
-    if(rights.persona!=Persona.Admin||rights.school||rights.students||rights.academic||rights.applications||rights.attendance){
+    if(rights.persona!=Persona.Admin||rights.school||rights.students||rights.academic||rights.teacherInvites||rights.attendance){
         SettingsGroup(R.string.settings_group_school) {
             if(rights.allows(WorkspacePage.Gradebook()))OpenPage(state,WorkspacePage.Gradebook(),R.string.gradebook_title)
             if(rights.allows(WorkspacePage.Homework()))OpenPage(state,WorkspacePage.Homework(),R.string.homework_title)
@@ -529,9 +522,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
             if(rights.attendance)OpenPage(state,WorkspacePage.AttendanceReview(),R.string.attendance_review)
             if(rights.school)OpenPage(state,WorkspacePage.Calendar,R.string.school_calendar)
             if(rights.school||rights.students)OpenPage(state,WorkspacePage.Enrollment(),R.string.enrollments)
-            if(rights.students||rights.applications)OpenPage(state,WorkspacePage.Invitations(),R.string.invite_title)
-            if(rights.applications)OpenPage(state,WorkspacePage.Applications,R.string.teacher_apps)
-            if(rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Apply,R.string.teacher_apply)
+            if(rights.students||rights.teacherInvites)OpenPage(state,WorkspacePage.Invitations(),R.string.invite_title)
         }
     }
     if(rights.invoiceViewer||rights.bank||rights.stopManager){

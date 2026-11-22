@@ -25,7 +25,7 @@ const projection = (tx: Transaction) => tx`
 `;
 
 const authorizeKind = (tx: Transaction, ctx: ActorContext, kind: Kind) =>
-  requireCapability(tx, ctx, kind === "guardian" ? "students.manage" : "applications.manage");
+  requireCapability(tx, ctx, kind === "guardian" ? "students.manage" : "staff.invite");
 
 async function target(tx: Transaction, kind: Kind, id: string): Promise<Target> {
   const [row] = kind === "guardian"
@@ -73,7 +73,7 @@ export function listInvitations(ctx: ActorContext, query: z.infer<typeof invitat
   return withActor(ctx, async (tx) => {
     if (ctx.persona !== "admin") throw new ApiError("forbidden");
     const [capability] = await tx<{ allowed: boolean }[]>`
-      select app.has_capability('students.manage') or app.has_capability('applications.manage') as allowed`;
+      select app.has_capability('students.manage') or app.has_capability('staff.invite') as allowed`;
     if (!capability.allowed) throw new ApiError("forbidden");
 
     const rows = invitationSchema.array().parse(await tx`

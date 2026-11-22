@@ -27,7 +27,7 @@ async function visibleKeys(tx:Transaction) {
   const rows=await tx<{key:WorkQueueKey;allowed:boolean}[]>`
     select candidate.key, case candidate.key
       when 'class_assignments' then app.staff_editor()
-      when 'bounced_invites' then app.has_capability('students.manage') or app.has_capability('applications.manage')
+      when 'bounced_invites' then app.has_capability('students.manage') or app.has_capability('staff.invite')
       when 'noncontinuation_requests' then app.enrollment_stop_staff()
       when 'settlement_review' then app.finance_receipt_staff()
       when 'failed_deliveries' then app.may_operate_delivery_queue()

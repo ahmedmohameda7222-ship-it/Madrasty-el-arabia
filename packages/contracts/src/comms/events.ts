@@ -23,7 +23,6 @@ const paymentFields={
 };
 
 export const communicationPayloads={
-  "teacher_application.decided":z.object({applicantId:id.nullable(),decision:z.enum(["approved","declined"]),revision}).strict(),
   "family.link_approved":familyLink,
   "family.link_revoked":familyLink,
   "attendance.arrival_confirmed":z.object({...attendance,status:attendanceStatus,precedingExcuse:z.boolean()}).strict(),

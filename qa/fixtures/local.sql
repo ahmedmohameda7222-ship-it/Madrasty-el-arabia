@@ -57,7 +57,7 @@ begin
   end if;
   capabilities := case name
     when 'admin' then array['bank.configure']
-    when 'office' then array['students.manage', 'applications.manage']
+    when 'office' then array['students.manage', 'staff.invite']
     when 'finance' then array['finance.read', 'finance.issue', 'finance.post', 'finance.export']
     when 'supervisor' then array['attendance.supervise', 'academics.supervise']
     else '{}'::text[]
