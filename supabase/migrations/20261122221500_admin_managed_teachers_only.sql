@@ -2,6 +2,10 @@
 -- Remove the obsolete self-application flow without changing staff or invitation tables.
 -- Historical migrations are retained for reproducibility; this forward migration retires them.
 
+-- The constraint must be dropped before converting legacy capability rows. This
+-- migration is applied atomically; failures roll back the constraint and data.
+ALTER TABLE app.capability_grant DROP CONSTRAINT capability_grant_capability_check;
+
 DO $retire$
 DECLARE
   item record;
@@ -16,6 +20,8 @@ BEGIN
     RAISE EXCEPTION 'Cannot retire historical non-synthetic teacher requests without separate archiving';
   END IF;
 
+  -- The original CHECK constraint permits applications.manage but rejects staff.invite.
+  -- First migrate legacy grants; the replacement CHECK is installed below.
   UPDATE app.capability_grant SET capability='staff.invite'
   WHERE capability='applications.manage';
 
@@ -87,6 +93,14 @@ BEGIN
   END LOOP;
 END
 $retire$;
+
+ALTER TABLE app.capability_grant ADD CONSTRAINT capability_grant_capability_check
+  CHECK (capability = ANY (ARRAY[
+    'school.manage', 'students.manage', 'staff.invite',
+    'attendance.supervise', 'academics.supervise', 'comms.publish',
+    'finance.read', 'finance.issue', 'finance.post', 'finance.export',
+    'bank.configure', 'audit.read'
+  ]::text[]));
 
 DROP FUNCTION IF EXISTS app.my_application(uuid,uuid);
 DROP FUNCTION IF EXISTS app.decide_application(uuid,integer,text,text);
