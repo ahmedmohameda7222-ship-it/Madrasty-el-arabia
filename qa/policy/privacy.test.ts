@@ -70,7 +70,7 @@ test("revoking a family link immediately removes both the existing session's lis
   try {
     const [admin, guardian] = await Promise.all([school.bearer("admin", "admin"), school.bearer("dual-role", "guardian")]);
     const ids = await school.references();
-    const search = encodeURIComponent(`${school.run} dual-role`);
+    const search = encodeURIComponent("محمود صالح");
     const { payload } = await fixtureApi(school, `/school/guardians?query=${search}`, { token: admin });
     assert.equal(payload.data.length, 1);
     const profile = await fixtureApi(school, `/school/guardians/${payload.data[0].id}`, { token: admin });
@@ -81,7 +81,7 @@ test("revoking a family link immediately removes both the existing session's lis
     const excusePath = `/children/${ids.ahmed}/attendance/excuses`;
     const excuse = {
       method: "POST", token: guardian, persona: "guardian", key: `${school.run}.pre-revocation-excuse`,
-      body: { schoolDate: "2026-11-28", reason: "Synthetic relationship check" },
+      body: { schoolDate: clock.homeworkDue, reason: "Synthetic relationship check" },
     } as const;
     const original = await fixtureApi(school, excusePath, { ...excuse, status: 201 });
     assert.equal((await fixtureApi(school, excusePath, excuse)).payload.data.id, original.payload.data.id);
