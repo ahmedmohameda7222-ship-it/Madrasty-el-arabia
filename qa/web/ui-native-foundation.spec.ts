@@ -37,7 +37,7 @@ for(const scene of [
       await page.setViewportSize({width:scene.width,height:844});
       await page.goto("/"+scene.locale+"/school/"+scene.route);
       const shell=page.locator(".school-shell");
-      const nav=page.locator(".school-nav a");
+      const nav=page.locator(".school-nav > a");
       await expect(shell).toBeVisible({timeout:30000});
       await expect(nav).toHaveCount(4);
       const meta=await page.locator('meta[name="viewport"]').getAttribute("content");
