@@ -35,8 +35,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-10 | 2 | RED → GREEN verified incl. visual follow-up in isolated Chromium | Run 44972314607: 19/19 tests, typecheck/build; 320px German long shortcut contained and pressed-filter visually distinct, screenshots inspected |
 | UIX-11 | 2 | RED → GREEN verified in isolated Chromium (25/25), screenshot review done | Run 44973086473 on dde92394: 25/25 browser tests, TypeScript/build passed; Students, class-year and child-detail width fixes. Child action links remain densely packed (separate visual finding) |
 | UIX-12 | 2 | RED → GREEN verified in Chromium (28/28), screenshots captured | Run 44973950376 on fe2edfaa: three date/locale tests passed, ISO unchanged, TypeScript/build and prior 25 pass; native placeholders remain browser-dependent |
-| UIX-13 | 3 | Native dialog interaction acceptance tests committed; result pending | AR Guardian home 390 and DE Guardian children 320; modal/backdrop, Escape/focus return, repeated open, selection, reduced motion and safe area |
-| UIX-14 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-13 | 3 | Verified no-change: native sheet passed 2/2 targeted tests; full 30/30 Chromium | Run 44974444576, Arabic 390 and German 320, repeat/ESC/focus/select/reduced motion; no interaction defect requiring custom animation |
+| UIX-14 | 3 | Three RED disclosure motion tests committed; result pending | Admin AR 390, Guardian DE 320, Admin DE 1280; native summary keyboard/toggle, no entry keyframe, arrow reversible, reduced-motion |
 | UIX-15 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-16 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-17 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -224,3 +224,7 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44973950376](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44973950376) on fe2edfaa: 28/28 isolated Chromium, TypeScript and web build passed. Three UIX-12 form captures in artifact 14734019653; native date format remains determined by Chromium locale. The app now explicitly warns of that and offers a localized example; ISO storage unchanged.
 - UIX-13 scope-sheet source check: the existing component uses native `showModal`, `close` event focus restoration, semantic dialog and safe-area bottom offset. `de/school/more/assignments` currently has no ScopeSheet consumer; test the two real consumer routes rather than invent a new sheet. Ruling: do not add motion without demonstrated interaction benefit; existing absence of custom motion is not itself a defect.
+
+## UIX-13 verification and no-change ruling
+
+- [Run 44974444576](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44974444576): 30/30 isolated Chromium, TypeScript/build passed. Two new modal behavior tests passed *without modifying product code*. Semantic `<dialog>`, Escape, close-form button, focus restoration after selection and repeated opening, bottom placement, reduced motion all verified. Artifact 14735490373 screenshots reviewed; backdrop and safe-area placement appear correct. Ruling: do not introduce extra motion without demonstrated benefit; tests preserve correct native behavior. Physical device and IME interactions unverified.
