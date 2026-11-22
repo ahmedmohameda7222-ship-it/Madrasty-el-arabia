@@ -76,7 +76,7 @@ export function Families({ locale, initialGuardian, initialStudent, initialLink 
         <button type="button" className="plain-button" aria-pressed={mode === "guardians"}
           onClick={() => { setMode("guardians"); setTarget(null); }}>{text.family}</button>
       </div>
-      <div className="calendar-layout">
+      <div className={target ? "calendar-layout" : "calendar-layout family-single-panel"}>
         <section className="auth-card">
           <h2>{mode === "students" ? dictionary(locale).students : text.family}</h2>
           <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={setTarget} />
@@ -289,7 +289,7 @@ export function Children({ locale, initialChild }: { locale: Locale; initialChil
     ? { kind: "error", retry: available.retry, message: errorText(locale, available.error) }
     : !available.data ? { kind: "initialLoading" } : !available.data.length ? { kind: "empty", message: locale==="ar"?"لا يوجد أبناء مرتبطون بحسابك حاليًا. تواصل مع إدارة المدرسة لربط بياناتهم.":"Mit Ihrem Konto sind derzeit keine Kinder verknüpft. Wenden Sie sich für die Zuordnung an die Schule." }
     : { kind: "ready", content: (
-      <section className="auth-card">
+      <section className="auth-card guardian-child-panel">
         <ScopeSheet locale={locale} selectedId={selected?.id} choices={available.data.map((item) =>
           ({ id: item.id, label: item.displayName, detail: item.currentClass?.code ?? item.studentNumber }))} select={setChosen} />
         {selected ? <ChildDetail key={selected.id} locale={locale} id={selected.id} />

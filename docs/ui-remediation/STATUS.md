@@ -33,7 +33,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
 | UIX-09 | 2 | RED → GREEN verified in isolated browser | Run 44933487892: 16/16 Chromium, typecheck and build passed; first-child AR/DE, switch, zero children, invalid child deep-link |
 | UIX-10 | 2 | RED → GREEN verified incl. visual follow-up in isolated Chromium | Run 44972314607: 19/19 tests, typecheck/build; 320px German long shortcut contained and pressed-filter visually distinct, screenshots inspected |
-| UIX-11 | 2 | Focused desktop RED regressions authored; await observed browser result | Admin AR students at 768/1024/1280, Admin DE class-year 1280, Guardian DE children 1280; guardian AR home width preservation |
+| UIX-11 | 2 | RED verified: three 1280px width defects; page-scoped correction committed, GREEN pending | Run 44972722857: Admin AR students 480px, Admin DE class form 976px, Guardian DE detail 976px; 22 other tests passed |
 | UIX-12 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-13 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-14 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -204,3 +204,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44972314607](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44972314607) on d832267c: 19/19 isolated Chromium tests, TypeScript and build succeeded. The two AR/DE visual-state tests and German DOMRange containment now pass; last screenshot inspected and visible selected green filter, long strings within gray buttons. Artifact 14734376836; behavior tested only Chromium 390 AR Admin / 320 DE Guardian, not physical devices or full matrix.
 - One additional nuance: test screenshots are taken after archive toggling and expanding shortcuts, so archive and initial inbox state screenshots should be separately recorded at UIX-17. No production message query or permission contract changed.
+
+## UIX-11 RED checkpoint
+
+- [Run 44972722857](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44972722857) against 43d5a717: three expected failures at desktop 1280px — Students single panel was 480px, Class year selector 976px and Guardian child details 976px. Admin Students at 768/1024 and wide Guardian Home preserved, plus all 19 earlier regressions passed. Archived screenshots are diagnostic, not approved goldens.
+- Fix applies `family-single-panel` only while no editor is open; selecting/editing a record retains the original two-column layout. `class-year-panel` and `guardian-child-panel` constrain short desktop forms/readable child details only. No global `.auth-card` width rule, no permission/data/route change. GREEN and visual review pending.

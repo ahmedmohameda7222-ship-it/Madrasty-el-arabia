@@ -96,7 +96,7 @@ export function ClassWorkspace({ locale, manageClasses, manageEnrollment }: {
   const current = classes?.find((row) => row.id === classId);
   let content: ReactNode = null;
   if (years) content = <>
-    <section className="auth-card">
+    <section className="auth-card class-year-panel">
       <label className="auth-form">{text.year}<select value={yearId} onChange={(event) => {
         setYear(event.target.value); setClass(""); setClasses(undefined); showRollover(false);
       }}>
