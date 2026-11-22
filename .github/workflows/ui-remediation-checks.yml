@@ -64,6 +64,11 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
           pnpm exec playwright test --config qa/ui-remediation.config.ts
+      # Separate second phase: the 46-test matrix first verifies the unconfigured
+      # 503/Retry state. The positive READY-state fixture may then add a calendar.
+      - name: Verify configured teacher attendance ready state
+        shell: bash
+        run: pnpm exec playwright test --config qa/ui-attendance-ready.config.ts
       - name: Preserve isolated QA evidence (no secrets)
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,6 +76,8 @@ jobs:
           name: madrasty-ui-fixture-qa
           path: |
             qa-artifacts/ui-fixture-results.json
+            qa-artifacts/ui-attendance-ready-results.json
+            qa-artifacts/ui-attendance-ready-test-results/
             qa-artifacts/ui-remediation-test-results/
             qa-artifacts/ui-after/
             qa-artifacts/ui-manifests/
