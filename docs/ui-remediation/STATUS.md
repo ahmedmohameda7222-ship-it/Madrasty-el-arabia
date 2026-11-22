@@ -32,7 +32,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
 | UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
 | UIX-09 | 2 | RED → GREEN verified in isolated browser | Run 44933487892: 16/16 Chromium, typecheck and build passed; first-child AR/DE, switch, zero children, invalid child deep-link |
-| UIX-10 | 2 | Two focused mobile inbox RED tests authored; verification pending | Admin AR 390 + Guardian DE 320: one-row search, scrollable selected filters, accessible archive, shortcut disclosure, no clipping, early results |
+| UIX-10 | 2 | RED verified in AR/DE mobile; scoped inbox layout correction committed, GREEN pending | RED run 44933830550: two new tests fail with 54px search-control offset; 16 earlier Chromium tests pass; TypeScript/build passed |
 | UIX-11 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-12 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-13 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -184,3 +184,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 ## UIX-09 GREEN checkpoint
 
 - [Run 44933487892](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44933487892) on 9e0a3e35: 16/16 Chromium, types and build passed. UIX-09 four RED cases all GREEN in fresh isolated QA. Artifact 14717954494 includes screenshots and videos; no production user data touched. Invalid deep-link remains forbidden and no other child's detail leaks.
+
+## UIX-10 RED checkpoint
+
+- [Run 44933830550](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44933830550), Chromium 16 passed / 2 expected RED; both Arabic Admin 390 and German Guardian 320 search actions were 54px below input center. Artifact 14718494063 contains failure screenshots, video and trace.
+- Scoped CSS and ThreadInbox markup align the search action with the native input, move filters into a horizontally scrollable strip on mobile, collapse only secondary directory/broadcast shortcuts, and retain the archive toggle with identical state/query. Desktop retains the original shortcut row and no search/filter or thread-query logic changed. GREEN browser and visual review remain pending.
