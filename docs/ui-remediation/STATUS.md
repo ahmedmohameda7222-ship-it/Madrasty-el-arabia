@@ -37,8 +37,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-12 | 2 | RED → GREEN verified in Chromium (28/28), screenshots captured | Run 44973950376 on fe2edfaa: three date/locale tests passed, ISO unchanged, TypeScript/build and prior 25 pass; native placeholders remain browser-dependent |
 | UIX-13 | 3 | Verified no-change: native sheet passed 2/2 targeted tests; full 30/30 Chromium | Run 44974444576, Arabic 390 and German 320, repeat/ESC/focus/select/reduced motion; no interaction defect requiring custom animation |
 | UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
-| UIX-15 | 3 | RED observed on easing mismatch; scoped reuse of existing token committed, GREEN pending | Run 45024782971: 34 prior+negative checks pass; one RED expected `ease-out` vs existing `cubic-bezier(0.23,1,0.32,1)`; types/build passed |
-| UIX-16 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-15 | 3 | RED → GREEN verified; whole-web CSS negative checks and token consistency | Run 45025131948 on 8f67d62a: 35/35 isolated Chromium, TypeScript/build; no new animation library, 140ms shared ease-out, reduced-motion |
+| UIX-16 | 3 | Negative preservation tests committed; browser/source result pending, no product change | Web viewport-fit cover, 100dvh, four safe-area insets, 44px controls, RTL/LTR; Android source Scaffold/NavigationBar/ModalBottomSheet; 320/390/430 role smoke |
 | UIX-17 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 
@@ -243,3 +243,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 45024782971](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45024782971) on f407c598: 34/35 isolated Chromium tests passed, including negative source motion scan; targeted computed CSS check RED because More arrow used built-in `ease-out` rather than existing shared `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)`. No unintended `transition:all`, zero-scale entry, ungated row keyframe, or new library found. TypeScript/build passed.
 - Minimal change updates only the `.more-group summary::after` easing to the existing token, retaining 140ms duration, reduced-motion cutoff and no row motion. Fresh browser GREEN pending; no animation added to dashboards.
+
+## UIX-15 GREEN checkpoint
+
+- [Run 45025131948](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45025131948) on 8f67d62a: 35/35 isolated Chromium, TypeScript/build passed. The source-scan negative test and browser's computed shared easing both green; artifact 14755398519 includes UIX-15 screenshot, video, trace-on-failure policy. No extra animations or libraries, no dashboard motion.
+- UIX-16 preservation gate is explicitly web browser plus Android *source-level only*. Native APK build, iOS Safari physical safe area, Android device interaction and keyboard IME behavior remain **UNVERIFIED** until those environments are exercised. No native shell code modification authorized by a passing negative check.
