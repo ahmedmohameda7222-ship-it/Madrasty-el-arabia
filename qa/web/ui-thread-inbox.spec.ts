@@ -27,6 +27,13 @@ for(const scenario of [
       const filters=page.locator(".inbox-filter-strip");
       await expect(filters).toBeVisible();
       await expect(filters.locator('button[aria-pressed="true"]')).toHaveCount(1);
+      const visualState = await filters.evaluate(el=>{
+        const active=el.querySelector('button[aria-pressed="true"]');
+        const inactive=el.querySelector('button[aria-pressed="false"]');
+        if(!active||!inactive)throw new Error("missing real filter choices");
+        return {activeBg:getComputedStyle(active).backgroundColor,inactiveBg:getComputedStyle(inactive).backgroundColor};
+      });
+      expect(visualState.activeBg,"selected filter requires visible contrast").not.toBe(visualState.inactiveBg);
       expect(await filters.evaluate(el=>el.scrollWidth>=el.clientWidth)).toBe(true);
       const status=page.locator(".school-content [data-async-state='empty'], .school-content .group-list").last();
       await expect(status).toBeVisible({timeout:25000});
@@ -47,3 +54,32 @@ for(const scenario of [
     }finally{await school.close()}
   });
 }
+
+test("long German inbox shortcuts remain entirely inside their touch targets at 320px",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("guardian-de","guardian");
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:320,height:844});
+    await page.goto("/de/school/messages");
+    await page.locator(".inbox-mobile-shortcuts summary").click();
+    for(const name of ["Kontaktverzeichnis","Schulmitteilungen"]){
+      const link=page.getByRole("link",{name});
+      await expect(link).toBeVisible();
+      const bounds=await link.evaluate(el=>{
+        const box=el.getBoundingClientRect();
+        const range=document.createRange();
+        range.selectNodeContents(el);
+        const content=range.getBoundingClientRect();
+        return {textLeft:content.left,textRight:content.right,left:box.left,right:box.right,width:box.width,height:box.height};
+      });
+      expect(bounds.textLeft,name+" starts inside target").toBeGreaterThanOrEqual(bounds.left-1);
+      expect(bounds.textRight,name+" ends inside target").toBeLessThanOrEqual(bounds.right+1);
+      expect(bounds.width).toBeGreaterThanOrEqual(44);
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+    }
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+    expect(overflow,"expanded links do not create page overflow").toBeLessThanOrEqual(1);
+  }finally{await school.close();}
+});
