@@ -24,9 +24,9 @@ const words={
 } as const;
 const resources:Record<Locale,Record<AuditEntry["resourceKind"],string>>={
   ar:{access:"الصلاحيات",calendar:"تقويم المدرسة",assignments:"التكليفات",family:"الأسر والقيد",imports:"استيراد الأسر",invitation:"الدعوات",
-    application:"طلبات المدرسين",timetable:"الجدول الدراسي",attendance:"الحضور",academics:"التعلّم والدرجات",bank:"إعدادات البنك",finance:"الحسابات",communications:"إعلانات المدرسة"},
+    timetable:"الجدول الدراسي",attendance:"الحضور",academics:"التعلّم والدرجات",bank:"إعدادات البنك",finance:"الحسابات",communications:"إعلانات المدرسة"},
   de:{access:"Berechtigungen",calendar:"Schulkalender",assignments:"Einsätze",family:"Familien und Einschreibung",imports:"Familienimporte",invitation:"Einladungen",
-    application:"Bewerbungen von Lehrkräften",timetable:"Stundenplan",attendance:"Anwesenheit",academics:"Unterricht und Noten",bank:"Bankeinstellungen",finance:"Buchhaltung",communications:"Schulmitteilungen"},
+    timetable:"Stundenplan",attendance:"Anwesenheit",academics:"Unterricht und Noten",bank:"Bankeinstellungen",finance:"Buchhaltung",communications:"Schulmitteilungen"},
 };
 const categories:Record<Locale,Record<AuditEntry["changeCategory"],string>>={
   ar:{permissions:"تغيير صلاحية",revocation:"إلغاء",settings:"تحديث إعدادات",creation:"إضافة",update:"تعديل",approval:"اعتماد",transfer:"نقل طالب",
@@ -64,7 +64,6 @@ function auditUrl(locale:Locale,link:AuditResourceLink) {
   switch(link.kind){
     case "access":return `/${locale}/staff/access`;
     case "invitations":return `/${locale}/staff/invitations`;
-    case "applications":return `/${locale}/staff/applications`;
     case "calendar":return `${root}/more/calendar`;
     case "assignments":return `${root}/more/assignments`;
     case "timetable":return `${root}/more/timetable`;
@@ -72,6 +71,7 @@ function auditUrl(locale:Locale,link:AuditResourceLink) {
     case "guardian":return `${root}/students?guardian=${link.id}${link.linkId?`&link=${link.linkId}`:""}`;
     case "import":return `${root}/students/import?job=${link.id}`;
     case "class":return `${root}/more/assignments?class=${link.id}&year=${link.yearId}`;
+    default:return root+"/more/audit";
   }
 }
 function timestamp(row:AuditEntry,locale:Locale,timezone:string){

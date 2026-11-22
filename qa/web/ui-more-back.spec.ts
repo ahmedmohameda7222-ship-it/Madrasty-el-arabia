@@ -32,7 +32,7 @@ test("Arabic More pages return to the menu from a link or direct visit", async (
   }
 });
 
-test("German More navigation works on mobile and on the teacher application portal", async ({ page, context }) => {
+test("German More navigation works on mobile", async ({ page, context }) => {
   const school = schoolFixtures();
   try {
     await school.seed();
@@ -47,14 +47,6 @@ test("German More navigation works on mobile and on the teacher application port
     await back.click();
     await expect(page).toHaveURL("/de/school/more");
 
-    await page.locator("summary").getByText("Aufnahme und Schulverwaltung", { exact: true }).click();
-    await page.getByRole("link", { name: "Als Lehrkraft bewerben", exact: true }).click();
-    await expect(back).toBeVisible();
-    await back.click();
-    await expect(page).toHaveURL("/de/school/more");
-
-    await page.goto("/de/apply");
-    await expect(back).toHaveCount(0);
   } finally {
     await school.close();
   }

@@ -12,10 +12,10 @@ export function schoolResourceDestination(locale:Locale,target:SchoolResourceLin
     case "evaluation":return `${root}/more/evaluations?child=${target.childId}&evaluation=${id}`;
     case "activity":return `${root}/more/academics?child=${target.childId}&activity=${id}`;
     case "homework":return `${root}/more/homework?child=${target.childId}&work=${id}`;
-    case "application":return `/${locale}/apply`;
     case "invoice":return `${root}/more/invoices?invoice=${id}`;
     case "receipt":return `${root}/more/receipts?receipt=${id}`;
     case "fee_stop":return `${root}/more/enrollment-stops?request=${id}`;
+    default:return root+"/home";
   }
 }
 

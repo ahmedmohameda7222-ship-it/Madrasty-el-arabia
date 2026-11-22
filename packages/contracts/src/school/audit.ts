@@ -3,13 +3,13 @@ import { localeSchema, pageQuerySchema, schoolDateSchema } from "../http";
 
 const action = z.string().trim().min(1).max(100).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/);
 export const auditResourceKind = z.enum([
-  "access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications",
+  "access","calendar","assignments","family","imports","invitation","timetable","attendance","academics","bank","finance","communications",
 ]);
 export const auditCategory = z.enum([
   "permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication",
 ]);
 export const auditResourceLink = z.discriminatedUnion("kind",[
-  z.object({kind:z.enum(["access","calendar","assignments","timetable","invitations","applications"])}),
+  z.object({kind:z.enum(["access","calendar","assignments","timetable","invitations"])}),
   z.object({kind:z.literal("student"),id:z.uuid()}),
   z.object({kind:z.literal("guardian"),id:z.uuid(),linkId:z.uuid().optional()}),
   z.object({kind:z.literal("import"),id:z.uuid()}),

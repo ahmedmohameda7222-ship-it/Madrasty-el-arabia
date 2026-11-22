@@ -24,7 +24,7 @@ const copy={
     denied:"السماح بإشعارات الجهاز موقوف في إعداداته.",pushUnavailable:"إشعارات الجهاز غير متاحة. الإشعارات داخل التطبيق والبريد شغّالين حسب إعداداتك.",
     install:"على iPhone افتح التطبيق من أيقونته على الشاشة الرئيسية عشان تفعّل إشعارات الجهاز.",
     thread:"المحادثة",broadcast:"الإعلان",child:"ملف الطالب",attendance:"سجل الحضور",exam:"الامتحان",evaluation:"التقييم",
-    homework:"الواجب",activity:"النشاط",application:"طلب التدريس",invoice:"الفاتورة",receipt:"الإيصال",fee_stop:"طلب عدم الاستمرار"},
+    homework:"الواجب",activity:"النشاط",invoice:"الفاتورة",receipt:"الإيصال",fee_stop:"طلب عدم الاستمرار"},
   de:{title:"Benachrichtigungen",unread:"Ungelesen",all:"Alle Benachrichtigungen",mark:"Als gelesen markieren",open:"Benachrichtigung öffnen",
     updated:"Aktualisiert",back:"Zurück zu den Benachrichtigungen",refresh:"Aktualisieren",unavailable:"Die Details sind für dein Konto derzeit nicht verfügbar.",
     preferences:"Kontoeinstellungen",correspondence:"Sprache für Mitteilungen",ar:"Arabisch",de:"Deutsch",device:"Gerätebenachrichtigungen",
@@ -33,7 +33,7 @@ const copy={
     pushUnavailable:"Gerätebenachrichtigungen sind nicht verfügbar. Mitteilungen in der App und per E-Mail bleiben verfügbar.",
     install:"Öffne die Web-App auf dem iPhone über den Home-Bildschirm, um Gerätebenachrichtigungen zu aktivieren.",
     thread:"Unterhaltung",broadcast:"Mitteilung",child:"Schülerprofil",attendance:"Anwesenheit",exam:"Prüfung",evaluation:"Beurteilung",
-    homework:"Hausaufgabe",activity:"Aktivität",application:"Bewerbung als Lehrkraft",invoice:"Rechnung",receipt:"Beleg",fee_stop:"Abmeldeantrag"},
+    homework:"Hausaufgabe",activity:"Aktivität",invoice:"Rechnung",receipt:"Beleg",fee_stop:"Abmeldeantrag"},
 } as const;
 
 const listSchema=noticeRecord.array();

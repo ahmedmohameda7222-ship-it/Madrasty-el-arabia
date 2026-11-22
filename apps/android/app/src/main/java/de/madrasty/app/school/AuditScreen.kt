@@ -64,7 +64,7 @@ data class AuditFilters(
 private val areaLabels = mapOf(
     "access" to R.string.audit_area_access,"calendar" to R.string.audit_area_calendar,"assignments" to R.string.audit_area_assignments,
     "family" to R.string.audit_area_family,"imports" to R.string.audit_area_imports,"invitation" to R.string.audit_area_invitation,
-    "application" to R.string.audit_area_application,"timetable" to R.string.audit_area_timetable,"attendance" to R.string.audit_area_attendance,
+    "timetable" to R.string.audit_area_timetable,"attendance" to R.string.audit_area_attendance,
     "academics" to R.string.audit_area_academics,"bank" to R.string.audit_area_bank,"finance" to R.string.audit_area_finance,
     "communications" to R.string.audit_area_communications,
 )

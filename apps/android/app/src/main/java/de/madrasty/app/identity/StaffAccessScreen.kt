@@ -79,7 +79,7 @@ private val capabilities = mapOf(
     "access.manage" to R.string.permission_access_manage,
     "school.manage" to R.string.permission_school_manage,
     "students.manage" to R.string.permission_students_manage,
-    "applications.manage" to R.string.permission_applications_manage,
+    "staff.invite" to R.string.permission_staff_invite,
     "attendance.supervise" to R.string.permission_attendance_supervise,
     "academics.supervise" to R.string.permission_academics_supervise,
     "comms.publish" to R.string.permission_comms_publish,

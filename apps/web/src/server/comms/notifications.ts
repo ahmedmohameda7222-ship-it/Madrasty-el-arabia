@@ -22,7 +22,6 @@ const labels:Record<NotificationTemplate,Record<Locale,string>>={
   payment_recorded:{ar:"اتسجّل السداد",de:"Zahlung erfasst"},
   payment_reversed:{ar:"اتحدّث سجل السداد",de:"Zahlung aktualisiert"},
   fee_stop_changed:{ar:"تحديث طلب عدم الاستمرار",de:"Antrag zur Abmeldung aktualisiert"},
-  application_decided:{ar:"تحديث طلب التدريس",de:"Bewerbung als Lehrkraft aktualisiert"},
   school_update:{ar:"تحديث من المدرسة",de:"Neuigkeiten von der Schule"},
 };
 const cursorSchema=z.object({id:z.uuid(),createdAt:z.iso.datetime()});
@@ -76,7 +75,7 @@ export function openNotice(actor:ActorContext,id:string){
 }
 
 export async function upsertNotice(tx:Transaction,recipientId:string,input:{
-  persona:ActorContext["persona"]|"applicant";eventId:string;logicalKey:string;template:NotificationTemplate;targets:NoticeTarget[];
+  persona:ActorContext["persona"];eventId:string;logicalKey:string;template:NotificationTemplate;targets:NoticeTarget[];
 }){
   const targets=noticeTargets.min(1).parse(input.targets);
   const [row]=await tx<{id:string}[]>`

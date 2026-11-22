@@ -24,9 +24,9 @@ const names = {
     "شؤون الطلبة والأسر",
     "Schüler und Familien verwalten"
   ],
-  "applications.manage": [
-    "طلبات المدرسين",
-    "Bewerbungen prüfen"
+  "staff.invite": [
+    "دعوات المدرسين",
+    "Lehrkräfte einladen"
   ],
   "attendance.supervise": [
     "الإشراف على الحضور",

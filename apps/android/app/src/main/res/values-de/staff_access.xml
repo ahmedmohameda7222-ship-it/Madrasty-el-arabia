@@ -20,7 +20,7 @@
     <string name="permission_access_manage">Berechtigungen verwalten</string>
     <string name="permission_school_manage">Schule und Klassen verwalten</string>
     <string name="permission_students_manage">Schüler und Familien verwalten</string>
-    <string name="permission_applications_manage">Bewerbungen prüfen</string>
+    <string name="permission_staff_invite">Lehrkräfte einladen</string>
     <string name="permission_attendance_supervise">Anwesenheit beaufsichtigen</string>
     <string name="permission_academics_supervise">Unterricht und Ergebnisse beaufsichtigen</string>
     <string name="permission_comms_publish">Ankündigungen veröffentlichen</string>

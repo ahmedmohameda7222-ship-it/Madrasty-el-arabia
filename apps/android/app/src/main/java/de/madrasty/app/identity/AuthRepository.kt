@@ -49,33 +49,12 @@ class AuthRepository internal constructor(context: Context, private val attendan
     private val mutex = Mutex()
     private val random = SecureRandom()
     private var access: String? = null
-    private var applicantAccess: String? = null
     private var active: SchoolSession? = null
     private val apiOrigin = BuildConfig.API_ORIGIN
     private var authConfig: ProviderConfig? = null
     private val http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
         .connectTimeout(8, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build()
 
-    suspend fun requestApplicant(email: String, locale: String) = io {
-        exchange("$apiOrigin/api/v1/teacher-applications/registration",
-            JSONObject().put("email",email.trim()).put("locale",locale),emptyMap(),decodeApiError=true)
-        Unit
-    }
-
-    suspend fun applicantSignIn(email: String, password: String) = io {
-        val response = providerToken("password",JSONObject().put("email",email.trim()).put("password",password))
-        val token = response.getString("access_token")
-        api("/teacher-applications/me",token)
-        applicantAccess = token
-    }
-
-    suspend fun applicantRequest(path: String, body: JSONObject?) = io {
-        if (!path.startsWith("/teacher-applications")) throw HttpFailure(403,"forbidden")
-        val token = applicantAccess ?: access ?: throw HttpFailure(401,"unauthenticated")
-        api(path,token,body)
-    }
-
-    suspend fun closeApplicant() = io { applicantAccess = null }
     suspend fun acceptInvite(existing: Boolean, body: JSONObject, idempotencyKey: String) = io {
         val operation = if (existing) "existing" else "activate"
         exchange("$apiOrigin/api/v1/invitations/$operation", body,
@@ -407,7 +386,6 @@ class AuthRepository internal constructor(context: Context, private val attendan
     private fun clearLocal() {
         active = null
         access = null
-        applicantAccess = null
         store.remove("refresh")
         store.remove("logout_ticket")
         store.remove("pkce")

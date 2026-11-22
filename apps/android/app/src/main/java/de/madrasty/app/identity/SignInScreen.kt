@@ -129,10 +129,6 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    suspend fun applicantRegistration(email: String, locale: String) = repository.requestApplicant(email,locale)
-    suspend fun applicantSignIn(email: String, password: String) = repository.applicantSignIn(email,password)
-    suspend fun applicantCall(path: String, data: JSONObject? = null) = repository.applicantRequest(path,data)
-    fun endApplicantSession() { viewModelScope.launch { repository.closeApplicant() } }
     suspend fun acceptInvite(existing: Boolean, body: JSONObject, idempotencyKey: String) =
         repository.acceptInvite(existing, body, idempotencyKey)
 
@@ -310,10 +306,8 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
             model.routePushNotice(null)
         }
     }
-    if (navigation.page == WorkspacePage.Apply) {
-        ApplicantScreen(model) { model.endApplicantSession(); navigation.back() }
-    } else if (session == null) {
-        SignInScreen(model) { navigation.open(WorkspacePage.Apply) }
+    if (session == null) {
+        SignInScreen(model)
     } else if (session.offlineOnly) {
         OfflineAttendanceScreen(model,session)
     } else {
@@ -322,7 +316,7 @@ fun IdentityScreen(model: IdentityViewModel, callback: Uri?, consumed: () -> Uni
 }
 
 @Composable
-private fun SignInScreen(model: IdentityViewModel, apply: () -> Unit) {
+private fun SignInScreen(model: IdentityViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
@@ -350,7 +344,6 @@ private fun SignInScreen(model: IdentityViewModel, apply: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(if (model.pending) R.string.loading else R.string.sign_in)) }
         RecoveryLink()
-        TextButton(onClick=apply) { Text(stringResource(R.string.teacher_apply)) }
     }
 }
 

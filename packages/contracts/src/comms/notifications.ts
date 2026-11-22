@@ -5,10 +5,10 @@ const id=z.uuid();
 export const notificationTemplate=z.enum([
   "broadcast","human_message","child_linked","arrival_confirmed","attendance_unexcused","attendance_corrected",
   "exam_scheduled","result_published","result_corrected","invoice_issued","invoice_reminder","payment_recorded",
-  "payment_reversed","fee_stop_changed","application_decided","school_update",
+  "payment_reversed","fee_stop_changed","school_update",
 ]);
 export const noticeTarget=z.discriminatedUnion("kind",[
-  z.object({kind:z.enum(["thread","broadcast","child","application","invoice","receipt","fee_stop"]),id}),
+  z.object({kind:z.enum(["thread","broadcast","child","invoice","receipt","fee_stop"]),id}),
   z.object({kind:z.enum(["exam","evaluation","activity","homework"]),id,childId:id}),
   z.object({kind:z.literal("attendance"),id,childId:id,date:schoolDateSchema}),
 ]);
