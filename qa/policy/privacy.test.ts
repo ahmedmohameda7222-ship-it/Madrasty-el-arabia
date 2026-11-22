@@ -59,7 +59,7 @@ test("teacher scope, guardian child scope, and finance privilege remain distinct
     assert.equal(children.payload.data.length, 2);
     assert.equal(otherChildren.payload.data.length, 1);
     await fixtureApi(school, "/finance/invoices", { token: finance });
-    await fixtureApi(school, "/finance/pupils?period=2026-11", { token: teacher, status: 403 });
+    await fixtureApi(school, `/finance/pupils?period=${clock.month}`, { token: teacher, status: 403 });
   } finally {
     await school.close();
   }

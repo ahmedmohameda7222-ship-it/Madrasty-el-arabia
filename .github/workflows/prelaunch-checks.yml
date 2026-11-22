@@ -84,8 +84,16 @@ jobs:
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          failures=0
           for suite in contracts school policy academics communication finance; do
             echo "::group::qa:$suite"
-            pnpm "qa:$suite"
+            if pnpm "qa:$suite"; then
+              echo "::notice::qa:$suite passed"
+            else
+              echo "::error::qa:$suite failed"
+              failures=$((failures+1))
+            fi
             echo "::endgroup::"
           done
+          echo "Domain suite failures: $failures"
+          test "$failures" -eq 0

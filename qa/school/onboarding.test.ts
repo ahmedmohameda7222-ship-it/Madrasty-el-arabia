@@ -24,7 +24,7 @@ test("a school administrator sets up classes, staffing, enrollment and a clash-s
     const different = await fixtureApi(school, "/school/classes", { ...options, body: { ...draft, capacity: 7 }, status: 409 });
     assert.equal(different.payload.error.code, "idempotency_conflict");
 
-    const slot = { assignmentId: offering.id, roomId: room.id, weekday: 6, start: 600, end: 660,
+    const slot = { assignmentId: offering.id, roomId: room.id, weekday: clock.weekday, start: 600, end: 660,
       from: clock.startsOn, untilExclusive: clock.endsExclusive };
     const review = { method: "POST", token: admin, persona: "admin" } as const;
     const confirmed = await fixtureApi(school, "/school/timetable/preview", { ...review, body: { yearId: year.id, slots: [slot] } });

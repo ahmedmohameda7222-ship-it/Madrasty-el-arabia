@@ -111,7 +111,7 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
       body: { studentId: ids.omar, lastAttendanceMonth: clock.month, duration: "one_month", reason: "Synthetic school break" },
     })).payload.data);
-    assert.equal(stop.startMonth, "2026-12");
+    assert.equal(stop.startMonth, clock.nextMonth);
     const dashboard = await fixtureApi(school, `/school/work-queues?asOf=${queueDate}`, {token:admin,persona:"admin"});
     const pending = dashboard.payload.data.queues.find((row: {key:string}) => row.key==="noncontinuation_requests");
     assert.equal(pending?.state, "ready");
@@ -127,7 +127,7 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const resolved = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:admin,persona:"admin"});
     assert.ok(!resolved.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
     const nextMonth = invoicePreview.parse(await send("/finance/invoice-previews", "next-month-preview", {
-      ...selection, period: "2026-12",
+      ...selection, period: clock.nextMonth,
     }));
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.omar)?.outcome, "stopped");
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.ahmed)?.outcome, "ready");
