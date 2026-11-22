@@ -67,7 +67,7 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
     <h1>{text.title}</h1>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">
-        <label>{text.period}<input type="month" dir="ltr" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>
+        <label>{text.period}<input type="month" dir="ltr" aria-describedby="date-format-finance-month" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>
         {staff&&classChoices.length>0&&<label>{text.classes}<select value={draft.classId??""} onChange={(event)=>patch("classId",event.target.value||undefined)}>
           <option value="">{text.allClasses}</option>
           {classChoices.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe} · {item.yearStart.slice(0,4)}</option>)}
@@ -76,17 +76,23 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
           <option value="">{text.allStates}</option>
           {financeReportStatus.options.map((key)=><option key={key} value={key}>{key==="overdue"?text.overdue:billingCopy[locale][key]}</option>)}
         </select></label>
-        <label>{text.asOf}<input type="date" dir="ltr" value={draft.asOf??""} max={summary.value?.data?.schoolDate}
+        <label>{text.asOf}<input type="date" dir="ltr" aria-describedby="date-format-finance-day" value={draft.asOf??""} max={summary.value?.data?.schoolDate}
           onChange={(event)=>patch("asOf",event.target.value||undefined)}/></label>
       </div>
       <div className="header-actions">
-        <label>{text.from}<input type="date" dir="ltr" value={draft.receivedFrom??""} max={draft.receivedThrough}
+        <label>{text.from}<input type="date" dir="ltr" aria-describedby="date-format-finance-day" value={draft.receivedFrom??""} max={draft.receivedThrough}
           onChange={(event)=>patch("receivedFrom",event.target.value||undefined)}/></label>
-        <label>{text.through}<input type="date" dir="ltr" min={draft.receivedFrom} value={draft.receivedThrough??""}
+        <label>{text.through}<input type="date" dir="ltr" aria-describedby="date-format-finance-day" min={draft.receivedFrom} value={draft.receivedThrough??""}
           onChange={(event)=>patch("receivedThrough",event.target.value||undefined)}/></label>
         {filters.studentId&&<button type="button" className="plain-button" onClick={()=>focus({studentId:undefined})}>{text.allPupils}</button>}
         <button type="submit" className="primary-button" disabled={!financeReportQuery.safeParse(draft).success}>{text.apply}</button>
       </div>
+      <small className="date-format-hint" id="date-format-finance-day">{locale==="ar"
+        ?"تنسيق التاريخ المعروض يعتمد على المتصفح. مثال: ٣١/١٢/٢٠٢٦؛ يمكنك الاختيار من التقويم."
+        :"Das angezeigte Datumsformat hängt vom Browser ab. Beispiel: 31.12.2026; Datum im Kalender wählen."}</small>
+      <small className="date-format-hint" id="date-format-finance-month">{locale==="ar"
+        ?"تنسيق الشهر المعروض يعتمد على المتصفح. مثال: ١٢/٢٠٢٦؛ اختر الشهر والسنة."
+        :"Das angezeigte Monatsformat hängt vom Browser ab. Beispiel: 12.2026; Monat und Jahr auswählen."}</small>
     </form>
     <TimetableRead locale={locale} result={summary}>{(data)=><ReportBody locale={locale} data={data} filters={filters}
       refresh={refresh} focus={focus}/>}</TimetableRead>

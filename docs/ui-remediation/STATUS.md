@@ -34,7 +34,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-09 | 2 | RED → GREEN verified in isolated browser | Run 44933487892: 16/16 Chromium, typecheck and build passed; first-child AR/DE, switch, zero children, invalid child deep-link |
 | UIX-10 | 2 | RED → GREEN verified incl. visual follow-up in isolated Chromium | Run 44972314607: 19/19 tests, typecheck/build; 320px German long shortcut contained and pressed-filter visually distinct, screenshots inspected |
 | UIX-11 | 2 | RED → GREEN verified in isolated Chromium (25/25), screenshot review done | Run 44973086473 on dde92394: 25/25 browser tests, TypeScript/build passed; Students, class-year and child-detail width fixes. Child action links remain densely packed (separate visual finding) |
-| UIX-12 | 2 | RED tests committed; browser result pending | Arabic finance 3 dates + 1 month; German teacher attendance date; German Guardian report 2 dates; accessible browser-format hint and ISO preservation at 390px |
+| UIX-12 | 2 | RED verified 3/3 missing hints; native form hint fix committed, GREEN pending | Run 44973606320: 25 earlier regressions passed, 3 expected failures at `aria-describedby=null`; no date parser/type changes |
 | UIX-13 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-14 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-15 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -214,3 +214,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44973086473](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44973086473) on dde92394: browser 25/25, TypeScript/build and screenshot-policy tests passed. Artifact 14733799091 has five changed-page screenshots and motion videos. Direct image review confirms centered Students, class-year and Guardian-child sections; the crowded inline Guardian child shortcut links are logged as a later visual issue (not part of UIX-11 geometry contract).
 - UIX-12 is scoped to semantic accessible hints for browser-native date/month inputs. No new calendar dependency or ISO parser modification permitted.
+
+## UIX-12 RED checkpoint
+
+- [Run 44973606320](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44973606320) on ba95de3a: three new Chromium tests failed for expected `aria-describedby=null` on live Arabic finance / German attendance / German learning report native date inputs. All earlier 25 browser tests, static checks, types and build passed; screenshots/videos/traces in artifact 14734238347.
+- Targeted fix retains native `type=date/month` inputs, ISO values, validation and filters. Reuses one localized accessible `small#date-format-*` description across related date controls, with a separate month example. Explicitly acknowledges that the browser decides native display order; no custom datepicker or timezone transformation. Fresh GREEN pending.
