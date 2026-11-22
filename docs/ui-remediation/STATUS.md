@@ -27,7 +27,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-02 | 0 | RED → GREEN verified in isolated Chromium | RED run 44893054000 failed expected; GREEN run 44893313926 1/1 passed; types and build passed; no device verification |
 | UIX-03 | 1 | RED → GREEN verified in Chromium | RED 44893561314; GREEN 44893854146: 2/2 targeted tests passed; types/build passed; mobile device pending |
 | UIX-04 | 1 | RED → GREEN verified Chromium at 320/390/430 across ar/de | RED 44894123403; GREEN 44894423678: 3/3 tests pass, TypeScript and build succeed |
-| UIX-05 | 1 | Mobile GREEN; desktop preservation RED confirmed; fix committed, GREEN pending | Run 44924619647: 1024px displayed Anwes. rather than Anwesenheit; first-child fixture test fixed separately |
+| UIX-05 | 1 | RED → GREEN verified including mobile DE abbreviated and full desktop/ARIA text | Run 45034346415 includes 320/390/430, 200% and 1024px desktop; actual phone pending |
 | UIX-06 | 1 | RED → GREEN verified in isolated Chromium | Run 44925691878: 5/5 tests passed including long child at ar/de 320/390/430 and 200% selector; typecheck and build passed |
 | UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
 | UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
@@ -39,15 +39,16 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
 | UIX-15 | 3 | RED → GREEN verified; whole-web CSS negative checks and token consistency | Run 45025131948 on 8f67d62a: 35/35 isolated Chromium, TypeScript/build; no new animation library, 140ms shared ease-out, reduced-motion |
 | UIX-16 | 3 | Verified no-change preservation: 39/39 isolated Chromium, TypeScript/build | Run 45025567730 on 253d371d: native Android source contracts and web viewport/dark/reduced at 320/390/430 passed; hardware/IME unverified |
-| UIX-17 | 4 | 44/46 matrix run exposed two Teacher attendance service-unavailable states; strict error-state assertions committed, GREEN pending | Run 45026985338: Admin AR/DE, Guardian AR/DE passed; Teacher AR/DE failed only at attendance due API 503 `unavailable`; ready sheet BLOCKED by missing isolated school calendar |
-| UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-17 | 4 | GREEN for focused matrix, not whole-product acceptance: 46/46 Chromium, 90 captures + focused screenshot | Run 45034346415 on 17e90445; exact Teacher attendance 503 error documented, ready flow blocked by unconfigured synthetic calendar; hardware/full QA pending |
+| UIX-18 | 4 | Draft PR #2, issue status reconciliation, final evidence ZIP and motion review documented; owner exit gate OPEN | ACCEPTANCE/MOTION_REVIEW docs, CI 45034346415, independent external review and live devices pending; no merge/deploy |
 
-## Verification taxonomy
+## Verification taxonomy — updated 2026-11-22
 
-- **Verified:** source archive count/path validation; GitHub branch refs and comparison.
-- **Code only:** source comparison and previous branch inspection; **not** a passing visual test.
-- **Blocked/unverified:** `pnpm install --frozen-lockfile`, `pnpm check:types`, `pnpm build:web`, targeted/full Playwright QA, screenshots/videos from the changed app, real iOS Safari/Android PWA, Android Compose regression.
-- **Not attempted:** merge, deployment, Supabase mutation, live login, main branch modification.
+- **QA_ENV_ONLY automated GREEN:** [CI 45034346415](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45034346415) on 17e90445: `pnpm check:types`, `pnpm build:web`, screenshot-policy/overlay-policy tests and 46/46 isolated Chromium tests passed.
+- **Captured, not owner-approved:** 90 UIX-17 role-matrix screenshots plus one targeted screenshot, six manifests and videos in artifact 14758948669. The historical 416 captures are diagnostic, not goldens or regenerated acceptance.
+- **Expected fixture error:** Teacher attendance HTTP 503 `unavailable`; alert/retry verified; ready flow BLOCKED by missing synthetic school calendar.
+- **Unverified:** full `pnpm qa:all`, full historical runner revalidation, physical iOS/Android/IME, Android APK build/install, actual phone touch and an external independent reviewer.
+- **Unchanged/not authorized:** main, production Supabase and school data, Vercel, signed APK, migrations, authentication, finance and data contracts.
 
 ## Dependencies and rulings
 
@@ -269,3 +270,9 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 - [Run 45026985338](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45026985338) on fc9b697f: 44 passed, 2 failed. Admin AR/DE and Guardian AR/DE matrices captured 15 verified terminal screens each. Both Teacher scenarios reached `/attendance` and received HTTP **503** on `GET /api/v1/attendance/classes`; browser trace response body was `{"error":{"code":"unavailable",...}}`. This occurred after eight passing Teacher shell/Home captures, not a broken redirect or a permission 403.
 - Root-cause inspection: `readAttendanceClasses()` uses `schoolDate()` and throws `unavailable` when `app.school_today()` is null; `qa.seed_actor` / `qa.seed_family` create principals and children but do **not** configure `app.school_settings` or a school calendar. This is a **QA_ENV_ONLY** state, not evidence of a production attendance defect. Do not change business logic or treat every API failure as success.
 - Acceptance protocol explicitly verifies the specific attendance response **503 + code unavailable**, visible localized alert, Retry button, and no forbidden state. Its manifest records `error-unconfigured-school-calendar`, never `ready`. A populated Teacher attendance **ready** screenshot and related operational workflows remain **BLOCKED/UNVERIFIED** pending safe synthetic school calendar setup and later full QA. Fresh GREEN verification pending.
+
+## UIX-17 final browser checkpoint / UIX-18 owner handoff
+
+- [Run 45034346415](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45034346415): 46/46 isolated Chromium GREEN (5.5 minutes), TypeScript/build and policy checks GREEN. Six role×locale scenarios each captured 15 scenes; role/screen/viewport/state/SHA manifests stored in [artifact 14758948669](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45034346415/artifacts/14758948669).
+- [ACCEPTANCE.md](ACCEPTANCE.md) is task/QA evidence; [ISSUES.md](ISSUES.md) reconciles all 19 audit IDs; [MOTION_REVIEW.md](MOTION_REVIEW.md) is a Before/After/Why review of motion against Emil. Draft [PR #2](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/pull/2) is intentionally unmerged, undeployed and pending owner approval.
+- Standalone review ZIP `Madrasty_El_Arabia_UIX00-18_Review_Evidence_2026-11-22.zip`, SHA-256 `c65e3b393f92cc963cf9971535723c9502b9de9fc5ff1d45744540cbbdc1d0a3`. Before images are historical diagnostic; after/video from synthetic Chromium, not physical phone. Device and full QA gates remain open.
