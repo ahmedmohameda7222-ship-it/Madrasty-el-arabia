@@ -1,7 +1,7 @@
 name: Prelaunch web and contracts
 on:
   push:
-    branches: ["implementation/prelaunch"]
+    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22"]
   workflow_dispatch:
 permissions:
   contents: read
