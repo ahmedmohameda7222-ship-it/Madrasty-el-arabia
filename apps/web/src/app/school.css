@@ -95,6 +95,9 @@ button:disabled { cursor: default; }
   border: 0; border-radius: 12px; font-weight: 600; text-decoration: none; text-align: center;
 }
 .plain-button { background: var(--inset); color: var(--ink); }
+.more-back-link { gap: .25rem; }
+.more-back-link svg { flex: none; inline-size: 1.125rem; block-size: 1.125rem; }
+.public-page > .more-back-link { margin-block-end: 12px; }
 .primary-button { min-block-size: 48px; background: var(--primary); color: var(--on-primary); }
 /* Immediate, reversible press feedback for controls; never suppress text selection on content. */
 button, a, [role="button"], .more-group summary { touch-action: manipulation; }

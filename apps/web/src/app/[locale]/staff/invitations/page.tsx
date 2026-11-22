@@ -4,6 +4,7 @@ import { z } from "zod";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { mayUse } from "@/server/access/capabilities";
 import { SchoolHeader } from "@/ui/Shell";
+import { MoreBackLink } from "@/ui/MoreBackLink";
 import { InviteWorkspace } from "@/features/identity/Invitations";
 
 export default async function StaffInvitations({ params, searchParams }: {
@@ -19,6 +20,7 @@ export default async function StaffInvitations({ params, searchParams }: {
   if (!guardians && !teachers) notFound();
   const batch = z.uuid().safeParse(search.batchId);
   return <main className="public-page"><SchoolHeader locale={locale.data} />
+    <MoreBackLink locale={locale.data} />
     <InviteWorkspace locale={locale.data} guardians={guardians} teachers={teachers} invitationId={z.uuid().safeParse(search.invite).data} batchId={guardians && batch.success ? batch.data : undefined} />
   </main>;
 }

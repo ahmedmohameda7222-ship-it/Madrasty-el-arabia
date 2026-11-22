@@ -8,6 +8,7 @@ import { dictionary } from "@/i18n";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
+import { MoreBackLink } from "./MoreBackLink";
 import { SchoolLink } from "./SchoolLink";
 import { NotificationLink } from "@/features/comms/NotificationCenter";
 
@@ -56,6 +57,8 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   const positions = useRef(new Map<string, { top: number; focus: string | null }>());
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
+  const showMoreBack = pathname.startsWith(`${root}/more/`) ||
+    pathname === `/${locale}/directory` || pathname === `/${locale}/account/preferences`;
   const destinations: Destination[] = ["home", roleTab[actor.persona], "messages", "more"];
   const active = destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
 
@@ -111,6 +114,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           )}
         </nav>
         <main id="school-content" ref={main} className="school-content" tabIndex={-1}>
+          {showMoreBack && <MoreBackLink locale={locale} />}
           {selectedScope && <p className="scope-label"><bdi>{selectedScope.label}</bdi>{selectedScope.detail && <> · <bdi>{selectedScope.detail}</bdi></>}</p>}
           {children}
         </main>
