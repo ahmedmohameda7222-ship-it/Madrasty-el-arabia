@@ -242,12 +242,14 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .inbox-search > button { align-self: end; }
 .inbox-filter-strip { display: flex; flex-wrap: nowrap; gap: 8px; min-inline-size: 0; max-inline-size: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; padding-block-end: 3px; }
 .inbox-filter-strip > button { flex: 0 0 auto; white-space: nowrap; }
+.inbox-filter-strip > button[aria-pressed='true'] { background: var(--primary); color: var(--on-primary); }
 .inbox-desktop-shortcuts { display: none; }
 .inbox-mobile-actions { display: flex; justify-content: space-between; align-items: start; gap: 8px; min-inline-size: 0; }
 .inbox-mobile-shortcuts { min-inline-size: 0; }
 .inbox-mobile-shortcuts summary { display: flex; align-items: center; justify-content: center; min-block-size: 44px; padding: 6px 12px; border-radius: 12px; background: var(--inset); color: var(--ink); font-weight: 600; cursor: pointer; }
 .inbox-mobile-shortcuts summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .inbox-shortcut-links { display: grid; gap: 8px; margin-block-start: 8px; }
+.inbox-shortcut-links > .plain-button { inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; overflow-wrap: anywhere; white-space: normal; }
 @media (max-width: 959px) {
   .inbox-panel { padding: 16px; margin-block: 12px; gap: 8px; }
 }

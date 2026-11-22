@@ -32,7 +32,7 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-07 | 2 | RED → GREEN verified for shared empty/error states | Run 44927327255 8/8 Chromium tests pass; typecheck and build pass. More roles/state variants unverified |
 | UIX-08 | 2 | RED → GREEN verified: four persona/locale cases | CI 44932593380 12/12 Chromium, types/build passed. No linked child / revoked scenario separate acceptance |
 | UIX-09 | 2 | RED → GREEN verified in isolated browser | Run 44933487892: 16/16 Chromium, typecheck and build passed; first-child AR/DE, switch, zero children, invalid child deep-link |
-| UIX-10 | 2 | Core RED → GREEN verified 18/18; visual review found missing pressed contrast and German shortcut text overflow; focused regression RED pending | Push first failed Supabase startup; rerun CI 44971491777 on 23fe6c2 passed 18/18 Chromium, types/build; screenshot review uncovered two gaps |
+| UIX-10 | 2 | Core 18/18 GREEN; new visual RED verified 3 expected failures, minimal CSS fix committed; final GREEN pending | Run 44972014383: 16 prior tests pass, two invisible selected-state tests and one long German label containment test fail; no logic changes |
 | UIX-11 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-12 | 2 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-13 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -194,3 +194,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - GitHub [run 44971491777](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44971491777) retry: 18/18 Chromium, typecheck/build passed. Artifact 14734400554 contains AR admin 390 and DE guardian 320 after screenshots. Original attempt on same SHA failed before browser tests during disposable Supabase startup, not due to UI.
 - Actual DE 320 image has unbroken `Kontaktverzeichnis` text extending beyond its button background when mobile shortcuts are expanded. The selected `Alle` filter has no differentiated background versus inactive chips in the rendered image. Do not mark UIX-10 visually accepted; RED tests are added for both issues before scoped styling.
+
+## UIX-10 visual RED checkpoint
+
+- [Run 44972014383](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44972014383), browser: 16 prior tests passed, three expected visual regressions failed. Arabic/German selected filter and inactive filter both had `rgb(237, 242, 248)` backgrounds; `Kontaktverzeichnis` text started at x=118.58 while its touch target starts at x=134.31. The test verifies visual contrast and real text DOMRange containment (not source matching). No product/backend code changed during RED.
+- Scoped CSS now styles the selected chip with theme tokens and lets long shortcut labels wrap inside their own accessible targets. Focus/target sizes unchanged. Await GREEN on fresh isolated browser evidence and screenshot review.
