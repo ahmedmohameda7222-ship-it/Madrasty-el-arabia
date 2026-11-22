@@ -36,8 +36,8 @@ The supplied audit has **19/19 expected IDs** and **416/416 actual archived PNGs
 | UIX-11 | 2 | RED → GREEN verified in isolated Chromium (25/25), screenshot review done | Run 44973086473 on dde92394: 25/25 browser tests, TypeScript/build passed; Students, class-year and child-detail width fixes. Child action links remain densely packed (separate visual finding) |
 | UIX-12 | 2 | RED → GREEN verified in Chromium (28/28), screenshots captured | Run 44973950376 on fe2edfaa: three date/locale tests passed, ISO unchanged, TypeScript/build and prior 25 pass; native placeholders remain browser-dependent |
 | UIX-13 | 3 | Verified no-change: native sheet passed 2/2 targeted tests; full 30/30 Chromium | Run 44974444576, Arabic 390 and German 320, repeat/ESC/focus/select/reduced motion; no interaction defect requiring custom animation |
-| UIX-14 | 3 | RED confirmed 3/3 on old CSS; scoped disclosure arrow correction committed, GREEN pending | Run 44974843209: prior 30 tests passed, all 3 new cases failed because computed `.more-rows` animationName was `more-enter`; TypeScript/build pass |
-| UIX-15 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
+| UIX-14 | 3 | RED → GREEN verified; 33/33 isolated Chromium, TypeScript/build passed | Run 45024262605 on 5323788e: AR admin 390, DE guardian 320, DE admin 1280. Repeated open/close, keyboard, reversible arrow 140ms, reduced-motion, screenshot/video artifact 14755556508 |
+| UIX-15 | 3 | Motion negative checks and token consistency RED tests committed; result pending | Whole-web school.css source + actual AR Admin 390 computed easing; prohibited transitions/keyframes and reduced-motion |
 | UIX-16 | 3 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-17 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
 | UIX-18 | 4 | Not started | Requires fresh RED → GREEN, browser/fixture evidence and affected regressions |
@@ -233,3 +233,8 @@ UIX-05 desktop-preservation ruling: The approved change addresses the cramped mo
 
 - [Run 44974843209](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/44974843209) on ec2b7f75: 30 previous Chromium tests passed; 3 new disclosure checks failed on the expected `animationName=more-enter` across AR admin 390, DE guardian 320 and DE admin 1280. TypeScript/build passed. Root cause was CSS entry-only keyframes, which re-trigger at each opening without corresponding close motion.
 - Scoped fix removes the `more-enter` keyframe and instead transitions only the existing disclosure arrow's transform for 140ms; reduced-motion disables this transition. Native `<details>` toggle, keyboard/links, colors, hit targets and layout unchanged. Fresh GREEN and visual review pending.
+
+## UIX-14 verified; UIX-15 motion review checkpoint
+
+- [UIX-14 run 45024262605](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/45024262605): 33/33 isolated Chromium tests (30 prior + 3 targeted), TypeScript and web build passed on 5323788e. Artifact 14755556508 contains screenshots and interaction videos. DE Guardian 320 screenshot directly reviewed: disclosure rows visible, arrow orientation clear, keyboard tests passed. The screenshot also shows bottom-nav German `Nachrichten` broken across two lines at 320; record for UIX-17, do not silently call the entire shared shell accepted.
+- UIX-15 code audit follows the source of `emilkowalski/skills/skills/review-animations/STANDARDS.md`: purposeful feedback, no frequently repeated entry keyframes, under-300ms UI, strong shared ease-out, no layout-property animation, reduced-motion fallback. Existing `--ease-out` is custom cubic-bezier; UIX-14 arrow currently uses built-in `ease-out`, so browser RED test compares computed easing against the existing token. Other negative checks should pass with no product change.
