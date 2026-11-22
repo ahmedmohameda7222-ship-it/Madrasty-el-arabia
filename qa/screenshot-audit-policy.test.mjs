@@ -36,3 +36,22 @@ test('retry targets retain persona locale and width matching',()=>{
   assert.equal(selectRetryTargets(targets,'teacher','de','/de/school/home',390),true);
   assert.equal(selectRetryTargets(targets,'guardian','de','/de/school/home',390),false);
 });
+
+
+const stamped=(extra={})=>({...ready(),role:'guardian',locale:'de',mode:'standard',sha:'sha-1',...extra});
+test('302 document cannot count as successful screenshot coverage',()=>{
+ assert.throws(()=>assertCompleteAudit([stamped({httpStatus:302})],{expected:1}),/HTTP 302/);
+});
+test('same route at same width in distinct modes counts as two required scenes',()=>{
+ const records=[stamped(),stamped({mode:'text-200'})];
+ assert.equal(assertCompleteAudit(records,{expected:2,targets:records.map(x=>({role:x.role,locale:x.locale,route:x.route,width:x.width,mode:x.mode}))}).captured,2);
+});
+test('role-locale dimensions must match each required screenshot scene',()=>{
+ assert.throws(()=>assertCompleteAudit([stamped({role:'admin'})],{expected:1,targets:[{route:'/de/school/home',width:390,mode:'standard',role:'guardian',locale:'de'}]}),/missing|unexpected|coverage/i);
+});
+test('real evidence checks refuse a missing file even with a nonempty path',()=>{
+ assert.throws(()=>assertCompleteAudit([stamped({files:['/does-not-exist/madrasty.png']})],{expected:1,verifyFiles:true}),/missing|file|screenshot/i);
+});
+test('real evidence requires nonempty SHA linked to scene identity',()=>{
+ assert.throws(()=>assertCompleteAudit([stamped({sha:''})],{expected:1,requireIdentity:true,expectedSha:'sha-1'}),/sha/i);
+});

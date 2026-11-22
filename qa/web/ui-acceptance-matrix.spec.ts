@@ -1,6 +1,7 @@
 import {mkdirSync,writeFileSync} from "node:fs";
 import {expect,test} from "@playwright/test";
 import {schoolFixtures} from "../fixtures/school";
+import {assertCompleteAudit} from "../screenshot-audit-policy.mjs";
 import {localOrigin} from "../support/target";
 
 test("German 320px message bottom tab never splits a word and retains its full accessible name",async({page,context})=>{
@@ -44,6 +45,12 @@ for(const scenario of acceptanceScenarios){
   test("UIX17 "+scenario.persona+" "+scenario.locale+" shared shell and role screens across six viewport widths",async({page,context},testInfo)=>{
     const school=schoolFixtures();
     const captures:{sha:string;role:string;locale:string;route:string;width:number;mode:string;state:string;path:string}[]=[];
+    // The browser runner must submit real response/terminal state and on-disk screenshot
+    // evidence to the same coverage gate whose negative cases run as Node unit tests.
+    const policyRecords:{
+      route:string;width:number;role:string;locale:string;mode:string;sha:string;
+      httpStatus:number|undefined;finalPath:string;terminalState:string;captureIntent?:string;files:string[];
+    }[]=[];
     const suiteLabel=scenario.persona+"-"+scenario.locale;
     try{
       await school.seed();
@@ -61,7 +68,7 @@ for(const scenario of acceptanceScenarios){
         const attendanceResponse=expectedAttendanceError
           ? page.waitForResponse(response=>new URL(response.url()).pathname==="/api/v1/attendance/classes"&&response.status()===503)
           : null;
-        await page.goto("/"+scenario.locale+"/school/"+route);
+        const documentResponse=await page.goto("/"+scenario.locale+"/school/"+route);
         await expect(page).toHaveURL(new RegExp("/"+scenario.locale+"/school/"+route.replaceAll("/","\\/")+"(?:\\?.*)?$"));
         const main=page.locator(".school-content");
         await expect(main).toBeVisible({timeout:30000});
@@ -103,6 +110,13 @@ for(const scenario of acceptanceScenarios){
         const path="qa-artifacts/ui-after/UIX17-"+suiteLabel+"-"+route.replaceAll("/","-")+"-"+width+"-"+mode+".png";
         await page.screenshot({path,animations:"disabled"});
         captures.push({sha:process.env.GITHUB_SHA??"local",role:scenario.persona,locale:scenario.locale,route,width,mode,state,path});
+        policyRecords.push({
+          role:scenario.persona,locale:scenario.locale,route:"/"+scenario.locale+"/school/"+route,
+          width,mode,sha:process.env.GITHUB_SHA??"local",
+          httpStatus:documentResponse?.status(),finalPath:new URL(page.url()).pathname,
+          terminalState:expectedAttendanceError?"error":state,
+          captureIntent:expectedAttendanceError?"error":undefined,files:[path],
+        });
       };
       for(const width of viewportWidths)await capture("more",width,"standard");
       for(const width of [390,1280])await capture("home",width,"standard");
@@ -110,9 +124,31 @@ for(const scenario of acceptanceScenarios){
       for(const width of [320,390,430])await capture("messages",width,"standard");
       await capture("home",390,"text-200");
       await capture("more",430,"dark-reduced");
-      const report="qa-artifacts/ui-manifests/UIX17-"+suiteLabel+"-captures.json";
-      writeFileSync(report,JSON.stringify({head:process.env.GITHUB_SHA??"local",browser:testInfo.project.name,scenes:captures},null,2)+"\n");
+      // Compare exact role/locale/route/viewport/mode identities, not just an aggregate count.
+      // The intentional, independently verified unconfigured-calendar error is *not* READY.
+      const targets=[
+        ...viewportWidths.map(width=>({route:"more",width,mode:"standard"})),
+        ...[390,1280].map(width=>({route:"home",width,mode:"standard"})),
+        ...[390,1280].map(width=>({route:scenario.detail,width,mode:"standard"})),
+        ...[320,390,430].map(width=>({route:"messages",width,mode:"standard"})),
+        {route:"home",width:390,mode:"text-200"},
+        {route:"more",width:430,mode:"dark-reduced"},
+      ].map(entry=>({
+        role:scenario.persona,locale:scenario.locale,
+        route:"/"+scenario.locale+"/school/"+entry.route,width:entry.width,mode:entry.mode,
+      }));
+      const coverage=assertCompleteAudit(policyRecords,{
+        expected:15,targets,verifyFiles:true,requireIdentity:true,
+        expectedSha:process.env.GITHUB_SHA??"local",
+      });
+      expect(coverage.captured).toBe(15);
+      expect(coverage.denied).toBe(0);
       expect(captures).toHaveLength(15);
+      const report="qa-artifacts/ui-manifests/UIX17-"+suiteLabel+"-captures.json";
+      writeFileSync(report,JSON.stringify({
+        head:process.env.GITHUB_SHA??"local",browser:testInfo.project.name,
+        scenes:captures,policyRecords,coverage,
+      },null,2)+"\n");
     }finally{await school.close();}
   });
 }

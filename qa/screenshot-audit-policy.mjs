@@ -1,3 +1,4 @@
+import { existsSync, statSync } from "node:fs";
 /** Summarize evidence without turning a denied route, loading screen or redirect into a pass. */
 export function summarizeCaptures(records, {strictRetry = false, verifiedDenials = []} = {}) {
   const summary = {attempted: records.length, captured: 0, denied: 0, failed: 0, failures: []};
@@ -11,7 +12,7 @@ export function summarizeCaptures(records, {strictRetry = false, verifiedDenials
       continue;
     }
     if (entry.error) { fail(entry.error); continue; }
-    if (entry.httpStatus === undefined || entry.httpStatus < 200 || entry.httpStatus >= 400) {
+    if (entry.httpStatus === undefined || entry.httpStatus < 200 || entry.httpStatus >= 300) {
       fail(`HTTP ${entry.httpStatus ?? 'missing'}`); continue;
     }
     if (entry.finalPath !== entry.route) {
@@ -32,13 +33,38 @@ export function summarizeCaptures(records, {strictRetry = false, verifiedDenials
 }
 
 /** Also checks exact expected pathname+viewport pairs, not only their total count. */
-export function assertCompleteAudit(records, {expected, targets, strictRetry = false, verifiedDenials = []} = {}) {
+export function assertCompleteAudit(records, {expected, targets, strictRetry = false, verifiedDenials = [], verifyFiles = false, requireIdentity = false, expectedSha} = {}) {
   const summary = summarizeCaptures(records, {strictRetry, verifiedDenials});
   if (expected !== undefined && expected !== summary.attempted) {
     throw new Error(`Expected ${expected} route attempts, got ${summary.attempted}`);
   }
+  if (requireIdentity) {
+    for (const entry of records) {
+      if (!entry.role || !['admin', 'teacher', 'guardian'].includes(entry.role) ||
+          !['ar', 'de'].includes(entry.locale) ||
+          typeof entry.sha !== 'string' || !entry.sha.trim() ||
+          !entry.route?.startsWith(`/${entry.locale}/`) ||
+          !Number.isInteger(entry.width) || entry.width <= 0 ||
+          !entry.mode) {
+        throw new Error(`Missing role/locale/path/width/mode/sha capture identity: ${entry.route ?? '-'}`);
+      }
+      if (expectedSha !== undefined && entry.sha !== expectedSha) {
+        throw new Error(`Capture SHA mismatch for ${entry.route}: ${entry.sha} is not ${expectedSha}`);
+      }
+    }
+  }
+  if (verifyFiles) {
+    for (const entry of records) {
+      if ([403, 404].includes(entry.httpStatus) && verifiedDenials.includes(entry.route)) continue;
+      for (const file of entry.files ?? []) {
+        if (typeof file !== 'string' || !existsSync(file) || !statSync(file).isFile() || statSync(file).size === 0) {
+          throw new Error(`Missing or empty screenshot file for ${entry.route}: ${file}`);
+        }
+      }
+    }
+  }
   if (targets) {
-    const key = (entry) => `${entry.route}::${entry.width}`;
+    const key = (entry) => `${entry.role ?? ''}::${entry.locale ?? ''}::${entry.route}::${entry.width}::${entry.mode ?? 'standard'}`;
     const actual = new Set(records.map(key));
     const required = new Set(targets.map(key));
     if (actual.size !== records.length) throw new Error('Duplicate route/viewport capture attempt');
