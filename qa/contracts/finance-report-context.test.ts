@@ -24,4 +24,8 @@ test("clearing the student and status removes only their URL keys",()=>{
 });
 
 test("invalid or reversed finance date filters are never restored",()=>{
-  const invalid=new URLSearchParams("receivedFrom=2026-¶»§q«^
+  const invalid=new URLSearchParams("receivedFrom=2026-11-22&receivedThrough=2026-11-01");
+  const restored=readFinanceReportContext(invalid);
+  assert.equal(restored.receivedFrom,undefined);
+  assert.equal(restored.receivedThrough,undefined);
+});

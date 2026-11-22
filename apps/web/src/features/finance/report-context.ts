@@ -29,4 +29,5 @@ export function writeFinanceReportContext(params:URLSearchParams,filters:Finance
     else next.delete(key);
   }
   next.delete("cutoff");
-  return n¶»§q«^
+  return next;
+}
