@@ -104,9 +104,13 @@ async function correctionEvent(tx:Transaction,actorId:string,value:Changed){
 export function correctAttendance(actor:ActorContext,id:string,key:string|null,input:z.infer<typeof attendanceCorrectionInput>){
   return commitCommand(actor,"attendance.record.correct",key,hashCommand({id,...input}),{
     authorize:async(tx)=>{
-      await requireCapability(tx,actor,"attendance.supervise");
-      const [row]=await tx`select 1 from app.attendance_correction_context(${id})`;
-      if(!row)throw new ApiError("not_found");
+      if(actor.persona!=="teacher")throw new ApiError("forbidden");
+      const [row]=await tx<{allowed:boolean}[]>`
+        select app.attendance_scope(sheet.class_id,sheet.school_date,'attendance.approve') as allowed
+        from app.attendance_row pupil join app.attendance_sheet sheet on sheet.id=pupil.sheet_id
+        where pupil.id=${id}
+      `;
+      if(!row?.allowed)throw new ApiError("forbidden");
     },
     mutate:async(tx)=>{
       const [value]=await tx<Omit<Changed,"rowId">[]>`
@@ -123,6 +127,10 @@ export function correctAttendance(actor:ActorContext,id:string,key:string|null,i
 
 type CalendarChanged = Omit<Changed,"previousStatus"|"calendarCancelled"|"rowId"> & {rowId:string|null};
 export function cancelApprovedDate(actor:ActorContext,id:string,key:string|null,input:z.infer<typeof attendanceCancellationInput>){
+  // Retroactive calendar cancellation changes approved attendance evidence.
+  // It must not be performed by an administrative supervisor. Its historical
+  // records stay readable; a separate teacher-verified exception workflow is required.
+  throw new ApiError("forbidden");
   return commitCommand(actor,"attendance.sheet.cancel_for_calendar",key,hashCommand({id,...input}),{
     authorize:async(tx)=>{
       await requireCapability(tx,actor,"attendance.supervise");
