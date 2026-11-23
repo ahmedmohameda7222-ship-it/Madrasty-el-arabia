@@ -50,20 +50,24 @@ export default async function SchoolPage({ params, searchParams }: {
         {(session.activePersona !== "admin" || calendar || academic || attendance) && <MoreGroup group="learning">
           <summary>{locale === "ar" ? "التعليم والحضور" : "Unterricht und Anwesenheit"}</summary>
           <div className="more-rows">
-            {(session.activePersona==="teacher"||academic)&&<Link className="more-row" href={`/${locale}/school/more/grading`}>{locale==="ar"?"تصحيح الواجبات":"Hausaufgaben korrigieren"}</Link>}
-            {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/reports`}>{locale==="ar"?"التقرير الأكاديمي":"Lernbericht"}</Link>}
-            {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/exams`}>{locale==="ar"?"الامتحانات":"Prüfungen"}</Link>}
-            {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/evaluations`}>{locale==="ar"?"التقييمات الدورية":"Regelmäßige Beurteilungen"}</Link>}
-            {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/homework`}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>}
-            {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/academics`}>{locale==="ar"?"الشرح والأنشطة":"Unterricht und Aktivitäten"}</Link>}
-            {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/curriculum`}>{locale==="ar"?"المواد والدروس":"Fächer und Unterricht"}</Link>}
+            {session.activePersona==="admin" && (academic || attendance) &&
+              <Link className="more-row" href={`/${locale}/school/more/oversight`}>
+                {locale==="ar"?"متابعة التدريس":"Unterricht im Blick"}
+              </Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/grading`}>{locale==="ar"?"تصحيح الواجبات":"Hausaufgaben korrigieren"}</Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/reports`}>{locale==="ar"?"التقرير الأكاديمي":"Lernbericht"}</Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/exams`}>{locale==="ar"?"الامتحانات":"Prüfungen"}</Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/evaluations`}>{locale==="ar"?"التقييمات الدورية":"Regelmäßige Beurteilungen"}</Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/homework`}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/academics`}>{locale==="ar"?"الشرح والأنشطة":"Unterricht und Aktivitäten"}</Link>}
+            {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/curriculum`}>{locale==="ar"?"المواد والدروس":"Fächer und Unterricht"}</Link>}
             {(calendar || academic || teacherInvites) && <Link className="more-row" href={`/${locale}/school/more/assignments`}>{locale === "ar" ? "المدرسون والإدارة" : "Lehrkräfte und Verwaltung"}</Link>}
             {(session.activePersona !== "admin" || calendar || academic) && <Link className="more-row"
               href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
-            {attendance && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
+            {session.activePersona==="teacher" && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
           </div></MoreGroup>}
-        {(placement || calendar || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
-            {(calendar || placement) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
+        {(placement || calendar || academic || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
+            {(calendar || placement || academic) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
             {calendar && <Link className="more-row" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
           </div>
         </MoreGroup>}
