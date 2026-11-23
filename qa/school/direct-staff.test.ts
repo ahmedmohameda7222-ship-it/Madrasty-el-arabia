@@ -113,6 +113,10 @@ test("Klassenlehrkraft can teach any subject offered in its class, without a sec
       body:{offeringId:assigned.offeringId,date:clock.day,time:"11:00",kind:"oral",
         title:"Class teacher may teach Sira",maxScore:20},status:201,
     });
-    assert.equal(result.payload.data.offeringId,assigned.offeringId);
+    // POST returns a minimal creation receipt; the detail API exposes offeringId.
+    const exam = await fixtureApi(school,`/academics/exams/${result.payload.data.id}`,{
+      token:teacher,persona:"teacher",
+    });
+    assert.equal(exam.payload.data.offeringId,assigned.offeringId);
   }finally{await school.close();}
 });
