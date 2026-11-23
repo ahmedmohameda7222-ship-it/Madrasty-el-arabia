@@ -6,7 +6,7 @@ import { Timetable } from "@/features/school/timetable/Timetable";
 import { webSchoolSession } from "@/server/identity/web-session";
 
 export default async function TimetablePage({params,searchParams}:{
-  params:Promise<{locale:Locale}>;searchParams:Promise<{child?:string;class?:string}>;
+  params:Promise<{locale:Locale}>;searchParams:Promise<{child?:string;class?:string;year?:string}>;
 }) {
   const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
@@ -16,5 +16,6 @@ export default async function TimetablePage({params,searchParams}:{
   }
   const id = z.uuid();
   return <Timetable locale={locale} child={id.safeParse(query.child).data}
-    initialClass={session.activePersona==="admin"?id.safeParse(query.class).data:undefined}/>;
+    initialClass={session.activePersona==="admin"?id.safeParse(query.class).data:undefined}
+    initialYear={session.activePersona==="admin"?id.safeParse(query.year).data:undefined}/>;
 }
