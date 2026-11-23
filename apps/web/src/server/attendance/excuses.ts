@@ -89,6 +89,7 @@ async function rowDetail(tx:Transaction,id:string,showReason=false){
 }
 
 export function readStaffAttendanceRow(actor:ActorContext,id:string,showReason:boolean){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,(tx)=>rowDetail(tx,id,showReason));
 }
 
