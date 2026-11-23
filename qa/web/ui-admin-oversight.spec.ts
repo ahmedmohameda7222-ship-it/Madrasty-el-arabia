@@ -22,5 +22,9 @@ test("Admin gets read-only oversight, not teacher grading actions",async({page,c
   await expect(page.getByText("Nur ansehen")).toBeVisible();
   await expect(page.getByRole("heading",{name:"Klassenübersicht"})).toBeVisible();
   await expect(page.getByRole("button",{name:"Prüfung hinzufügen"})).toHaveCount(0);
+  // The Admin must still reach an actual read-only exam list.
+  await page.getByRole("link",{name:"Prüfungen ansehen"}).click();
+  await expect(page.getByLabel("Fach, Klasse und Schuljahr")).toBeVisible();
+  await expect(page.getByRole("button",{name:"Prüfung hinzufügen"})).toHaveCount(0);
  }finally{await school.close();}
 });
