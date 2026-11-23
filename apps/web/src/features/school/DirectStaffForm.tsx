@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
   capabilityKeys, directStaffAccountInput, directStaffAccountSchema,
-  schoolClassSchema, subjectSchema, yearSchema, type Locale,
+  schoolClassSchema, yearSchema, type Locale,
 } from "@madrasty/contracts";
 import { useAdminCommand } from "@/api/commands";
 import { ApiResponseError, requestApi } from "@/api/client";
@@ -14,22 +14,14 @@ const copy={
   ar:{teacher:"إضافة مدرس",admin:"إضافة Admin",name:"الاسم",email:"البريد الإلكتروني",
     password:"كلمة المرور",passwordHint:"كلمة المرور دي ثابتة، مش مؤقتة، ويمكن تغييرها بعدين من إعدادات الحساب.",
     phone:"التليفون (اختياري)",language:"اللغة",permissions:"صلاحيات الإدارة",save:"إنشاء الحساب",cancel:"إلغاء",
-    year:"السنة الدراسية",class:"الفصل (اختياري)",subject:"المادة",noClass:"بدون فصل حاليًا",
-    select:"اختر",classTeacher:"مدرس الفصل",subjectTeacher:"مدرس مادة",
-    classTeacherHint:"مدرس الفصل مسؤول عن الحضور والتدريس والدرجات والتواصل الخاص بالفصل.",
-    subjectTeacherHint:"مدرس المادة مسؤول عن تدريس المادة والدرجات والتواصل الخاص بها.",
-    assigning:"التكليف في الفصل",assignmentHelp:"ممكن تختار الفصل والمادة دلوقتي، أو تسيبهم لبعدين.",
-    accountOnly:"بيانات الحساب",noSubject:"بدون مادة محددة",missing:"اختار الفصل الأول.",
+    year:"السنة الدراسية",class:"الفصل (اختياري)",noClass:"بدون فصل حاليًا",
+    select:"اختر",assigning:"الفصل",
   },
   de:{teacher:"Lehrkraft hinzufügen",admin:"Admin hinzufügen",name:"Name",email:"E-Mail-Adresse",
     password:"Passwort",passwordHint:"Dieses Passwort ist dauerhaft, nicht temporär. Es kann später vom Kontoinhaber geändert werden.",
     phone:"Telefon (optional)",language:"Sprache",permissions:"Admin-Berechtigungen",save:"Konto erstellen",cancel:"Abbrechen",
-    year:"Schuljahr",class:"Klasse (optional)",subject:"Fach",noClass:"Noch keiner Klasse zugeordnet",
-    select:"Auswählen",classTeacher:"Klassenlehrkraft",subjectTeacher:"Fachlehrkraft",
-    classTeacherHint:"Die Klassenlehrkraft ist für Anwesenheit, Unterricht, Noten und Klassenkommunikation zuständig.",
-    subjectTeacherHint:"Die Fachlehrkraft verwaltet Unterricht, Noten und Kommunikation für ihr Fach.",
-    assigning:"Klassenzuordnung",assignmentHelp:"Klasse und Fach können direkt zugeordnet oder später festgelegt werden.",
-    accountOnly:"Kontodaten",noSubject:"Kein bestimmtes Fach",missing:"Zuerst eine Klasse auswählen.",
+    year:"Schuljahr",class:"Klasse (optional)",noClass:"Noch keiner Klasse zugeordnet",
+    select:"Auswählen",assigning:"Klasse",
   },
 } as const;
 const grants:Record<string,[string,string]>={
@@ -46,29 +38,24 @@ const grants:Record<string,[string,string]>={
   "bank.configure":["إعداد البنك","Zahlungskonto konfigurieren"],
   "audit.read":["سجل العمليات","Aktivitätsprotokoll"],
 };
-const yearList=yearSchema.array(), classList=schoolClassSchema.array(), subjectList=subjectSchema.array();
+const yearList=yearSchema.array(), classList=schoolClassSchema.array();
 type Year=z.infer<typeof yearSchema>;
 type Classroom=z.infer<typeof schoolClassSchema>;
-type Subject=z.infer<typeof subjectSchema>;
 export function DirectStaffForm({locale,role,canCreateAdmin,canAssignClasses=true,saved,cancel}:{
   locale:Locale;role:"teacher"|"admin";canCreateAdmin:boolean;canAssignClasses?:boolean;
   saved:()=>void;cancel:()=>void;
 }){
   const t=copy[locale],command=useAdminCommand();
   const [granted,setGranted]=useState<string[]>([]);
-  const [years,setYears]=useState<Year[]>([]),[classes,setClasses]=useState<Classroom[]>([]),[subjects,setSubjects]=useState<Subject[]>([]);
-  const [yearId,setYearId]=useState(""),[classId,setClassId]=useState(""),[subjectId,setSubjectId]=useState("");
-  const [kind,setKind]=useState<"primary"|"subject">("primary");
+  const [years,setYears]=useState<Year[]>([]),[classes,setClasses]=useState<Classroom[]>([]);
+  const [yearId,setYearId]=useState(""),[classId,setClassId]=useState("");
   const [busy,setBusy]=useState(false),[problem,setProblem]=useState("");
   useEffect(()=>{
     if(role!=="teacher"||!canAssignClasses)return;
     const controller=new AbortController();
-    Promise.all([
-      requestApi("/school/years",yearList,{signal:controller.signal}),
-      requestApi("/school/subjects",subjectList,{signal:controller.signal}),
-    ]).then(([a,b])=>{
-      setYears(a.data);setSubjects(b.data);
-      const active=a.data.find(y=>y.state==="active")??a.data.find(y=>y.state!=="closed");
+    requestApi("/school/years",yearList,{signal:controller.signal}).then(({data})=>{
+      setYears(data);
+      const active=data.find(y=>y.state==="active")??data.find(y=>y.state!=="closed");
       if(active)setYearId(active.id);
     }).catch(e=>{if(!controller.signal.aborted)setProblem(e instanceof Error?e.message:String(e));});
     return()=>controller.abort();
@@ -84,14 +71,13 @@ export function DirectStaffForm({locale,role,canCreateAdmin,canAssignClasses=tru
   const submit=(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();
     if(role==="admin"&&!canCreateAdmin){setProblem(dictionary(locale)["error.forbidden"]);return;}
-    if(role==="teacher"&&classId&&kind==="subject"&&!subjectId){setProblem(dictionary(locale)["error.validation"]);return;}
     const data=new FormData(event.currentTarget);
     const parsed=directStaffAccountInput.safeParse({
       role,displayName:data.get("displayName"),email:data.get("email"),password:data.get("password"),
       workPhone:data.get("workPhone")||null,correspondenceLocale:data.get("locale"),
       capabilities:role==="admin"?granted:[],
       ...(role==="teacher"&&canAssignClasses&&classId?{
-        assignment:{classId,kind,subjectId:subjectId||null},
+        assignment:{classId,kind:"primary",subjectId:null},
       }:{}),
     });
     if(!parsed.success){setProblem(dictionary(locale)["error.validation"]);return;}
@@ -120,7 +106,7 @@ export function DirectStaffForm({locale,role,canCreateAdmin,canAssignClasses=tru
         <h3 className={styles.cardTitle}>{t.assigning}</h3>
         <div className={styles.twoCols}>
           <label className={styles.field}>{t.year}<select className={styles.select} value={yearId}
-            onChange={e=>{setYearId(e.target.value);setClassId("");setSubjectId("");setClasses([]);}}>
+            onChange={e=>{setYearId(e.target.value);setClassId("");setClasses([]);}}>
             <option value="">{t.select}</option>{years.filter(y=>y.state!=="closed").map(y=>
               <option key={y.id} value={y.id}>{y.startsOn} – {y.endsExclusive}</option>)}
           </select></label>
@@ -129,20 +115,6 @@ export function DirectStaffForm({locale,role,canCreateAdmin,canAssignClasses=tru
             <option value="">{t.noClass}</option>{classes.map(c=><option key={c.id} value={c.id}>{c.code} · {locale==="ar"?c.nameAr:c.nameDe}</option>)}
           </select></label>
         </div>
-        {classId&&<>
-          <div className={styles.radioCards}>
-            <label className={styles.radioCard}><input type="radio" checked={kind==="primary"} onChange={()=>setKind("primary")}/>{t.classTeacher}</label>
-            <label className={styles.radioCard}><input type="radio" checked={kind==="subject"} onChange={()=>setKind("subject")}/>{t.subjectTeacher}</label>
-          </div>
-          <p className={styles.muted}>{kind==="primary"?t.classTeacherHint:t.subjectTeacherHint}</p>
-          <label className={styles.field}>{t.subject}
-            <select className={styles.select} value={subjectId} onChange={e=>setSubjectId(e.target.value)} required={kind==="subject"}>
-              <option value="">{kind==="primary"?t.noSubject:t.select}</option>
-              {subjects.map(x=><option value={x.id} key={x.id}>{locale==="ar"?x.nameAr:x.nameDe}</option>)}
-            </select>
-          </label>
-        </>}
-        <p className={styles.muted}>{t.assignmentHelp}</p>
       </>}
       {role==="admin"&&canCreateAdmin&&<fieldset className={styles.details}><legend>{t.permissions}</legend>
         <div className={styles.stack}>
