@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { directStaffAccountInput,directStaffAccountSchema } from "../../packages/contracts/src/identity";
+import { setUpCalendar } from "../fixtures/calendar";
 import { schoolFixtures } from "../fixtures/school";
 import { fixtureApi } from "../support/api";
 
@@ -43,4 +44,46 @@ test("only Hauptadmin can create an Admin; delegated staff manager can create a 
     });
     assert.equal(directStaffAccountSchema.parse(root.payload.data).role,"admin");
   } finally {await school.close();}
+});
+
+test("Hauptadmin provisions a teacher with full class responsibility and a subject atomically",async()=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    const {year,command}=await setUpCalendar(school,admin);
+    const classroom=await command("/school/classes","staff-onboarding-class",{
+      yearId:year.id,code:"QA_STAFF_ONBOARD",nameAr:"فصل مدرس جديد",nameDe:"Neue Lehrkraft",capacity:20,
+    });
+    const subjects=(await fixtureApi(school,"/school/subjects",{token:admin})).payload.data as {id:string;code:string}[];
+    const fiqh=subjects.find(s=>s.code==="FIQH");
+    assert.ok(fiqh);
+    const teacher=directStaffAccountInput.parse({
+      role:"teacher",displayName:"Test Teacher Full Class",email:`qa-${school.run}-class-teacher@madrasty.invalid`,
+      password:"permanent-school-password-2026",workPhone:null,correspondenceLocale:"de",capabilities:[],
+      assignment:{classId:classroom.id,kind:"primary",subjectId:fiqh.id},
+    });
+    const created=directStaffAccountSchema.parse((await fixtureApi(school,"/staff/provision",{
+      method:"POST",token:admin,persona:"admin",body:teacher,status:201,
+    })).payload.data);
+    const linked=(await fixtureApi(school,`/school/classes/${classroom.id}/assignments`,{token:admin})).payload.data as {
+      kind:string;staffId:string;subjectId:string|null;capabilities:string[];revoked:boolean
+    }[];
+    const primary=linked.find(a=>a.staffId===created.staffId&&a.kind==="primary");
+    const subject=linked.find(a=>a.staffId===created.staffId&&a.kind==="subject");
+    assert.ok(primary);assert.ok(subject);
+    assert.equal(subject.subjectId,fiqh.id);
+    assert.deepEqual(new Set(primary.capabilities),new Set([
+      "attendance.read","attendance.mark","attendance.approve","academics.plan",
+      "academics.log","academics.grade","academics.publish","comms.class",
+    ]));
+    assert.equal(subject.capabilities.includes("attendance.mark"),false);
+    assert.equal(subject.capabilities.includes("academics.grade"),true);
+
+    const staffOnly=await school.bearer("office","admin");
+    await fixtureApi(school,"/staff/provision",{
+      method:"POST",token:staffOnly,persona:"admin",
+      body:{...teacher,email:`qa-${school.run}-denied-assignment@madrasty.invalid`},status:403,
+    });
+  }finally{await school.close();}
 });
