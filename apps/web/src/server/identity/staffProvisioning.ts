@@ -17,7 +17,7 @@ export async function provisionStaffAccount(ctx: ActorContext, input: z.infer<ty
   const { data, error } = await provider.admin.createUser({
     email: input.email, password: input.password, email_confirm: true,
   });
-  if (error) throw new ApiError(error.status === 429 ? "throttled" : error.status >= 500 ? "unavailable" : "conflict");
+  if (error) throw new ApiError(error.status === 429 ? "throttled" : (error.status ?? 0) >= 500 ? "unavailable" : "conflict");
   const providerId = data.user?.id;
   if (!providerId) throw new ApiError("unavailable");
 

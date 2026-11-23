@@ -6,10 +6,10 @@ import { useAdminCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 const list = invitationSchema.array();
 const wording = {
-  ar:{title:"حساب ولي الأمر",active:"الحساب مفعل",notInvited:"لم تُرسل دعوة بعد",pending:"دعوة بانتظار التفعيل",
+  ar:{title:"حساب ولي الأمر",active:"الحساب مفعل",activated:"الحساب مفعل",notInvited:"لم تُرسل دعوة بعد",pending:"دعوة بانتظار التفعيل",
     expired:"انتهت الدعوة",replaced:"تم استبدال الدعوة",revoked:"دعوة ملغاة",send:"إرسال دعوة",
     reissue:"إعادة إصدار الدعوة",correct:"تصحيح البريد (اختياري)",save:"تأكيد",noEmail:"يجب تسجيل البريد أولًا."},
-  de:{title:"Elternzugang",active:"Konto aktiviert",notInvited:"Noch keine Einladung",pending:"Einladung ausstehend",
+  de:{title:"Elternzugang",active:"Konto aktiviert",activated:"Konto aktiviert",notInvited:"Noch keine Einladung",pending:"Einladung ausstehend",
     expired:"Einladung abgelaufen",replaced:"Einladung ersetzt",revoked:"Einladung widerrufen",
     send:"Einladung senden",reissue:"Einladung neu ausstellen",
     correct:"Korrigierte E-Mail (optional)",save:"Bestätigen",noEmail:"Bitte zuerst eine E-Mail-Adresse hinterlegen."},
