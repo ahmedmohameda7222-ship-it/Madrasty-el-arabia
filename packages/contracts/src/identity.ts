@@ -21,6 +21,12 @@ export const sessionSchema = z.object({
 export type SchoolSession = z.infer<typeof sessionSchema>;
 
 /** Used only by the authenticated administrative server endpoint. Never persist passwords. */
+export const staffClassAssignmentInput = z.object({
+  classId: z.uuid(),
+  kind: z.enum(["primary","subject"]),
+  subjectId: z.uuid().nullable().optional(),
+}).refine(value => value.kind !== "subject" || Boolean(value.subjectId), {path:["subjectId"]});
+
 export const directStaffAccountInput = z.object({
   role: z.enum(["teacher", "admin"]),
   displayName: z.string().trim().min(1).max(200),
@@ -28,9 +34,10 @@ export const directStaffAccountInput = z.object({
   password: z.string().min(12).max(128),
   workPhone: z.string().trim().min(1).max(48).nullable().optional(),
   correspondenceLocale: z.enum(["ar", "de"]).default("de"),
+  assignment: staffClassAssignmentInput.optional(),
   capabilities: z.array(capabilitySchema.exclude(["access.manage"])).max(12).default([])
     .refine((items) => new Set(items).size === items.length),
-});
+}).refine(value => !value.assignment || value.role === "teacher", {path:["assignment"]});
 export const directStaffAccountSchema = z.object({
   accountId: z.uuid(),
   staffId: z.uuid(),
