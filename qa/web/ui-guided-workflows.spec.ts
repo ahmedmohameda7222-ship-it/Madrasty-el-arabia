@@ -129,5 +129,7 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     await page.getByRole("combobox",{name:"Lehrkraft",exact:true}).selectOption({index:1});
     await page.getByRole("button",{name:"Zuordnung speichern"}).click();
     await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
+    await page.getByRole("link",{name:"Zuordnungen und Vertretungen"}).click();
+    await expect(page.getByRole("combobox",{name:"Aufgabe",exact:true})).toHaveCount(0);
   }finally{await school.close();}
 });
