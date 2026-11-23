@@ -133,3 +133,18 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     await expect(page.getByRole("combobox",{name:"Aufgabe",exact:true})).toHaveCount(0);
   }finally{await school.close();}
 });
+
+
+test("legacy primary and subject assignments render the volunteer only once",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("admin","admin");
+    const {year,apple}=await setUpCalendar(school,token);
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.goto(`/de/school/more/classes?year=${year.id}&class=${apple.id}`);
+    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
+    await expect(page.getByText("يوسف عبد الرحمن محمود",{exact:true})).toHaveCount(1);
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
+  }finally{await school.close();}
+});
