@@ -27,12 +27,14 @@ export async function homeworkRecord(tx:Transaction,id:string,child?:string){
   return homeworkEntry.parse(row);
 }
 export function readHomework(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,child);
     return homeworkRecord(tx,id,child);
   });
 }
 export function listHomework(actor:ActorContext,query:z.infer<typeof homeworkListQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,query.childId);
     const after=position(query.cursor);
