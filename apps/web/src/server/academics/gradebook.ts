@@ -27,7 +27,7 @@ export function readHomeworkGrades<T>(request:Request,schema:z.ZodType<T>){
 }
 
 async function staff(tx:Transaction,actor:ActorContext){
-  if(actor.persona==="guardian")throw new ApiError("forbidden");
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   await academicReadScope(tx,actor);
 }
 
