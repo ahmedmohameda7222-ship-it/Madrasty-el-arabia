@@ -55,6 +55,12 @@ begin
   if name in ('admin', 'admin-two') then
     insert into app.access_administrator (account_id) values (account);
   end if;
+  -- The disposable first synthetic Admin acts as the original Hauptadmin.
+  -- Never modify the real live initial_admin row; this runs only in local QA.
+  if name = 'admin' and not exists (select 1 from app.initial_admin) then
+    insert into app.initial_admin(singleton,submitted_email,account_id,provider_subject,activated_at)
+      values (true,'madrastyelarabia@hotmail.com',account,subject,now());
+  end if;
   capabilities := case name
     when 'admin' then array['bank.configure']
     when 'office' then array['students.manage', 'staff.invite']
