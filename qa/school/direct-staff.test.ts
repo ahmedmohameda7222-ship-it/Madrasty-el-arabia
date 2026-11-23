@@ -7,6 +7,7 @@ import { fixtureApi } from "../support/api";
 test("only Hauptadmin can create an Admin; delegated staff manager can create a teacher directly",async()=>{
   const school=schoolFixtures();
   try {
+    await school.seed();
     const office=await school.bearer("office","admin");
     const admin=await school.bearer("admin","admin");
     const finance=await school.bearer("finance","admin");

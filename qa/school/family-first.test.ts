@@ -8,6 +8,7 @@ import { fixtureApi } from "../support/api";
 test("family onboarding creates approved guardian links and optional classroom enrollments atomically",async()=>{
   const school=schoolFixtures();
   try {
+    await school.seed();
     const token=await school.bearer("admin","admin");
     const {apple,berry}=await setUpCalendar(school,token);
     const root={method:"POST",token,persona:"admin",status:[200,201]} as const;

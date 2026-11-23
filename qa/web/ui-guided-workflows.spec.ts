@@ -7,6 +7,7 @@ test("family-first dashboard opens one guardian-and-children form with optional 
   test.setTimeout(75_000);
   const school = schoolFixtures();
   try {
+    await school.seed();
     const token = await school.bearer("admin","admin");
     const {year,apple} = await setUpCalendar(school, token);
     await context.addCookies([
