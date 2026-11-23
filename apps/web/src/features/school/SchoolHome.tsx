@@ -16,11 +16,11 @@ const copy={
   ar:{today:"دروس اليوم",schedule:"افتح الجدول",attendance:"افتح الحضور",assignments:"تكليفاتي الحالية",
     next:"الحصة التالية",
     noAssignment:"ما فيش تكليفات سارية اليوم.",noLessons:"ما فيش دروس مواعيدها النهارده.",profile:"افتح بيانات الطفل",
-    substitute:"مدرس بديل",children:"أبنائي",subject:"مدرس مادة",primary:"مسؤول الحضور"},
+    substitute:"مدرس بديل",children:"أبنائي",teacher:"مدرس"},
   de:{today:"Unterricht heute",schedule:"Wochenplan öffnen",attendance:"Anwesenheit öffnen",assignments:"Meine aktuellen Einsätze",
     next:"Nächste Unterrichtsstunde",
     noAssignment:"Heute gibt es keine laufenden Einsätze.",noLessons:"Für heute sind keine Stunden geplant.",profile:"Kind öffnen",
-    substitute:"Vertretung",children:"Kinder",subject:"Fachunterricht",primary:"Anwesenheitsverantwortung"},
+    substitute:"Vertretung",children:"Kinder",teacher:"Lehrkraft"},
 } as const;
 const myTeaching=teachingViewSchema.array(), myChildren=childSummarySchema.array();
 
@@ -53,7 +53,7 @@ function TeacherHome({locale}:{locale:Locale}){
       <ul className="group-list">{rows.map((row)=><li key={row.id}>
         <Link className="group-row" href={row.kind==="primary"?`${base}/attendance?class=${row.classId}`:`${base}/more/timetable`}>
           <bdi>{locale==="ar"?row.classNameAr:row.classNameDe}</bdi>
-          <small>{row.substitute?text.substitute:row.kind==="primary"?text.primary:locale==="ar"?row.subjectNameAr:row.subjectNameDe}</small>
+          <small>{row.substitute?text.substitute:text.teacher}</small>
         </Link>
       </li>)}</ul>
     </section>}</TimetableRead>
