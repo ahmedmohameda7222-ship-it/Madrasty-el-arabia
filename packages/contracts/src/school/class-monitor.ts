@@ -4,6 +4,8 @@ import {schoolDateSchema} from "../http";
 const id=z.uuid(),day=schoolDateSchema;
 const subject=z.object({subjectAr:z.string(),subjectDe:z.string()});
 const pupil=z.object({studentId:id,name:z.string(),number:z.string()});
+const publishedMark=z.object({studentId:id,studentName:z.string(),score:z.number().nullable(),
+  maxScore:z.number(),feedback:z.string().nullable()});
 const attendanceStatus=z.enum(["present","late","absent_unexcused","absent_excused"]).nullable();
 const officialEvaluation=subject.extend({
   id,title:z.string(),periodStart:day,periodEnd:day,publishedAt:z.string(),
@@ -23,11 +25,14 @@ export const adminMonitorDashboard=z.object({
     absentUnexcused:z.int().nonnegative(),absentExcused:z.int().nonnegative()}).nullable(),
   attendance:z.object({studentId:id,date:day,status:attendanceStatus}).array(),
   exams:subject.extend({id,title:z.string(),date:day,time:z.string().nullable(),
-    kind:z.enum(["oral","written"]),maxScore:z.number(),publishedCount:z.int().nonnegative()}).array(),
+    kind:z.enum(["oral","written"]),maxScore:z.number(),publishedCount:z.int().nonnegative(),
+    publishedResults:publishedMark.array()}).array(),
   homework:subject.extend({id,title:z.string(),instructions:z.string(),
-    issuedOn:day,dueOn:day,publishedCount:z.int().nonnegative()}).array(),
+    issuedOn:day,dueOn:day,publishedCount:z.int().nonnegative(),
+    publishedResults:publishedMark.array()}).array(),
   activities:subject.extend({id,title:z.string(),date:day,maxScore:z.number(),
-    publishedCount:z.int().nonnegative()}).array(),
+    publishedCount:z.int().nonnegative(),
+    publishedResults:publishedMark.array()}).array(),
   evaluations:officialEvaluation.extend({studentId:id,studentName:z.string()}).array(),
   teaching:subject.extend({id,date:day,notes:z.string(),recordedAt:z.string(),
     teacher:z.string().nullable()}).array(),
