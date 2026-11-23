@@ -37,6 +37,22 @@ test("Admin sees class list first, then a read-only class dashboard and student 
  }finally{await school.close();}
 });
 
+test("Admin can open the monitoring dashboard directly from class administration",async({page,context})=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const {year,apple}=await setUpCalendar(school,admin);
+  await signInAdmin(context,admin);
+  await page.goto(`/de/school/more/classes?year=${year.id}&class=${apple.id}`);
+  await page.getByRole("link",{name:"Klassenübersicht öffnen"}).click();
+  await expect(page).toHaveURL(new RegExp(`/de/school/more/oversight\\?year=${year.id}&class=${apple.id}`));
+  await expect(page.getByRole("heading",{name:"Klassenübersicht",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Zurück zu Klassen"}).click();
+  await expect(page.getByRole("heading",{name:"Klassen",exact:true})).toBeVisible();
+ }finally{await school.close();}
+});
+
 test("Admin sees only announced exams for selected class; another class and teacher drafts stay hidden",async({page,context})=>{
  const school=schoolFixtures();
  try {
