@@ -29,11 +29,11 @@ const queueRoute=(locale:Locale,route:string,asOf:string)=>`/${locale}${route}${
 const publications = schoolPublishingEntry.array();
 const overviewCopy = {
   ar: {title:"المدرسة في أرقام", quick:"إجراءات سريعة", students:"الطلبة", classes:"الفصول", teachers:"المدرسون",
-    guardian:"إضافة ولي أمر", event:"إضافة حدث", invoice:"إصدار فاتورة", announcement:"إرسال إعلان",
-    news:"آخر أخبار المدرسة", events:"الأحداث", allNews:"أخبار المدرسة", addStudent:"إضافة طالب", school:"أقسام المدرسة"},
+    guardian:"إضافة أسرة", event:"إضافة حدث", invoice:"إصدار فاتورة", announcement:"إرسال إعلان",
+    news:"آخر أخبار المدرسة", events:"الأحداث", allNews:"أخبار المدرسة", addStudent:"إضافة أسرة", school:"أقسام المدرسة"},
   de: {title:"Die Schule auf einen Blick", quick:"Schnellzugriff", students:"Schüler", classes:"Klassen", teachers:"Lehrkräfte",
-    guardian:"Sorgeberechtigte hinzufügen", event:"Neue Veranstaltung", invoice:"Rechnungen ausstellen", announcement:"Mitteilung senden",
-    news:"Aktuelles aus der Schule", events:"Veranstaltungen", allNews:"Schulnachrichten", addStudent:"Schüler hinzufügen", school:"Schulbereiche"},
+    guardian:"Neue Familie hinzufügen", event:"Neue Veranstaltung", invoice:"Rechnungen ausstellen", announcement:"Mitteilung senden",
+    news:"Aktuelles aus der Schule", events:"Veranstaltungen", allNews:"Schulnachrichten", addStudent:"Neue Familie hinzufügen", school:"Schulbereiche"},
 } as const;
 
 function SchoolUpdates({locale,today,version}:{locale:Locale;today:string;version:number}) {
@@ -102,7 +102,7 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
     return <>
       <RoleHero persona="admin" title={text.work} detail={detail}
         action={first?{href:queueRoute(locale,first.route,first.filters.asOf),label:text.open}
-          :overview?.students != null ? {href:`${base}/students?add=student`,label:labels.addStudent}
+          :overview?.students != null ? {href:`${base}/students?add=family`,label:labels.addStudent}
           :{href:`${base}/more`,label:labels.school}} />
       {metrics.length>0&&<section className="auth-card">
         <h2>{labels.title}</h2>
@@ -113,7 +113,7 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
       {overview&&(overview.students != null||overview.mayIssue||overview.mayPublish)&&<section className="auth-card">
         <h2>{labels.quick}</h2>
         <div className="header-actions">
-          {overview.students != null&&<Link className="plain-button" href={`${base}/students?add=guardian`}>{labels.guardian}</Link>}
+          {overview.students != null&&<Link className="plain-button" href={`${base}/students?add=family`}>{labels.guardian}</Link>}
           {overview.mayPublish&&<><Link className="plain-button" href={`${base}/more/events?add=1`}>{labels.event}</Link>
             <Link className="plain-button" href={`${base}/more/broadcasts`}>{labels.announcement}</Link></>}
           {overview.mayIssue&&<Link className="plain-button" href={`${base}/more/issue-invoices`}>{labels.invoice}</Link>}

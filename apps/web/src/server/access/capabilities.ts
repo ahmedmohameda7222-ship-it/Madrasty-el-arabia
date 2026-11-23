@@ -32,6 +32,9 @@ export function readAccess(ctx: ActorContext, id: string) {
 export function replaceAccess(ctx: ActorContext, id: string, edit: AccessEdit) {
   return withActor(ctx, async (tx) => {
     await requireCapability(tx, ctx, "access.manage");
+    // Only the original Hauptadmin may administer any staff grants.
+    const [root] = await tx<{ allowed: boolean }[]>`select app.is_hauptadmin() as allowed`;
+    if (!root?.allowed) throw new ApiError("forbidden");
     if (id === ctx.accountId) throw new ApiError("forbidden");
     const [result] = await tx<{ revision: number | null }[]>`
       select app.replace_access(${id}, ${edit.revision}, ${tx.json(edit)}) as revision

@@ -37,7 +37,7 @@ export default async function SchoolPage({ params, searchParams }: {
   if (tab === "students" && !families) notFound();
   return (
     <>
-      <h1>{text[tab as Tab]}</h1>
+      <h1>{tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
       {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
