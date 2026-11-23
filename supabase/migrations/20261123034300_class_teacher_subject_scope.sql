@@ -5,7 +5,7 @@ set local search_path=pg_catalog,public,extensions;
 
 create or replace function app.staff_assignable(ref uuid,begin_day date,end_day date)
 returns boolean language sql stable security definer set search_path=pg_catalog
-as $
+as $$
   select exists (
     select 1 from app.staff_profile p join app.account a on a.id=p.account_id
     where p.id=ref and p.role='teacher'
@@ -15,7 +15,7 @@ as $
       and 'teacher'=any(app.active_personas(a.id))
       and not ('admin'=any(app.active_personas(a.id)))
   )
-$;
+$$;
 
 create or replace function app.teacher_scope(
   target_class uuid,local_day date,action text,offering uuid default null
