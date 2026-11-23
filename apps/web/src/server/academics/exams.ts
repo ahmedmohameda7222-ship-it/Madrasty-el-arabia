@@ -36,12 +36,14 @@ async function examRecord(tx:Transaction,id:string,child?:string){
   return examEntry.parse(raw);
 }
 export function loadExam(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,child);
     return examRecord(tx,id,child);
   });
 }
 export function listExams(actor:ActorContext,input:z.infer<typeof examListQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,input.childId);
     const cursor=cursorFrom(input.cursor);
@@ -55,7 +57,7 @@ export function listExams(actor:ActorContext,input:z.infer<typeof examListQuery>
   });
 }
 async function staff(tx:Transaction,actor:ActorContext){
-  if(actor.persona==="guardian")throw new ApiError("forbidden");
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   await academicReadScope(tx,actor);
 }
 async function scope(tx:Transaction,offering:string,date:string,operation:"academics.plan"|"academics.grade"|"academics.publish"){
