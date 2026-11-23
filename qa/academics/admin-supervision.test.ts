@@ -36,11 +36,12 @@ test("Admin monitors teaching records without exam, homework or attendance write
      canPlan:monitored.canPlan,canPublish:monitored.canPublish,
      canLog:monitored.canLog,canGrade:monitored.canGrade,
    },{canPlan:false,canPublish:false,canLog:false,canGrade:false});
-   const exam=(await fixtureApi(school,`/academics/exams/${examId}`,{token:admin,persona:"admin"})).payload.data;
-   assert.equal(exam.canEdit,false);
-   assert.equal(exam.canAnnounce,false);
-   assert.equal(exam.canMark,false);
-   assert.equal(exam.canPublish,false);
+   // Legacy teacher endpoints contain working drafts: no Admin can retrieve them.
+   await fixtureApi(school,`/academics/exams/${examId}`,{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,"/academics/exams?limit=20",{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,`/academics/exams/${examId}/marks`,{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,"/academics/evaluations?limit=20",{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,"/academics/grading?limit=20",{token:admin,persona:"admin",status:403});
    await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,
      {method:"POST",token:admin,persona:"admin",key:randomUUID(),body:{},status:[403,404]});
    const opened=await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,
