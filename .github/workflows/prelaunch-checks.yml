@@ -1,7 +1,7 @@
 name: Prelaunch web and contracts
 on:
   push:
-    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22"]
+    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -57,7 +57,7 @@ jobs:
           pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/academics/attendance.test.ts
           pnpm qa:finance
   domain-acceptance:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -98,7 +98,7 @@ jobs:
           echo "Domain suite failures: $failures"
           test "$failures" -eq 0
   android-debug:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
