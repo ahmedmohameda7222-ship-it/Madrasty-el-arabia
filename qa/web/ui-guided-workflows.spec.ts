@@ -20,7 +20,7 @@ test("family-first dashboard opens one guardian-and-children form with optional 
     await page.goto("/de/school/home");
     await expect(page.locator(".school-overview-metrics dt")).toHaveText(["Schüler","Klassen","Lehrkräfte"]);
     await page.getByRole("link",{name:"Neue Familie hinzufügen",exact:true}).first().click();
-    await expect(page).toHaveURL(/\\/de\\/school\\/students\\?add=family$/);
+    await expect(page).toHaveURL(/students\?add=family$/);
     await expect(page.getByRole("heading",{name:"Neue Familie hinzufügen",exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"Schüler hinzufügen",exact:true})).toHaveCount(0);
     const seed=Date.now();
