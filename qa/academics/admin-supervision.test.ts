@@ -56,6 +56,8 @@ test("Admin monitors teaching records without exam, homework or attendance write
    assert.ok(monitoredClass);
    assert.equal(monitoredClass.attendanceState,"not_started",
      "An open teacher sheet must not appear in the Admin monitoring response");
+   assert.equal(monitoredClass.unmarkedCount,null,
+     "No student attendance count should be inferred from an unapproved sheet");
  }finally{await school.close();}
 });
 
