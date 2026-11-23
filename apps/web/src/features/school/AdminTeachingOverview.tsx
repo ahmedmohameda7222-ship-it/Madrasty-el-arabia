@@ -20,7 +20,7 @@ const labels={
  de:{title:"Unterricht im Blick",readonly:"Nur ansehen",date:"Schultag",apply:"Anzeigen",
  search:"Klasse suchen",classes:"Klassen",pending:"Offene Anwesenheit",
  teaching:"Unterrichtseinträge",upcoming:"Prüfungen in 14 Tagen",classList:"Klassenübersicht",
- details:"Status dieser Klasse",teacher:"Klassenlehrkraft",unassigned:"Keine Lehrkraft zugewiesen",
+ details:"Status dieser Klasse",teacher:"Lehrkraft",unassigned:"Keine Lehrkraft zugewiesen",
  attendance:"Anwesenheit",not_started:"Noch nicht begonnen",open:"Noch nicht bestätigt",approved:"Bestätigt",
  unmarked:"Schüler ohne Anwesenheitsstatus",homework:"Laufende Hausaufgaben",
  exams:"Anstehende Prüfungen",marks:"Erfasste Noten (30 Tage)",logs:"Unterrichtseinträge heute",

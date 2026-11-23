@@ -90,8 +90,21 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await expect(page.getByRole("combobox",{name:"Klasse (optional)"})).toBeVisible();
     await page.getByRole("combobox",{name:"Schuljahr"}).selectOption(year.id);
     await page.getByRole("combobox",{name:"Klasse (optional)"}).selectOption(classroom.id);
+    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByText("Fachlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByRole("combobox",{name:"Fach",exact:true})).toHaveCount(0);
     await expect(page.getByText("So funktioniert es jetzt")).toHaveCount(0);
     await expect(page.getByText("Lehrkräfte und Admins zentral verwalten. Klassenzuweisungen erfolgen direkt in der jeweiligen Klasse.")).toHaveCount(0);
+    const teacherName="QA Volunteer "+Date.now();
+    await page.locator('input[name="displayName"]').fill(teacherName);
+    await page.locator('input[name="email"]').fill(`qa-${school.run}-volunteer@madrasty.invalid`);
+    await page.locator('input[name="password"]').fill("QA-volunteer-permanent-2026");
+    await page.getByRole("button",{name:"Konto erstellen"}).click();
+    await expect(page.getByText(teacherName)).toBeVisible();
+    await page.goto(`/de/school/more/classes?year=${year.id}&class=${classroom.id}`);
+    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
+    await expect(page.getByText(teacherName)).toBeVisible();
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
   }finally{await school.close();}
 });
 
@@ -104,13 +117,42 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     const room=await command("/school/classes","class-teachers-ui",{
       yearId:year.id,code:"QA_CLASS_TEAM",nameAr:"فصل المعلمين",nameDe:"Klassenlehrkräfte",capacity:20,
     });
-    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await context.addCookies([
+      {name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},
+      {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
+    ]);
     await page.goto(`/de/school/more/classes?year=${year.id}&class=${room.id}`);
-    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
+    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
     await page.getByRole("button",{name:"Lehrkraft zuweisen"}).click();
-    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toBeVisible();
-    await expect(page.getByText("Fachlehrkraft",{exact:true})).toBeVisible();
-    await expect(page.getByRole("checkbox",{name:"Anwesenheit betreuen"})).toHaveCount(0);
+    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByText("Fachlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByRole("combobox",{name:"Fach",exact:true})).toHaveCount(0);
+    await expect(page.getByRole("combobox",{name:"Lehrkraft",exact:true})).toBeVisible();
     await expect(page.getByText("Erweiterte Einstellungen")).toBeVisible();
+    await page.getByRole("combobox",{name:"Lehrkraft",exact:true}).selectOption({index:1});
+    const assignmentResponse=page.waitForResponse(response=>
+      response.url().includes(`/api/v1/school/classes/${room.id}/assignments`) &&
+      response.request().method()==="POST");
+    await page.getByRole("button",{name:"Zuordnung speichern"}).click();
+    const posted=await assignmentResponse;
+    expect(posted.status(),await posted.text()).toBe(201);
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
+    await page.getByRole("link",{name:"Zuordnungen und Vertretungen"}).click();
+    await expect(page.getByRole("combobox",{name:"Aufgabe",exact:true})).toHaveCount(0);
+  }finally{await school.close();}
+});
+
+
+test("legacy primary and subject assignments render the volunteer only once",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("admin","admin");
+    const {year,apple}=await setUpCalendar(school,token);
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.goto(`/de/school/more/classes?year=${year.id}&class=${apple.id}`);
+    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
+    await expect(page.getByText("يوسف عبد الرحمن محمود",{exact:true})).toHaveCount(1);
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
   }finally{await school.close();}
 });

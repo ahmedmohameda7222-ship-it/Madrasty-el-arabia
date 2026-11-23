@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
   assignmentActions, assignmentSchema, assignmentWithSubstitutesSchema, schoolClassSchema, staffAccountSchema,
-  staffRoleSchema, staffSchema, subjectSchema, substituteSchema, teachingViewSchema, yearSchema,
+  staffRoleSchema, staffSchema, substituteSchema, teachingViewSchema, yearSchema,
   type Locale, type StaffProfile,
 } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
@@ -18,7 +18,7 @@ const words = {
     choose:"اختر", name:"الاسم المهني", role:"الدور المهني", teacher:"مدرس", admin:"إدارة", principal:"مدير", deputy:"وكيل", office:"موظف مكتب",
     titleAr:"المسمى بالعربية", titleDe:"المسمى بالألمانية", email:"بريد العمل", phone:"هاتف العمل", account:"حساب المدرسة", noAccount:"بدون ربط",
     from:"بداية السريان", until:"تاريخ الانتهاء (غير مشمول)", save:"حفظ", class:"الفصل", year:"السنة الدراسية", kind:"نوع التكليف",
-    primary:"مسؤول الحضور", subject:"مدرس مادة", course:"المادة", staff:"الموظف المكلّف", caps:"صلاحيات التكليف",
+    primary:"مدرس", subject:"مدرس", course:"المادة", staff:"الموظف المكلّف", caps:"صلاحيات التكليف",
     replace:"استبدال المكلّف", end:"تعديل الانتهاء", revoke:"إلغاء التكليف", substitute:"تكليف بديل", substitutes:"البدلاء",
     active:"ساري", ended:"ملغى", overview:"تكليفاتي", search:"بحث باسم الموظف", more:"عرض المزيد",
   },
@@ -26,19 +26,18 @@ const words = {
     choose:"Auswählen", name:"Dienstlicher Name", role:"Dienstliche Rolle", teacher:"Lehrkraft", admin:"Admin", principal:"Schulleitung", deputy:"Stellvertretung", office:"Schulbüro",
     titleAr:"Funktion auf Arabisch", titleDe:"Funktion auf Deutsch", email:"Dienstliche E-Mail", phone:"Diensttelefon", account:"Schulkonto", noAccount:"Ohne Verknüpfung",
     from:"Gültig ab", until:"Gültig bis (ausschließlich)", save:"Speichern", class:"Klasse", year:"Schuljahr", kind:"Aufgabe",
-    primary:"Anwesenheitsverantwortung", subject:"Fachunterricht", course:"Fach", staff:"Beauftragte Person", caps:"Berechtigungen",
+    primary:"Lehrkraft", subject:"Lehrkraft", course:"Fach", staff:"Beauftragte Person", caps:"Berechtigungen",
     replace:"Person ablösen", end:"Ende ändern", revoke:"Einsatz widerrufen", substitute:"Vertretung beauftragen", substitutes:"Vertretungen",
     active:"Gültig", ended:"Widerrufen", overview:"Meine Einsätze", search:"Nach Namen suchen", more:"Weitere anzeigen",
   },
 } as const;
 
 const actionLabel={"attendance.read":["عرض الحضور","Anwesenheit ansehen"],"attendance.mark":["تسجيل الحضور","Anwesenheit erfassen"],"attendance.approve":["اعتماد الحضور","Anwesenheit bestätigen"],"academics.plan":["خطة الدروس","Unterricht planen"],"academics.log":["سجل الشرح","Unterricht dokumentieren"],"academics.grade":["تسجيل الدرجات","Noten erfassen"],"academics.publish":["نشر النتائج","Ergebnisse veröffentlichen"],"comms.class":["مراسلات الفصل","Klassenkommunikation"]} as const;
-const staffList=staffSchema.array(), accountList=staffAccountSchema.array(), subjects=subjectSchema.array();
+const staffList=staffSchema.array(), accountList=staffAccountSchema.array();
 const classes=schoolClassSchema.array(), years=yearSchema.array(), assignmentList=assignmentWithSubstitutesSchema.array();
 const teaching=teachingViewSchema.array();
 const updated=z.object({ assignment:assignmentSchema, replacement:assignmentSchema.nullable() });
 type StaffAccounts=z.infer<typeof accountList>;
-type Subject=z.infer<typeof subjectSchema>;
 type Assignment=z.infer<typeof assignmentWithSubstitutesSchema>;
 type Capability=z.infer<typeof assignmentSchema>["capabilities"][number];
 
@@ -69,7 +68,6 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
   const [peopleCursor,setPeopleCursor]=useState<string>();
   const [search,setSearch]=useState("");
   const [query,setQuery]=useState("");
-  const [subjectsList,setSubjects]=useState<Subject[]>([]);
   const [record,setRecord]=useState<StaffProfile|null>();
   const [newRole,setNewRole]=useState<"teacher"|"admin"|null>(null);
   const [yearsList,setYears]=useState<z.infer<typeof years>>([]);
@@ -85,10 +83,9 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
     const abort=new AbortController();
     Promise.all([
       requestApi(`${area}/staff/accounts`,accountList,{signal:abort.signal}),
-      requestApi(`${area}/subjects`,subjects,{signal:abort.signal}),
       requestApi(`${area}/years`,years,{signal:abort.signal}),
-    ]).then(([one,two,three])=>{
-      setAccounts(one.data);setSubjects(two.data);setYears(three.data);setReadiness("ready");
+    ]).then(([one,three])=>{
+      setAccounts(one.data);setYears(three.data);setReadiness("ready");
     }).catch((error)=>{if(!abort.signal.aborted){setError(report(locale,error));setReadiness("error");}});
     return ()=>abort.abort();
   },[locale,reload]);
@@ -160,11 +157,12 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
             <option value="">{text.choose}</option>{classList.map((item)=><option value={item.id} key={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
           </select></label>}
         </div>
-        {classId&&<AssignmentForm key={classId} classId={classId} locale={locale} people={people.filter((item)=>item.accountId&&!item.disabled)}
-          offered={subjectsList} saved={()=>setReload(reload+1)} />}
+        {classId&&!rows.some(a=>a.kind==="primary"&&!a.revoked&&a.untilExclusive>new Date().toISOString().slice(0,10))&&
+          <AssignmentForm key={classId} classId={classId} locale={locale}
+            people={people.filter((item)=>item.role==="teacher"&&item.accountId&&!item.disabled)} saved={()=>setReload(reload+1)} />}
       </section>
       {classId&&rows.map((item)=><AssignmentCard key={item.id} item={item} locale={locale}
-        people={people.filter((row)=>row.accountId&&!row.disabled)} saved={()=>setReload(reload+1)} />)}
+        people={people.filter((row)=>row.role==="teacher"&&row.accountId&&!row.disabled)} saved={()=>setReload(reload+1)} />)}
     </>}
     <WorkNotice operation={operation}/>
     {error&&readiness==="ready"&&<p role="alert">{error}</p>}
@@ -219,29 +217,22 @@ function StaffSelect({locale,people}:{locale:Locale;people:StaffProfile[]}) {
     {people.map((entry)=><option value={entry.id} key={entry.id}>{entry.displayName}</option>)}</select></label>;
 }
 
-function AssignmentForm({classId,locale,people,offered,saved}:{classId:string;locale:Locale;people:StaffProfile[];offered:Subject[];saved:()=>void}) {
+function AssignmentForm({classId,locale,people,saved}:{classId:string;locale:Locale;people:StaffProfile[];saved:()=>void}) {
   const text=words[locale],command=useAdminCommand(),operation=useOperation(locale);
-  const [kind,setKind]=useState<"primary"|"subject">("primary");
   return <form className="auth-form" onSubmit={(event)=>{
     event.preventDefault();
     const data=new FormData(event.currentTarget);
     void operation.run(async()=>{
       await command(`${area}/classes/${classId}/assignments`,"POST",{
-        kind,staffId:data.get("staffId"),subjectId:kind==="subject"?data.get("subjectId"):null,
-        from:data.get("from"),untilExclusive:data.get("until"),capabilities:data.getAll("capability"),
+        kind:"primary",staffId:data.get("staffId"),subjectId:null,
+        from:data.get("from"),untilExclusive:data.get("until"),capabilities:[...assignmentActions],
       },assignmentSchema);saved();
     });
   }}>
     <h3>{text.newAssignment}</h3>
     <StaffSelect locale={locale} people={people}/>
-    <label>{text.kind}<select value={kind} onChange={(event)=>setKind(event.target.value as typeof kind)}>
-      <option value="primary">{text.primary}</option><option value="subject">{text.subject}</option></select></label>
-    {kind==="subject"&&<label>{text.course}<select name="subjectId" required>
-      <option value="">{text.choose}</option>{offered.map((item)=><option value={item.id} key={item.id}>{locale==="ar"?item.nameAr:item.nameDe}</option>)}
-    </select></label>}
     <label>{text.from}<input type="date" name="from" required/></label>
     <label>{text.until}<input type="date" name="until" required/></label>
-    <Capabilities key={kind} locale={locale} options={kind==="primary"?assignmentActions:assignmentActions.filter((cap)=>!["attendance.mark","attendance.approve"].includes(cap))}/>
     <button className="primary-button" disabled={operation.busy}>{text.save}</button><WorkNotice operation={operation}/>
   </form>;
 }
@@ -304,7 +295,7 @@ export function TeachingSummary({locale,classId}:{locale:Locale;classId?:string}
       :!rows?{kind:"initialLoading"}:rows.length===0?{kind:"empty"}:{kind:"ready",content:<ul className="group-list">
         {rows.map((item)=><li key={item.id} className="group-row">
           <bdi dir="ltr">{item.classCode}</bdi><bdi>{locale==="ar"?item.classNameAr:item.classNameDe}</bdi>
-          <span>{item.kind==="primary"?text.primary:(locale==="ar"?item.subjectNameAr:item.subjectNameDe)}</span>
+          <span>{text.teacher}</span>
           <bdi>{item.from} – {item.untilExclusive}</bdi>{item.substitute&&<span>{text.substitute}</span>}
         </li>)}
       </ul>}}/>
