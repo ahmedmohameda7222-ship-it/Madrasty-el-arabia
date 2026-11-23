@@ -113,8 +113,8 @@ function ClassDetails({locale,report,section,setSection,openStudent,goBack}:{
    <span className={styles.readonly}>{t.readonly}</span>
   </div>
   <header className={styles.header}>
-   <span className={styles.eyebrow}>{t.dashboard}</span>
-   <h1>{report.classroom.code} · <bdi>{locale==="ar"?report.classroom.nameAr:report.classroom.nameDe}</bdi></h1>
+   <h1>{t.dashboard}</h1>
+   <p className={styles.classIdentity}><strong>{report.classroom.code} · <bdi>{locale==="ar"?report.classroom.nameAr:report.classroom.nameDe}</bdi></strong></p>
    <p>{t.teacher}: {report.classroom.teacherName??t.notAssigned}</p>
   </header>
   <div className={styles.metrics}>
