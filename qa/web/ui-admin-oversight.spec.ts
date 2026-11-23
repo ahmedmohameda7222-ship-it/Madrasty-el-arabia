@@ -14,6 +14,7 @@ test("Admin gets read-only oversight, not teacher grading actions",async({page,c
     {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
   ]);
   await page.goto("/de/school/more");
+  await page.getByText("Unterricht und Anwesenheit",{exact:true}).click();
   await expect(page.getByRole("link",{name:"Unterricht im Blick"})).toBeVisible();
   await expect(page.getByRole("link",{name:"Hausaufgaben korrigieren"})).toHaveCount(0);
   await page.getByRole("link",{name:"Unterricht im Blick"}).click();
