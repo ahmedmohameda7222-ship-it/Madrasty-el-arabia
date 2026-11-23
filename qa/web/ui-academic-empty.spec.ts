@@ -44,3 +44,16 @@ test("Admin old academic exam link redirects to safe class monitoring, not an ex
     await page.screenshot({path:"qa-artifacts/ui-after/UIX08-admin-ar-exams-safe-monitor-390.png",animations:"disabled"});
   }finally{await school.close();}
 });
+
+test("Admin old attendance editor route redirects to official class monitoring",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("admin","admin");
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.goto("/de/school/more/attendance");
+    await expect(page).toHaveURL(/\/de\/school\/more\/oversight(?:\?.*)?$/);
+    await expect(page.getByRole("heading",{name:"Klassen",exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Anwesenheit bestätigen"})).toHaveCount(0);
+  }finally{await school.close();}
+});
