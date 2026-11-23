@@ -74,7 +74,7 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
  return <section className={css.card} aria-label={t.title}>
   <div className={css.cardHeader}>
     <h2 className={css.cardTitle}>{t.title}</h2>
-    {canManage&&year.state!=="closed"&&!hasLeader&&<button type="button" className={css.primary}
+    {canManage&&!loading&&year.state!=="closed"&&!hasLeader&&<button type="button" className={css.primary}
       onClick={()=>{setOpen(current=>!current);setError("");}}>{t.add}</button>}
   </div>
   {loading?<p role="status" className={css.muted}>{t.waiting}</p>:<div className={css.assignmentList}>
