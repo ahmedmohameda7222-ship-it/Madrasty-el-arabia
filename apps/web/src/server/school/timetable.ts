@@ -158,6 +158,25 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
       starts_on::text as "from",ends_exclusive::text as "untilExclusive"
     from app.timetable_teachers(${yearId}) where slot_id is distinct from ${exclude ?? null}::uuid
   `;
+  // A one-off moved lesson occupies its actual room/teacher/time. Recurring
+  // slot exclusion constraints alone cannot detect clashes with these changes.
+  const special=await tx<{date:string;classId:string;roomId:string;staffId:string;start:number;end:number}[]>`
+    with changed as (
+      select v.local_date,v.assignment_id,l.class_id,v.room_id,
+        v.starts_minute as starts,v.ends_minute as ends
+      from app.weekly_slot_override v join app.weekly_slot l on l.id=v.slot_id
+      where l.year_id=${yearId} and l.canceled_at is null and not v.cancelled
+        and v.slot_id is distinct from ${exclude ?? null}::uuid
+    )
+    select x.local_date::text as date,x.class_id as "classId",x.room_id as "roomId",
+      a.staff_id as "staffId",x.starts as start,x.ends as end
+    from changed x join app.teaching_assignment a on a.id=x.assignment_id
+    union all
+    select x.local_date::text,x.class_id,x.room_id,d.staff_id,x.starts,x.ends
+    from changed x join app.substitute_assignment d on d.assignment_id=x.assignment_id
+    where d.revoked_at is null and 'academics.log'=any(d.capabilities)
+      and x.local_date>=d.effective_from and x.local_date<d.effective_until
+  `;
   const proposed: Proposed[]=[];
   const entries=drafts.map((draft)=>{
     const issues: TimetableIssue[]=[];
@@ -185,6 +204,15 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
     }
     if(staff.some((candidate)=>staffOccupancy.some((slot)=>slot.staffId===candidate.staffId && overlaps(candidate,slot)))){
       issueOnce(issues,"staffId");
+    }
+    for(const changed of special){
+      if(changed.date<draft.from||changed.date>=draft.untilExclusive)continue;
+      const weekday=new Date(changed.date+"T12:00:00Z").getUTCDay()||7;
+      if(weekday!==draft.weekday||draft.start>=changed.end||changed.start>=draft.end)continue;
+      if(changed.classId===term.classId)issueOnce(issues,"classId");
+      if(changed.roomId===draft.roomId)issueOnce(issues,"roomId");
+      if(staff.some(candidate=>candidate.staffId===changed.staffId
+        && changed.date>=candidate.from&&changed.date<candidate.untilExclusive))issueOnce(issues,"staffId");
     }
     return {slot:{...draft,assignmentRevision:term.revision,roomRevision},issues};
   });
