@@ -20,7 +20,7 @@ async function timetableEditor(tx: Transaction, actor: ActorContext) {
 
 const roomFields = (tx: Transaction) => tx`id, code, name_ar as "nameAr", name_de as "nameDe", revision`;
 const slotFields = (tx: Transaction) => tx`id, assignment_id as "assignmentId", year_id as "yearId", class_id as "classId",
-  room_id as "roomId", weekday, starts_minute as start, ends_minute as end, effective_from::text as "from",
+  room_id as "roomId", (select o.subject_id from app.class_subject o where o.id=offering_id) as "subjectId", weekday, starts_minute as start, ends_minute as end, effective_from::text as "from",
   effective_until::text as "untilExclusive", canceled_at is not null as canceled, revision`;
 
 export function listRooms(actor: ActorContext) {
@@ -70,14 +70,25 @@ async function getSlot(tx: Transaction,id: string) {
   return timetableSlot.parse(row);
 }
 
-export function readSlot(actor: ActorContext,id: string) {
-  return withActor(actor,async(tx)=>{await timetableEditor(tx,actor);return getSlot(tx,id);});
+export function readSlot(actor: ActorContext,id: string,date?:string) {
+  return withActor(actor,async(tx)=>{
+    await timetableEditor(tx,actor);
+    const original=await getSlot(tx,id);
+    if(!date)return original;
+    const [change]=await tx<{cancelled:boolean;assignmentId:string|null;subjectId:string|null;roomId:string|null;start:number|null;end:number|null}[]>`
+      select v.cancelled,v.assignment_id as "assignmentId",o.subject_id as "subjectId",v.room_id as "roomId",
+        v.starts_minute as start,v.ends_minute as end
+      from app.weekly_slot_override v left join app.class_subject o on o.id=v.offering_id
+      where v.slot_id=${id} and v.local_date=${date}::date`;
+    return change&&!change.cancelled ? timetableSlot.parse({...original,
+      assignmentId:change.assignmentId,subjectId:change.subjectId,roomId:change.roomId,start:change.start,end:change.end}) : original;
+  });
 }
 
 type DateRange = { from: string; untilExclusive: string };
 type TimedRange = DateRange & { weekday: number; start: number; end: number };
 type Occupancy = TimedRange & { staffId: string };
-type Term = DateRange & { id: string; classId: string; staffId: string; revision: number };
+type Term = DateRange & { id: string; classId: string; staffId: string; revision: number; kind: string; offeringId: string|null; subjectId: string|null };
 type Delegate = DateRange & { assignmentId: string; staffId: string };
 type Proposed = { draft: DraftSlot; classId: string; staff: Occupancy[]; issues: TimetableIssue[] };
 
@@ -118,19 +129,21 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
   const assignments=[...new Set(drafts.map((draft)=>draft.assignmentId))];
   const terms=new Map((await tx<Term[]>`
     select t.id,t.class_id as "classId",t.staff_id as "staffId",t.effective_from::text as "from",
-      t.effective_until::text as "untilExclusive",t.revision
-    from app.teaching_assignment t join app.school_class c on c.id=t.class_id
+      t.effective_until::text as "untilExclusive",t.revision,t.kind,t.offering_id as "offeringId",o.subject_id as "subjectId"
+    from app.teaching_assignment t left join app.class_subject o on o.id=t.offering_id join app.school_class c on c.id=t.class_id
     join app.staff_profile p on p.id=t.staff_id
     join app.staff_accounts() owner on owner.account_id=p.account_id and 'teacher'=any(owner.roles)
     where p.disabled_at is null and p.active_from<=t.effective_from
       and (p.active_until is null or p.active_until>=t.effective_until) and c.year_id=${yearId} and t.id=any(${assignments}::uuid[])
-      and t.kind='subject' and t.revoked_at is null
+      and t.kind in ('subject','primary','support') and t.revoked_at is null
   `).map((term)=>[term.id,term]));
   const delegates=await tx<Delegate[]>`
     select assignment_id as "assignmentId",staff_id as "staffId",effective_from::text as "from",
       effective_until::text as "untilExclusive" from app.substitute_assignment
     where assignment_id=any(${assignments}::uuid[]) and revoked_at is null and 'academics.log'=any(capabilities)
   `;
+  const requestedSubjects=[...new Set(drafts.flatMap((draft)=>draft.subjectId?[draft.subjectId]:[]))];
+  const validSubjects=new Set((await tx<{id:string}[]>`select id from app.subject where id=any(${requestedSubjects}::uuid[])`).map(({id})=>id));
   const roomIds=[...new Set(drafts.map((draft)=>draft.roomId))];
   const rooms=new Map((await tx<{id: string;revision: number}[]>`
     select id,revision from app.room where id=any(${roomIds}::uuid[])
@@ -151,6 +164,10 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
     const term=terms.get(draft.assignmentId);
     const roomRevision=rooms.get(draft.roomId);
     if(!term)issues.push({field:"assignmentId",kind:"unavailable"});
+    if(term && (term.kind==="subject"
+      ? (draft.subjectId!==undefined && draft.subjectId!==term.subjectId)
+      : !draft.subjectId))issues.push({field:"subjectId",kind:"unavailable"});
+    if(draft.subjectId && !validSubjects.has(draft.subjectId))issues.push({field:"subjectId",kind:"unavailable"});
     if(!roomRevision)issues.push({field:"roomId",kind:"unavailable"});
     if(draft.start>=draft.end)issues.push({field:"end",kind:"interval"});
     if(draft.from<year.starts || term && draft.from<term.from)issues.push({field:"from",kind:"interval"});
@@ -206,9 +223,19 @@ function checkReview(current: TimetablePreview, yearRevision: number, slots: z.i
   });
 }
 
+async function offeringFor(tx:Transaction,draft:DraftSlot) {
+  if(!draft.subjectId)return null;
+  const [row]=await tx<{id:string}[]>`
+    insert into app.class_subject(class_id,subject_id)
+    select class_id,${draft.subjectId}::uuid from app.teaching_assignment where id=${draft.assignmentId}
+    on conflict(class_id,subject_id) do update set subject_id=excluded.subject_id returning id`;
+  if(!row)throw new ApiError("conflict");
+  return row.id;
+}
 async function insertSlot(tx: Transaction,draft: DraftSlot) {
-  const [slot]=await tx<{id:string}[]>`insert into app.weekly_slot (assignment_id,room_id,weekday,starts_minute,ends_minute,effective_from,effective_until)
-    values (${draft.assignmentId},${draft.roomId},${draft.weekday},${draft.start},${draft.end},${draft.from}::date,${draft.untilExclusive}::date)
+  const offeringId=await offeringFor(tx,draft);
+  const [slot]=await tx<{id:string}[]>`insert into app.weekly_slot (assignment_id,offering_id,room_id,weekday,starts_minute,ends_minute,effective_from,effective_until)
+    values (${draft.assignmentId},${offeringId},${draft.roomId},${draft.weekday},${draft.start},${draft.end},${draft.from}::date,${draft.untilExclusive}::date)
     returning id`;
   return slot.id;
 }
@@ -244,7 +271,8 @@ export function updateSlot(actor: ActorContext,id: string,key: string | null,inp
       } else {
         const draft=input.slot;
         checkReview(await preview(tx,before.yearId,[draft],id),input.yearRevision,[draft]);
-        await tx`update app.weekly_slot set assignment_id=${draft.assignmentId},room_id=${draft.roomId},weekday=${draft.weekday},
+        const offeringId=await offeringFor(tx,draft);
+        await tx`update app.weekly_slot set assignment_id=${draft.assignmentId},offering_id=coalesce(${offeringId}::uuid,offering_id),room_id=${draft.roomId},weekday=${draft.weekday},
           starts_minute=${draft.start},ends_minute=${draft.end},effective_from=${draft.from}::date,
           effective_until=${draft.untilExclusive}::date,revision=revision+1 where id=${id}`;
       }
