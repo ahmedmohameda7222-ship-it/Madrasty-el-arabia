@@ -28,7 +28,7 @@ function datedPage<T>(rows:T[],limit:number,dates:(row:T)=>DatedEntry){
 }
 
 async function staffRead(tx:Transaction,actor:ActorContext){
-  if(actor.persona==="guardian")throw new ApiError("forbidden");
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   await academicReadScope(tx,actor);
 }
 async function offeringScope(tx:Transaction,actor:ActorContext,offering:string,date:string,operation:"academics.log"|"academics.grade"){
@@ -100,9 +100,11 @@ async function activityRecord(tx:Transaction,id:string,child?:string){
   return activityEntry.parse(row);
 }
 export function activityById(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{await academicReadScope(tx,actor,child);return activityRecord(tx,id,child);});
 }
 export function activities(actor:ActorContext,query:z.infer<typeof activityQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,query.childId);
     const after=cursorValue(query.cursor);
