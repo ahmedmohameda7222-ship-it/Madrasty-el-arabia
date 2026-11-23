@@ -295,7 +295,7 @@ export function TeachingSummary({locale,classId}:{locale:Locale;classId?:string}
       :!rows?{kind:"initialLoading"}:rows.length===0?{kind:"empty"}:{kind:"ready",content:<ul className="group-list">
         {rows.map((item)=><li key={item.id} className="group-row">
           <bdi dir="ltr">{item.classCode}</bdi><bdi>{locale==="ar"?item.classNameAr:item.classNameDe}</bdi>
-          <span>{item.kind==="primary"?text.primary:(locale==="ar"?item.subjectNameAr:item.subjectNameDe)}</span>
+          <span>{text.teacher}</span>
           <bdi>{item.from} – {item.untilExclusive}</bdi>{item.substitute&&<span>{text.substitute}</span>}
         </li>)}
       </ul>}}/>
