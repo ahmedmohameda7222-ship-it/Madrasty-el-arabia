@@ -87,11 +87,24 @@ test("Admin sees an announced exam and only published scores and evaluations",as
   const profilePath=`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`;
   let profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
   assert.equal(profile.exams.length,0,"Unpublished mark must never leave Admin API");
+  const classBeforePublication=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{
+    token:admin,persona:"admin",
+  })).payload.data;
+  const examBefore=classBeforePublication.exams.find((row:{id:string})=>row.id===created.id);
+  assert.equal(examBefore?.publishedResults.length,0);
+  assert.equal(JSON.stringify(classBeforePublication).includes("Published score feedback"),false);
   await fixtureApi(school,`/academics/exams/${created.id}/results/publish`,{
     method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
     body:{revision:announce.revision,reviewedRows:[{studentId:ids.ahmed,revision:marked.revision}]},status:200});
   profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
   assert.equal(profile.exams.find((exam:{id:string})=>exam.id===created.id)?.score,16.5);
+  const classAfterPublication=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{
+    token:admin,persona:"admin",
+  })).payload.data;
+  const examAfter=classAfterPublication.exams.find((row:{id:string})=>row.id===created.id);
+  assert.equal(examAfter.publishedResults.find((row:{studentId:string})=>row.studentId===ids.ahmed)?.score,16.5);
+  assert.equal(examAfter.publishedResults.find((row:{studentId:string})=>row.studentId===ids.ahmed)?.feedback,
+    "Published score feedback");
   const evaluationProfilePath=`/school/monitor/classes/${apple.id}/students/${ids.omar}`;
   const assessment=(await fixtureApi(school,"/academics/evaluations",{
     method:"POST",token:teacher,persona:"teacher",key:randomUUID(),status:201,
