@@ -153,9 +153,9 @@ test("Admin sees attendance rows only after approval, not while the sheet is ope
   assert.equal(after.attendance.filter((row:{date:string})=>row.date===day).length,opened.rows.length);
   assert.equal(after.lastAttendance.date,day);
   assert.equal(after.lastAttendance.present,ready.counts.present);
-  assert.equal(after.lastAttendance.absentExcused,ready.counts.absentExcused);
+  assert.equal(after.lastAttendance.absentExcused,ready.counts.absent_excused);
   assert.equal(after.lastAttendance.late,ready.counts.late);
-  assert.equal(after.lastAttendance.absentUnexcused,ready.counts.absentUnexcused);
+  assert.equal(after.lastAttendance.absentUnexcused,ready.counts.absent_unexcused);
   const student=(await fixtureApi(school,`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`,
     {token:admin,persona:"admin"})).payload.data;
   assert.equal(student.attendance.find((entry:{date:string})=>entry.date===day)?.status,
