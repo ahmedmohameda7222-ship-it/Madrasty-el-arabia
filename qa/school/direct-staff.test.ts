@@ -11,6 +11,9 @@ test("only Hauptadmin can create an Admin; delegated staff manager can create a 
     const office=await school.bearer("office","admin");
     const admin=await school.bearer("admin","admin");
     const finance=await school.bearer("finance","admin");
+    // Staff provisioning is a narrow capability, not classroom/profile administration.
+    await fixtureApi(school,"/school/staff",{token:office,status:403});
+    await fixtureApi(school,"/school/subjects",{token:office,status:403});
     const base={displayName:"QA Provisioned Staff",password:"QA-direct-secret-2026",workPhone:null,correspondenceLocale:"de",capabilities:[]};
     const roleAdmin={...base,role:"admin",email:`qa-${school.run}-denied-admin@madrasty.invalid`};
     await fixtureApi(school,"/staff/provision",{
