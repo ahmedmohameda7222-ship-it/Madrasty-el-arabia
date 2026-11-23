@@ -90,6 +90,9 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await expect(page.getByRole("combobox",{name:"Klasse (optional)"})).toBeVisible();
     await page.getByRole("combobox",{name:"Schuljahr"}).selectOption(year.id);
     await page.getByRole("combobox",{name:"Klasse (optional)"}).selectOption(classroom.id);
+    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByText("Fachlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByRole("combobox",{name:"Fach",exact:true})).toHaveCount(0);
     await expect(page.getByText("So funktioniert es jetzt")).toHaveCount(0);
     await expect(page.getByText("Lehrkräfte und Admins zentral verwalten. Klassenzuweisungen erfolgen direkt in der jeweiligen Klasse.")).toHaveCount(0);
   }finally{await school.close();}
@@ -108,9 +111,13 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     await page.goto(`/de/school/more/classes?year=${year.id}&class=${room.id}`);
     await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
     await page.getByRole("button",{name:"Lehrkraft zuweisen"}).click();
-    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toBeVisible();
-    await expect(page.getByText("Fachlehrkraft",{exact:true})).toBeVisible();
-    await expect(page.getByRole("checkbox",{name:"Anwesenheit betreuen"})).toHaveCount(0);
+    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByText("Fachlehrkraft",{exact:true})).toHaveCount(0);
+    await expect(page.getByRole("combobox",{name:"Fach",exact:true})).toHaveCount(0);
+    await expect(page.getByRole("combobox",{name:"Lehrkraft",exact:true})).toBeVisible();
     await expect(page.getByText("Erweiterte Einstellungen")).toBeVisible();
+    await page.getByRole("combobox",{name:"Lehrkraft",exact:true}).selectOption({index:1});
+    await page.getByRole("button",{name:"Zuordnung speichern"}).click();
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
   }finally{await school.close();}
 });
