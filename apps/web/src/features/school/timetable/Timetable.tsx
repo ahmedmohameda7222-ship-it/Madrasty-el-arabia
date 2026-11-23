@@ -171,7 +171,7 @@ export function WeekRows({locale,week,edit}:{
             <small>{locale==="ar"?slot.classNameAr:slot.classNameDe} · {slot.roomCode}</small>
             <small>{slot.teacherName}</small>
             {slot.substitute&&<span className={css.badge}>{text.substitute}</span>}
-            {!teaching&&<span className={css.badge}>{text.canceled}</span>}
+            {(!teaching||!slot.teaching)&&<span className={css.badge}>{text.canceled}</span>}
             {edit&&<button type="button" className="plain-button" onClick={()=>edit(slot.id,slot.date)}>{text.edit}</button>}
           </div>)}
         </div>
