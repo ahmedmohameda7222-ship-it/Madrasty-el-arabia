@@ -88,9 +88,12 @@ export function listCurriculumOfferings(actor:ActorContext,child?:string){
     return curriculumOffering.array().parse(await tx`select id,subject_id as "subjectId",
       class_id as "classId",class_code as "classCode",class_name_ar as "classNameAr",class_name_de as "classNameDe",
       year_id as "yearId",year_start::text as "yearStart",year_end::text as "yearEnd",
-      can_plan as "canPlan",can_publish as "canPublish",
-      ${child??null}::uuid is null and (app.has_capability('academics.supervise') or app.academic_offering_scope(id,app.school_today(),'academics.log')) as "canLog",
-      ${child??null}::uuid is null and (app.has_capability('academics.supervise') or app.academic_offering_scope(id,app.school_today(),'academics.grade')) as "canGrade"
+      ${actor.persona==="teacher"}::boolean and can_plan as "canPlan",
+      ${actor.persona==="teacher"}::boolean and can_publish as "canPublish",
+      ${actor.persona==="teacher"}::boolean and ${child??null}::uuid is null
+        and app.academic_offering_scope(id,app.school_today(),'academics.log') as "canLog",
+      ${actor.persona==="teacher"}::boolean and ${child??null}::uuid is null
+        and app.academic_offering_scope(id,app.school_today(),'academics.grade') as "canGrade"
       from app.curriculum_offerings(${child??null}::uuid)
       order by year_start desc,class_code,id`);
   });
