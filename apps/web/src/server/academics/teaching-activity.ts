@@ -124,6 +124,7 @@ export function createActivity(actor:ActorContext,key:string|null,input:z.infer<
   });
 }
 export function activityRoster(actor:ActorContext,id:string,query:z.infer<typeof activityRosterQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await staffRead(tx,actor);
     await activityRecord(tx,id);
@@ -140,6 +141,7 @@ async function rosterPupil(tx:Transaction,activity:string,student:string){
   if(!row)throw new ApiError("not_found");
 }
 export function activityHistory(actor:ActorContext,id:string,student:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await staffRead(tx,actor);
     await rosterPupil(tx,id,student);
