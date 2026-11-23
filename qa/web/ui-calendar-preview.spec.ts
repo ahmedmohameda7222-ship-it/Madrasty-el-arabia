@@ -20,6 +20,23 @@ test("admin calendar uses the approved visual workflow and can reset a school-wi
     await page.goto("/de/school/more/calendar");
     await expect(page.getByRole("heading", { name: "Schuljahr und Kalender" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("button", { name: /Neues Schuljahr/ })).toBeVisible();
+    // The shared back link must not collide with the calendar's eyebrow/header.
+    const backLink = page.getByRole("link", { name: /Zurück.*Mehr/ });
+    await expect(backLink).toBeVisible();
+    const backBounds = await backLink.boundingBox();
+    const eyebrowBounds = await page.getByText("SCHULORGANISATION").boundingBox();
+    expect(backBounds).not.toBeNull();
+    expect(eyebrowBounds).not.toBeNull();
+    expect(eyebrowBounds!.y - (backBounds!.y + backBounds!.height)).toBeGreaterThanOrEqual(12);
+
+    // Dark panels should be blue/navy, not the old green-tinted surfaces.
+    await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
+    const yearCardBackground = await page.getByText("Ausgewähltes Schuljahr").locator("..")
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    const channels = yearCardBackground.match(/\\d+/g)?.slice(0, 3).map(Number);
+    expect(channels).toHaveLength(3);
+    expect(channels![2] - channels![1]).toBeGreaterThanOrEqual(10);
+
     await expect(page.getByText("Reguläre Unterrichtstage", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Schuleinstellungen")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: new RegExp(clock.startsOn.slice(0, 4)) })).toBeVisible();
