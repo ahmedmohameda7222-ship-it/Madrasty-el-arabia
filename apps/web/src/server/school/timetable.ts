@@ -257,6 +257,103 @@ export function saveTimetable(actor: ActorContext,key: string | null,input: z.in
   });
 }
 
+function dayAfter(date:string) {
+  const next=new Date(date+"T12:00:00Z");
+  next.setUTCDate(next.getUTCDate()+1);
+  return next.toISOString().slice(0,10);
+}
+
+type OccurrenceChange=Extract<z.infer<typeof timetablePatchInput>,{date:string}>;
+
+async function assertOccurrence(tx:Transaction,before:TimetableSlot,date:string) {
+  const [day]=await tx<{today:string|null}[]>`select app.school_today()::text as today`;
+  const iso=new Date(date+"T12:00:00Z").getUTCDay()||7;
+  if(before.canceled || date<before.from || date>=before.untilExclusive || iso!==before.weekday
+    || !day?.today || date<day.today)throw new ApiError("conflict");
+  const year=await yearRecord(tx,before.yearId);
+  if(year.state!=="active")throw new ApiError("conflict");
+}
+
+async function checkSingleCollision(tx:Transaction,before:TimetableSlot,date:string,draft:DraftSlot) {
+  const [assn]=await tx<{classId:string;staffId:string}[]>`
+    select class_id as "classId",staff_id as "staffId" from app.teaching_assignment where id=${draft.assignmentId}`;
+  if(!assn || assn.classId!==before.classId)throw new ApiError("conflict");
+  const busy=await tx<{slotId:string;classId:string;roomId:string;staffId:string;start:number;end:number}[]>`
+    select slot_id as "slotId",class_id as "classId",room_id as "roomId",staff_id as "staffId",
+      starts_minute as start,ends_minute as end
+    from app.timetable_day_occupancy(${date}::date) where slot_id<>${before.id}::uuid`;
+  const [alternates]=await tx<{staffId:string}[]>`
+    select staff_id as "staffId" from app.substitute_assignment
+    where assignment_id=${draft.assignmentId} and revoked_at is null
+      and 'academics.log'=any(capabilities)
+      and effective_from<=${date}::date and effective_until>${date}::date limit 1`;
+  const reserved=new Set([assn.staffId,...(alternates?[alternates.staffId]:[])]);
+  if(busy.some(row=>row.start<draft.end&&draft.start<row.end
+    &&(row.classId===before.classId||row.roomId===draft.roomId||reserved.has(row.staffId))))
+    throw new ApiError("conflict");
+}
+
+async function changeOccurrence(tx:Transaction,before:TimetableSlot,input:OccurrenceChange):Promise<TimetableSlot> {
+  const date=input.date;
+  await assertOccurrence(tx,before,date);
+  if("slot" in input && input.slot.weekday!==before.weekday)throw new ApiError("conflict");
+  if(input.scope==="single"){
+    if("cancel" in input){
+      await tx`insert into app.weekly_slot_override(slot_id,local_date,cancelled)
+        values(${before.id},${date}::date,true)
+        on conflict(slot_id,local_date) do update set cancelled=true,assignment_id=null,
+          offering_id=null,room_id=null,starts_minute=null,ends_minute=null,revision=app.weekly_slot_override.revision+1`;
+    }else{
+      const draft={...input.slot,from:date,untilExclusive:dayAfter(date)};
+      checkReview(await preview(tx,before.yearId,[draft],before.id),input.yearRevision,[input.slot]);
+      await checkSingleCollision(tx,before,date,draft);
+      const offeringId=await offeringFor(tx,draft);
+      const [origin]=await tx<{offeringId:string|null}[]>`
+        select offering_id as "offeringId" from app.teaching_assignment where id=${draft.assignmentId}`;
+      const chosenOffering=offeringId??origin?.offeringId;
+      if(!chosenOffering)throw new ApiError("conflict");
+      await tx`insert into app.weekly_slot_override
+        (slot_id,local_date,cancelled,assignment_id,offering_id,room_id,starts_minute,ends_minute)
+        values(${before.id},${date}::date,false,${draft.assignmentId},${chosenOffering},
+          ${draft.roomId},${draft.start},${draft.end})
+        on conflict(slot_id,local_date) do update set cancelled=false,
+          assignment_id=excluded.assignment_id,offering_id=excluded.offering_id,
+          room_id=excluded.room_id,starts_minute=excluded.starts_minute,
+          ends_minute=excluded.ends_minute,revision=app.weekly_slot_override.revision+1`;
+    }
+    await tx`update app.weekly_slot set revision=revision+1 where id=${before.id}`;
+    await appendAudit(tx,{action:"school.timetable_changed",aggregateId:before.id,
+      metadata:{date,scope:"single",cancelled:"cancel" in input}});
+    return getSlot(tx,before.id);
+  }
+
+  // Future edits split the recurrence at the selected day's occurrence.
+  // Past dates, other weekdays and prior one-off changes remain intact.
+  const earlier={...before,untilExclusive:date};
+  if(containsWeekday(earlier)){
+    await tx`update app.weekly_slot set effective_until=${date}::date,
+      revision=revision+1 where id=${before.id}`;
+  }else{
+    await tx`update app.weekly_slot set canceled_at=now(),revision=revision+1 where id=${before.id}`;
+  }
+  if("cancel" in input){
+    await appendAudit(tx,{action:"school.timetable_canceled",aggregateId:before.id,
+      metadata:{date,scope:"future"}});
+    return getSlot(tx,before.id);
+  }
+  const draft={...input.slot,from:date,untilExclusive:before.untilExclusive};
+  const [assn]=await tx<{classId:string}[]>`
+    select class_id as "classId" from app.teaching_assignment where id=${draft.assignmentId}`;
+  if(assn?.classId!==before.classId)throw new ApiError("conflict");
+  checkReview(await preview(tx,before.yearId,[draft]),input.yearRevision,[input.slot]);
+  const id=await insertSlot(tx,draft);
+  await tx`update app.weekly_slot_override set slot_id=${id}
+    where slot_id=${before.id} and local_date>=${date}::date`;
+  await appendAudit(tx,{action:"school.timetable_changed",aggregateId:id,
+    metadata:{date,scope:"future",previousSlotId:before.id}});
+  return getSlot(tx,id);
+}
+
 export function updateSlot(actor: ActorContext,id: string,key: string | null,input: z.infer<typeof timetablePatchInput>) {
   return commitCommand(actor,"school.timetable.change",key,hashCommand({id,...input}),{
     authorize:async(tx)=>{await timetableEditor(tx,actor);await getSlot(tx,id);},
@@ -266,6 +363,7 @@ export function updateSlot(actor: ActorContext,id: string,key: string | null,inp
       const year=await yearRecord(tx,before.yearId);
       requireRevision(before.revision,input.revision);
       if(before.canceled || year.state==="closed")throw new ApiError("conflict");
+      if("date" in input)return changeOccurrence(tx,before,input);
       if("cancel" in input){
         await tx`update app.weekly_slot set canceled_at=now(),revision=revision+1 where id=${id}`;
       } else {
