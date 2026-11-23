@@ -145,7 +145,7 @@ function action(locale:Locale,entry:QueueItem) {
   if(target.kind==="attendance_sheet")return `${base}/more/attendance?class=${target.classId}&date=${target.date}`;
   if(target.kind==="receipt_match")return `${base}/more/receipts?receipt=${target.receiptId}`;
   if(target.kind==="delivery_review")return `${base}/more/delivery-status?job=${target.deliveryId}`;
-  if(target.kind==="bounced_invite")return `/${locale}/staff/invitations?invite=${target.invitationId}`;
+  if(target.kind==="bounced_invite")return `/${locale}/school/students?invite=${target.invitationId}`;
   return `${base}/more/assignments?year=${target.yearId}&class=${target.classId}`;
 }
 

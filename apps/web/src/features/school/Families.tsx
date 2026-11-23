@@ -14,7 +14,7 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useAdminCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { AsyncSurface } from "@/ui/AsyncSurface";
-import { InviteGuardianButton } from "@/features/identity/Invitations";
+import { GuardianInviteManager } from "@/features/identity/GuardianInviteManager";
 import { ScopeSheet } from "@/ui/Shell";
 import { NewFamilyForm, AddFamilyChildForm } from "./NewFamily";
 import { readDirectorySearch, writeDirectorySearch } from "./directory-filter-state";
@@ -298,8 +298,8 @@ function Relationships({ locale, record, initialLink, forStudent, changed }: { l
   }
   return <section className="auth-form">
     <h3>{text.links}</h3>
-    {!record.linkedAccount && record.contactEmail && record.links.some((link) => link.state === "approved") &&
-      <InviteGuardianButton locale={locale} id={record.id} correspondenceLocale={record.correspondenceLocale} />}
+    {record.links.some((link) => link.state === "approved") &&
+      <GuardianInviteManager locale={locale} id={record.id} correspondenceLocale={record.correspondenceLocale} linkedAccount={record.linkedAccount} />}
     {record.links.length === 0 && <p>{dictionary(locale).empty}</p>}
     <ul className="group-list">
       {record.links.map((link) => <li key={link.id} className="group-row" id={`guardian-link-${link.id}`} tabIndex={link.id===initialLink?-1:undefined}>

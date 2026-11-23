@@ -19,7 +19,7 @@ const copy = {
     approve:"استخدم السجل الحالي", skip:"تخطّ الصف", restore:"اعتمد إعادة الربط", match_guardian:"اختر ولي أمر موجودًا",
     match_student:"اختر طالبًا موجودًا", payer:"مرشح للسداد", keep:"حسب الملف", yes:"نعم", no:"لا", find:"بحث",
     commit:"اعتماد الصفوف", receipt:"نتيجة الاستيراد", rows:"الصفوف المعتمدة", links:"الروابط المعتمدة الجديدة",
-    eligible:"أولياء أمور مؤهلون للدعوة", sendNotice:"الدعوات لها خطوة منفصلة بعد الاعتماد.", next:"عرض صفوف إضافية",
+    eligible:"أولياء أمور مؤهلون للدعوة", sendNotice:"يمكن إرسال دعوات أولياء الأمور من هنا أو من ملفات الأسر.", next:"عرض صفوف إضافية",
     invalidFile:"راجع الملف واختر CSV أو XLSX صالحًا.", utf8:"احفظ CSV بترميز UTF-8.", workbookSize:"ملف Excel أكبر من الحدود المسموحة.",
     unsupportedWorkbook:"تركيب ملف Excel غير مدعوم.", worksheetError:"اختر ورقة عمل متاحة.", cellSize:"إحدى الخلايا أكبر من المسموح.",
     csvLayout:"راجع فاصل CSV والاقتباسات.", headers:"تأكد من وجود صف عناوين.", columnLimit:"الملف يتجاوز حد الأعمدة.", rowLimit:"الملف يتجاوز حد الصفوف.",
@@ -39,7 +39,7 @@ const copy = {
     approve:"Bestehenden Eintrag übernehmen", skip:"Zeile überspringen", restore:"Verknüpfung erneut bestätigen", match_guardian:"Vorhandene Sorgeberechtigte auswählen",
     match_student:"Vorhandenen Schüler auswählen", payer:"Vorgeschlagener Zahler", keep:"Aus Datei", yes:"Ja", no:"Nein", find:"Suchen",
     commit:"Zeilen übernehmen", receipt:"Importergebnis", rows:"Übernommene Zeilen", links:"Neue bestätigte Verknüpfungen",
-    eligible:"Einladungsberechtigte Sorgeberechtigte", sendNotice:"Einladungen werden anschließend separat verwaltet.", next:"Weitere Zeilen anzeigen",
+    eligible:"Einladungsberechtigte Sorgeberechtigte", sendNotice:"Elterneinladungen können hier oder im Familienprofil gesendet werden.", next:"Weitere Zeilen anzeigen",
     invalidFile:"Wählen Sie eine gültige CSV- oder XLSX-Datei.", utf8:"Speichern Sie die CSV-Datei als UTF-8.",
     workbookSize:"Die Excel-Datei überschreitet das Größenlimit.", unsupportedWorkbook:"Diese Excel-Struktur wird nicht unterstützt.",
     worksheetError:"Wählen Sie ein vorhandenes Arbeitsblatt.", cellSize:"Eine Zelle überschreitet die zulässige Größe.",
@@ -234,7 +234,7 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
         <dt>{text.links}</dt><dd>{receipt.linksCreated}</dd>
         <dt>{text.eligible}</dt><dd>{receipt.eligibleGuardians}</dd></dl>
       <p>{text.sendNotice}</p>
-      {receipt.eligibleGuardians > 0 && <Link className="plain-button" href={`/${locale}/staff/invitations?batchId=${receipt.id}`}>{text.eligible}</Link>}
+      {receipt.eligibleGuardians > 0 && <Link className="plain-button" href={`/${locale}/school/students?batchId=${receipt.id}`}>{text.eligible}</Link>}
     </section>}
     {pending && <p role="status">{translated.pending}</p>}
     {error && <p role="alert" className="notice">{error}</p>}
