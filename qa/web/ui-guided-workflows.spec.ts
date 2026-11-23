@@ -130,7 +130,12 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     await expect(page.getByRole("combobox",{name:"Lehrkraft",exact:true})).toBeVisible();
     await expect(page.getByText("Erweiterte Einstellungen")).toBeVisible();
     await page.getByRole("combobox",{name:"Lehrkraft",exact:true}).selectOption({index:1});
+    const assignmentResponse=page.waitForResponse(response=>
+      response.url().includes(`/api/v1/school/classes/${room.id}/assignments`) &&
+      response.request().method()==="POST");
     await page.getByRole("button",{name:"Zuordnung speichern"}).click();
+    const posted=await assignmentResponse;
+    expect(posted.status(),await posted.text()).toBe(201);
     await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
     await page.getByRole("link",{name:"Zuordnungen und Vertretungen"}).click();
     await expect(page.getByRole("combobox",{name:"Aufgabe",exact:true})).toHaveCount(0);
