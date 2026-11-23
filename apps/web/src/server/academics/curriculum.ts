@@ -117,6 +117,7 @@ function lessonColumns(tx:Transaction,child?:string){
 }
 
 export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof lessonListQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,query.childId);
     const cursor=readCursor(query.cursor);
@@ -130,6 +131,7 @@ export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof le
 }
 
 export function readCurriculumLesson(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,child);
     const [row]=await tx`select ${lessonColumns(tx,child)} from app.curriculum_projection(${child??null}::uuid,null,${id})`;
