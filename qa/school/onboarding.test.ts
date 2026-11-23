@@ -104,6 +104,44 @@ test("a school administrator sets up classes, staffing, enrollment and a clash-s
     const gone=await fixtureApi(school,`/school/timetable?weekOf=${nextMonday}&classId=${apple.id}`,{token:admin});
     assert.equal(gone.payload.data.slots.some((slot:{id:string})=>slot.id===bulk.ids[0]),false);
 
+    // Future-only edit starts a new recurring series on precisely this weekday.
+    // A later single-occurrence change must follow the new series without loss.
+    function shiftSchoolDay(from:string,count:number) {
+      const stamp=new Date(from+"T12:00:00Z");
+      stamp.setUTCDate(stamp.getUTCDate()+count);
+      return stamp.toISOString().slice(0,10);
+    }
+    const futureDate=shiftSchoolDay(currentDate,8);
+    const exceptionalDate=shiftSchoolDay(futureDate,7);
+    const exceptional={...batch[1],start:990,end:1050,from:exceptionalDate,
+      untilExclusive:shiftSchoolDay(exceptionalDate,1)};
+    const exceptionalPreview=await fixtureApi(school,"/school/timetable/preview",{
+      ...review,body:{yearId:year.id,editingId:bulk.ids[1],slots:[exceptional]},
+    });
+    assert.equal(exceptionalPreview.payload.data.canSave,true);
+    await command(`/school/timetable/${bulk.ids[1]}`,"later-one-off",{
+      revision:1,date:exceptionalDate,scope:"single",
+      yearRevision:exceptionalPreview.payload.data.yearRevision,
+      slot:exceptionalPreview.payload.data.entries[0].slot,
+    },"PATCH");
+    const futureDraft={...batch[1],start:900,end:960,from:futureDate,
+      untilExclusive:clock.endsExclusive};
+    const futurePreview=await fixtureApi(school,"/school/timetable/preview",{
+      ...review,body:{yearId:year.id,editingId:bulk.ids[1],slots:[futureDraft]},
+    });
+    assert.equal(futurePreview.payload.data.canSave,true);
+    const futureEdit=await command(`/school/timetable/${bulk.ids[1]}`,"future-edit",{
+      revision:2,date:futureDate,scope:"future",
+      yearRevision:futurePreview.payload.data.yearRevision,slot:futurePreview.payload.data.entries[0].slot,
+    },"PATCH");
+    assert.notEqual(futureEdit.id,bulk.ids[1]);
+    const editedWeek=await fixtureApi(school,`/school/timetable?weekOf=${futureDate}&classId=${apple.id}`,{token:admin});
+    assert.ok(editedWeek.payload.data.slots.some((row:{id:string;start:number;date:string})=>
+      row.id===futureEdit.id && row.date===futureDate && row.start===900));
+    const specialWeek=await fixtureApi(school,`/school/timetable?weekOf=${exceptionalDate}&classId=${apple.id}`,{token:admin});
+    assert.ok(specialWeek.payload.data.slots.some((row:{id:string;start:number;date:string})=>
+      row.id===futureEdit.id && row.date===exceptionalDate && row.start===990));
+
     const teacher = await school.bearer("teacher", "teacher");
     const guardian = await school.bearer("guardian-ar", "guardian");
     const { payload: roster } = await fixtureApi(school, `/school/classes/${apple.id}/roster?date=${clock.day}`, { token: admin });
