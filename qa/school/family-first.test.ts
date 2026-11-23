@@ -10,7 +10,15 @@ test("family onboarding creates approved guardian links and optional classroom e
   try {
     await school.seed();
     const token=await school.bearer("admin","admin");
-    const {apple,berry}=await setUpCalendar(school,token);
+    const {year,command}=await setUpCalendar(school,token);
+    // This test must not modify the fixture classes QA_A/QA_B: attendance,
+    // student roster, and teacher messaging suites reuse those exact classes.
+    const apple=await command("/school/classes","family-class-a",{
+      yearId:year.id,code:"QA_FAMILY_A",nameAr:"فصل الأسرة أ",nameDe:"Familienklasse A",capacity:10,
+    });
+    const berry=await command("/school/classes","family-class-b",{
+      yearId:year.id,code:"QA_FAMILY_B",nameAr:"فصل الأسرة ب",nameDe:"Familienklasse B",capacity:10,
+    });
     const root={method:"POST",token,persona:"admin",status:[200,201]} as const;
     const body=createFamilyInput.parse({
       guardians:[
