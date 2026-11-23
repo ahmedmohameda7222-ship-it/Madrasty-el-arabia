@@ -56,3 +56,19 @@ test("Supervision overview is admin-only and reports the class and its teacher",
    await fixtureApi(school,`/school/oversight?date=${clock.day}`,{token:teacher,persona:"teacher",status:403});
  }finally{await school.close();}
 });
+
+test("Admin cannot correct or cancel approved attendance by calling legacy write endpoints",async()=>{
+ const school=schoolFixtures();
+ try{
+   await school.seed();
+   const admin=await school.bearer("admin","admin");
+   await fixtureApi(school,`/attendance/rows/${randomUUID()}/corrections`,{
+     method:"POST",token:admin,persona:"admin",key:randomUUID(),
+     body:{revision:1,status:"present",reason:"Forbidden Admin change"},status:403,
+   });
+   await fixtureApi(school,`/attendance/sheets/${randomUUID()}/cancel-for-calendar`,{
+     method:"POST",token:admin,persona:"admin",key:randomUUID(),
+     body:{approvalRevision:1,reason:"Admin cannot alter attendance"},status:403,
+   });
+ }finally{await school.close();}
+});
