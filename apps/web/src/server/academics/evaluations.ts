@@ -27,7 +27,7 @@ const fields=(tx:Transaction)=>tx`id,student_id as "studentId",student_name as "
   can_publish as "canPublish",has_corrections as "hasCorrections"`;
 
 async function staff(tx:Transaction,actor:ActorContext){
-  if(actor.persona==="guardian")throw new ApiError("forbidden");
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   await academicReadScope(tx,actor);
 }
 
@@ -37,12 +37,14 @@ async function record(tx:Transaction,id:string,child?:string){
   return evaluationEntry.parse(row);
 }
 export function readEvaluation(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,child);
     return record(tx,id,child);
   });
 }
 export function listEvaluations(actor:ActorContext,input:z.infer<typeof evaluationListQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,input.childId);
     const cursor=cursorFrom(input.cursor);
