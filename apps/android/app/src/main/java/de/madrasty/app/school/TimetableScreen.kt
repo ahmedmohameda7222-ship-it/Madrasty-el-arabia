@@ -53,7 +53,9 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
     var dateText by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var classId by remember { mutableStateOf("") }
+    var yearId by remember { mutableStateOf("") }
     var editId by remember { mutableStateOf<String?>(null) }
+    var editDate by remember { mutableStateOf<String?>(null) }
     var editor by remember { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     BackHandler {
@@ -68,12 +70,19 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
     val available = (children as? AsyncState.Ready)?.content
     val child = if (chosenChild == null) available?.firstOrNull()?.getString("id")
     else available?.find { it.getString("id") == chosenChild }?.getString("id")
+    val adminYears = scheduleRead(if (persona == Persona.Admin) "/school/years" else null,refresh,model::records)
+    val activeYear=(adminYears as? AsyncState.Ready)?.content?.firstOrNull { it.getString("state") == "active" }
+        ?: (adminYears as? AsyncState.Ready)?.content?.firstOrNull { it.getString("state") != "closed" }
+    val selectedYear=yearId.ifEmpty { activeYear?.getString("id").orEmpty() }
+    val adminClasses = scheduleRead(if (persona == Persona.Admin && selectedYear.isNotEmpty())
+        "/school/classes?yearId=$selectedYear&limit=100" else null,refresh,model::records)
     val query = buildList {
         if (date.isNotBlank()) add("weekOf=$date")
         if (classId.isNotBlank()) add("classId=$classId")
         if (child != null) add("childId=$child")
     }.joinToString("&")
-    val path = if (persona == Persona.Guardian && child == null) null else "/school/timetable?$query"
+    val path = if ((persona == Persona.Guardian && child == null) ||
+        (persona == Persona.Admin && classId.isEmpty())) null else "/school/timetable?$query"
     val week = scheduleRead(path,refresh,model::timetableObject)
     val monday = (week as? AsyncState.Ready)?.content?.getString("weekOf")
 
@@ -84,6 +93,8 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
     fun saved(starts: String?) {
         if (starts != null) openWeek(starts)
         editId = null
+        editDate = null
+        editor = false
         refresh++
     }
 
@@ -101,6 +112,28 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
                 FilterChip(child == id, onClick = { chosenChild = id }, label = { Text(isolate(row.getString("displayName"))) })
             }
         }
+        if (persona == Persona.Admin && classId.isEmpty()) {
+            Text(if (language == "de") "Klasse auswählen" else "اختار الفصل",
+                style=MaterialTheme.typography.titleLarge)
+            AsyncSurface(adminYears) { years ->
+                years.forEach { year ->
+                    val id=year.getString("id")
+                    FilterChip(selectedYear==id,onClick={yearId=id},label={
+                        Text(isolate("${year.getString("startsOn")} – ${year.getString("endsExclusive")}"))
+                    })
+                }
+            }
+            AsyncSurface(adminClasses) { classes ->
+                if (classes.isEmpty()) Text(if (language=="de") "Keine Klassen" else "لا توجد فصول")
+                classes.forEach { classroom ->
+                    val id=classroom.getString("id")
+                    TextButton(onClick={classId=id;date="";dateText=""}) {
+                        Text(isolate(classroom.getString("code"))+" · "+
+                            isolate(classroom.getString(if(language=="de")"nameDe" else "nameAr"))+" ›")
+                    }
+                }
+            }
+        }
         if (path == null && chosenChild != null && available != null) AsyncSurface<Unit>(AsyncState.Forbidden()) {}
         if (path != null) {
             TextButton(enabled = monday != null, onClick = { monday?.let { openWeek(LocalDate.parse(it).minusWeeks(1).toString()) } }) {
@@ -115,16 +148,16 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
                 Text(stringResource(R.string.timetable_open_week))
             }
             if (persona == Persona.Admin) {
-                if (classId.isNotEmpty()) TextButton(onClick = { classId = "" }) { Text(stringResource(R.string.timetable_all_classes)) }
+                if (classId.isNotEmpty()) TextButton(onClick = { classId = ""; editor=false;editId=null }) { Text(stringResource(R.string.timetable_all_classes)) }
                 TextButton(onClick = { editId = null; editor = !editor }) { Text(stringResource(R.string.timetable_build)) }
                 if (editor) {
                     val slot = editId
-                    if (slot == null) TimetableEditor(model,language,null,{ classId = it },::saved){ editor = false }
+                    if (slot == null) TimetableEditor(model,language,null,null,classId,selectedYear,{ classId = it },::saved){ editor = false }
                     else key(slot) {
-                        val detail = scheduleRead("/school/timetable/$slot",refresh,model::timetableObject)
+                        val detail = scheduleRead("/school/timetable/$slot?date=${editDate.orEmpty()}",refresh,model::timetableObject)
                         AsyncSurface(detail) { record ->
                             key(record.getInt("revision")) {
-                                TimetableEditor(model,language,record,{ classId = it },::saved){ editor = false; editId = null }
+                                TimetableEditor(model,language,record,editDate,classId,selectedYear,{ classId = it },::saved){ editor = false; editId = null }
                             }
                         }
                     }
@@ -132,7 +165,7 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
             }
             AsyncSurface(week) { data ->
                 WeekRows(data,language,if (persona == Persona.Admin) {
-                    { id -> editId = id; editor = true }
+                    { id,occurrence -> editId = id; editDate = occurrence; editor = true }
                 } else null)
             }
         }
@@ -140,7 +173,7 @@ fun TimetableScreen(model: IdentityViewModel, persona: Persona, initialChild: St
 }
 
 @Composable
-internal fun WeekRows(week: JSONObject, language: String, edit: ((String) -> Unit)? = null) {
+internal fun WeekRows(week: JSONObject, language: String, edit: ((String,String) -> Unit)? = null) {
     val days = week.getJSONArray("days").tableRows()
     val lessons = week.getJSONArray("slots").tableRows()
     val formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM",Locale.forLanguageTag(language))
@@ -159,7 +192,7 @@ internal fun WeekRows(week: JSONObject, language: String, edit: ((String) -> Uni
                 .joinToString(" · ", transform = ::isolate))
             if (row.getBoolean("substitute")) Text(stringResource(R.string.timetable_substitute))
             if (day.getBoolean("teaching") && !row.getBoolean("teaching")) Text(stringResource(R.string.timetable_closed))
-            if (edit != null) TextButton(onClick={edit(row.getString("id"))}) { Text(stringResource(R.string.timetable_edit)) }
+            if (edit != null) TextButton(onClick={edit(row.getString("id"),date)}) { Text(stringResource(R.string.timetable_edit)) }
         }
     }
 }
