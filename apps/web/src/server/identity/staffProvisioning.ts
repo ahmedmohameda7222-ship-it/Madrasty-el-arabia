@@ -51,7 +51,7 @@ export async function provisionStaffAccount(ctx: ActorContext, input: z.infer<ty
         if (!classroom || !clock?.today || classroom.state==="closed") throw new ApiError("validation");
         const from=clock.today>classroom.startsOn?clock.today:classroom.startsOn;
         if (from>=classroom.endsExclusive) throw new ApiError("validation");
-        const addAssignment=async (kind:"primary"|"subject", subjectId:string|null) => {
+        const addAssignment=async (kind:"primary"|"support"|"subject", subjectId:string|null) => {
           let offeringId:string|null=null;
           if(subjectId){
             const [offer] = await tx<{id:string}[]>`
@@ -75,7 +75,15 @@ export async function provisionStaffAccount(ctx: ActorContext, input: z.infer<ty
           await appendAudit(tx,{action:"school.assignment_created",aggregateId:row.id});
         };
         if(assignment.kind==="primary"){
-          await addAssignment("primary",null);
+          // One attendance-responsible teacher; all other teachers join the class
+          // as regular Lehrkräfte without attendance approval rights.
+          const [leader]=await tx<{id:string}[]>`
+            select id from app.teaching_assignment where class_id=${assignment.classId}
+              and kind='primary' and revoked_at is null
+              and daterange(effective_from,effective_until,'[)') &&
+                  daterange(${from}::date,${classroom.endsExclusive}::date,'[)')
+            limit 1`;
+          await addAssignment(leader?"support":"primary",null);
           if(assignment.subjectId) await addAssignment("subject",assignment.subjectId);
         }else{
           await addAssignment("subject",assignment.subjectId ?? null);
