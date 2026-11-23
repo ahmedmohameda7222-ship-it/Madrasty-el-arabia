@@ -42,3 +42,20 @@ as $$
       and app.teacher_applies(t.id,p.id,app.school_today(),action)
   )
 $$;
+
+-- Migrate current and future Klassenlehrkraft assignments to the full-class
+-- permission model. Do not rewrite revoked or closed-year history.
+-- Increment revision so outdated staff editors cannot silently overwrite it.
+update app.teaching_assignment as t
+set capabilities=ARRAY['attendance.read','attendance.mark','attendance.approve','academics.plan','academics.log','academics.grade','academics.publish','comms.class']::text[],
+    revision=t.revision+1
+from app.school_class c, app.school_year y, app.staff_profile p, app.account a
+where t.class_id=c.id and c.year_id=y.id
+  and t.staff_id=p.id and p.account_id=a.id
+  and t.kind='primary' and t.revoked_at is null
+  and t.effective_until>app.school_today()
+  and y.state='active'
+  and p.role='teacher' and a.status='active'
+  and 'teacher'=any(app.active_personas(a.id))
+  and not ('admin'=any(app.active_personas(a.id)))
+  and not (t.capabilities @> ARRAY['attendance.read','attendance.mark','attendance.approve','academics.plan','academics.log','academics.grade','academics.publish','comms.class']::text[]);
