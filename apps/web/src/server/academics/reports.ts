@@ -9,6 +9,7 @@ import { academicReadScope } from "./curriculum";
 type Period=z.infer<typeof academicReportQuery>;
 
 async function reportAccess(tx:Transaction,actor:ActorContext,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   if(actor.persona==="guardian"){
     if(!child)throw new ApiError("forbidden");
     await academicReadScope(tx,actor,child);
