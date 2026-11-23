@@ -100,3 +100,31 @@ test("Admin cannot inspect teacher attendance row details or revision history",a
   await fixtureApi(school,`/attendance/rows/${row.id}`,{token:teacher,persona:"teacher",status:200});
  }finally{await school.close();}
 });
+
+test("Admin cannot access legacy homework drafts or unfiltered academic reports",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {offering,ids}=await setUpCalendar(school,admin);
+  const title="PRIVATE STAFF HOMEWORK "+randomUUID();
+  const created=(await fixtureApi(school,"/academics/homework",{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),status:201,
+    body:{offeringId:offering.offeringId,title,instructions:"PRIVATE STAFF NOTES",
+      lessonId:null,issuedOn:clock.day,dueOn:clock.homeworkDue},
+  })).payload.data;
+  await fixtureApi(school,"/academics/homework",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/academics/homework/${created.id}`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,
+    `/academics/reports/students?from=${clock.startsOn}&to=${clock.day}`,
+    {token:admin,persona:"admin",status:403});
+  await fixtureApi(school,
+    `/academics/reports/students/${ids.ahmed}?from=${clock.startsOn}&to=${clock.day}`,
+    {token:admin,persona:"admin",status:403});
+  // Teacher workflows must not regress.
+  const teacherView=(await fixtureApi(school,`/academics/homework/${created.id}`,
+    {token:teacher,persona:"teacher"})).payload.data;
+  assert.equal(teacherView.title,title);
+ }finally{await school.close();}
+});
