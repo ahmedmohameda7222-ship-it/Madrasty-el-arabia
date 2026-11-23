@@ -156,6 +156,13 @@ test("Admin sees attendance rows only after approval, not while the sheet is ope
   assert.equal(after.lastAttendance.absentExcused,ready.counts.absent_excused);
   assert.equal(after.lastAttendance.late,ready.counts.late);
   assert.equal(after.lastAttendance.absentUnexcused,ready.counts.absent_unexcused);
+  const legacyOverview=(await fixtureApi(school,`/school/oversight?date=${day}`,
+    {token:admin,persona:"admin"})).payload.data;
+  const approvedLegacy=legacyOverview.classes.find((row:{classId:string})=>row.classId===apple.id);
+  assert.ok(approvedLegacy);
+  assert.equal(approvedLegacy.attendanceState,"approved",
+    "An approved sheet must remain available to administrative monitoring");
+  assert.equal(approvedLegacy.unmarkedCount,0);
   const student=(await fixtureApi(school,`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`,
     {token:admin,persona:"admin"})).payload.data;
   assert.equal(student.attendance.find((entry:{date:string})=>entry.date===day)?.status,
