@@ -182,7 +182,8 @@ internal fun WeekRows(week: JSONObject, language: String, edit: ((String,String)
         val date = day.getString("date")
         HorizontalDivider()
         Text(LocalDate.parse(date).format(formatter),style=MaterialTheme.typography.titleLarge)
-        if (!day.getBoolean("teaching")) Text(stringResource(R.string.timetable_closed))
+        val anyTeaching=day.getBoolean("teaching") || lessons.any { it.getString("date")==date && it.getBoolean("teaching") }
+        if (!anyTeaching) Text(stringResource(R.string.timetable_closed))
         lessons.filter { it.getString("date") == date }.forEach { row ->
             val suffix = if (language == "de") "De" else "Ar"
             val hours = "${formatMinutes(row.getInt("start"))} – ${formatMinutes(row.getInt("end"))}"
@@ -191,7 +192,7 @@ internal fun WeekRows(week: JSONObject, language: String, edit: ((String,String)
             Text(listOf(row.getString("className$suffix"),row.getString("roomCode"),row.getString("teacherName"))
                 .joinToString(" · ", transform = ::isolate))
             if (row.getBoolean("substitute")) Text(stringResource(R.string.timetable_substitute))
-            if (day.getBoolean("teaching") && !row.getBoolean("teaching")) Text(stringResource(R.string.timetable_closed))
+            if (!row.getBoolean("teaching")) Text(stringResource(R.string.timetable_closed))
             if (edit != null) TextButton(onClick={edit(row.getString("id"),date)}) { Text(stringResource(R.string.timetable_edit)) }
         }
     }
