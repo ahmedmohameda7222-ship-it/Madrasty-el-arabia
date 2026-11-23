@@ -82,6 +82,22 @@ function Count({label,value}:{label:string;value:string|number}){
 function Topic({title,meta,children}:{title:string;meta?:string;children?:ReactNode}){
  return <article className={styles.topic}><div className={styles.topicTitle}><strong>{title}</strong>{meta&&<span>{meta}</span>}</div>{children}</article>;
 }
+type PublishedMark=AdminMonitorDashboard["exams"][number]["publishedResults"][number];
+function PublishedResults({locale,rows,openStudent}:{
+ locale:Locale;rows:PublishedMark[];openStudent:(id:string)=>void;
+}){
+ const t=copy[locale];
+ return <details className={styles.results}>
+  <summary>{t.details} · {t.publishedCount}: {number(rows.length,locale)}</summary>
+  {rows.length?<div className={styles.list}>{rows.map(row=><div className={styles.resultRow} key={row.studentId}>
+   <div><strong>{row.studentName}</strong><p>{t.score}: {row.score===null?t.noOfficial:
+     `${number(row.score,locale)} / ${number(row.maxScore,locale)}`}</p>
+    {row.feedback&&<p className={styles.pre}>{t.feedback}: {row.feedback}</p>}
+   </div>
+   <button type="button" className={styles.action} onClick={()=>openStudent(row.studentId)}>{t.viewProfile}</button>
+  </div>)}</div>:<Empty message={t.noGrades}/>}
+ </details>;
+}
 
 function ClassDetails({locale,report,section,setSection,openStudent,goBack}:{
  locale:Locale;report:AdminMonitorDashboard;section:Section;setSection:(value:Section)=>void;
@@ -145,17 +161,20 @@ function ClassDetails({locale,report,section,setSection,openStudent,goBack}:{
     {report.exams.map(row=><Topic key={row.id} title={row.title} meta={dateLabel(row.date,locale)}>
      <p>{t.subject}: {subject(row,locale)}{row.time?" · "+row.time:""}</p>
      <p>{t.max}: {number(row.maxScore,locale)} · {t.publishedCount}: {number(row.publishedCount,locale)}</p>
+     <PublishedResults locale={locale} rows={row.publishedResults} openStudent={openStudent}/>
     </Topic>)}
    </div>)}
    {section==="homework"&&(!report.homework.length?<Empty message={t.noContent}/>:<div className={styles.list}>
     {report.homework.map(row=><Topic key={row.id} title={row.title} meta={dateLabel(row.dueOn,locale)}>
      <p>{t.subject}: {subject(row,locale)} · {t.publishedCount}: {number(row.publishedCount,locale)}</p>
      <p className={styles.pre}>{row.instructions}</p>
+     <PublishedResults locale={locale} rows={row.publishedResults} openStudent={openStudent}/>
     </Topic>)}
    </div>)}
    {section==="activities"&&(!report.activities.length?<Empty message={t.noContent}/>:<div className={styles.list}>
     {report.activities.map(row=><Topic key={row.id} title={row.title} meta={dateLabel(row.date,locale)}>
      <p>{t.subject}: {subject(row,locale)} · {t.publishedCount}: {number(row.publishedCount,locale)}</p>
+     <PublishedResults locale={locale} rows={row.publishedResults} openStudent={openStudent}/>
     </Topic>)}
    </div>)}
    {section==="evaluations"&&(!report.evaluations.length?<Empty message={t.noContent}/>:<div className={styles.list}>
