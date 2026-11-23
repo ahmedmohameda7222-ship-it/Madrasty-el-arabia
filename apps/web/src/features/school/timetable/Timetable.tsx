@@ -159,9 +159,10 @@ export function WeekRows({locale,week,edit}:{
   return <section className={css.weekGrid} aria-label={text.title}>
     {week.days.map(({date,teaching})=>{
       const lessons=week.slots.filter(slot=>slot.date===date);
-      return <article className={`${css.day} ${teaching?"":css.dayOff}`} key={date}>
+      const hasTeaching=teaching||lessons.some(slot=>slot.teaching);
+      return <article className={`${css.day} ${hasTeaching?"":css.dayOff}`} key={date}>
         <div className={css.dayHead}><h3>{dayLabel(date,locale)}</h3>
-          <span>{teaching?(locale==="ar"?"يوم دراسة":"Unterricht"):(locale==="ar"?"إجازة":"Unterrichtsfrei")}</span></div>
+          <span>{hasTeaching?(locale==="ar"?"يوم دراسة":"Unterricht"):(locale==="ar"?"إجازة":"Unterrichtsfrei")}</span></div>
         <div className={css.dayBody}>
           {lessons.length===0&&<p className={css.emptyDay}>{teaching
             ?(locale==="ar"?"مفيش حصص":"Keine Stunden"):text.canceled}</p>}
@@ -171,7 +172,7 @@ export function WeekRows({locale,week,edit}:{
             <small>{locale==="ar"?slot.classNameAr:slot.classNameDe} · {slot.roomCode}</small>
             <small>{slot.teacherName}</small>
             {slot.substitute&&<span className={css.badge}>{text.substitute}</span>}
-            {(!teaching||!slot.teaching)&&<span className={css.badge}>{text.canceled}</span>}
+            {!slot.teaching&&<span className={css.badge}>{text.canceled}</span>}
             {edit&&<button type="button" className="plain-button" onClick={()=>edit(slot.id,slot.date)}>{text.edit}</button>}
           </div>)}
         </div>
