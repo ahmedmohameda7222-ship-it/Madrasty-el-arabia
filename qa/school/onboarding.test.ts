@@ -82,6 +82,16 @@ test("a school administrator sets up classes, staffing, enrollment and a clash-s
     },"PATCH");
     const weekNow=await fixtureApi(school,`/school/timetable?weekOf=${clock.weekOf}&classId=${apple.id}`,{token:admin});
     assert.ok(weekNow.payload.data.slots.some((slot:{id:string;start:number})=>slot.id===bulk.ids[0]&&slot.start===930));
+    // A later recurring proposal must respect the changed single occurrence,
+    // not merely the original recurring time range.
+    const movedClash=await fixtureApi(school,"/school/timetable/preview",{
+      ...review,body:{yearId:year.id,slots:[{
+        assignmentId:offering.id,roomId:room.id,weekday:clock.weekday,
+        start:950,end:980,from:clock.startsOn,untilExclusive:clock.endsExclusive,
+      }]},
+    });
+    assert.equal(movedClash.payload.data.canSave,false);
+    assert.ok(movedClash.payload.data.entries[0].issues.some((issue:{kind:string})=>issue.kind==="clash"));
     const followingWeek=new Date(clock.weekOf+"T12:00:00Z");
     followingWeek.setUTCDate(followingWeek.getUTCDate()+7);
     const nextMonday=followingWeek.toISOString().slice(0,10);
