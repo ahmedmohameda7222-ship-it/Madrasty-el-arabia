@@ -67,3 +67,50 @@ test("an invitation-only administrator can provision teachers without school adm
     await expect(page.getByRole("button",{name:"Klasseneinsätze"})).toHaveCount(0);
   }finally{await school.close();}
 });
+
+test("the team workspace uses a dark compact directory and offers permanent-password classroom onboarding",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("admin","admin");
+    const {year,command}=await setUpCalendar(school,token);
+    await command("/school/classes","staff-ux-class",{
+      yearId:year.id,code:"QA_TEAM_UI",nameAr:"فصل المدرس",nameDe:"Lehrkraft UI",capacity:15,
+    });
+    await context.addCookies([
+      {name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},
+      {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
+    ]);
+    await page.goto("/de/school/more/assignments");
+    await expect(page.getByRole("heading",{name:"Lehrkräfte und Verwaltung"})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Klasseneinsätze",exact:true})).toHaveCount(0);
+    await expect(page.getByText("♧")).toHaveCount(0);
+    await page.getByRole("button",{name:"Lehrkraft hinzufügen",exact:true}).click();
+    await expect(page.getByText(/Passwort ist dauerhaft, nicht temporär/)).toBeVisible();
+    await expect(page.getByRole("combobox",{name:"Klasse (optional)"})).toBeVisible();
+    await page.getByRole("combobox",{name:"Schuljahr"}).selectOption(year.id);
+    await page.getByRole("combobox",{name:"Klasse (optional)"}).selectOption({label:/QA_TEAM_UI/});
+    await expect(page.getByText("So funktioniert es jetzt")).toHaveCount(0);
+    await expect(page.getByText("Lehrkräfte und Admins zentral verwalten. Klassenzuweisungen erfolgen direkt in der jeweiligen Klasse.")).toHaveCount(0);
+  }finally{await school.close();}
+});
+
+test("classroom teacher management lives inside Klassen und Einschreibungen",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("admin","admin");
+    const {year,command}=await setUpCalendar(school,token);
+    const room=await command("/school/classes","class-teachers-ui",{
+      yearId:year.id,code:"QA_CLASS_TEAM",nameAr:"فصل المعلمين",nameDe:"Klassenlehrkräfte",capacity:20,
+    });
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.goto(`/de/school/more/classes?year=${year.id}&class=${room.id}`);
+    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
+    await page.getByRole("button",{name:"Lehrkraft zuweisen"}).click();
+    await expect(page.getByText("Klassenlehrkraft",{exact:true})).toBeVisible();
+    await expect(page.getByText("Fachlehrkraft",{exact:true})).toBeVisible();
+    await expect(page.getByRole("checkbox",{name:"Anwesenheit betreuen"})).toHaveCount(0);
+    await expect(page.getByText("Erweiterte Einstellungen")).toBeVisible();
+  }finally{await school.close();}
+});

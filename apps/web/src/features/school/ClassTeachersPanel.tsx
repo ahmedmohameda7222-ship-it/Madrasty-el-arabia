@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState,type FormEvent} from "react";
+import type {z} from "zod";
 import Link from "next/link";
 import {
   assignmentActions,assignmentSchema,assignmentWithSubstitutesSchema,
@@ -11,9 +12,9 @@ import {dictionary,localizedError} from "@/i18n";
 import css from "./StaffWorkspace.module.css";
 const assignmentList=assignmentWithSubstitutesSchema.array();
 const staffList=staffSchema.array(),subjectsList=subjectSchema.array();
-type Assignment=typeof assignmentList._output[number];
-type Teacher=typeof staffList._output[number];
-type Subject=typeof subjectsList._output[number];
+type Assignment=z.infer<typeof assignmentWithSubstitutesSchema>;
+type Teacher=z.infer<typeof staffSchema>;
+type Subject=z.infer<typeof subjectSchema>;
 const copy={
  ar:{title:"مدرسو الفصل",add:"تعيين مدرس",leader:"مدرس الفصل",subject:"مدرس مادة",
     name:"المدرس",subjectLabel:"المادة",choose:"اختر",save:"حفظ التكليف",
@@ -64,7 +65,7 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
   }).catch(e=>{if(!controller.signal.aborted){setError(problem(locale,e));setLoading(false);}});
   return()=>controller.abort();
  },[schoolClass.id,locale,reload]);
- const available=assignments.filter(a=>!a.revoked);
+ const available=assignments.filter(a=>!a.revoked&&a.untilExclusive>defaultStart(year.startsOn));
  const hasLeader=available.some(a=>a.kind==="primary"&&a.untilExclusive>defaultStart(year.startsOn));
  const onSubmit=(event:FormEvent<HTMLFormElement>)=>{
   event.preventDefault();
