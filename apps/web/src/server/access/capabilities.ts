@@ -81,3 +81,15 @@ export async function schoolMenuAccess(session: SchoolSession, keys: readonly Ca
 }
 
 export const mayManageAccess = (session: import("@madrasty/contracts").SchoolSession) => mayUse(session, "access.manage");
+
+/** Only the verified original Hauptadmin can provision or manage Administrators. */
+export async function mayProvisionAdmin(session: SchoolSession) {
+  if(session.activePersona !== "admin" || session.assurance !== "aal2") return false;
+  return withActor({
+    requestId:crypto.randomUUID(),accountId:session.accountId,sessionId:session.sessionId,
+    persona:session.activePersona,assurance:session.assurance,
+  }, async tx=>{
+    const [answer]=await tx<{allowed:boolean}[]>`select app.is_hauptadmin() as allowed`;
+    return answer.allowed;
+  });
+}
