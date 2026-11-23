@@ -1,8 +1,7 @@
-import { notFound,redirect } from "next/navigation";
+import {redirect} from "next/navigation";
 import { z } from "zod";
 import { academicReportQuery,type Locale } from "@madrasty/contracts";
 import { AcademicReport } from "@/features/academics/AcademicReport";
-import { mayUse } from "@/server/access/capabilities";
 import { webSchoolSession } from "@/server/identity/web-session";
 
 export default async function AcademicReportPage({params,searchParams}:{
@@ -10,7 +9,7 @@ export default async function AcademicReportPage({params,searchParams}:{
 }){
   const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
-  if(session.activePersona==="admin"&&!await mayUse(session,"academics.supervise"))notFound();
+  if(session.activePersona==="admin")redirect(`/${locale}/school/more/oversight`);
   const pupil=z.uuid().safeParse(session.activePersona==="guardian"?query.child:query.student).data;
   const range=academicReportQuery.safeParse({from:query.from,to:query.to}).data;
   return <AcademicReport locale={locale} initial={pupil} initialPeriod={range}/>;
