@@ -1,4 +1,4 @@
-import { timetablePatchInput } from "@madrasty/contracts";
+import { schoolDateSchema, timetablePatchInput } from "@madrasty/contracts";
 import { z } from "zod";
 import { ApiError, api, data, readJson } from "@/server/http";
 import { requireActor } from "@/server/identity/actor";
@@ -10,8 +10,12 @@ async function slotId(route: Route){
   if(!id.success)throw new ApiError("not_found");
   return id.data;
 }
-export const GET=api(async(request,context,route:Route)=>
-  data(await readSlot(await requireActor(request,context),await slotId(route))));
+export const GET=api(async(request,context,route:Route)=>{
+  const dateParam=new URL(request.url).searchParams.get("date");
+  const date=dateParam===null?undefined:schoolDateSchema.safeParse(dateParam).data;
+  if(dateParam!==null&&!date)throw new ApiError("validation");
+  return data(await readSlot(await requireActor(request,context),await slotId(route),date));
+});
 
 export const PATCH=api(async(request,context,route:Route)=>{
   const actor=await requireActor(request,context);
