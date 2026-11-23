@@ -166,6 +166,7 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
         v.starts_minute as starts,v.ends_minute as ends
       from app.weekly_slot_override v join app.weekly_slot l on l.id=v.slot_id
       where l.year_id=${yearId} and l.canceled_at is null and not v.cancelled
+        and v.local_date>=l.effective_from and v.local_date<l.effective_until
         and v.slot_id is distinct from ${exclude ?? null}::uuid
     )
     select x.local_date::text as date,x.class_id as "classId",x.room_id as "roomId",
