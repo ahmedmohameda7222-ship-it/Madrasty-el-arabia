@@ -24,7 +24,7 @@ export const staffListInput = pageQuerySchema.extend({ query: z.string().trim().
 export const staffAccountSchema = z.object({ accountId: z.uuid(), displayName: z.string(), roles: personaSchema.array() });
 export const subjectSchema = z.object({ id: z.uuid(), code: z.string(), nameAr: z.string(), nameDe: z.string() });
 const range = z.object({ from: schoolDateSchema, untilExclusive: schoolDateSchema, capabilities: caps });
-const assignment = range.extend({ staffId: z.uuid(), kind: z.enum(["primary","subject"]), subjectId: z.uuid().nullable() });
+const assignment = range.extend({ staffId: z.uuid(), kind: z.enum(["primary","subject","support"]), subjectId: z.uuid().nullable() });
 export const assignmentInput = window(assignment).refine((entry) => (entry.kind === "subject") === Boolean(entry.subjectId), { path: ["subjectId"] });
 export const assignmentSchema = assignment.extend({
   id: z.uuid(), classId: z.uuid(), offeringId: z.uuid().nullable(), revision: revisionSchema,
