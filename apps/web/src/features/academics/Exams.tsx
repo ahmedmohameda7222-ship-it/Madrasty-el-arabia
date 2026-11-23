@@ -19,20 +19,24 @@ const examRows=examEntry.array();
 
 function dateAndTime(date:string,time?:string|null){return time?`${date} · ${time}`:date;}
 
-export function Exams({locale,initialChild,initial}:{locale:Locale;initialChild?:string;initial?:string}){
+export function Exams({locale,initialChild,initial,initialClass}:{locale:Locale;initialChild?:string;initial?:string;initialClass?:string}){
+  const {persona}=useAccountScope();
   return <>
     <h1>{examCopy[locale].heading}</h1>
-    <AssessmentScope locale={locale} initialChild={initialChild} initial={initial}
+    {persona==="admin"&&initialClass?<>
+      <p className="notice">{locale==="ar"?"امتحانات الفصل المحدد · للمتابعة فقط":"Prüfungen dieser Klasse · Nur ansehen"}</p>
+      <ExamList locale={locale} classId={initialClass} scope={{version:0}}/>
+    </>:<AssessmentScope locale={locale} initialChild={initialChild} initial={initial}
       allow={(item)=>item.canPlan||item.canGrade||item.canPublish}
       staffEmptyMessage={locale==="ar"?"لا توجد فصول أو مواد متاحة لعرض الامتحانات حاليًا.":"Derzeit sind keine Klassen oder Fächer für Prüfungen verfügbar."}>
       {(scope)=><ExamList key={scope.child??scope.offering?.id??"exam"} locale={locale} scope={scope}/>}
-    </AssessmentScope>
+    </AssessmentScope>}
   </>;
 }
-function ExamList({locale,scope}:{locale:Locale;scope:AssessmentContext}){
+function ExamList({locale,scope,classId}:{locale:Locale;scope:AssessmentContext;classId?:string}){
   const text=examCopy[locale],{child,offering,version}=scope;
   const [id,setId]=useState(scope.initial),[create,setCreate]=useState(false),[updated,setUpdated]=useState(0),[notice,setNotice]=useState("");
-  const search=child?`&childId=${child}`:offering?`&offeringId=${offering.id}`:"";
+  const search=child?`&childId=${child}`:classId?`&classId=${classId}`:offering?`&offeringId=${offering.id}`:"";
   const page=useAcademicPage(`/academics/exams?limit=25${search}`,examRows,version+updated);
   const detail=useTimetableRead(id?`/academics/exams/${id}${child?`?childId=${child}`:""}`:null,examEntry,version+updated);
   return <section className="auth-card auth-form">

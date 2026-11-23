@@ -14,7 +14,8 @@ export function AssessmentScope({locale,initialChild,initial,allow,children:rend
   locale:Locale;initialChild?:string;initial?:string;allow:(offering:CurriculumOffering)=>boolean;staffEmptyMessage?:string;
   children:(scope:AssessmentContext)=>ReactNode;
 }){
-  const guardian=useAccountScope().persona==="guardian";
+  const {persona}=useAccountScope();
+  const guardian=persona==="guardian";
   const [selected,setSelected]=useState(guardian?initialChild??"":"");
   const [version,setVersion]=useState(0);
   useEffect(()=>{
@@ -40,7 +41,7 @@ export function AssessmentScope({locale,initialChild,initial,allow,children:rend
         :selected&&options&&<AsyncSurface locale={locale} state={{kind:"forbidden"}}/>}
     </>;
   }
-  const options=courses.value?.data?.filter(allow)??[];
+  const options=courses.value?.data?.filter(item=>persona==="admin"||allow(item))??[];
   const picked=options.find((item)=>item.id===selected)??options[0];
   return <>
     <TimetableRead locale={locale} result={courses}>{()=>options.length?<label className="auth-card">
