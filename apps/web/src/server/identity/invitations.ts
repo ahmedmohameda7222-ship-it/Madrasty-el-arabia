@@ -79,7 +79,7 @@ export function listInvitations(ctx: ActorContext, query: z.infer<typeof invitat
     const rows = invitationSchema.array().parse(await tx`
       select result.* from (
         select ${projection(tx)} from app.invitation i
-        where (${query.id ?? null}::uuid is null or i.id = ${query.id ?? null}::uuid)
+        where i.kind = 'guardian' and (${query.id ?? null}::uuid is null or i.id = ${query.id ?? null}::uuid)
           and (${query.batchId ?? null}::uuid is null or i.batch_id = ${query.batchId ?? null}::uuid)
           and (${query.cursor ?? null}::uuid is null or i.id > ${query.cursor ?? null}::uuid)
       ) result where (${query.status ?? null}::text is null or result.validity = ${query.status ?? null})
@@ -147,11 +147,13 @@ export function reissueInvitation(ctx: ActorContext, id: string, key: string | n
   return commitCommand(ctx, "invitation.reissue", key, hashCommand({ id, ...input }), {
     authorize: async (tx) => {
       const found = await record(tx, id);
-      await authorizeKind(tx, ctx, found.kind);
-      await target(tx, found.kind, found.recipientId);
+      if (found.kind !== "guardian") throw new ApiError("forbidden");
+      await authorizeKind(tx, ctx, "guardian");
+      await target(tx, "guardian", found.recipientId);
     },
     mutate: async (tx) => {
       const before = await record(tx, id);
+      if (before.kind !== "guardian") throw new ApiError("forbidden");
       await tx`select pg_advisory_xact_lock(hashtextextended(${`madrasty:invite:${before.kind}:${before.recipientId}`}, 0))`;
       const found = await record(tx, id);
       requireRevision(found.revision, input.revision);

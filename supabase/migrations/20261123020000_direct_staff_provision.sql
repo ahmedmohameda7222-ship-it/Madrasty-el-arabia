@@ -159,3 +159,9 @@ update app.audit_action_rule set allowed_capabilities =
   array_append(allowed_capabilities, 'staff.invite')
 where action in ('school.staff_created','school.staff_updated')
   and not ('staff.invite'=any(allowed_capabilities));
+
+-- Superseded teacher invitations cannot activate or be reissued after the
+-- transition to direct staff accounts. Preserve historical audit records.
+update app.invitation set validity='revoked',
+  sealed_token=null, sealed_proof=null, proof_hash=null, revision=revision+1
+where kind='teacher' and validity='pending';
