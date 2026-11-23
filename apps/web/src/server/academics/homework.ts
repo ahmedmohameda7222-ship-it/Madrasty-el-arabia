@@ -48,6 +48,7 @@ export function listHomework(actor:ActorContext,query:z.infer<typeof homeworkLis
 
 type HomeworkDraft=z.infer<typeof homeworkCreate>|z.infer<typeof homeworkChange>;
 export function writeHomework(actor:ActorContext,key:string|null,input:HomeworkDraft,id?:string){
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   const offering="offeringId" in input?input.offeringId:null;
   const revision="revision" in input?input.revision:null;
   return commitCommand(actor,id?"academics.homework.change":"academics.homework.create",key,hashCommand({id:id??null,...input}),{
