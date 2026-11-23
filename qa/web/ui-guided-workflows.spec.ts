@@ -74,7 +74,7 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await school.seed();
     const token=await school.bearer("admin","admin");
     const {year,command}=await setUpCalendar(school,token);
-    await command("/school/classes","staff-ux-class",{
+    const classroom=await command("/school/classes","staff-ux-class",{
       yearId:year.id,code:"QA_TEAM_UI",nameAr:"فصل المدرس",nameDe:"Lehrkraft UI",capacity:15,
     });
     await context.addCookies([
@@ -89,7 +89,7 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await expect(page.getByText(/Passwort ist dauerhaft, nicht temporär/)).toBeVisible();
     await expect(page.getByRole("combobox",{name:"Klasse (optional)"})).toBeVisible();
     await page.getByRole("combobox",{name:"Schuljahr"}).selectOption(year.id);
-    await page.getByRole("combobox",{name:"Klasse (optional)"}).selectOption({label:/QA_TEAM_UI/});
+    await page.getByRole("combobox",{name:"Klasse (optional)"}).selectOption(classroom.id);
     await expect(page.getByText("So funktioniert es jetzt")).toHaveCount(0);
     await expect(page.getByText("Lehrkräfte und Admins zentral verwalten. Klassenzuweisungen erfolgen direkt in der jeweiligen Klasse.")).toHaveCount(0);
   }finally{await school.close();}

@@ -62,8 +62,8 @@ export default async function SchoolPage({ params, searchParams }: {
               href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
             {attendance && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
           </div></MoreGroup>}
-        {(placement || calendar || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
-            {(calendar || placement) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
+        {(placement || calendar || academic || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
+            {(calendar || placement || academic) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
             {calendar && <Link className="more-row" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
           </div>
         </MoreGroup>}

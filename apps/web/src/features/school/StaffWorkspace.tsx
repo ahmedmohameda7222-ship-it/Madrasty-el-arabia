@@ -114,7 +114,7 @@ export function StaffWorkspace({locale,canCreateAdmin}:{locale:Locale;canCreateA
           {chosen.workPhone&&<p className={css.muted}><bdi>{chosen.workPhone}</bdi></p>}
           <p className={css.muted}>{t.activeFrom}: <bdi>{chosen.activeFrom}</bdi></p>
           {chosen.activeUntil&&<p className={css.muted}>{t.activeUntil}: <bdi>{chosen.activeUntil}</bdi></p>}
-          <button type="button" className={css.secondary} onClick={()=>setEditing(true)}>{t.edit}</button>
+          {(chosen.role==="teacher"||canCreateAdmin)&&<button type="button" className={css.secondary} onClick={()=>setEditing(true)}>{t.edit}</button>}
           {chosen.role==="teacher"&&<Link className={css.smallButton} href={`/${locale}/school/more/classes`}>{t.classLink}</Link>}
         </>}
       </div>}
