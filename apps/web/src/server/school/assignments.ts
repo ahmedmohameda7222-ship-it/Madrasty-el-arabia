@@ -53,7 +53,11 @@ export function readStaff(ctx: ActorContext, id: string) {
 
 export function createStaff(ctx: ActorContext, key: string | null, input: z.infer<typeof staffInput>) {
   return commitCommand(ctx, "school.staff.create", key, hashCommand(input), {
-    authorize: (tx) => editor(ctx, tx),
+    authorize: async (tx) => {
+      await editor(ctx, tx);
+      // All new accounts must be provisioned through the Auth-backed flow.
+      throw new ApiError("forbidden");
+    },
     mutate: async (tx) => {
       await activeAccount(tx, input.accountId, input.role);
       const [row] = await tx<{ id: string }[]>`
@@ -68,10 +72,23 @@ export function createStaff(ctx: ActorContext, key: string | null, input: z.infe
 
 export function changeStaff(ctx: ActorContext, id: string, key: string | null, input: z.infer<typeof staffChangeInput>) {
   return commitCommand(ctx, "school.staff.change", key, hashCommand({ id, ...input }), {
-    authorize: async (tx) => { await editor(ctx, tx); await profile(tx, id); },
+    authorize: async (tx) => {
+      await editor(ctx, tx);
+      const current = await profile(tx, id);
+      if (current.role === "admin" || input.role === "admin" || current.role !== input.role
+        || current.accountId !== input.accountId) {
+        const [owner] = await tx<{ allowed: boolean }[]>`select app.is_hauptadmin() as allowed`;
+        if (!owner?.allowed) throw new ApiError("forbidden");
+      }
+    },
     mutate: async (tx) => {
       await tx`select app.lock_school_calendar()`;
       const current = await profile(tx, id, true);
+      if (current.role === "admin" || input.role === "admin" || current.role !== input.role
+        || current.accountId !== input.accountId) {
+        const [root] = await tx<{ allowed: boolean }[]>`select app.is_hauptadmin() as allowed`;
+        if (!root?.allowed) throw new ApiError("forbidden");
+      }
       requireRevision(current.revision, input.revision);
       if (input.accountId !== current.accountId || input.role !== current.role) await activeAccount(tx, input.accountId, input.role);
       await tx`update app.staff_profile set account_id = ${input.accountId}, display_name = ${input.displayName}, role = ${input.role},

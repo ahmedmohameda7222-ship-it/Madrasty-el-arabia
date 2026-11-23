@@ -12,8 +12,10 @@ export default async function AssignmentPage({ params, searchParams }: {
   const locale = localeSchema.safeParse(route.locale);
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);
-  const [office, academic] = await Promise.all([mayUse(session, "school.manage"), mayUse(session, "academics.supervise")]);
-  if (!office && !academic) notFound();
+  const [office, academic, staffManagement] = await Promise.all([
+    mayUse(session, "school.manage"), mayUse(session, "academics.supervise"), mayUse(session, "staff.invite")
+  ]);
+  if (!office && !academic && !staffManagement) notFound();
   const canCreateAdmin = await mayProvisionAdmin(session);
   return <StaffAssignments locale={locale.data} canCreateAdmin={canCreateAdmin} initialYear={z.uuid().safeParse(query.year).data} initialClass={z.uuid().safeParse(query.class).data} />;
 }

@@ -307,16 +307,9 @@ export function createFamilyChild(ctx: ActorContext, guardianId: string, key: st
   return commitCommand(ctx, "school.family.child.create", key, hashCommand({ guardianId, ...input }), {
     authorize: async (tx) => { await office(ctx)(tx); await guardian(tx, guardianId); },
     mutate: async (tx) => {
-      // Keep co-guardians connected to the children in the same family.
-      const people = await tx<{ id: string }[]>`
-        select distinct g.guardian_id as id from app.child_link g
-        where g.state = 'approved' and g.student_id in (
-          select student_id from app.child_link
-          where guardian_id = ${guardianId} and state = 'approved'
-        )
-        union select ${guardianId}::uuid as id
-      `;
-      return addFamilyStudent(tx, ctx, input, people.map((row) => row.id));
+      // Do not guess co-guardian links from siblings: blended families may
+      // have different adults. New links require explicit verified selection.
+      return addFamilyStudent(tx, ctx, input, [guardianId]);
     },
   });
 }
