@@ -25,6 +25,17 @@ test("Admin monitors teaching records without exam, homework or attendance write
    const created=await fixtureApi(school,"/academics/exams",{method:"POST",token:teacher,persona:"teacher",
      key:randomUUID(),body:examRequest,status:201});
    const examId=created.payload.data.id;
+   // An administrative supervisor can inspect an offering, but never receives
+   // teacher authoring flags, even with academics.supervise.
+   const offerings=(await fixtureApi(school,"/academics/offerings",{
+     token:admin,persona:"admin",
+   })).payload.data as {id:string;canPlan:boolean;canPublish:boolean;canLog:boolean;canGrade:boolean}[];
+   const monitored=offerings.find(row=>row.id===offering.offeringId);
+   assert.ok(monitored,"Admin should see the class offering");
+   assert.deepEqual({
+     canPlan:monitored.canPlan,canPublish:monitored.canPublish,
+     canLog:monitored.canLog,canGrade:monitored.canGrade,
+   },{canPlan:false,canPublish:false,canLog:false,canGrade:false});
    const exam=(await fixtureApi(school,`/academics/exams/${examId}`,{token:admin,persona:"admin"})).payload.data;
    assert.equal(exam.canEdit,false);
    assert.equal(exam.canAnnounce,false);
