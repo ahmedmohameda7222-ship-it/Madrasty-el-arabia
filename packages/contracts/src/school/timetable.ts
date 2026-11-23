@@ -14,6 +14,7 @@ export type TimetableRoom = z.infer<typeof roomSchema>;
 
 const draft = z.object({
   assignmentId: z.uuid(),
+  subjectId: z.uuid().optional(),
   roomId: z.uuid(),
   weekday: z.int().min(1).max(7),
   start: z.int().min(0).max(1439),
@@ -35,6 +36,8 @@ export const timetableSaveInput = z.object({
 export const timetablePatchInput = z.union([
   z.object({ revision: revisionSchema, cancel: z.literal(true) }),
   z.object({ revision: revisionSchema, yearRevision: revisionSchema, slot: timetableReviewedSlot }),
+  z.object({ revision: revisionSchema, date: schoolDateSchema, scope: z.enum(["single","future"]), cancel: z.literal(true) }),
+  z.object({ revision: revisionSchema, yearRevision: revisionSchema, date: schoolDateSchema, scope: z.enum(["single","future"]), slot: timetableReviewedSlot }),
 ]);
 export const timetableIssue = z.object({
   field: z.enum(["assignmentId","roomId","weekday","start","end","from","untilExclusive","classId","staffId"]),
