@@ -137,3 +137,24 @@ test("Admin cannot access legacy homework drafts or unfiltered academic reports"
   assert.equal(teacherView.title,title);
  }finally{await school.close();}
 });
+
+test("Admin cannot access legacy draft-capable attendance and activity readers",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {apple}=await setUpCalendar(school,admin);
+  // These legacy readers predate the published-only Admin monitoring projection.
+  // A successful empty response is still unsafe: future draft records could then leak.
+  await fixtureApi(school,"/attendance/sheets",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,"/academics/teaching-log",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,"/academics/activities",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/academics/activities/${randomUUID()}`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/academics/teaching-log/${randomUUID()}`,{token:admin,persona:"admin",status:403});
+  // Existing teacher workflows must remain reachable.
+  await fixtureApi(school,"/academics/teaching-log",{token:teacher,persona:"teacher"});
+  await fixtureApi(school,"/academics/activities",{token:teacher,persona:"teacher"});
+  await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"});
+ }finally{await school.close();}
+});
