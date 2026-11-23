@@ -11,18 +11,19 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useAdminCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { AsyncSurface } from "@/ui/AsyncSurface";
+import { DirectStaffForm } from "./DirectStaffForm";
 
 const words = {
-  ar: { title:"الموظفون والتكليفات", profiles:"الموظفون", assignments:"تكليفات الفصول", newProfile:"إضافة موظف", newAssignment:"إضافة تكليف",
-    choose:"اختر", name:"الاسم المهني", role:"الدور المهني", teacher:"مدرس", principal:"مدير", deputy:"وكيل", office:"موظف مكتب",
+  ar: { title:"المدرسون والإدارة", profiles:"المدرسون والإدارة", assignments:"تكليفات الفصول", newProfile:"إضافة مدرس", newAssignment:"إضافة تكليف",
+    choose:"اختر", name:"الاسم المهني", role:"الدور المهني", teacher:"مدرس", admin:"إدارة", principal:"مدير", deputy:"وكيل", office:"موظف مكتب",
     titleAr:"المسمى بالعربية", titleDe:"المسمى بالألمانية", email:"بريد العمل", phone:"هاتف العمل", account:"حساب المدرسة", noAccount:"بدون ربط",
     from:"بداية السريان", until:"تاريخ الانتهاء (غير مشمول)", save:"حفظ", class:"الفصل", year:"السنة الدراسية", kind:"نوع التكليف",
     primary:"مسؤول الحضور", subject:"مدرس مادة", course:"المادة", staff:"الموظف المكلّف", caps:"صلاحيات التكليف",
     replace:"استبدال المكلّف", end:"تعديل الانتهاء", revoke:"إلغاء التكليف", substitute:"تكليف بديل", substitutes:"البدلاء",
     active:"ساري", ended:"ملغى", overview:"تكليفاتي", search:"بحث باسم الموظف", more:"عرض المزيد",
   },
-  de: { title:"Mitarbeitende und Einsätze", profiles:"Mitarbeitende", assignments:"Klasseneinsätze", newProfile:"Person hinzufügen", newAssignment:"Einsatz hinzufügen",
-    choose:"Auswählen", name:"Dienstlicher Name", role:"Dienstliche Rolle", teacher:"Lehrkraft", principal:"Schulleitung", deputy:"Stellvertretung", office:"Schulbüro",
+  de: { title:"Lehrkräfte und Verwaltung", profiles:"Lehrkräfte und Admins", assignments:"Klasseneinsätze", newProfile:"Lehrkraft hinzufügen", newAssignment:"Einsatz hinzufügen",
+    choose:"Auswählen", name:"Dienstlicher Name", role:"Dienstliche Rolle", teacher:"Lehrkraft", admin:"Admin", principal:"Schulleitung", deputy:"Stellvertretung", office:"Schulbüro",
     titleAr:"Funktion auf Arabisch", titleDe:"Funktion auf Deutsch", email:"Dienstliche E-Mail", phone:"Diensttelefon", account:"Schulkonto", noAccount:"Ohne Verknüpfung",
     from:"Gültig ab", until:"Gültig bis (ausschließlich)", save:"Speichern", class:"Klasse", year:"Schuljahr", kind:"Aufgabe",
     primary:"Anwesenheitsverantwortung", subject:"Fachunterricht", course:"Fach", staff:"Beauftragte Person", caps:"Berechtigungen",
@@ -60,7 +61,7 @@ function WorkNotice({ operation }: {operation:ReturnType<typeof useOperation>}) 
 }
 const area = "/school";
 
-export function StaffAssignments({locale,initialYear,initialClass}: {locale:Locale;initialYear?:string;initialClass?:string}) {
+export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin=false}: {locale:Locale;initialYear?:string;initialClass?:string;canCreateAdmin?:boolean}) {
   const text=words[locale], operation=useOperation(locale);
   const [mode,setMode]=useState<"profiles"|"assignments">(initialClass?"assignments":"profiles");
   const [accounts,setAccounts]=useState<StaffAccounts>();
@@ -70,6 +71,7 @@ export function StaffAssignments({locale,initialYear,initialClass}: {locale:Loca
   const [query,setQuery]=useState("");
   const [subjectsList,setSubjects]=useState<Subject[]>([]);
   const [record,setRecord]=useState<StaffProfile|null>();
+  const [newRole,setNewRole]=useState<"teacher"|"admin"|null>(null);
   const [yearsList,setYears]=useState<z.infer<typeof years>>([]);
   const [yearId,setYearId]=useState(initialYear??"");
   const [classId,setClassId]=useState(initialClass??"");
@@ -136,9 +138,16 @@ export function StaffAssignments({locale,initialYear,initialClass}: {locale:Loca
           const result=await requestApi(`${area}/staff?query=${encodeURIComponent(query)}&cursor=${peopleCursor}&limit=100`,staffList);
           setPeople([...people,...result.data]);setPeopleCursor(result.meta?.nextCursor);
         },false)}>{text.more}</button>}
-        <button className="primary-button" onClick={()=>setRecord(null)}>{text.newProfile}</button>
+        <div className="header-actions">
+          <button className="primary-button" onClick={()=>{setRecord(undefined);setNewRole("teacher");}}>{text.newProfile}</button>
+          {canCreateAdmin&&<button className="plain-button" onClick={()=>{setRecord(undefined);setNewRole("admin");}}>
+            {locale==="ar"?"إضافة Admin":"Admin hinzufügen"}
+          </button>}
+        </div>
       </section>
-      {record!==undefined&&accounts&&<ProfileForm locale={locale} accounts={accounts} item={record}
+      {newRole&&<DirectStaffForm locale={locale} role={newRole} canCreateAdmin={canCreateAdmin}
+        saved={()=>{setNewRole(null);setReload(v=>v+1);}} cancel={()=>setNewRole(null)}/>}
+      {record&&accounts&&<ProfileForm locale={locale} accounts={accounts} item={record}
         key={record?.id??"new"} saved={(item)=>{setRecord(item);setReload(reload+1);}}/>}
     </div>:<>
       <section className="auth-card">
@@ -181,8 +190,8 @@ function ProfileForm({locale,accounts,item,saved}:{locale:Locale;accounts:StaffA
       });
     }}>
       <label>{text.name}<input name="name" required maxLength={200} defaultValue={item?.displayName}/></label>
-      <label>{text.role}<select name="role" defaultValue={item?.role??"teacher"}>
-        {staffRoleSchema.options.map((role)=><option key={role} value={role}>{text[role]}</option>)}</select></label>
+      <p>{text.role}: <strong>{text[item?.role??"teacher"]}</strong></p>
+      <input type="hidden" name="role" value={item?.role??"teacher"}/>
       <label>{text.titleAr}<input name="titleAr" required maxLength={120} defaultValue={item?.titleAr}/></label>
       <label>{text.titleDe}<input name="titleDe" required maxLength={120} defaultValue={item?.titleDe}/></label>
       <label>{text.email}<input name="email" type="email" dir="ltr" defaultValue={item?.workEmail??""}/></label>

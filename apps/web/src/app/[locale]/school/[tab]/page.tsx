@@ -7,6 +7,7 @@ import { webSchoolSession } from "@/server/identity/web-session";
 import { schoolMenuAccess, mayUse } from "@/server/access/capabilities";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
 import { Children, Families } from "@/features/school/Families";
+import { InviteWorkspace } from "@/features/identity/Invitations";
 import { dictionary } from "@/i18n";
 import { ThreadInbox } from "@/features/comms/ThreadInbox";
 import { SessionControls } from "@/features/identity/SessionControls";
@@ -17,7 +18,7 @@ type Tab = typeof tabs[number];
 
 export default async function SchoolPage({ params, searchParams }: {
   params: Promise<{ locale: Locale; tab: string }>;
-  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string }>;
+  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; batchId?:string; invite?:string }>;
 }) {
   const [{ locale, tab }, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
@@ -36,10 +37,13 @@ export default async function SchoolPage({ params, searchParams }: {
   if (tab === "students" && !families) notFound();
   return (
     <>
-      <h1>{text[tab as Tab]}</h1>
+      <h1>{tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
       {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
-      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} /></>}
+      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
+        {(search.batchId || search.invite) && <InviteWorkspace locale={locale} guardians={true}
+          batchId={z.uuid().safeParse(search.batchId).data} invitationId={z.uuid().safeParse(search.invite).data}/>}
+      </>}
       {tab === "children" && <Children locale={locale} initialChild={z.uuid().safeParse(search.child).data} />}
       {tab === "attendance" && session.activePersona === "teacher" && <DailyAttendance locale={locale} initialClass={z.uuid().safeParse(search.class).data} initialDate={schoolDateSchema.safeParse(search.date).data} />}
       {tab === "more" && <div className="more-index">
@@ -53,13 +57,12 @@ export default async function SchoolPage({ params, searchParams }: {
             {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/homework`}>{locale==="ar"?"الواجبات":"Hausaufgaben"}</Link>}
             {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/academics`}>{locale==="ar"?"الشرح والأنشطة":"Unterricht und Aktivitäten"}</Link>}
             {(session.activePersona!=="admin"||academic)&&<Link className="more-row" href={`/${locale}/school/more/curriculum`}>{locale==="ar"?"المواد والدروس":"Fächer und Unterricht"}</Link>}
-            {(calendar || academic) && <Link className="more-row" href={`/${locale}/school/more/assignments`}>{locale === "ar" ? "الموظفون والتكليفات" : "Mitarbeitende und Einsätze"}</Link>}
+            {(calendar || academic || teacherInvites) && <Link className="more-row" href={`/${locale}/school/more/assignments`}>{locale === "ar" ? "المدرسون والإدارة" : "Lehrkräfte und Verwaltung"}</Link>}
             {(session.activePersona !== "admin" || calendar || academic) && <Link className="more-row"
               href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
             {attendance && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
           </div></MoreGroup>}
-        {(invites || placement || calendar || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
-            {(placement || invites) && <Link className="more-row" href={`/${locale}/staff/invitations`}>{locale === "ar" ? "الدعوات" : "Einladungen"}</Link>}
+        {(placement || calendar || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
             {(calendar || placement) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
             {calendar && <Link className="more-row" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
           </div>

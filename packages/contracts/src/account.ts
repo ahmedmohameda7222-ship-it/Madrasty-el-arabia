@@ -11,7 +11,7 @@ export const preferencesSchema = z.object({
 });
 export type Preferences = z.infer<typeof preferencesSchema>;
 
-export const directoryRoleSchema = z.enum(["teacher","principal","deputy","office","guardian"]);
+export const directoryRoleSchema = z.enum(["teacher","admin","principal","deputy","office","guardian"]);
 export const directoryIdSchema = z.union([z.uuid(), inboxSchema]);
 export const directoryQuerySchema = pageQuerySchema.extend({
   query: z.string().trim().max(120).optional(),

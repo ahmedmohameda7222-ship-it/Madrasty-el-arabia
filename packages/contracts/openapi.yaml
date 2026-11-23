@@ -497,6 +497,111 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","deleted":true}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/families:
+    post:
+      operationId: createFamilyWithChildren
+      summary: Create guardians and at least one child transactionally, with optional class per child
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [guardians, children]
+              properties:
+                guardians:
+                  type: array
+                  minItems: 1
+                  maxItems: 2
+                  items:
+                    type: object
+                    required: [displayName, contactEmail, contactPhone, correspondenceLocale]
+                    properties:
+                      displayName: { type: string, minLength: 1, maxLength: 200 }
+                      contactEmail: { type: [string, 'null'], format: email }
+                      contactPhone: { type: [string, 'null'] }
+                      correspondenceLocale: { type: string, enum: [ar, de] }
+                children:
+                  type: array
+                  minItems: 1
+                  maxItems: 25
+                  items:
+                    type: object
+                    required: [displayName]
+                    properties:
+                      displayName: { type: string, minLength: 1, maxLength: 200 }
+                      classId: { type: [string, 'null'], format: uuid, description: Optional }
+      responses:
+        '201':
+          description: Family, guardian identifiers, and children created atomically
+          content:
+            application/json:
+              example: { data: { guardianIds: [2d71a427-2ffa-4740-bfa4-308f34973fd0], children: [{ id: 07f9999d-5dc2-479d-9c18-bf524b0fd11e, studentNumber: MA-000001, displayName: Omar, state: active, revision: 1 }] } }
+        '200':
+          description: Same idempotent request replayed
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/families/{id}/children:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: addChildToExistingFamily
+      summary: Add a child to an existing family, with optional class
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [displayName], properties: { displayName: { type: string }, classId: { type: [string, 'null'], format: uuid } } }
+      responses:
+        '201':
+          description: Child linked to the selected guardian
+        '200':
+          description: Replayed request
+        default:
+          $ref: '#/components/responses/AuthError'
+  /school/guardians/{id}/invitations:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listGuardianInvitationsInFamily
+      summary: Display parent invitation status in the family record
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Recent guardian-only invitations
+        default:
+          $ref: '#/components/responses/AuthError'
+  /staff/provision:
+    post:
+      operationId: provisionDirectStaffAccount
+      summary: Create Lehrkraft or Hauptadmin-authorized Admin account without an invitation
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role, displayName, email, password]
+              properties:
+                role: { type: string, enum: [teacher, admin] }
+                displayName: { type: string, minLength: 1 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12, writeOnly: true }
+                workPhone: { type: [string, 'null'] }
+                correspondenceLocale: { type: string, enum: [ar, de] }
+                capabilities: { type: array, items: { type: string }, uniqueItems: true }
+      responses:
+        '201':
+          description: Ready-to-login Auth and staff account identifiers
+        default:
+          $ref: '#/components/responses/AuthError'
   /school/students:
     get:
       operationId: listStudents
@@ -511,29 +616,6 @@ paths:
           content:
             application/json:
               example: {"data":[{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}]}
-        default:
-          $ref: '#/components/responses/AuthError'
-    post:
-      operationId: createStudent
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {"type":"object","required":["displayName"],"properties":{"displayName":{"type":"string"},"source":{"type":"object","required":["namespace","key"],"properties":{"namespace":{"type":"string"},"key":{"type":"string"}}}}}
-      responses:
-        '201':
-          description: Authorized family record
-          content:
-            application/json:
-              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}}
-        '200':
-          description: Replayed authorized creation
-          content:
-            application/json:
-              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","studentNumber":"MA-000001","displayName":"Salma Example","state":"active","revision":1}}
         default:
           $ref: '#/components/responses/AuthError'
   /school/students/{id}:
@@ -1123,30 +1205,6 @@ paths:
           content:
             application/json:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"guardian","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
-        default:
-          $ref: '#/components/responses/AuthError'
-  /invitations/teachers:
-    post:
-      operationId: issueTeacherInvitation
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {"type":"object","required":["name","email","locale"],"properties":{"name":{"type":"string"},"email":{"type":"string","format":"email"},"locale":{"type":"string","enum":["ar","de"]}}}
-      responses:
-        '201':
-          description: Scoped invitation result
-          content:
-            application/json:
-              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"teacher","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
-        '200':
-          description: Replayed authorized request
-          content:
-            application/json:
-              example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","recipientId":"2d71a427-2ffa-4740-bfa4-308f34973fd0","batchId":null,"generation":1,"kind":"teacher","locale":"ar","delivery":"queued","validity":"pending","email":"family@example.invalid","expiresAt":"2026-11-20T22:00:00.000Z","revision":1}}
         default:
           $ref: '#/components/responses/AuthError'
   /invitations/batches:

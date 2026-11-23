@@ -1,26 +1,18 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
+import { notFound } from "next/navigation";
 import { z } from "zod";
-import { webSchoolSession } from "@/server/identity/web-session";
-import { mayUse } from "@/server/access/capabilities";
-import { SchoolHeader } from "@/ui/Shell";
-import { MoreBackLink } from "@/ui/MoreBackLink";
-import { InviteWorkspace } from "@/features/identity/Invitations";
 
-export default async function StaffInvitations({ params, searchParams }: {
-  params: Promise<{ locale: string }>; searchParams: Promise<{ batchId?: string; invite?: string }>;
+/** Legacy deep links resolve to the integrated family workspace. */
+export default async function FormerInvitationPage({params,searchParams}:{
+  params:Promise<{locale:string}>;
+  searchParams:Promise<{batchId?:string;invite?:string}>;
 }) {
-  const [route, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
-  const locale = localeSchema.safeParse(route.locale);
-  if (!locale.success) notFound();
-  if (!session) redirect(`/${locale.data}/account/sign-in`);
-  const [guardians, teachers] = await Promise.all([
-    mayUse(session, "students.manage"), mayUse(session, "staff.invite"),
-  ]);
-  if (!guardians && !teachers) notFound();
-  const batch = z.uuid().safeParse(search.batchId);
-  return <main className="public-page"><SchoolHeader locale={locale.data} />
-    <MoreBackLink locale={locale.data} />
-    <InviteWorkspace locale={locale.data} guardians={guardians} teachers={teachers} invitationId={z.uuid().safeParse(search.invite).data} batchId={guardians && batch.success ? batch.data : undefined} />
-  </main>;
+  const [{locale},query]=await Promise.all([params,searchParams]);
+  const accepted=localeSchema.safeParse(locale);
+  if(!accepted.success)notFound();
+  const paramsOut=new URLSearchParams();
+  if(z.uuid().safeParse(query.batchId).success)paramsOut.set("batchId",query.batchId!);
+  if(z.uuid().safeParse(query.invite).success)paramsOut.set("invite",query.invite!);
+  redirect(`/${accepted.data}/school/students${paramsOut.size?"?"+paramsOut:""}`);
 }

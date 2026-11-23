@@ -1,7 +1,7 @@
 import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
 import { activatedInvitationSchema, batchChoiceSchema, batchOutputSchema, idempotencyKeySchema, invitationSchema,
-  type activateInvitationInput, type invitationListInput, type issueBatchInput, type issueInvitationInput, type issueTeacherInput,
+  type activateInvitationInput, type invitationListInput, type issueBatchInput, type issueInvitationInput,
   type reissueInvitationInput, type invitationKind, type Locale,
 } from "@madrasty/contracts";
 import type { z } from "zod";
@@ -79,7 +79,7 @@ export function listInvitations(ctx: ActorContext, query: z.infer<typeof invitat
     const rows = invitationSchema.array().parse(await tx`
       select result.* from (
         select ${projection(tx)} from app.invitation i
-        where (${query.id ?? null}::uuid is null or i.id = ${query.id ?? null}::uuid)
+        where i.kind = 'guardian' and (${query.id ?? null}::uuid is null or i.id = ${query.id ?? null}::uuid)
           and (${query.batchId ?? null}::uuid is null or i.batch_id = ${query.batchId ?? null}::uuid)
           and (${query.cursor ?? null}::uuid is null or i.id > ${query.cursor ?? null}::uuid)
       ) result where (${query.status ?? null}::text is null or result.validity = ${query.status ?? null})
@@ -91,27 +91,8 @@ export function listInvitations(ctx: ActorContext, query: z.infer<typeof invitat
 
 export function issueInvitation(ctx: ActorContext, key: string | null, input: z.infer<typeof issueInvitationInput>) {
   return commitCommand(ctx, "invitation.issue", key, hashCommand(input), {
-    authorize: async (tx) => { await authorizeKind(tx, ctx, input.kind); await target(tx, input.kind, input.recipientId); },
+    authorize: async (tx) => { if (input.kind !== "guardian") throw new ApiError("forbidden"); await authorizeKind(tx, ctx, "guardian"); await target(tx, "guardian", input.recipientId); },
     mutate: async (tx) => (await issue(tx, ctx, input.kind, await target(tx, input.kind, input.recipientId), input.locale, null)).invite,
-  });
-}
-
-export function createTeacherInvitation(ctx: ActorContext, key: string | null, input: z.infer<typeof issueTeacherInput>) {
-  return commitCommand(ctx, "invitation.teacher_create", key, hashCommand(input), {
-    authorize: async (tx) => {
-      await authorizeKind(tx, ctx, "teacher");
-      const [existing] = await tx`select account_id from app.teacher_invite_contact where email = ${input.email}`;
-      if (existing?.account_id) throw new ApiError("not_found");
-    },
-    mutate: async (tx) => {
-      const [contact] = await tx<{ id: string; display_name: string; correspondence_locale: Locale }[]>`
-        insert into app.teacher_invite_contact(email, display_name, correspondence_locale)
-        values (${input.email}, ${input.name}, ${input.locale})
-        on conflict (email) do update set email = excluded.email
-        returning id, display_name, correspondence_locale`;
-      if (contact.display_name !== input.name) throw new ApiError("conflict");
-      return (await issue(tx, ctx, "teacher", await target(tx, "teacher", contact.id), input.locale, null)).invite;
-    },
   });
 }
 
@@ -166,11 +147,13 @@ export function reissueInvitation(ctx: ActorContext, id: string, key: string | n
   return commitCommand(ctx, "invitation.reissue", key, hashCommand({ id, ...input }), {
     authorize: async (tx) => {
       const found = await record(tx, id);
-      await authorizeKind(tx, ctx, found.kind);
-      await target(tx, found.kind, found.recipientId);
+      if (found.kind !== "guardian") throw new ApiError("forbidden");
+      await authorizeKind(tx, ctx, "guardian");
+      await target(tx, "guardian", found.recipientId);
     },
     mutate: async (tx) => {
       const before = await record(tx, id);
+      if (before.kind !== "guardian") throw new ApiError("forbidden");
       await tx`select pg_advisory_xact_lock(hashtextextended(${`madrasty:invite:${before.kind}:${before.recipientId}`}, 0))`;
       const found = await record(tx, id);
       requireRevision(found.revision, input.revision);
@@ -220,4 +203,18 @@ export async function activateInvite(input: z.infer<typeof activateInvitationInp
   const accepted = await claimInvite(access, input.token, key);
   await providerSignOut(access, false).catch(() => undefined);
   return accepted;
+}
+
+/** Invitation status shown inside a guardian's family record. */
+export function listGuardianInvitations(ctx: ActorContext, guardianId: string) {
+  return withActor(ctx, async tx => {
+    await requireCapability(tx, ctx, "students.manage");
+    const [adult] = await tx`select id from app.guardian_profile where id=${guardianId}`;
+    if (!adult) throw new ApiError("not_found");
+    return invitationSchema.array().parse(await tx`
+      select ${projection(tx)} from app.invitation i
+      where i.kind='guardian' and i.recipient_id=${guardianId}
+      order by i.generation desc, i.id desc limit 15
+    `);
+  });
 }

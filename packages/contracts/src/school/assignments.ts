@@ -3,7 +3,7 @@ import { pageQuerySchema, personaSchema, revisionSchema, schoolDateSchema } from
 
 export const assignmentActions = ["attendance.read","attendance.mark","attendance.approve","academics.plan","academics.log","academics.grade","academics.publish","comms.class"] as const;
 export const assignmentActionSchema = z.enum(assignmentActions);
-export const staffRoleSchema = z.enum(["teacher","principal","deputy","office"]);
+export const staffRoleSchema = z.enum(["teacher","admin"]);
 const text = (length: number) => z.string().trim().min(1).max(length);
 const caps = z.array(assignmentActionSchema).min(1).max(assignmentActions.length)
   .refine((values) => values.length === new Set(values).size);

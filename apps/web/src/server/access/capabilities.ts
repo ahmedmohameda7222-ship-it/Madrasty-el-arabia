@@ -32,6 +32,9 @@ export function readAccess(ctx: ActorContext, id: string) {
 export function replaceAccess(ctx: ActorContext, id: string, edit: AccessEdit) {
   return withActor(ctx, async (tx) => {
     await requireCapability(tx, ctx, "access.manage");
+    // Only the original Hauptadmin may administer any staff grants.
+    const [root] = await tx<{ allowed: boolean }[]>`select app.is_hauptadmin() as allowed`;
+    if (!root?.allowed) throw new ApiError("forbidden");
     if (id === ctx.accountId) throw new ApiError("forbidden");
     const [result] = await tx<{ revision: number | null }[]>`
       select app.replace_access(${id}, ${edit.revision}, ${tx.json(edit)}) as revision
@@ -81,3 +84,15 @@ export async function schoolMenuAccess(session: SchoolSession, keys: readonly Ca
 }
 
 export const mayManageAccess = (session: import("@madrasty/contracts").SchoolSession) => mayUse(session, "access.manage");
+
+/** Only the verified original Hauptadmin can provision or manage Administrators. */
+export async function mayProvisionAdmin(session: SchoolSession) {
+  if(session.activePersona !== "admin" || session.assurance !== "aal2") return false;
+  return withActor({
+    requestId:crypto.randomUUID(),accountId:session.accountId,sessionId:session.sessionId,
+    persona:session.activePersona,assurance:session.assurance,
+  }, async tx=>{
+    const [answer]=await tx<{allowed:boolean}[]>`select app.is_hauptadmin() as allowed`;
+    return answer.allowed;
+  });
+}

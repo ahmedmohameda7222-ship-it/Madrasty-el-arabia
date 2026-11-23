@@ -1,6 +1,7 @@
 import "server-only";
 import {
   childLinkSchema, childSummarySchema, guardianDetailSchema, guardianSchema, studentSchema,
+  createFamilyInput, createFamilyChildInput, createdFamilySchema,
   type createGuardianInput, type createLinkInput, type createStudentInput, type changeLinkInput,
   type updateGuardianInput, type updateStudentInput, type familyQuerySchema,
 } from "@madrasty/contracts";
@@ -10,6 +11,7 @@ import { commitCommand, hashCommand, requireRevision } from "@/server/db/command
 import { appendAudit, appendEvent } from "@/server/db/outbox";
 import { withActor, type ActorContext, type Transaction } from "@/server/db/scoped";
 import { ApiError } from "@/server/http";
+import { classRecord, yearRecord, insertEnrollment } from "./enrollments";
 
 type Query = z.infer<typeof familyQuerySchema>;
 const office = (ctx: ActorContext) => (tx: Transaction) => requireCapability(tx, ctx, "students.manage");
@@ -239,5 +241,75 @@ export function readChild(ctx: ActorContext, id: string) {
     `;
     if (!row) throw accessError();
     return childSummarySchema.parse(row);
+  });
+}
+
+/**
+ * Class placement is optional per child. A selected class starts on the
+ * first eligible day of its school year, or today if already in progress.
+ * The existing enrollment trigger enforces capacity and non-overlap.
+ */
+async function placeFamilyChild(tx: Transaction, studentId: string, classId: string | null | undefined) {
+  if (!classId) return;
+  const classroom = await classRecord(tx, classId);
+  const year = await yearRecord(tx, classroom.yearId);
+  const [school] = await tx<{ today: string }[]>`select app.school_today()::text as today`;
+  const from = school.today < year.starts ? year.starts : school.today;
+  if (year.state === "closed" || from >= year.ends) throw new ApiError("validation", { classId: "error.validation" });
+  await insertEnrollment(tx, studentId, classId, classroom.yearId, from, year.ends);
+}
+
+async function addFamilyStudent(tx: Transaction, actor: ActorContext, child: z.infer<typeof createFamilyChildInput>, guardianIds: string[]) {
+  const [created] = await tx<{ id: string }[]>`
+    insert into app.student(display_name) values (${child.displayName}) returning id
+  `;
+  for (const guardianId of guardianIds) {
+    const [relation] = await tx<{ id: string }[]>`
+      insert into app.child_link(guardian_id,student_id,state,effective_from,changed_by,reason)
+      values (${guardianId},${created.id},'approved',now(),${actor.accountId},'School registration') returning id
+    `;
+    await appendAudit(tx, { action: "family.link_approved", aggregateId: relation.id });
+  }
+  await placeFamilyChild(tx, created.id, child.classId);
+  await appendAudit(tx, { action: "school.student_created", aggregateId: created.id });
+  return student(tx, created.id);
+}
+
+export function createFamily(ctx: ActorContext, key: string | null, input: z.infer<typeof createFamilyInput>) {
+  return commitCommand(ctx, "school.family.create", key, hashCommand(input), {
+    authorize: office(ctx),
+    mutate: async (tx) => {
+      // Duplicate contacts should be selected from existing family records, not cloned.
+      for (const adult of input.guardians) {
+        if (adult.contactEmail) {
+          const existing = await tx`select id from app.guardian_profile where contact_email = ${adult.contactEmail}`;
+          if (existing.length) throw new ApiError("conflict");
+        }
+      }
+      const guardianIds: string[] = [];
+      for (const adult of input.guardians) {
+        const [saved] = await tx<{ id: string }[]>`
+          insert into app.guardian_profile(display_name,contact_email,contact_phone,correspondence_locale)
+          values (${adult.displayName},${adult.contactEmail},${adult.contactPhone},${adult.correspondenceLocale})
+          returning id
+        `;
+        guardianIds.push(saved.id);
+        await appendAudit(tx, { action: "school.guardian_created", aggregateId: saved.id });
+      }
+      const children = [];
+      for (const child of input.children) children.push(await addFamilyStudent(tx, ctx, child, guardianIds));
+      return createdFamilySchema.parse({ guardianIds, children });
+    },
+  });
+}
+
+export function createFamilyChild(ctx: ActorContext, guardianId: string, key: string | null, input: z.infer<typeof createFamilyChildInput>) {
+  return commitCommand(ctx, "school.family.child.create", key, hashCommand({ guardianId, ...input }), {
+    authorize: async (tx) => { await office(ctx)(tx); await guardian(tx, guardianId); },
+    mutate: async (tx) => {
+      // Do not guess co-guardian links from siblings: blended families may
+      // have different adults. New links require explicit verified selection.
+      return addFamilyStudent(tx, ctx, input, [guardianId]);
+    },
   });
 }

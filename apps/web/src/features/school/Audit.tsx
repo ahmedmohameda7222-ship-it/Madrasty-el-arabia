@@ -63,7 +63,7 @@ function auditUrl(locale:Locale,link:AuditResourceLink) {
   const root=`/${locale}/school`;
   switch(link.kind){
     case "access":return `/${locale}/staff/access`;
-    case "invitations":return `/${locale}/staff/invitations`;
+    case "invitations":return `${root}/students`;
     case "calendar":return `${root}/more/calendar`;
     case "assignments":return `${root}/more/assignments`;
     case "timetable":return `${root}/more/timetable`;
