@@ -46,11 +46,9 @@ test("Admin monitors teaching records without exam, homework or attendance write
      {method:"POST",token:admin,persona:"admin",key:randomUUID(),body:{},status:[403,404]});
    const opened=await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,
      {method:"POST",token:teacher,persona:"teacher",key:randomUUID(),body:{},status:[200,201]});
-   const read=(await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}`,
-     {token:admin,persona:"admin"})).payload.data;
-   assert.equal(read.canMark,false);
-   assert.equal(read.canApprove,false);
-   assert.equal(read.state,opened.payload.data.state);
+   // Open sheets are teacher working data, not a published Admin record.
+   await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}`,
+     {token:admin,persona:"admin",status:403});
  }finally{await school.close();}
 });
 
