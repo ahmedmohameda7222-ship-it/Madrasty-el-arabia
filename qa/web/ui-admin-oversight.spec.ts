@@ -45,9 +45,15 @@ test("Admin exam drilldown stays inside the selected classroom",async({page,cont
   const berryStaff=staff.find(p=>p.accountId===ids["teacher-other"]);
   const subjects=(await fixtureApi(school,"/school/subjects",{token:admin})).payload.data as {id:string;code:string}[];
   const fiqh=subjects.find(p=>p.code==="FIQH");
-  if(!berryStaff||!fiqh)throw new Error("Synthetic staff and subject missing");
+  const seerah=subjects.find(p=>p.code==="SEERAH");
+  if(!berryStaff||!fiqh||!seerah)throw new Error("Synthetic staff and subjects missing");
   const assigned=await command(`/school/classes/${berry.id}/assignments`,"berry-exam-offering",{
     staffId:berryStaff.id,kind:"subject",subjectId:fiqh.id,
+    from:clock.startsOn,untilExclusive:clock.endsExclusive,
+    capabilities:["academics.plan","academics.log","academics.grade","academics.publish"],
+  });
+  const secondOffering=await command(`/school/classes/${berry.id}/assignments`,"berry-seerah-offering",{
+    staffId:berryStaff.id,kind:"subject",subjectId:seerah.id,
     from:clock.startsOn,untilExclusive:clock.endsExclusive,
     capabilities:["academics.plan","academics.log","academics.grade","academics.publish"],
   });
@@ -57,6 +63,7 @@ test("Admin exam drilldown stays inside the selected classroom",async({page,cont
   };
   await createExam(appleTeacher,offering.offeringId,"Synthetic APPLE classroom exam");
   await createExam(berryTeacher,assigned.offeringId,"Synthetic BERRY classroom exam");
+  await createExam(berryTeacher,secondOffering.offeringId,"Synthetic BERRY SEERAH classroom exam");
   await context.addCookies([
     {name:"madrasty-session",value:admin,url:localOrigin,httpOnly:true,sameSite:"Lax"},
     {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
@@ -66,6 +73,7 @@ test("Admin exam drilldown stays inside the selected classroom",async({page,cont
   await page.getByRole("link",{name:"Prüfungen ansehen"}).click();
   await expect(page).toHaveURL(`/de/school/more/exams?class=${berry.id}`);
   await expect(page.getByText("Synthetic BERRY classroom exam")).toBeVisible();
+  await expect(page.getByText("Synthetic BERRY SEERAH classroom exam")).toBeVisible();
   await expect(page.getByText("Synthetic APPLE classroom exam")).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Prüfung hinzufügen"})).toHaveCount(0);
  }finally{await school.close();}
