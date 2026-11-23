@@ -13,11 +13,11 @@ export default async function ClassesPage({ params, searchParams }: {
   const locale = localeSchema.safeParse(route.locale);
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);
-  const [manageClasses, manageEnrollment] = await Promise.all([
-    mayUse(session, "school.manage"), mayUse(session, "students.manage"),
+  const [manageClasses, manageEnrollment, manageAcademic] = await Promise.all([
+    mayUse(session, "school.manage"), mayUse(session, "students.manage"), mayUse(session, "academics.supervise"),
   ]);
-  if (!manageClasses && !manageEnrollment) notFound();
+  if (!manageClasses && !manageEnrollment && !manageAcademic) notFound();
   const student = manageEnrollment ? z.uuid().safeParse(query.student).data : undefined;
-  return <ClassWorkspace locale={locale.data} manageClasses={manageClasses} manageEnrollment={manageEnrollment}
+  return <ClassWorkspace locale={locale.data} manageClasses={manageClasses} manageEnrollment={manageEnrollment} manageTeachers={manageClasses || manageAcademic}
     student={student} />;
 }

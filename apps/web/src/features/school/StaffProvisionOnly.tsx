@@ -12,7 +12,7 @@ export function StaffProvisionOnly({locale}:{locale:Locale}) {
     <div>
       <h1>{locale==="ar"?"إضافة مدرس":"Lehrkraft hinzufügen"}</h1>
       {created&&<p role="status">{locale==="ar"?"تم إنشاء حساب المدرس.":"Das Lehrkraft-Konto wurde erstellt."}</p>}
-      <DirectStaffForm key={revision} locale={locale} role="teacher" canCreateAdmin={false}
+      <DirectStaffForm key={revision} locale={locale} role="teacher" canCreateAdmin={false} canAssignClasses={false}
         saved={()=>{setCreated(true);setRevision(value=>value+1);}}
         cancel={()=>{setCreated(false);setRevision(value=>value+1);}}/>
     </div>
