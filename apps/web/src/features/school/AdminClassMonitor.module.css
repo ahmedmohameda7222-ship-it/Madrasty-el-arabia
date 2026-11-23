@@ -37,3 +37,10 @@
 .back:focus-visible,.action:focus-visible,.section:focus-visible,.selected:focus-visible,.classCard:focus-visible,.field input:focus-visible,.field select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 @media(max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.root{padding:12px 0 28px;gap:14px}.classCard{padding:14px}.classHeadline{align-items:flex-start}.metrics{gap:8px}.metric{padding:12px;gap:7px}.sectionBody,.panel{padding:13px}.sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section,.selected{text-align:center;padding:9px}.pupilRow{align-items:flex-start;flex-direction:column}.action{width:100%}}
+
+.results{display:grid;gap:10px;border-top:1px solid var(--rule);padding-top:10px}
+.results>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.9rem;font-weight:650}
+.results[open]{gap:8px}.resultRow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px;border:1px solid var(--rule);border-radius:11px;background:var(--card);min-width:0}
+.resultRow>div{display:grid;gap:7px;min-width:0}.resultRow p{margin:0;color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
+.results>summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media(max-width:560px){.resultRow{flex-direction:column;align-items:stretch}.resultRow .action{width:100%}}
