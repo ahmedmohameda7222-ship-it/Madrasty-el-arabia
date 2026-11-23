@@ -45,7 +45,7 @@ test("Admin old academic exam link redirects to safe class monitoring, not an ex
   }finally{await school.close();}
 });
 
-test("Admin old attendance editor route redirects to official class monitoring",async({page,context})=>{
+test("Admin legacy teacher editors redirect to official class monitoring",async({page,context})=>{
   const school=schoolFixtures();
   try{
     await school.seed();
@@ -55,5 +55,10 @@ test("Admin old attendance editor route redirects to official class monitoring",
     await expect(page).toHaveURL(/\/de\/school\/more\/oversight(?:\?.*)?$/);
     await expect(page.getByRole("heading",{name:"Klassen",exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"Anwesenheit bestätigen"})).toHaveCount(0);
+    for(const editor of ["academics","curriculum"]){
+      await page.goto(`/de/school/more/${editor}`);
+      await expect(page).toHaveURL(/\/de\/school\/more\/oversight(?:\?.*)?$/);
+      await expect(page.getByRole("heading",{name:"Klassen",exact:true})).toBeVisible();
+    }
   }finally{await school.close();}
 });
