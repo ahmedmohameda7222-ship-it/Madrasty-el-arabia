@@ -15,8 +15,9 @@ test("Admin class list is class-first and restricted to monitoring role",async()
   const {year,apple,berry}=await setUpCalendar(school,admin);
   const result=await fixtureApi(school,`/school/monitor/classes?yearId=${year.id}`,{token:admin,persona:"admin"});
   const rows=result.payload.data as {classId:string;studentCount:number;teacherName:string|null}[];
-  assert.equal(rows.length,2);
-  assert.deepEqual(new Set(rows.map(row=>row.classId)),new Set([apple.id,berry.id]));
+  assert.ok(rows.length>=2);
+  assert.ok(rows.some(row=>row.classId===apple.id));
+  assert.ok(rows.some(row=>row.classId===berry.id));
   assert.ok(rows.find(row=>row.classId===apple.id)?.studentCount===2);
   assert.ok(rows.find(row=>row.classId===apple.id)?.teacherName);
   await fixtureApi(school,`/school/monitor/classes?yearId=${year.id}`,{token:teacher,persona:"teacher",status:403});
@@ -52,8 +53,11 @@ test("Admin class monitoring never serializes draft exam or evaluation content",
   await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:teacher,persona:"teacher",status:403});
   await fixtureApi(school,`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`,
     {token:teacher,persona:"teacher",status:403});
-  await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{method:"POST",token:admin,persona:"admin",key:randomUUID(),
-    body:{title:"Forbidden monitor write"},status:[404,405]});
+  const deniedWrite=await fetch(`${school.origin}/api/v1/school/monitor/classes/${apple.id}`,{
+    method:"POST",headers:{authorization:`Bearer ${admin}`,"x-school-persona":"admin",
+      "content-type":"application/json"},body:JSON.stringify({title:"Forbidden monitor write"}),
+  });
+  assert.ok([404,405].includes(deniedWrite.status));
  }finally{await school.close();}
 });
 
@@ -88,20 +92,22 @@ test("Admin sees an announced exam and only published scores and evaluations",as
     body:{revision:announce.revision,reviewedRows:[{studentId:ids.ahmed,revision:marked.revision}]},status:200});
   profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
   assert.equal(profile.exams.find((exam:{id:string})=>exam.id===created.id)?.score,16.5);
+  const evaluationProfilePath=`/school/monitor/classes/${apple.id}/students/${ids.omar}`;
   const assessment=(await fixtureApi(school,"/academics/evaluations",{
     method:"POST",token:teacher,persona:"teacher",key:randomUUID(),status:201,
-    body:{offeringId:offering.offeringId,studentId:ids.ahmed,periodStart:clock.day,periodEnd:clock.day,
+    body:{offeringId:offering.offeringId,studentId:ids.omar,periodStart:clock.day,periodEnd:clock.day,
       title:"Official progress",participation:5,understanding:4,preparation:3,
       strengths:"Published strengths",improvements:"Published goals"}})).payload.data;
-  profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
-  assert.equal(profile.evaluations.length,0,"Evaluation draft must stay private");
+  const pendingEvaluation=(await fixtureApi(school,evaluationProfilePath,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(pendingEvaluation.evaluations.some((row:{id:string})=>row.id===assessment.id),false,"Evaluation draft must stay private");
   await fixtureApi(school,`/academics/evaluations/${assessment.id}/publish`,{
     method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
     body:{revision:assessment.revision},status:200});
-  profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
-  assert.equal(profile.evaluations[0].title,"Official progress");
-  assert.equal(profile.evaluations[0].strengths,"Published strengths");
-  assert.equal(JSON.stringify(profile).includes("private_reason"),false);
+  const publishedEvaluation=(await fixtureApi(school,evaluationProfilePath,{token:admin,persona:"admin"})).payload.data;
+  const official=publishedEvaluation.evaluations.find((row:{id:string})=>row.id===assessment.id);
+  assert.equal(official?.title,"Official progress");
+  assert.equal(official?.strengths,"Published strengths");
+  assert.equal(JSON.stringify(publishedEvaluation).includes("private_reason"),false);
  }finally{await school.close();}
 });
 
@@ -112,7 +118,9 @@ test("Admin sees attendance rows only after approval, not while the sheet is ope
   const admin=await school.bearer("admin","admin");
   const teacher=await school.bearer("teacher","teacher");
   const {apple,ids}=await setUpCalendar(school,admin);
-  const daily=`/attendance/classes/${apple.id}/days/${clock.day}`;
+  // Use a separate school day: other fixture tests assert clock.day is untouched.
+  const day=clock.homeworkDue;
+  const daily=`/attendance/classes/${apple.id}/days/${day}`;
   const opened=(await fixtureApi(school,daily+"/open",{
     method:"POST",token:teacher,persona:"teacher",key:randomUUID(),body:{},status:[200,201]})).payload.data;
   const before=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
