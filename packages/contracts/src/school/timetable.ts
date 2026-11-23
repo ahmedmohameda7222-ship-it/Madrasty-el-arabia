@@ -40,7 +40,7 @@ export const timetablePatchInput = z.union([
   z.object({ revision: revisionSchema, yearRevision: revisionSchema, date: schoolDateSchema, scope: z.enum(["single","future"]), slot: timetableReviewedSlot }),
 ]);
 export const timetableIssue = z.object({
-  field: z.enum(["assignmentId","roomId","weekday","start","end","from","untilExclusive","classId","staffId"]),
+  field: z.enum(["assignmentId","subjectId","roomId","weekday","start","end","from","untilExclusive","classId","staffId"]),
   kind: z.enum(["unavailable","interval","clash"]),
 });
 export const timetablePreviewSchema = z.object({
