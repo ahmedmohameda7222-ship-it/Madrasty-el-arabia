@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { directStaffAccountInput,directStaffAccountSchema } from "../../packages/contracts/src/identity";
+import { setUpCalendar } from "../fixtures/calendar";
+import {schoolClock as clock} from "../fixtures/clock";
 import { schoolFixtures } from "../fixtures/school";
 import { fixtureApi } from "../support/api";
 
@@ -43,4 +45,78 @@ test("only Hauptadmin can create an Admin; delegated staff manager can create a 
     });
     assert.equal(directStaffAccountSchema.parse(root.payload.data).role,"admin");
   } finally {await school.close();}
+});
+
+test("Hauptadmin provisions a teacher with full class responsibility and a subject atomically",async()=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    const {year,command}=await setUpCalendar(school,admin);
+    const classroom=await command("/school/classes","staff-onboarding-class",{
+      yearId:year.id,code:"QA_STAFF_ONBOARD",nameAr:"فصل مدرس جديد",nameDe:"Neue Lehrkraft",capacity:20,
+    });
+    const subjects=(await fixtureApi(school,"/school/subjects",{token:admin})).payload.data as {id:string;code:string}[];
+    const fiqh=subjects.find(s=>s.code==="FIQH");
+    assert.ok(fiqh);
+    const teacher=directStaffAccountInput.parse({
+      role:"teacher",displayName:"Test Teacher Full Class",email:`qa-${school.run}-class-teacher@madrasty.invalid`,
+      password:"permanent-school-password-2026",workPhone:null,correspondenceLocale:"de",capabilities:[],
+      assignment:{classId:classroom.id,kind:"primary",subjectId:fiqh.id},
+    });
+    const created=directStaffAccountSchema.parse((await fixtureApi(school,"/staff/provision",{
+      method:"POST",token:admin,persona:"admin",body:teacher,status:201,
+    })).payload.data);
+    const linked=(await fixtureApi(school,`/school/classes/${classroom.id}/assignments`,{token:admin})).payload.data as {
+      kind:string;staffId:string;subjectId:string|null;capabilities:string[];revoked:boolean
+    }[];
+    const primary=linked.find(a=>a.staffId===created.staffId&&a.kind==="primary");
+    const subject=linked.find(a=>a.staffId===created.staffId&&a.kind==="subject");
+    assert.ok(primary);assert.ok(subject);
+    assert.equal(subject.subjectId,fiqh.id);
+    assert.deepEqual(new Set(primary.capabilities),new Set([
+      "attendance.read","attendance.mark","attendance.approve","academics.plan",
+      "academics.log","academics.grade","academics.publish","comms.class",
+    ]));
+    assert.equal(subject.capabilities.includes("attendance.mark"),false);
+    assert.equal(subject.capabilities.includes("academics.grade"),true);
+
+    const staffOnly=await school.bearer("office","admin");
+    await fixtureApi(school,"/staff/provision",{
+      method:"POST",token:staffOnly,persona:"admin",
+      body:{...teacher,email:`qa-${school.run}-denied-assignment@madrasty.invalid`},status:403,
+    });
+  }finally{await school.close();}
+});
+
+test("Klassenlehrkraft can teach any subject offered in its class, without a second subject assignment",async()=>{
+  const school=schoolFixtures();
+  try {
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    const teacher=await school.bearer("teacher","teacher");
+    const {apple,ids}=await setUpCalendar(school,admin);
+    const profiles=(await fixtureApi(school,"/school/staff",{token:admin})).payload.data as {id:string;accountId:string}[];
+    const other=profiles.find(p=>p.accountId===ids["teacher-other"]);
+    assert.ok(other);
+    const subjects=(await fixtureApi(school,"/school/subjects",{token:admin})).payload.data as {id:string;code:string}[];
+    const seerah=subjects.find(p=>p.code==="SEERAH");
+    assert.ok(seerah);
+    const assigned=(await fixtureApi(school,`/school/classes/${apple.id}/assignments`,{
+      method:"POST",token:admin,persona:"admin",key:`${school.run}.second-subject`,
+      body:{staffId:other.id,kind:"subject",subjectId:seerah.id,from:clock.startsOn,
+        untilExclusive:clock.endsExclusive,capabilities:["academics.plan","academics.log","academics.grade","academics.publish"]},
+      status:201,
+    })).payload.data as {offeringId:string};
+    const result=await fixtureApi(school,"/academics/exams",{
+      method:"POST",token:teacher,persona:"teacher",key:`${school.run}.primary-teacher-creates-exam`,
+      body:{offeringId:assigned.offeringId,date:clock.day,time:"11:00",kind:"oral",
+        title:"Class teacher may teach Sira",maxScore:20},status:201,
+    });
+    // POST returns a minimal creation receipt; the detail API exposes offeringId.
+    const exam = await fixtureApi(school,`/academics/exams/${result.payload.data.id}`,{
+      token:teacher,persona:"teacher",
+    });
+    assert.equal(exam.payload.data.offeringId,assigned.offeringId);
+  }finally{await school.close();}
 });

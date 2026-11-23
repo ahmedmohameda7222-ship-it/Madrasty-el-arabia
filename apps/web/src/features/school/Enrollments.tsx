@@ -12,6 +12,7 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useAdminCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { AsyncSurface } from "@/ui/AsyncSurface";
+import { ClassTeachersPanel } from "./ClassTeachersPanel";
 
 const labels = {
   ar: {
@@ -69,8 +70,8 @@ const period = (year: SchoolYear) => `${year.startsOn} – ${year.endsExclusive}
 
 const routeId = z.uuid();
 
-export function ClassWorkspace({ locale, manageClasses, manageEnrollment, student }: {
-  locale: Locale; manageClasses: boolean; manageEnrollment: boolean;
+export function ClassWorkspace({ locale, manageClasses, manageEnrollment, manageTeachers = false, student }: {
+  locale: Locale; manageClasses: boolean; manageEnrollment: boolean; manageTeachers?: boolean;
   student?: string;
 }) {
   const text = labels[locale];
@@ -121,20 +122,23 @@ export function ClassWorkspace({ locale, manageClasses, manageEnrollment, studen
           <option value="">{manageClasses && year.state !== "closed" ? text.newClass : text.classes}</option>
           {classes.map((row) => <option value={row.id} key={row.id}>{name(row, locale)}</option>)}
         </select></label>
-        {manageClasses && year.state !== "closed" && <ClassForm key={current?.id ?? "new"} locale={locale} initial={current} yearId={year.id}
-          saved={(value) => {
-            choose(yearId,value.id);
-            setClasses((rows) => [value, ...(rows ?? []).filter((row) => row.id !== value.id)]);
-          }} />}
+        {manageClasses && year.state !== "closed" && <details className="class-settings-toggle" open={!current}>
+          <summary>{current ? (locale === "ar" ? "تعديل بيانات الفصل" : "Klassendaten bearbeiten")
+            : (locale === "ar" ? "إنشاء فصل جديد" : "Neue Klasse hinzufügen")}</summary>
+          <ClassForm key={current?.id ?? "new"} locale={locale} initial={current} yearId={year.id}
+            saved={(value) => {
+              choose(yearId,value.id);
+              setClasses((rows) => [value, ...(rows ?? []).filter((row) => row.id !== value.id)]);
+            }} />
+        </details>}
         {manageEnrollment && year.state !== "closed" && <button className="plain-button" onClick={() => showRollover(!rollover)}>{text.rollover}</button>}
-        {current && manageClasses && <Link className="plain-button" href={`/${locale}/school/more/assignments?year=${yearId}&class=${current.id}&returnToClass=1`}>
-          {locale === "ar" ? "عيّن المدرسين للفصل" : "Lehrkräfte für die Klasse zuweisen"}
-        </Link>}
+        
         {current && manageClasses && <Link className="plain-button" href={`/${locale}/school/more/timetable?year=${yearId}&class=${current.id}&returnToClass=1`}>
           {locale === "ar" ? "افتح جدول الفصل" : "Wochenplan der Klasse öffnen"}
         </Link>}
       </div>}
     </section>
+    {current && year && manageTeachers && <ClassTeachersPanel locale={locale} schoolClass={current} year={year}/>}
     {current && classes && manageEnrollment && <Roster key={`${current.id}:${student ?? ""}`} locale={locale} schoolClass={current} classes={classes}
       editable={year?.state !== "closed"} student={student} />}
     {rollover && year && classes && <Rollover key={year.id} locale={locale} source={year} years={years}

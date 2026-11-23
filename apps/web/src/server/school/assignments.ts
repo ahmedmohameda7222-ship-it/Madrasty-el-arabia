@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  assignmentSchema, assignmentWithSubstitutesSchema, staffAccountSchema, staffSchema, subjectSchema, substituteSchema, teachingViewSchema,
+  assignmentActions, assignmentSchema, assignmentWithSubstitutesSchema, staffAccountSchema, staffSchema, subjectSchema, substituteSchema, teachingViewSchema,
   type assignmentChangeInput, type assignmentInput, type staffChangeInput, type staffInput, type staffListInput, type substituteInput,
 } from "@madrasty/contracts";
 import type { z } from "zod";
@@ -165,10 +165,13 @@ export function myTeaching(ctx: ActorContext) {
 
 type AssignmentFields = { staffId: string; kind: string; from: string; untilExclusive: string; capabilities: string[] };
 async function insertAssignment(tx: Transaction, id: string, offeringId: string | null, values: AssignmentFields) {
+  // A Klassenlehrkraft owns all educational responsibilities for the entire
+  // class. Fachlehrkräfte keep explicitly delegated permission boundaries.
+  const capabilities = values.kind === "primary" ? [...assignmentActions] : values.capabilities;
   const [row] = await tx<{ id: string }[]>`
     insert into app.teaching_assignment(class_id,offering_id,staff_id,kind,effective_from,effective_until,capabilities)
     values (${id},${offeringId},${values.staffId},${values.kind},${values.from}::date,${values.untilExclusive}::date,
-      ${tx.array(values.capabilities)}::text[]) returning id`;
+      ${tx.array(capabilities)}::text[]) returning id`;
   return assignment(tx,row.id);
 }
 

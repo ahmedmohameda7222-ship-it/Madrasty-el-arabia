@@ -292,3 +292,8 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .more-group .header-actions {padding:12px 16px}
 @media (hover: hover) and (pointer: fine) {.more-row:hover,.more-group summary:hover {background:var(--inset,ButtonFace)}}
 @media (prefers-reduced-motion:reduce) {.more-group summary::after {transition:none}}
+
+/* Class settings belong in a secondary disclosure, not the main class workflow. */
+.class-settings-toggle {margin-block:12px;border:1px solid var(--rule);border-radius:13px;padding:12px;background:var(--inset);}
+.class-settings-toggle > summary {cursor:pointer;color:var(--ink);font-weight:600;min-block-size:26px;}
+.class-settings-toggle[open] > summary {margin-block-end:12px;}
