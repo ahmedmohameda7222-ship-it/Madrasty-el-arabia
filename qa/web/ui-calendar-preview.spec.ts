@@ -33,7 +33,7 @@ test("admin calendar uses the approved visual workflow and can reset a school-wi
     await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
     const yearCardBackground = await page.getByText("Ausgewähltes Schuljahr").locator("..")
       .evaluate((element) => getComputedStyle(element).backgroundColor);
-    const channels = yearCardBackground.match(/\\d+/g)?.slice(0, 3).map(Number);
+    const channels = yearCardBackground.match(/\d+/g)?.slice(0, 3).map(Number);
     expect(channels).toHaveLength(3);
     expect(channels![2] - channels![1]).toBeGreaterThanOrEqual(10);
 
