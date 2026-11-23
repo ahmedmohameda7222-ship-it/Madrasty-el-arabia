@@ -137,8 +137,9 @@ test("Admin sees attendance rows only after approval, not while the sheet is ope
     body:{approvalRevision:ready.approvalRevision,
       expectedRows:ready.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))},status:200});
   const after=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
-  assert.equal(after.attendance.length,2);
-  assert.equal(after.lastAttendance.present,2);
+  assert.equal(after.attendance.filter((row:{date:string})=>row.date===day).length,opened.rows.length);
+  assert.equal(after.lastAttendance.date,day);
+  assert.equal(after.lastAttendance.present,opened.rows.length);
   const student=(await fixtureApi(school,`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`,
     {token:admin,persona:"admin"})).payload.data;
   assert.equal(student.attendance[0].status,"present");
