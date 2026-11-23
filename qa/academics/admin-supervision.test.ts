@@ -82,3 +82,21 @@ test("Admin cannot correct or cancel approved attendance by calling legacy write
    });
  }finally{await school.close();}
 });
+
+test("Admin cannot inspect teacher attendance row details or revision history",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {apple}=await setUpCalendar(school,admin);
+  const opened=(await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,{
+    token:teacher,persona:"teacher",method:"POST",key:randomUUID(),body:{},status:[200,201]})).payload.data;
+  const row=opened.rows[0];
+  assert.ok(row?.id);
+  await fixtureApi(school,`/attendance/rows/${row.id}`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/attendance/rows/${row.id}?detail=private`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/attendance/rows/${row.id}/history`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/attendance/rows/${row.id}`,{token:teacher,persona:"teacher",status:200});
+ }finally{await school.close();}
+});
