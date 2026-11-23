@@ -119,7 +119,7 @@ export function AdminTeachingOverview({locale}:{locale:Locale}){
        <div className={css.actions}>
         {active.attendanceState!==null&&<Link className={css.button}
           href={`/${locale}/school/more/attendance?class=${active.classId}&date=${report.date}`}>{t.toAttendance}</Link>}
-        {active.teachingEntries!==null&&<Link className={css.button} href={`/${locale}/school/more/exams`}>{t.toExams}</Link>}
+        {active.teachingEntries!==null&&<Link className={css.button} href={`/${locale}/school/more/exams?class=${active.classId}`}>{t.toExams}</Link>}
         <Link className={css.button} href={`/${locale}/school/more/classes?year=${active.yearId}&class=${active.classId}`}>{t.toClass}</Link>
        </div>
       </div>}
