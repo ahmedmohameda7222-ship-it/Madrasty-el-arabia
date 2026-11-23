@@ -15,12 +15,12 @@ const staffList=staffSchema.array();
 type Assignment=z.infer<typeof assignmentWithSubstitutesSchema>;
 type Teacher=z.infer<typeof staffSchema>;
 const copy={
- ar:{title:"مدرس الفصل",add:"تعيين مدرس",name:"المدرس",choose:"اختر",save:"حفظ التكليف",
+ ar:{title:"مدرسو الفصل",add:"تعيين مدرس",name:"المدرس",choose:"اختر",save:"حفظ التكليف",
     cancel:"إلغاء",advanced:"إعدادات متقدمة",details:"التكليفات والبدلاء",
     start:"يبدأ من",end:"ينتهي في",empty:"لم يُعيَّن مدرس لهذا الفصل بعد.",
     cannot:"لا يوجد مدرسون جاهزون للتكليف. أضف حساب مدرس أولًا.",
     active:"ساري",waiting:"جاري التحميل"},
- de:{title:"Lehrkraft dieser Klasse",add:"Lehrkraft zuweisen",name:"Lehrkraft",choose:"Auswählen",save:"Zuordnung speichern",
+ de:{title:"Lehrkräfte dieser Klasse",add:"Lehrkraft zuweisen",name:"Lehrkraft",choose:"Auswählen",save:"Zuordnung speichern",
     cancel:"Abbrechen",advanced:"Erweiterte Einstellungen",details:"Zuordnungen und Vertretungen",
     start:"Beginn",end:"Ende",empty:"Dieser Klasse ist noch keine Lehrkraft zugeordnet.",
     cannot:"Noch keine zuweisbare Lehrkraft vorhanden. Zuerst ein Konto anlegen.",
@@ -59,13 +59,14 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
  // Historic primary + subject assignments can belong to one volunteer. Display that person once.
  const visibleTeachers=available.filter((item,index,rows)=>rows.findIndex(row=>row.staffId===item.staffId)===index);
  const hasLeader=available.some(a=>a.kind==="primary"&&a.untilExclusive>defaultStart(year.startsOn));
+ const assignable=teachers.filter(p=>!visibleTeachers.some(a=>a.staffId===p.id));
  const onSubmit=(event:FormEvent<HTMLFormElement>)=>{
   event.preventDefault();
   if(!teacherId){setError(dictionary(locale)["error.validation"]);return;}
   setBusy(true);setError("");setSuccess("");
-  const permissions=[...assignmentActions];
+  const permissions=hasLeader?assignmentActions.filter(a=>a!=="attendance.mark"&&a!=="attendance.approve"):[...assignmentActions];
   void cmd(`/school/classes/${schoolClass.id}/assignments`,"POST",{
-    staffId:teacherId,kind:"primary",subjectId:null,
+    staffId:teacherId,kind:hasLeader?"support":"primary",subjectId:null,
     from:start,untilExclusive:end,capabilities:permissions,
   },assignmentSchema).then(()=>{
     setReload(v=>v+1);setOpen(false);setTeacherId("");
@@ -76,7 +77,7 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
  return <section className={css.card} aria-label={t.title}>
   <div className={css.cardHeader}>
     <h2 className={css.cardTitle}>{t.title}</h2>
-    {canManage&&!loading&&year.state!=="closed"&&!hasLeader&&<button type="button" className={css.primary}
+    {canManage&&!loading&&year.state!=="closed"&&assignable.length>0&&<button type="button" className={css.primary}
       onClick={()=>{setOpen(current=>!current);setError("");}}>{t.add}</button>}
   </div>
   {loading?<p role="status" className={css.muted}>{t.waiting}</p>:<div className={css.assignmentList}>
@@ -91,7 +92,7 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
   {open&&<form className={css.stack} onSubmit={onSubmit}>
     <hr className={css.rule}/>
     <label className={css.field}>{t.name}<select className={css.select} required value={teacherId} onChange={e=>setTeacherId(e.target.value)}>
-      <option value="">{t.choose}</option>{teachers.map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}
+      <option value="">{t.choose}</option>{assignable.map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}
     </select></label>
     {teachers.length===0&&<p className={css.muted}>{t.cannot}</p>}
     <details className={css.details}><summary>{t.advanced}</summary>
@@ -103,7 +104,7 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
       </div>
     </details>
     <div className={css.actions}>
-      <button className={css.primary} disabled={busy||teachers.length===0||year.state==="closed"}>{t.save}</button>
+      <button className={css.primary} disabled={busy||assignable.length===0||year.state==="closed"}>{t.save}</button>
       <button className={css.secondary} type="button" onClick={()=>setOpen(false)}>{t.cancel}</button>
     </div>
   </form>}

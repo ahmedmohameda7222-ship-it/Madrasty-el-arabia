@@ -37,16 +37,21 @@ internal fun TimetableEditor(
     model: IdentityViewModel,
     language: String,
     initial: JSONObject?,
+    occurrenceDate: String?,
+    initialClass: String?,
+    initialYear: String?,
     pickClass: (String) -> Unit,
     saved: (String?) -> Unit,
     close: () -> Unit,
 ) {
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
-    var yearId by remember { mutableStateOf(initial?.getString("yearId").orEmpty()) }
-    var classId by remember { mutableStateOf(initial?.getString("classId").orEmpty()) }
+    var yearId by remember { mutableStateOf(initial?.getString("yearId") ?: initialYear.orEmpty()) }
+    var classId by remember { mutableStateOf(initial?.getString("classId") ?: initialClass.orEmpty()) }
+    var subjectId by remember { mutableStateOf(initial?.optString("subjectId").orEmpty()) }
     var assignmentId by remember { mutableStateOf(initial?.getString("assignmentId").orEmpty()) }
     var roomId by remember { mutableStateOf(initial?.getString("roomId").orEmpty()) }
-    var weekday by remember { mutableStateOf(initial?.getInt("weekday") ?: 1) }
+    var weekdays by remember { mutableStateOf(setOf(initial?.getInt("weekday") ?: 1)) }
+    var scope by remember { mutableStateOf("single") }
     var startText by remember { mutableStateOf(initial?.getInt("start")?.let(::formatMinutes).orEmpty()) }
     var endText by remember { mutableStateOf(initial?.getInt("end")?.let(::formatMinutes).orEmpty()) }
     var from by remember { mutableStateOf(initial?.getString("from").orEmpty()) }
@@ -58,13 +63,18 @@ internal fun TimetableEditor(
     var cancel by remember { mutableStateOf(false) }
     val suffix = if (language == "de") "De" else "Ar"
     val rooms = scheduleRead("/school/rooms",roomVersion,model::records)
+    val subjects = scheduleRead("/school/subjects",0,model::records)
     val years = scheduleRead("/school/years",0,model::records)
     val selectedYear = yearId.ifEmpty {
         (years as? AsyncState.Ready)?.content?.firstOrNull { it.getString("state") != "closed" }?.getString("id").orEmpty()
     }
     val classes = scheduleRead(selectedYear.takeIf(String::isNotEmpty)?.let { "/school/classes?yearId=$it&limit=100" },0,model::records)
     val terms = scheduleRead(classId.takeIf(String::isNotEmpty)?.let { "/school/classes/$it/assignments" },0,model::records)
-    val term = (terms as? AsyncState.Ready)?.content?.find { it.getString("id") == assignmentId && !it.getBoolean("revoked") }
+    val candidates=(terms as? AsyncState.Ready)?.content?.filter {
+        !it.getBoolean("revoked") && (it.getString("kind") != "subject" ||
+            it.optString("subjectId") == subjectId)
+    }?.distinctBy { it.getString("staffId") }.orEmpty()
+    val term = candidates.find { it.getString("id") == assignmentId }
 
     fun replaceQueue(value: List<Draft>) { queue = value; review = null }
     fun edit(entry: Draft) {
@@ -73,7 +83,8 @@ internal fun TimetableEditor(
         pickClass(classId)
         assignmentId = row.getString("assignmentId")
         roomId = row.getString("roomId")
-        weekday = row.getInt("weekday")
+        weekdays = setOf(row.getInt("weekday"))
+        subjectId = row.optString("subjectId")
         startText = formatMinutes(row.getInt("start"))
         endText = formatMinutes(row.getInt("end"))
         from = row.getString("from")
@@ -108,21 +119,35 @@ internal fun TimetableEditor(
         AsyncSurface(classes) { rows ->
             rows.forEach { row ->
                 val id = row.getString("id")
-                FilterChip(id == classId,onClick = {
+                FilterChip(id == classId,enabled = initial == null,onClick = {
                     if (classId != id) { classId = id; assignmentId = ""; pickClass(id); review = null }
                 },label = { Text(classLabel(row,language)) })
             }
         }
     }
+    Text(if (language=="de") "Fach" else "المادة")
+    AsyncSurface(subjects) { rows ->
+        rows.forEach { item ->
+            val id=item.getString("id")
+            FilterChip(id==subjectId,onClick={
+                if(subjectId!=id){subjectId=id;assignmentId="";review=null}
+            },label={Text(isolate(item.getString("name$suffix")))})
+        }
+    }
     if (classId.isNotEmpty()) {
         Text(stringResource(R.string.timetable_assignment))
         AsyncSurface(terms) { rows ->
-            rows.filter { it.getString("kind") == "subject" && !it.getBoolean("revoked") }.forEach { row ->
+            val options=rows.filter { !it.getBoolean("revoked") &&
+                (it.getString("kind")!="subject"||it.optString("subjectId")==subjectId) }
+                .distinctBy { it.getString("staffId") }
+            if (options.isEmpty()) Text(if(language=="de") "Zuerst Lehrkräfte zuordnen." else "اربط المدرسين بالفصل أولًا.")
+            options.forEach { row ->
                 val id = row.getString("id")
                 FilterChip(id == assignmentId,onClick = {
-                    assignmentId = id; from = row.getString("from"); until = row.getString("untilExclusive")
-                },label = { Text(listOf(row.getString("subjectName$suffix"),row.getString("staffName"))
-                    .joinToString(" · ", transform = ::isolate)) })
+                    assignmentId = id
+                    if(initial == null){from = row.getString("from");until = row.getString("untilExclusive")}
+                    review = null
+                },label = { Text(isolate(row.getString("staffName"))) })
             }
         }
     }
@@ -136,22 +161,44 @@ internal fun TimetableEditor(
         }
     }
     Text(stringResource(R.string.timetable_weekday))
-    for (day in 1..7) FilterChip(day == weekday,onClick = { weekday = day },label = { Text(timetableDay(day,language)) })
+    if(initial != null && occurrenceDate != null){
+        Text(isolate(occurrenceDate)+" · "+timetableDay(initial.getInt("weekday"),language))
+        FilterChip(scope=="single",onClick={scope="single";replaceQueue(emptyList())},
+            label={Text(if(language=="de") "Nur diesen Termin" else "الحصة دي بس")})
+        FilterChip(scope=="future",onClick={scope="future";replaceQueue(emptyList())},
+            label={Text(if(language=="de") "Alle künftigen Termine dieses Wochentags" else "نفس اليوم في كل الأسابيع الجاية")})
+    } else {
+        for (day in 1..7) FilterChip(day in weekdays,onClick = {
+            weekdays=if(day in weekdays) weekdays-day else weekdays+day
+        },label = { Text(timetableDay(day,language)) })
+    }
     Field(R.string.timetable_start,startText) { startText = it.take(5) }
     Field(R.string.timetable_end,endText) { endText = it.take(5) }
-    Field(R.string.timetable_from,from) { from = it.take(10) }
-    Field(R.string.timetable_until,until) { until = it.take(10) }
+    if(initial == null) {
+        Field(R.string.timetable_from,from) { from = it.take(10) }
+        Field(R.string.timetable_until,until) { until = it.take(10) }
+    }
     val start = parseTime(startText)
     val end = parseTime(endText)
     val room = (rooms as? AsyncState.Ready)?.content?.find { it.getString("id") == roomId }
-    TextButton(enabled = (queue.size < 60 || initial != null) && term != null && room != null &&
+    TextButton(enabled = (queue.size+weekdays.size <= 60 || initial != null) && term != null && room != null && subjectId.isNotEmpty() && weekdays.isNotEmpty() &&
         start in 0..1439 && end in 1..1440 && timetableDate(from) && timetableDate(until),onClick = {
         if (term != null && room != null) {
-            val record = JSONObject().put("assignmentId",assignmentId).put("roomId",roomId).put("weekday",weekday)
-                .put("start",start).put("end",end).put("from",from).put("untilExclusive",until)
-            val draft = Draft(classId,listOf(term.getString("subjectName$suffix"),term.getString("classCode"),room.getString("code"))
-                .joinToString(" · ",transform = ::isolate),record)
-            replaceQueue(if (initial == null) queue + draft else listOf(draft))
+            val drafts=weekdays.sorted().map { day ->
+                val rangeStart=if(initial!=null&&occurrenceDate!=null) occurrenceDate else from
+                val rangeEnd=if(initial!=null&&occurrenceDate!=null)
+                    if(scope=="single") java.time.LocalDate.parse(occurrenceDate).plusDays(1).toString()
+                    else initial.getString("untilExclusive")
+                    else until
+                val record = JSONObject().put("assignmentId",assignmentId).put("subjectId",subjectId)
+                    .put("roomId",roomId).put("weekday",day).put("start",start).put("end",end)
+                    .put("from",rangeStart).put("untilExclusive",rangeEnd)
+                val subjectName=(subjects as? AsyncState.Ready)?.content?.find { it.getString("id")==subjectId }
+                    ?.optString("name$suffix").orEmpty()
+                Draft(classId,listOf(subjectName,term.getString("staffName"),room.getString("code"))
+                    .joinToString(" · ",transform = ::isolate),record)
+            }
+            replaceQueue(if (initial == null) queue + drafts else drafts)
         }
     }) { Text(stringResource(R.string.timetable_add)) }
 
@@ -194,6 +241,7 @@ internal fun TimetableEditor(
                     } else {
                         val input = JSONObject().put("revision",initial.getInt("revision"))
                             .put("yearRevision",latest.getInt("yearRevision")).put("slot",checked.single())
+                        if(occurrenceDate!=null) input.put("date",occurrenceDate).put("scope",scope)
                         model.schoolCommand(attempts,"/school/timetable/${initial.getString("id")}","PATCH",input)
                     }
                     saved(checked.first().getString("from"))
@@ -201,11 +249,12 @@ internal fun TimetableEditor(
             }
         }
     }
-    if (initial != null && !initial.getBoolean("canceled")) {
+    if (initial != null && occurrenceDate != null && !initial.getBoolean("canceled")) {
         TextButton(onClick = { cancel = !cancel }) { Text(stringResource(R.string.timetable_cancel)) }
         if (cancel) Submit(true,R.string.timetable_confirm_cancel) {
             model.schoolCommand(attempts,"/school/timetable/${initial.getString("id")}","PATCH",
-                JSONObject().put("revision",initial.getInt("revision")).put("cancel",true))
+                JSONObject().put("revision",initial.getInt("revision")).put("cancel",true)
+                    .apply { if(occurrenceDate!=null) put("date",occurrenceDate).put("scope",scope) })
             saved(null)
         }
     }

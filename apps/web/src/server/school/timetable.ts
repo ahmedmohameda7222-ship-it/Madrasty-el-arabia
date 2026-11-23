@@ -20,7 +20,7 @@ async function timetableEditor(tx: Transaction, actor: ActorContext) {
 
 const roomFields = (tx: Transaction) => tx`id, code, name_ar as "nameAr", name_de as "nameDe", revision`;
 const slotFields = (tx: Transaction) => tx`id, assignment_id as "assignmentId", year_id as "yearId", class_id as "classId",
-  room_id as "roomId", weekday, starts_minute as start, ends_minute as end, effective_from::text as "from",
+  room_id as "roomId", (select o.subject_id from app.class_subject o where o.id=offering_id) as "subjectId", weekday, starts_minute as start, ends_minute as end, effective_from::text as "from",
   effective_until::text as "untilExclusive", canceled_at is not null as canceled, revision`;
 
 export function listRooms(actor: ActorContext) {
@@ -70,14 +70,25 @@ async function getSlot(tx: Transaction,id: string) {
   return timetableSlot.parse(row);
 }
 
-export function readSlot(actor: ActorContext,id: string) {
-  return withActor(actor,async(tx)=>{await timetableEditor(tx,actor);return getSlot(tx,id);});
+export function readSlot(actor: ActorContext,id: string,date?:string) {
+  return withActor(actor,async(tx)=>{
+    await timetableEditor(tx,actor);
+    const original=await getSlot(tx,id);
+    if(!date)return original;
+    const [change]=await tx<{cancelled:boolean;assignmentId:string|null;subjectId:string|null;roomId:string|null;start:number|null;end:number|null}[]>`
+      select v.cancelled,v.assignment_id as "assignmentId",o.subject_id as "subjectId",v.room_id as "roomId",
+        v.starts_minute as start,v.ends_minute as end
+      from app.weekly_slot_override v left join app.class_subject o on o.id=v.offering_id
+      where v.slot_id=${id} and v.local_date=${date}::date`;
+    return change&&!change.cancelled ? timetableSlot.parse({...original,
+      assignmentId:change.assignmentId,subjectId:change.subjectId,roomId:change.roomId,start:change.start,end:change.end}) : original;
+  });
 }
 
 type DateRange = { from: string; untilExclusive: string };
 type TimedRange = DateRange & { weekday: number; start: number; end: number };
 type Occupancy = TimedRange & { staffId: string };
-type Term = DateRange & { id: string; classId: string; staffId: string; revision: number };
+type Term = DateRange & { id: string; classId: string; staffId: string; revision: number; kind: string; offeringId: string|null; subjectId: string|null };
 type Delegate = DateRange & { assignmentId: string; staffId: string };
 type Proposed = { draft: DraftSlot; classId: string; staff: Occupancy[]; issues: TimetableIssue[] };
 
@@ -118,19 +129,21 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
   const assignments=[...new Set(drafts.map((draft)=>draft.assignmentId))];
   const terms=new Map((await tx<Term[]>`
     select t.id,t.class_id as "classId",t.staff_id as "staffId",t.effective_from::text as "from",
-      t.effective_until::text as "untilExclusive",t.revision
-    from app.teaching_assignment t join app.school_class c on c.id=t.class_id
+      t.effective_until::text as "untilExclusive",t.revision,t.kind,t.offering_id as "offeringId",o.subject_id as "subjectId"
+    from app.teaching_assignment t left join app.class_subject o on o.id=t.offering_id join app.school_class c on c.id=t.class_id
     join app.staff_profile p on p.id=t.staff_id
     join app.staff_accounts() owner on owner.account_id=p.account_id and 'teacher'=any(owner.roles)
     where p.disabled_at is null and p.active_from<=t.effective_from
       and (p.active_until is null or p.active_until>=t.effective_until) and c.year_id=${yearId} and t.id=any(${assignments}::uuid[])
-      and t.kind='subject' and t.revoked_at is null
+      and t.kind in ('subject','primary','support') and t.revoked_at is null
   `).map((term)=>[term.id,term]));
   const delegates=await tx<Delegate[]>`
     select assignment_id as "assignmentId",staff_id as "staffId",effective_from::text as "from",
       effective_until::text as "untilExclusive" from app.substitute_assignment
     where assignment_id=any(${assignments}::uuid[]) and revoked_at is null and 'academics.log'=any(capabilities)
   `;
+  const requestedSubjects=[...new Set(drafts.flatMap((draft)=>draft.subjectId?[draft.subjectId]:[]))];
+  const validSubjects=new Set((await tx<{id:string}[]>`select id from app.subject where id=any(${requestedSubjects}::uuid[])`).map(({id})=>id));
   const roomIds=[...new Set(drafts.map((draft)=>draft.roomId))];
   const rooms=new Map((await tx<{id: string;revision: number}[]>`
     select id,revision from app.room where id=any(${roomIds}::uuid[])
@@ -145,12 +158,36 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
       starts_on::text as "from",ends_exclusive::text as "untilExclusive"
     from app.timetable_teachers(${yearId}) where slot_id is distinct from ${exclude ?? null}::uuid
   `;
+  // A one-off moved lesson occupies its actual room/teacher/time. Recurring
+  // slot exclusion constraints alone cannot detect clashes with these changes.
+  const special=await tx<{date:string;classId:string;roomId:string;staffId:string;start:number;end:number}[]>`
+    with changed as (
+      select v.local_date,v.assignment_id,l.class_id,v.room_id,
+        v.starts_minute as starts,v.ends_minute as ends
+      from app.weekly_slot_override v join app.weekly_slot l on l.id=v.slot_id
+      where l.year_id=${yearId} and l.canceled_at is null and not v.cancelled
+        and v.local_date>=l.effective_from and v.local_date<l.effective_until
+        and v.slot_id is distinct from ${exclude ?? null}::uuid
+    )
+    select x.local_date::text as date,x.class_id as "classId",x.room_id as "roomId",
+      a.staff_id as "staffId",x.starts as start,x.ends as end
+    from changed x join app.teaching_assignment a on a.id=x.assignment_id
+    union all
+    select x.local_date::text,x.class_id,x.room_id,d.staff_id,x.starts,x.ends
+    from changed x join app.substitute_assignment d on d.assignment_id=x.assignment_id
+    where d.revoked_at is null and 'academics.log'=any(d.capabilities)
+      and x.local_date>=d.effective_from and x.local_date<d.effective_until
+  `;
   const proposed: Proposed[]=[];
   const entries=drafts.map((draft)=>{
     const issues: TimetableIssue[]=[];
     const term=terms.get(draft.assignmentId);
     const roomRevision=rooms.get(draft.roomId);
     if(!term)issues.push({field:"assignmentId",kind:"unavailable"});
+    if(term && (term.kind==="subject"
+      ? (draft.subjectId!==undefined && draft.subjectId!==term.subjectId)
+      : !draft.subjectId))issues.push({field:"subjectId",kind:"unavailable"});
+    if(draft.subjectId && !validSubjects.has(draft.subjectId))issues.push({field:"subjectId",kind:"unavailable"});
     if(!roomRevision)issues.push({field:"roomId",kind:"unavailable"});
     if(draft.start>=draft.end)issues.push({field:"end",kind:"interval"});
     if(draft.from<year.starts || term && draft.from<term.from)issues.push({field:"from",kind:"interval"});
@@ -168,6 +205,15 @@ async function preview(tx: Transaction, yearId: string, drafts: DraftSlot[], exc
     }
     if(staff.some((candidate)=>staffOccupancy.some((slot)=>slot.staffId===candidate.staffId && overlaps(candidate,slot)))){
       issueOnce(issues,"staffId");
+    }
+    for(const changed of special){
+      if(changed.date<draft.from||changed.date>=draft.untilExclusive)continue;
+      const weekday=new Date(changed.date+"T12:00:00Z").getUTCDay()||7;
+      if(weekday!==draft.weekday||draft.start>=changed.end||changed.start>=draft.end)continue;
+      if(changed.classId===term.classId)issueOnce(issues,"classId");
+      if(changed.roomId===draft.roomId)issueOnce(issues,"roomId");
+      if(staff.some(candidate=>candidate.staffId===changed.staffId
+        && changed.date>=candidate.from&&changed.date<candidate.untilExclusive))issueOnce(issues,"staffId");
     }
     return {slot:{...draft,assignmentRevision:term.revision,roomRevision},issues};
   });
@@ -206,9 +252,19 @@ function checkReview(current: TimetablePreview, yearRevision: number, slots: z.i
   });
 }
 
+async function offeringFor(tx:Transaction,draft:DraftSlot) {
+  if(!draft.subjectId)return null;
+  const [row]=await tx<{id:string}[]>`
+    insert into app.class_subject(class_id,subject_id)
+    select class_id,${draft.subjectId}::uuid from app.teaching_assignment where id=${draft.assignmentId}
+    on conflict(class_id,subject_id) do update set subject_id=excluded.subject_id returning id`;
+  if(!row)throw new ApiError("conflict");
+  return row.id;
+}
 async function insertSlot(tx: Transaction,draft: DraftSlot) {
-  const [slot]=await tx<{id:string}[]>`insert into app.weekly_slot (assignment_id,room_id,weekday,starts_minute,ends_minute,effective_from,effective_until)
-    values (${draft.assignmentId},${draft.roomId},${draft.weekday},${draft.start},${draft.end},${draft.from}::date,${draft.untilExclusive}::date)
+  const offeringId=await offeringFor(tx,draft);
+  const [slot]=await tx<{id:string}[]>`insert into app.weekly_slot (assignment_id,offering_id,room_id,weekday,starts_minute,ends_minute,effective_from,effective_until)
+    values (${draft.assignmentId},${offeringId},${draft.roomId},${draft.weekday},${draft.start},${draft.end},${draft.from}::date,${draft.untilExclusive}::date)
     returning id`;
   return slot.id;
 }
@@ -230,6 +286,103 @@ export function saveTimetable(actor: ActorContext,key: string | null,input: z.in
   });
 }
 
+function dayAfter(date:string) {
+  const next=new Date(date+"T12:00:00Z");
+  next.setUTCDate(next.getUTCDate()+1);
+  return next.toISOString().slice(0,10);
+}
+
+type OccurrenceChange=Extract<z.infer<typeof timetablePatchInput>,{date:string}>;
+
+async function assertOccurrence(tx:Transaction,before:TimetableSlot,date:string) {
+  const [day]=await tx<{today:string|null}[]>`select app.school_today()::text as today`;
+  const iso=new Date(date+"T12:00:00Z").getUTCDay()||7;
+  if(before.canceled || date<before.from || date>=before.untilExclusive || iso!==before.weekday
+    || !day?.today || date<day.today)throw new ApiError("conflict");
+  const year=await yearRecord(tx,before.yearId);
+  if(year.state!=="active")throw new ApiError("conflict");
+}
+
+async function checkSingleCollision(tx:Transaction,before:TimetableSlot,date:string,draft:DraftSlot) {
+  const [assn]=await tx<{classId:string;staffId:string}[]>`
+    select class_id as "classId",staff_id as "staffId" from app.teaching_assignment where id=${draft.assignmentId}`;
+  if(!assn || assn.classId!==before.classId)throw new ApiError("conflict");
+  const busy=await tx<{slotId:string;classId:string;roomId:string;staffId:string;start:number;end:number}[]>`
+    select slot_id as "slotId",class_id as "classId",room_id as "roomId",staff_id as "staffId",
+      starts_minute as start,ends_minute as end
+    from app.timetable_day_occupancy(${date}::date) where slot_id<>${before.id}::uuid`;
+  const [alternates]=await tx<{staffId:string}[]>`
+    select staff_id as "staffId" from app.substitute_assignment
+    where assignment_id=${draft.assignmentId} and revoked_at is null
+      and 'academics.log'=any(capabilities)
+      and effective_from<=${date}::date and effective_until>${date}::date limit 1`;
+  const reserved=new Set([assn.staffId,...(alternates?[alternates.staffId]:[])]);
+  if(busy.some(row=>row.start<draft.end&&draft.start<row.end
+    &&(row.classId===before.classId||row.roomId===draft.roomId||reserved.has(row.staffId))))
+    throw new ApiError("conflict");
+}
+
+async function changeOccurrence(tx:Transaction,before:TimetableSlot,input:OccurrenceChange):Promise<TimetableSlot> {
+  const date=input.date;
+  await assertOccurrence(tx,before,date);
+  if("slot" in input && input.slot.weekday!==before.weekday)throw new ApiError("conflict");
+  if(input.scope==="single"){
+    if("cancel" in input){
+      await tx`insert into app.weekly_slot_override(slot_id,local_date,cancelled)
+        values(${before.id},${date}::date,true)
+        on conflict(slot_id,local_date) do update set cancelled=true,assignment_id=null,
+          offering_id=null,room_id=null,starts_minute=null,ends_minute=null,revision=app.weekly_slot_override.revision+1`;
+    }else{
+      const draft={...input.slot,from:date,untilExclusive:dayAfter(date)};
+      checkReview(await preview(tx,before.yearId,[draft],before.id),input.yearRevision,[input.slot]);
+      await checkSingleCollision(tx,before,date,draft);
+      const offeringId=await offeringFor(tx,draft);
+      const [origin]=await tx<{offeringId:string|null}[]>`
+        select offering_id as "offeringId" from app.teaching_assignment where id=${draft.assignmentId}`;
+      const chosenOffering=offeringId??origin?.offeringId;
+      if(!chosenOffering)throw new ApiError("conflict");
+      await tx`insert into app.weekly_slot_override
+        (slot_id,local_date,cancelled,assignment_id,offering_id,room_id,starts_minute,ends_minute)
+        values(${before.id},${date}::date,false,${draft.assignmentId},${chosenOffering},
+          ${draft.roomId},${draft.start},${draft.end})
+        on conflict(slot_id,local_date) do update set cancelled=false,
+          assignment_id=excluded.assignment_id,offering_id=excluded.offering_id,
+          room_id=excluded.room_id,starts_minute=excluded.starts_minute,
+          ends_minute=excluded.ends_minute,revision=app.weekly_slot_override.revision+1`;
+    }
+    await tx`update app.weekly_slot set revision=revision+1 where id=${before.id}`;
+    await appendAudit(tx,{action:"school.timetable_changed",aggregateId:before.id,
+      metadata:{date,scope:"single",cancelled:"cancel" in input}});
+    return getSlot(tx,before.id);
+  }
+
+  // Future edits split the recurrence at the selected day's occurrence.
+  // Past dates, other weekdays and prior one-off changes remain intact.
+  const earlier={...before,untilExclusive:date};
+  if(containsWeekday(earlier)){
+    await tx`update app.weekly_slot set effective_until=${date}::date,
+      revision=revision+1 where id=${before.id}`;
+  }else{
+    await tx`update app.weekly_slot set canceled_at=now(),revision=revision+1 where id=${before.id}`;
+  }
+  if("cancel" in input){
+    await appendAudit(tx,{action:"school.timetable_canceled",aggregateId:before.id,
+      metadata:{date,scope:"future"}});
+    return getSlot(tx,before.id);
+  }
+  const draft={...input.slot,from:date,untilExclusive:before.untilExclusive};
+  const [assn]=await tx<{classId:string}[]>`
+    select class_id as "classId" from app.teaching_assignment where id=${draft.assignmentId}`;
+  if(assn?.classId!==before.classId)throw new ApiError("conflict");
+  checkReview(await preview(tx,before.yearId,[draft]),input.yearRevision,[input.slot]);
+  const id=await insertSlot(tx,draft);
+  await tx`update app.weekly_slot_override set slot_id=${id}
+    where slot_id=${before.id} and local_date>=${date}::date`;
+  await appendAudit(tx,{action:"school.timetable_changed",aggregateId:id,
+    metadata:{date,scope:"future",previousSlotId:before.id}});
+  return getSlot(tx,id);
+}
+
 export function updateSlot(actor: ActorContext,id: string,key: string | null,input: z.infer<typeof timetablePatchInput>) {
   return commitCommand(actor,"school.timetable.change",key,hashCommand({id,...input}),{
     authorize:async(tx)=>{await timetableEditor(tx,actor);await getSlot(tx,id);},
@@ -239,12 +392,14 @@ export function updateSlot(actor: ActorContext,id: string,key: string | null,inp
       const year=await yearRecord(tx,before.yearId);
       requireRevision(before.revision,input.revision);
       if(before.canceled || year.state==="closed")throw new ApiError("conflict");
+      if("date" in input)return changeOccurrence(tx,before,input);
       if("cancel" in input){
         await tx`update app.weekly_slot set canceled_at=now(),revision=revision+1 where id=${id}`;
       } else {
         const draft=input.slot;
         checkReview(await preview(tx,before.yearId,[draft],id),input.yearRevision,[draft]);
-        await tx`update app.weekly_slot set assignment_id=${draft.assignmentId},room_id=${draft.roomId},weekday=${draft.weekday},
+        const offeringId=await offeringFor(tx,draft);
+        await tx`update app.weekly_slot set assignment_id=${draft.assignmentId},offering_id=coalesce(${offeringId}::uuid,offering_id),room_id=${draft.roomId},weekday=${draft.weekday},
           starts_minute=${draft.start},ends_minute=${draft.end},effective_from=${draft.from}::date,
           effective_until=${draft.untilExclusive}::date,revision=revision+1 where id=${id}`;
       }
