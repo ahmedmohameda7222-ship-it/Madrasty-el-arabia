@@ -56,6 +56,8 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
   return()=>controller.abort();
  },[schoolClass.id,locale,reload]);
  const available=assignments.filter(a=>!a.revoked&&a.untilExclusive>defaultStart(year.startsOn));
+ // Historic primary + subject assignments can belong to one volunteer. Display that person once.
+ const visibleTeachers=available.filter((item,index,rows)=>rows.findIndex(row=>row.staffId===item.staffId)===index);
  const hasLeader=available.some(a=>a.kind==="primary"&&a.untilExclusive>defaultStart(year.startsOn));
  const onSubmit=(event:FormEvent<HTMLFormElement>)=>{
   event.preventDefault();
@@ -78,8 +80,8 @@ export function ClassTeachersPanel({locale,schoolClass,year,canManage=true}:{
       onClick={()=>{setOpen(current=>!current);setError("");}}>{t.add}</button>}
   </div>
   {loading?<p role="status" className={css.muted}>{t.waiting}</p>:<div className={css.assignmentList}>
-    {available.length===0&&<p className={css.muted}>{t.empty}</p>}
-    {available.map(a=><div key={a.id} className={css.assignmentRow}>
+    {visibleTeachers.length===0&&<p className={css.muted}>{t.empty}</p>}
+    {visibleTeachers.map(a=><div key={a.id} className={css.assignmentRow}>
       <div className={css.assignmentIdentity}>
         <strong><bdi>{a.staffName}</bdi></strong>
       </div>
