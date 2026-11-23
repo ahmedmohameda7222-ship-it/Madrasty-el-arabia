@@ -39,6 +39,61 @@ test("a school administrator sets up classes, staffing, enrollment and a clash-s
     assert.equal(clashes.payload.data.canSave, false);
     assert.ok(clashes.payload.data.entries[0].issues.some((issue: { kind: string }) => issue.kind === "clash"));
 
+    // A second teacher may be linked to the same class without becoming
+    // the sole attendance-responsible teacher or choosing a fixed subject.
+    const { payload: listedStaff } = await fixtureApi(school,"/school/staff",{token:admin});
+    const secondTeacher=listedStaff.data.find((row:{accountId:string})=>row.accountId===ids["teacher-other"]);
+    assert.ok(secondTeacher);
+    const support=await command(`/school/classes/${apple.id}/assignments`,"support-teacher",{
+      staffId:secondTeacher.id,kind:"support",subjectId:null,
+      from:clock.startsOn,untilExclusive:clock.endsExclusive,
+      capabilities:["attendance.read","academics.plan","academics.log","academics.grade","academics.publish","comms.class"],
+    });
+    assert.equal(support.kind,"support");
+    const { payload: subjects } = await fixtureApi(school,"/school/subjects",{token:admin});
+    const subject=subjects.data.find((row:{code:string})=>row.code==="FIQH");
+    assert.ok(subject);
+    const nextDay=(clock.weekday%7)+1, thirdDay=(nextDay%7)+1;
+    const batch=[clock.weekday,nextDay,thirdDay].map(weekday=>({
+      assignmentId:support.id,subjectId:subject.id,roomId:room.id,
+      weekday,start:840,end:900,from:clock.startsOn,untilExclusive:clock.endsExclusive,
+    }));
+    const prepared=await fixtureApi(school,"/school/timetable/preview",{
+      ...review,body:{yearId:year.id,slots:batch},
+    });
+    assert.equal(prepared.payload.data.canSave,true);
+    const bulk=await command("/school/timetable","batch-days",{
+      yearId:year.id,yearRevision:prepared.payload.data.yearRevision,
+      slots:prepared.payload.data.entries.map((entry:{slot:unknown})=>entry.slot),
+    });
+    assert.equal(bulk.ids.length,3);
+    const currentDate=clock.day;
+    const nextDate=new Date(currentDate+"T12:00:00Z");
+    nextDate.setUTCDate(nextDate.getUTCDate()+1);
+    const dayAfter=nextDate.toISOString().slice(0,10);
+    const changed={...batch[0],start:930,end:990,from:currentDate,untilExclusive:dayAfter};
+    const onePreview=await fixtureApi(school,"/school/timetable/preview",{
+      ...review,body:{yearId:year.id,editingId:bulk.ids[0],slots:[changed]},
+    });
+    assert.equal(onePreview.payload.data.canSave,true);
+    await command(`/school/timetable/${bulk.ids[0]}`,"one-lesson",{
+      revision:1,date:currentDate,scope:"single",
+      yearRevision:onePreview.payload.data.yearRevision,slot:onePreview.payload.data.entries[0].slot,
+    },"PATCH");
+    const weekNow=await fixtureApi(school,`/school/timetable?weekOf=${clock.weekOf}&classId=${apple.id}`,{token:admin});
+    assert.ok(weekNow.payload.data.slots.some((slot:{id:string;start:number})=>slot.id===bulk.ids[0]&&slot.start===930));
+    const followingWeek=new Date(clock.weekOf+"T12:00:00Z");
+    followingWeek.setUTCDate(followingWeek.getUTCDate()+7);
+    const nextMonday=followingWeek.toISOString().slice(0,10);
+    const weekLater=await fixtureApi(school,`/school/timetable?weekOf=${nextMonday}&classId=${apple.id}`,{token:admin});
+    assert.ok(weekLater.payload.data.slots.some((slot:{id:string;start:number})=>slot.id===bulk.ids[0]&&slot.start===840));
+    await command(`/school/timetable/${bulk.ids[0]}`,"future-cancel",{
+      revision:2,date:nextMonday===currentDate?currentDate: (()=>{const d=new Date(currentDate+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+7);return d.toISOString().slice(0,10);})(),
+      scope:"future",cancel:true,
+    },"PATCH");
+    const gone=await fixtureApi(school,`/school/timetable?weekOf=${nextMonday}&classId=${apple.id}`,{token:admin});
+    assert.equal(gone.payload.data.slots.some((slot:{id:string})=>slot.id===bulk.ids[0]),false);
+
     const teacher = await school.bearer("teacher", "teacher");
     const guardian = await school.bearer("guardian-ar", "guardian");
     const { payload: roster } = await fixtureApi(school, `/school/classes/${apple.id}/roster?date=${clock.day}`, { token: admin });
@@ -47,8 +102,8 @@ test("a school administrator sets up classes, staffing, enrollment and a clash-s
     const { payload: teacherWeek } = await fixtureApi(school, `/school/timetable?weekOf=${clock.weekOf}`, { token: teacher });
     assert.ok(teacherWeek.data.slots.some((entry: { date: string; classId: string }) => entry.date === clock.day && entry.classId === apple.id));
     const { payload: parentWeek } = await fixtureApi(school, `/school/timetable?weekOf=${clock.weekOf}&childId=${ids.ahmed}`, { token: guardian });
-    assert.equal(parentWeek.data.slots.length, 1);
-    assert.equal(parentWeek.data.slots[0].classId, apple.id);
+    assert.ok(parentWeek.data.slots.length >= 2);
+    assert.ok(parentWeek.data.slots.every((entry: {classId:string})=>entry.classId===apple.id));
     const { payload: queue } = await fixtureApi(school, "/school/work-queues", { token: admin });
     assert.ok(queue.data);
     console.info("Replay request IDs", results.map(({ trace }) => trace).join(","));
