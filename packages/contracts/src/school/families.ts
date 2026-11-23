@@ -23,6 +23,24 @@ export const guardianSchema = contact.extend({
 });
 export const createGuardianInput = contact.extend({ source: source.optional() });
 export const updateGuardianInput = contact.extend({ revision: revisionSchema });
+/** Family-first registration: guardian(s) and at least one child are saved atomically. */
+export const createFamilyChildInput = z.object({
+  displayName: name,
+  classId: z.uuid().nullable().optional(),
+});
+export const createFamilyInput = z.object({
+  guardians: z.array(createGuardianInput).min(1).max(2)
+    .refine((items) => {
+      const emails = items.map((item) => item.contactEmail).filter((email) => email !== null);
+      return new Set(emails).size === emails.length;
+    }, { message: "guardian e-mails must be distinct" }),
+  children: z.array(createFamilyChildInput).min(1).max(25),
+});
+export const createdFamilySchema = z.object({
+  guardianIds: z.array(z.uuid()).min(1),
+  children: z.array(studentSchema).min(1),
+});
+
 export const childLinkSchema = z.object({
   id: z.uuid(), guardianId: z.uuid(), studentId: z.uuid(), state: z.enum(["pending", "approved", "revoked"]),
   studentName: name, studentNumber: z.string(), reason: z.string(), revision: revisionSchema,

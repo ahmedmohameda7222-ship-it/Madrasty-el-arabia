@@ -18,3 +18,17 @@ export const sessionSchema = z.object({
 });
 
 export type SchoolSession = z.infer<typeof sessionSchema>;
+
+/** Used only by the authenticated administrative server endpoint. Never persist passwords. */
+export const directStaffAccountInput = z.object({
+  role: z.enum(["teacher", "admin"]),
+  displayName: z.string().trim().min(1).max(200),
+  email: z.email().max(254).transform((email) => email.trim().toLowerCase()),
+  password: z.string().min(12).max(128),
+  workPhone: z.string().trim().min(1).max(48).nullable().optional(),
+});
+export const directStaffAccountSchema = z.object({
+  accountId: z.uuid(),
+  staffId: z.uuid(),
+  role: z.enum(["teacher", "admin"]),
+});
