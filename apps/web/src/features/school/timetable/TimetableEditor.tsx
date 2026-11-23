@@ -85,7 +85,7 @@ export function TimetableEditor({locale,initial,occurrenceDate,initialClass,init
     const list=weekdays.map(draftSlot);
     const valid=list.every(item=>timetableDraftSlot.safeParse(item).success)
       &&list.every(item=>item.start<item.end)&&selected&&subjectId&&weekdays.length;
-    if(!valid){setNotice({error:true,text:text.interval});return;}
+    if(!valid||!selected){setNotice({error:true,text:text.interval});return;}
     const subject=subjectCatalog.value?.data?.find(item=>item.id===subjectId);
     const name=locale==="ar"?subject?.nameAr:subject?.nameDe;
     const teacher=selected.staffName;
@@ -179,7 +179,7 @@ export function TimetableEditor({locale,initial,occurrenceDate,initialClass,init
             <select required value={roomId} onChange={e=>setRoomId(e.target.value)}><option value="">{text.choose}</option>
               {catalog.map(room=><option key={room.id} value={room.id}>
                 {room.code} · {locale==="ar"?room.nameAr:room.nameDe}</option>)}</select>
-          </label>}</TimetableRead>}
+          </label>}</TimetableRead>
         </div>
         <div className={css.editorGroup}>
           <h3>{text.weekday}</h3>
