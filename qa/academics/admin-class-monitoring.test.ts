@@ -56,3 +56,83 @@ test("Admin class monitoring never serializes draft exam or evaluation content",
     body:{title:"Forbidden monitor write"},status:[404,405]});
  }finally{await school.close();}
 });
+
+test("Admin sees an announced exam and only published scores and evaluations",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {apple,offering,ids}=await setUpCalendar(school,admin);
+  const created=(await fixtureApi(school,"/academics/exams",{method:"POST",token:teacher,persona:"teacher",
+    key:randomUUID(),body:{offeringId:offering.offeringId,date:clock.day,time:"11:00",kind:"oral",
+      title:"Published class oral test",maxScore:20},status:201})).payload.data;
+  let data=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(data.exams.some((exam:{id:string})=>exam.id===created.id),false);
+  const announce=(await fixtureApi(school,`/academics/exams/${created.id}/announce`,{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
+    body:{revision:created.revision,date:clock.day,time:"11:00"},status:200})).payload.data;
+  data=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(data.exams.some((exam:{id:string})=>exam.id===created.id),true);
+  const roster=(await fixtureApi(school,`/academics/exams/${created.id}/marks`,{token:teacher,persona:"teacher"})).payload.data;
+  const pupil=roster.find((row:{studentId:string})=>row.studentId===ids.ahmed);
+  assert.ok(pupil);
+  const marked=(await fixtureApi(school,`/academics/exams/${created.id}/marks/${ids.ahmed}`,{
+    method:"PUT",token:teacher,persona:"teacher",key:randomUUID(),
+    body:{revision:pupil.revision,score:16.5,feedback:"Published score feedback"},status:200})).payload.data;
+  const profilePath=`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`;
+  let profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(profile.exams.length,0,"Unpublished mark must never leave Admin API");
+  await fixtureApi(school,`/academics/exams/${created.id}/results/publish`,{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
+    body:{revision:announce.revision,reviewedRows:[{studentId:ids.ahmed,revision:marked.revision}]},status:200});
+  profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(profile.exams.find((exam:{id:string})=>exam.id===created.id)?.score,16.5);
+  const assessment=(await fixtureApi(school,"/academics/evaluations",{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),status:201,
+    body:{offeringId:offering.offeringId,studentId:ids.ahmed,periodStart:clock.day,periodEnd:clock.day,
+      title:"Official progress",participation:5,understanding:4,preparation:3,
+      strengths:"Published strengths",improvements:"Published goals"}})).payload.data;
+  profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(profile.evaluations.length,0,"Evaluation draft must stay private");
+  await fixtureApi(school,`/academics/evaluations/${assessment.id}/publish`,{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
+    body:{revision:assessment.revision},status:200});
+  profile=(await fixtureApi(school,profilePath,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(profile.evaluations[0].title,"Official progress");
+  assert.equal(profile.evaluations[0].strengths,"Published strengths");
+  assert.equal(JSON.stringify(profile).includes("private_reason"),false);
+ }finally{await school.close();}
+});
+
+test("Admin sees attendance rows only after approval, not while the sheet is open",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {apple,ids}=await setUpCalendar(school,admin);
+  const daily=`/attendance/classes/${apple.id}/days/${clock.day}`;
+  const opened=(await fixtureApi(school,daily+"/open",{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),body:{},status:[200,201]})).payload.data;
+  const before=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(before.attendance.length,0);
+  assert.equal(before.lastAttendance,null);
+  await fixtureApi(school,`/attendance/sheets/${opened.id}/mark-present`,{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
+    body:{rows:opened.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))},status:200});
+  const ready=(await fixtureApi(school,daily,{token:teacher,persona:"teacher"})).payload.data;
+  const stillPrivate=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(stillPrivate.attendance.length,0);
+  await fixtureApi(school,`/attendance/sheets/${opened.id}/approve`,{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),
+    body:{approvalRevision:ready.approvalRevision,
+      expectedRows:ready.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))},status:200});
+  const after=(await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"})).payload.data;
+  assert.equal(after.attendance.length,2);
+  assert.equal(after.lastAttendance.present,2);
+  const student=(await fixtureApi(school,`/school/monitor/classes/${apple.id}/students/${ids.ahmed}`,
+    {token:admin,persona:"admin"})).payload.data;
+  assert.equal(student.attendance[0].status,"present");
+ }finally{await school.close();}
+});
