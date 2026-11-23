@@ -42,7 +42,7 @@ export function AdminTeachingOverview({locale}:{locale:Locale}){
  const [error,setError]=useState(""),[reload,setReload]=useState(0);
  useEffect(()=>{
   const controller=new AbortController();setError("");
-  const path=`/school/oversight${applied?"?date="+encodeURIComponent(applied):""}`;
+  const path=`/school/oversight${applied?"?date="+encodeURIComponent(applied):""}` as `/${string}`;
   requestApi(path,adminClassOversight,{signal:controller.signal}).then(({data})=>{
    if(controller.signal.aborted)return;
    setReport(data);setDate(data.date);
