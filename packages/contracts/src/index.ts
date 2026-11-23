@@ -10,6 +10,7 @@ export * from "./school/enrollments";
 export * from "./school/imports";
 export * from "./invitations";
 export * from "./school/assignments";
+export * from "./school/oversight";
 export * from "./account";
 export * from "./school/timetable";
 export * from "./school/work-queues";

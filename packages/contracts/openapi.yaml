@@ -497,6 +497,51 @@ paths:
               example: {"data":{"id":"07f9999d-5dc2-479d-9c18-bf524b0fd11e","deleted":true}}
         default:
           $ref: '#/components/responses/AuthError'
+  /school/oversight:
+    get:
+      operationId: listAdminClassOversight
+      summary: Read-only per-class attendance and academic monitoring for authorized administrators
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: School-local date, defaults to today
+      responses:
+        '200':
+          description: Class-level aggregates with no student identifying data, restricted by the administrator's capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [date, classes]
+                    properties:
+                      date: { type: string, format: date }
+                      classes:
+                        type: array
+                        items:
+                          type: object
+                          required: [classId, yearId, classCode, classNameAr, classNameDe, teacherName, attendanceState, unmarkedCount, teachingEntries, activeHomework, upcomingExams, markedExamResults]
+                          properties:
+                            classId: { type: string, format: uuid }
+                            yearId: { type: string, format: uuid }
+                            classCode: { type: string }
+                            classNameAr: { type: string }
+                            classNameDe: { type: string }
+                            teacherName: { type: [string, 'null'] }
+                            attendanceState: { type: [string, 'null'], enum: [not_started, open, approved, null] }
+                            unmarkedCount: { type: [integer, 'null'], minimum: 0 }
+                            teachingEntries: { type: [integer, 'null'], minimum: 0 }
+                            activeHomework: { type: [integer, 'null'], minimum: 0 }
+                            upcomingExams: { type: [integer, 'null'], minimum: 0 }
+                            markedExamResults: { type: [integer, 'null'], minimum: 0 }
+        default:
+          $ref: '#/components/responses/AuthError'
   /school/families:
     post:
       operationId: createFamilyWithChildren
