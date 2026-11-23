@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { directStaffAccountInput,directStaffAccountSchema } from "../../packages/contracts/src/identity";
 import { setUpCalendar } from "../fixtures/calendar";
+import {schoolClock as clock} from "../fixtures/clock";
 import { schoolFixtures } from "../fixtures/school";
 import { fixtureApi } from "../support/api";
 
@@ -85,5 +86,33 @@ test("Hauptadmin provisions a teacher with full class responsibility and a subje
       method:"POST",token:staffOnly,persona:"admin",
       body:{...teacher,email:`qa-${school.run}-denied-assignment@madrasty.invalid`},status:403,
     });
+  }finally{await school.close();}
+});
+
+test("Klassenlehrkraft can teach any subject offered in its class, without a second subject assignment",async()=>{
+  const school=schoolFixtures();
+  try {
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    const teacher=await school.bearer("teacher","teacher");
+    const {apple,ids}=await setUpCalendar(school,admin);
+    const profiles=(await fixtureApi(school,"/school/staff",{token:admin})).payload.data as {id:string;accountId:string}[];
+    const other=profiles.find(p=>p.accountId===ids["teacher-other"]);
+    assert.ok(other);
+    const subjects=(await fixtureApi(school,"/school/subjects",{token:admin})).payload.data as {id:string;code:string}[];
+    const seerah=subjects.find(p=>p.code==="SEERAH");
+    assert.ok(seerah);
+    const assigned=(await fixtureApi(school,`/school/classes/${apple.id}/assignments`,{
+      method:"POST",token:admin,persona:"admin",key:`${school.run}.second-subject`,
+      body:{staffId:other.id,kind:"subject",subjectId:seerah.id,from:clock.startsOn,
+        untilExclusive:clock.endsExclusive,capabilities:["academics.plan","academics.log","academics.grade","academics.publish"]},
+      status:201,
+    })).payload.data as {offeringId:string};
+    const result=await fixtureApi(school,"/academics/exams",{
+      method:"POST",token:teacher,persona:"teacher",key:`${school.run}.primary-teacher-creates-exam`,
+      body:{offeringId:assigned.offeringId,date:clock.day,time:"11:00",kind:"oral",
+        title:"Class teacher may teach Sira",maxScore:20},status:201,
+    });
+    assert.equal(result.payload.data.offeringId,assigned.offeringId);
   }finally{await school.close();}
 });
