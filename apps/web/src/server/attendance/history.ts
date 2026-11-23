@@ -72,6 +72,7 @@ export function staffHistory(actor:ActorContext,input:z.infer<typeof staffAttend
 }
 
 export function attendanceRowHistory(actor:ActorContext,id:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     const [context]=await tx`
       select row.sheet_id as "sheetId",row.class_id as "classId",row.school_date::text as "schoolDate",row.row_payload as row,

@@ -36,20 +36,28 @@ test("Admin monitors teaching records without exam, homework or attendance write
      canPlan:monitored.canPlan,canPublish:monitored.canPublish,
      canLog:monitored.canLog,canGrade:monitored.canGrade,
    },{canPlan:false,canPublish:false,canLog:false,canGrade:false});
-   const exam=(await fixtureApi(school,`/academics/exams/${examId}`,{token:admin,persona:"admin"})).payload.data;
-   assert.equal(exam.canEdit,false);
-   assert.equal(exam.canAnnounce,false);
-   assert.equal(exam.canMark,false);
-   assert.equal(exam.canPublish,false);
+   // Legacy teacher endpoints contain working drafts: no Admin can retrieve them.
+   await fixtureApi(school,`/academics/exams/${examId}`,{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,"/academics/exams?limit=20",{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,`/academics/exams/${examId}/marks`,{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,"/academics/evaluations?limit=20",{token:admin,persona:"admin",status:403});
+   await fixtureApi(school,"/academics/grading?limit=20",{token:admin,persona:"admin",status:403});
    await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,
      {method:"POST",token:admin,persona:"admin",key:randomUUID(),body:{},status:[403,404]});
    const opened=await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,
      {method:"POST",token:teacher,persona:"teacher",key:randomUUID(),body:{},status:[200,201]});
-   const read=(await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}`,
+   // Open sheets are teacher working data, not a published Admin record.
+   await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}`,
+     {token:admin,persona:"admin",status:403});
+   // An older Admin overview endpoint must also hide the open sheet state.
+   const oversight=(await fixtureApi(school,`/school/oversight?date=${clock.day}`,
      {token:admin,persona:"admin"})).payload.data;
-   assert.equal(read.canMark,false);
-   assert.equal(read.canApprove,false);
-   assert.equal(read.state,opened.payload.data.state);
+   const monitoredClass=oversight.classes.find((row:{classId:string})=>row.classId===apple.id);
+   assert.ok(monitoredClass);
+   assert.equal(monitoredClass.attendanceState,"not_started",
+     "An open teacher sheet must not appear in the Admin monitoring response");
+   assert.equal(monitoredClass.unmarkedCount,null,
+     "No student attendance count should be inferred from an unapproved sheet");
  }finally{await school.close();}
 });
 
@@ -81,5 +89,72 @@ test("Admin cannot correct or cancel approved attendance by calling legacy write
      method:"POST",token:admin,persona:"admin",key:randomUUID(),
      body:{approvalRevision:1,reason:"Admin cannot alter attendance"},status:403,
    });
+ }finally{await school.close();}
+});
+
+test("Admin cannot inspect teacher attendance row details or revision history",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {apple}=await setUpCalendar(school,admin);
+  const opened=(await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}/open`,{
+    token:teacher,persona:"teacher",method:"POST",key:randomUUID(),body:{},status:[200,201]})).payload.data;
+  const row=opened.rows[0];
+  assert.ok(row?.id);
+  await fixtureApi(school,`/attendance/rows/${row.id}`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/attendance/rows/${row.id}?detail=private`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/attendance/rows/${row.id}/history`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/attendance/rows/${row.id}`,{token:teacher,persona:"teacher",status:200});
+ }finally{await school.close();}
+});
+
+test("Admin cannot access legacy homework drafts or unfiltered academic reports",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {offering,ids}=await setUpCalendar(school,admin);
+  const title="PRIVATE STAFF HOMEWORK "+randomUUID();
+  const created=(await fixtureApi(school,"/academics/homework",{
+    method:"POST",token:teacher,persona:"teacher",key:randomUUID(),status:201,
+    body:{offeringId:offering.offeringId,title,instructions:"PRIVATE STAFF NOTES",
+      lessonId:null,issuedOn:clock.day,dueOn:clock.homeworkDue},
+  })).payload.data;
+  await fixtureApi(school,"/academics/homework",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/academics/homework/${created.id}`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,
+    `/academics/reports/students?from=${clock.startsOn}&to=${clock.day}`,
+    {token:admin,persona:"admin",status:403});
+  await fixtureApi(school,
+    `/academics/reports/students/${ids.ahmed}?from=${clock.startsOn}&to=${clock.day}`,
+    {token:admin,persona:"admin",status:403});
+  // Teacher workflows must not regress.
+  const teacherView=(await fixtureApi(school,`/academics/homework/${created.id}`,
+    {token:teacher,persona:"teacher"})).payload.data;
+  assert.equal(teacherView.title,title);
+ }finally{await school.close();}
+});
+
+test("Admin cannot access legacy draft-capable attendance and activity readers",async()=>{
+ const school=schoolFixtures();
+ try{
+  await school.seed();
+  const admin=await school.bearer("admin","admin");
+  const teacher=await school.bearer("teacher","teacher");
+  const {apple}=await setUpCalendar(school,admin);
+  // These legacy readers predate the published-only Admin monitoring projection.
+  // A successful empty response is still unsafe: future draft records could then leak.
+  await fixtureApi(school,"/attendance/sheets",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,"/academics/teaching-log",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,"/academics/activities",{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/academics/activities/${randomUUID()}`,{token:admin,persona:"admin",status:403});
+  await fixtureApi(school,`/academics/teaching-log/${randomUUID()}`,{token:admin,persona:"admin",status:403});
+  // Existing teacher workflows must remain reachable.
+  await fixtureApi(school,"/academics/teaching-log",{token:teacher,persona:"teacher"});
+  await fixtureApi(school,"/academics/activities",{token:teacher,persona:"teacher"});
+  await fixtureApi(school,`/school/monitor/classes/${apple.id}`,{token:admin,persona:"admin"});
  }finally{await school.close();}
 });

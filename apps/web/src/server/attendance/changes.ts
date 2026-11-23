@@ -4,6 +4,7 @@ import { withActor, type ActorContext } from "@/server/db/scoped";
 import { ApiError } from "@/server/http";
 
 export function readRowNotices(actor:ActorContext,classId:string,day:string,after?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     const [scope]=await tx<{allowed:boolean}[]>`
       select app.attendance_scope(${classId},${day}::date,'attendance.read') as allowed`;

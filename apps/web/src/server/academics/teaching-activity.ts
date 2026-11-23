@@ -28,7 +28,7 @@ function datedPage<T>(rows:T[],limit:number,dates:(row:T)=>DatedEntry){
 }
 
 async function staffRead(tx:Transaction,actor:ActorContext){
-  if(actor.persona==="guardian")throw new ApiError("forbidden");
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   await academicReadScope(tx,actor);
 }
 async function offeringScope(tx:Transaction,actor:ActorContext,offering:string,date:string,operation:"academics.log"|"academics.grade"){
@@ -68,6 +68,7 @@ export function teachingAssignments(actor:ActorContext,offering:string,date:stri
   });
 }
 export function updateTeachingLog(actor:ActorContext,key:string|null,input:z.infer<typeof teachingLogCreate>|z.infer<typeof teachingLogChange>,id?:string){
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   const offeringId="offeringId" in input?input.offeringId:null;
   const revision="revision" in input?input.revision:null;
   return commitCommand(actor,id?"academics.teaching.change":"academics.teaching.create",key,hashCommand({id:id??null,...input}),{
@@ -99,9 +100,11 @@ async function activityRecord(tx:Transaction,id:string,child?:string){
   return activityEntry.parse(row);
 }
 export function activityById(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{await academicReadScope(tx,actor,child);return activityRecord(tx,id,child);});
 }
 export function activities(actor:ActorContext,query:z.infer<typeof activityQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,query.childId);
     const after=cursorValue(query.cursor);
@@ -113,6 +116,7 @@ export function activities(actor:ActorContext,query:z.infer<typeof activityQuery
   });
 }
 export function createActivity(actor:ActorContext,key:string|null,input:z.infer<typeof activityCreate>){
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   return commitCommand(actor,"academics.activity.create",key,hashCommand(input),{
     authorize:(tx)=>offeringScope(tx,actor,input.offeringId,input.date,"academics.grade"),
     mutate:async(tx)=>{
@@ -124,6 +128,7 @@ export function createActivity(actor:ActorContext,key:string|null,input:z.infer<
   });
 }
 export function activityRoster(actor:ActorContext,id:string,query:z.infer<typeof activityRosterQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await staffRead(tx,actor);
     await activityRecord(tx,id);
@@ -140,6 +145,7 @@ async function rosterPupil(tx:Transaction,activity:string,student:string){
   if(!row)throw new ApiError("not_found");
 }
 export function activityHistory(actor:ActorContext,id:string,student:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await staffRead(tx,actor);
     await rosterPupil(tx,id,student);
@@ -149,6 +155,7 @@ export function activityHistory(actor:ActorContext,id:string,student:string){
   });
 }
 export function setActivityMark(actor:ActorContext,id:string,student:string,key:string|null,input:z.infer<typeof activityMarkInput>){
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   return commitCommand(actor,"academics.activity.mark",key,hashCommand({id,student,...input}),{
     authorize:async(tx)=>{await staffRead(tx,actor);await rosterPupil(tx,id,student);},
     mutate:async(tx)=>{

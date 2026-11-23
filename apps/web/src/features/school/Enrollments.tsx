@@ -70,9 +70,9 @@ const period = (year: SchoolYear) => `${year.startsOn} – ${year.endsExclusive}
 
 const routeId = z.uuid();
 
-export function ClassWorkspace({ locale, manageClasses, manageEnrollment, manageTeachers = false, student }: {
+export function ClassWorkspace({ locale, manageClasses, manageEnrollment, manageTeachers = false, canMonitor = false, student }: {
   locale: Locale; manageClasses: boolean; manageEnrollment: boolean; manageTeachers?: boolean;
-  student?: string;
+  canMonitor?: boolean; student?: string;
 }) {
   const text = labels[locale];
   const [years, setYears] = useState<SchoolYear[]>();
@@ -135,6 +135,9 @@ export function ClassWorkspace({ locale, manageClasses, manageEnrollment, manage
         
         {current && manageClasses && <Link className="plain-button" href={`/${locale}/school/more/timetable?year=${yearId}&class=${current.id}&returnToClass=1`}>
           {locale === "ar" ? "افتح جدول الفصل" : "Wochenplan der Klasse öffnen"}
+        </Link>}
+        {current && canMonitor && <Link className="plain-button" href={`/${locale}/school/more/oversight?year=${yearId}&class=${current.id}`}>
+          {locale==="ar"?"افتح متابعة الفصل":"Klassenübersicht öffnen"}
         </Link>}
       </div>}
     </section>

@@ -2,7 +2,7 @@ import {notFound,redirect} from "next/navigation";
 import {localeSchema} from "@madrasty/contracts";
 import {webSchoolSession} from "@/server/identity/web-session";
 import {mayUse} from "@/server/access/capabilities";
-import {AdminTeachingOverview} from "@/features/school/AdminTeachingOverview";
+import {AdminClassMonitor} from "@/features/school/AdminClassMonitor";
 
 export default async function OversightPage({params}:{params:Promise<{locale:string}>}){
  const result=localeSchema.safeParse((await params).locale);
@@ -13,6 +13,6 @@ export default async function OversightPage({params}:{params:Promise<{locale:str
  const [attendance,academics]=await Promise.all([
    mayUse(session,"attendance.supervise"),mayUse(session,"academics.supervise"),
  ]);
- if(!attendance&&!academics)notFound();
- return <AdminTeachingOverview locale={result.data}/>;
+ if(!attendance||!academics)notFound();
+ return <AdminClassMonitor locale={result.data}/>;
 }

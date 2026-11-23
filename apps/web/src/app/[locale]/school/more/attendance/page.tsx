@@ -11,6 +11,11 @@ export default async function AttendanceReviewPage({params,searchParams}:{
   const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   if(!await mayUse(session,"attendance.supervise"))notFound();
+  if(session.activePersona==="admin"){
+    if(!await mayUse(session,"academics.supervise"))notFound();
+    const selected=z.uuid().safeParse(query.class).data;
+    redirect(`/${locale}/school/more/oversight${selected?"?class="+selected:""}`);
+  }
   return <>
     <h1>{locale==="ar"?"مراجعة الحضور":"Anwesenheit prüfen"}</h1>
     <DailyAttendance locale={locale} initialClass={z.uuid().safeParse(query.class).data}

@@ -87,6 +87,9 @@ export function readAttendanceClasses(actor:ActorContext,requested?:string){
 }
 
 export function readPendingSheets(actor:ActorContext,input:z.infer<typeof attendancePendingQuery>){
+  // Only teacher-facing workflows may query open sheets. Admin monitoring
+  // receives approved attendance through its separate published-only projection.
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await requireCapability(tx,actor,"attendance.supervise");
     const date=await schoolDate(tx,input.date);
@@ -108,6 +111,10 @@ export function readDailySheet(actor:ActorContext,id:string,date:string){
     const context=await classDay(tx,id,date);
     const [sheet]=await tx<StoredSheet[]>`
       select ${sheetFields(tx)} from app.attendance_sheet where class_id=${id} and school_date=${date}::date`;
+    if(actor.persona==="admin"){
+      await requireCapability(tx,actor,"attendance.supervise");
+      if(sheet?.state!=="approved")throw new ApiError("forbidden");
+    }
     return view(tx,context,date,sheet);
   });
 }

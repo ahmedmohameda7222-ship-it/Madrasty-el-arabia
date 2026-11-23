@@ -52,7 +52,7 @@ export default async function SchoolPage({ params, searchParams }: {
           <div className="more-rows">
             {session.activePersona==="admin" && (academic || attendance) &&
               <Link className="more-row" href={`/${locale}/school/more/oversight`}>
-                {locale==="ar"?"متابعة التدريس":"Unterricht im Blick"}
+                {locale==="ar"?"متابعة الفصول":"Klassen im Blick"}
               </Link>}
             {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/grading`}>{locale==="ar"?"تصحيح الواجبات":"Hausaufgaben korrigieren"}</Link>}
             {session.activePersona==="teacher"&&<Link className="more-row" href={`/${locale}/school/more/reports`}>{locale==="ar"?"التقرير الأكاديمي":"Lernbericht"}</Link>}

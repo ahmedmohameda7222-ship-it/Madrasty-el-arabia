@@ -117,6 +117,7 @@ function lessonColumns(tx:Transaction,child?:string){
 }
 
 export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof lessonListQuery>){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,query.childId);
     const cursor=readCursor(query.cursor);
@@ -130,6 +131,7 @@ export function listCurriculumLessons(actor:ActorContext,query:z.infer<typeof le
 }
 
 export function readCurriculumLesson(actor:ActorContext,id:string,child?:string){
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await academicReadScope(tx,actor,child);
     const [row]=await tx`select ${lessonColumns(tx,child)} from app.curriculum_projection(${child??null}::uuid,null,${id})`;
@@ -147,6 +149,7 @@ async function lessonPermission(tx:Transaction,actor:ActorContext,id:string,capa
 }
 
 export function saveCurriculumLesson(actor:ActorContext,key:string|null,input:SaveLesson,id?:string){
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   const offeringId="offeringId" in input?input.offeringId:null;
   const revision="revision" in input?input.revision:null;
   return commitCommand(actor,id?"academics.lesson.change":"academics.lesson.create",key,hashCommand({id:id??null,...input}),{
@@ -171,6 +174,7 @@ export function saveCurriculumLesson(actor:ActorContext,key:string|null,input:Sa
 }
 
 export function publishCurriculumLesson(actor:ActorContext,id:string,key:string|null,revision:number){
+  if(actor.persona!=="teacher")throw new ApiError("forbidden");
   return commitCommand(actor,"academics.lesson.publish",key,hashCommand({id,revision}),{
     authorize:(tx)=>lessonPermission(tx,actor,id,"academics.publish"),
     mutate:async(tx)=>{
