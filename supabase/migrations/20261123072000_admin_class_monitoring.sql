@@ -222,10 +222,19 @@ language sql stable security definer set search_path = pg_catalog as $$
       where t.class_id=c.id and t.kind='primary' and t.revoked_at is null
         and t.effective_from<=scope_day and scope_day<t.effective_until
       order by t.effective_from desc limit 1),
+    -- A draft/open teacher sheet is not an official Admin-visible attendance record.
     case when rights.attendance then
       coalesce((select s.state from app.attendance_sheet s
-        where s.class_id=c.id and s.school_date=scope_day),'not_started') else null end,
-    case when rights.attendance then
+        where s.class_id=c.id and s.school_date=scope_day
+          and s.state='approved' and s.calendar_cancelled_at is null
+          and app.is_teaching_day(c.id,s.school_date)
+        limit 1),'not_started') else null end,
+    case when rights.attendance and exists (
+      select 1 from app.attendance_sheet sh
+      where sh.class_id=c.id and sh.school_date=scope_day
+        and sh.state='approved' and sh.calendar_cancelled_at is null
+        and app.is_teaching_day(c.id,sh.school_date)
+    ) then
       (select count(*)::integer from app.attendance_sheet sh
         join app.attendance_row r on r.sheet_id=sh.id
         where sh.class_id=c.id and sh.school_date=scope_day and sh.state='approved'
