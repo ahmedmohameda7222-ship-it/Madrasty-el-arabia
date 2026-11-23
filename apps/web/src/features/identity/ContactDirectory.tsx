@@ -11,13 +11,13 @@ import { AsyncSurface, type AsyncState } from "@/ui/AsyncSurface";
 const words = {
   ar: {
     title:"دليل التواصل", query:"الاسم أو الوظيفة", search:"بحث", reset:"مسح البحث", role:"الوظيفة", all:"الكل",
-    teacher:"مدرس",principal:"مدير",deputy:"وكيل",office:"مكتب المدرسة",guardian:"ولي أمر", more:"عرض المزيد",
+    teacher:"مدرس",admin:"إدارة",principal:"مدير",deputy:"وكيل",office:"مكتب المدرسة",guardian:"ولي أمر", more:"عرض المزيد",
     empty:"ما فيش جهات اتصال مطابقة.", back:"رجوع للدليل", unavailable:"جهة الاتصال دي غير متاحة.",
     mail:"إرسال بريد لجهة العمل", call:"اتصال بهاتف العمل",
   },
   de: {
     title:"Kontaktverzeichnis", query:"Name oder Funktion", search:"Suchen", reset:"Suche zurücksetzen", role:"Funktion", all:"Alle",
-    teacher:"Lehrkraft",principal:"Schulleitung",deputy:"Stellvertretung",office:"Schulbüro",guardian:"Sorgeberechtigte", more:"Weitere anzeigen",
+    teacher:"Lehrkraft",admin:"Administration",principal:"Schulleitung",deputy:"Stellvertretung",office:"Schulbüro",guardian:"Sorgeberechtigte", more:"Weitere anzeigen",
     empty:"Keine passenden Kontakte.", back:"Zurück zum Verzeichnis", unavailable:"Dieser Kontakt ist nicht verfügbar.",
     mail:"Dienstliche E-Mail senden", call:"Diensttelefon anrufen",
   },
