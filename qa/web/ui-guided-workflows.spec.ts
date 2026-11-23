@@ -9,7 +9,10 @@ test("family-first dashboard opens one guardian-and-children form with optional 
   try {
     await school.seed();
     const token = await school.bearer("admin","admin");
-    const {year,apple} = await setUpCalendar(school, token);
+    const {year,command} = await setUpCalendar(school, token);
+    const apple = await command("/school/classes","guided-family-class",{
+      yearId:year.id,code:"QA_GUIDED_FAMILY",nameAr:"عائلة اختبار الواجهة",nameDe:"UI Familienklasse",capacity:10,
+    });
     await context.addCookies([
       {name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},
       {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},

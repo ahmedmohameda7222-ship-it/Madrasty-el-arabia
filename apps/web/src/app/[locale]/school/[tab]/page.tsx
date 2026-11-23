@@ -41,7 +41,7 @@ export default async function SchoolPage({ params, searchParams }: {
       {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
-        {(search.batchId || search.invite) && <InviteWorkspace locale={locale} guardians={true} teachers={false}
+        {(search.batchId || search.invite) && <InviteWorkspace locale={locale} guardians={true}
           batchId={z.uuid().safeParse(search.batchId).data} invitationId={z.uuid().safeParse(search.invite).data}/>}
       </>}
       {tab === "children" && <Children locale={locale} initialChild={z.uuid().safeParse(search.child).data} />}

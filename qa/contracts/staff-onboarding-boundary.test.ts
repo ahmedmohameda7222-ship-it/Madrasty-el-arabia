@@ -10,6 +10,8 @@ const exists = (path: string) => existsSync(resolve(root, path));
 test("only school administration manages staff onboarding", () => {
   assert.ok(exists("apps/web/src/app/[locale]/school/more/assignments/page.tsx"));
   assert.ok(exists("apps/web/src/app/[locale]/staff/invitations/page.tsx"));
+  assert.equal(exists("apps/web/src/app/api/v1/invitations/teachers/route.ts"), false);
+  assert.doesNotMatch(read("apps/web/src/features/identity/Invitations.tsx"), /\/invitations\/teachers/);
   for (const path of [
     "apps/web/src/app/[locale]/apply/page.tsx",
     "apps/web/src/app/[locale]/apply/verify/page.tsx",

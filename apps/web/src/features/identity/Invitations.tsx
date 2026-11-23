@@ -111,8 +111,8 @@ export function InvitationLanding({ locale }: { locale: Locale }) {
 const list = invitationSchema.array();
 const choices = batchChoiceSchema.array();
 
-export function InviteWorkspace({ locale, guardians, teachers, batchId, invitationId }: {
-  locale: Locale; guardians: boolean; teachers: boolean; batchId?: string; invitationId?: string;
+export function InviteWorkspace({ locale, guardians, batchId, invitationId }: {
+  locale: Locale; guardians: boolean; batchId?: string; invitationId?: string;
 }) {
   const text = names[locale], command = useAdminCommand();
   const [rows, setRows] = useState<Invitation[]>([]);
@@ -145,16 +145,6 @@ export function InviteWorkspace({ locale, guardians, teachers, batchId, invitati
     finally { setPending(false); }
   }
 
-  function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    void run(async () => {
-      await command("/invitations/teachers", "POST", {
-        name: form.get("name"), email: form.get("email"), locale: form.get("locale"),
-      }, invitationSchema);
-      setGeneration(generation + 1); setSaved(text.done);
-    });
-  }
 
   const status = (row: Invitation) => row.validity === "expired" ? text.expiredState : text[row.validity];
 
@@ -178,14 +168,6 @@ export function InviteWorkspace({ locale, guardians, teachers, batchId, invitati
       })}>{text.send} · {selected.length}</button>
     </section>}
 
-    {teachers && !batchId && <section className="auth-card"><h2>{text.staff}</h2>
-      <form className="auth-form" onSubmit={create}>
-        <label>{text.name}<input name="name" required maxLength={200} /></label>
-        <label>{text.email}<input name="email" dir="ltr" type="email" required /></label>
-        <label>{text.language}<select name="locale" defaultValue={locale}><option value="ar">العربية</option><option value="de">Deutsch</option></select></label>
-        <button className="primary-button" disabled={pending}>{text.send}</button>
-      </form>
-    </section>}
 
     <section className="auth-card">
       <div className="auth-form">
