@@ -159,10 +159,10 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
         </div>
         {classId&&!rows.some(a=>a.kind==="primary"&&!a.revoked&&a.untilExclusive>new Date().toISOString().slice(0,10))&&
           <AssignmentForm key={classId} classId={classId} locale={locale}
-            people={people.filter((item)=>item.accountId&&!item.disabled)} saved={()=>setReload(reload+1)} />}
+            people={people.filter((item)=>item.role==="teacher"&&item.accountId&&!item.disabled)} saved={()=>setReload(reload+1)} />}
       </section>
       {classId&&rows.map((item)=><AssignmentCard key={item.id} item={item} locale={locale}
-        people={people.filter((row)=>row.accountId&&!row.disabled)} saved={()=>setReload(reload+1)} />)}
+        people={people.filter((row)=>row.role==="teacher"&&row.accountId&&!row.disabled)} saved={()=>setReload(reload+1)} />)}
     </>}
     <WorkNotice operation={operation}/>
     {error&&readiness==="ready"&&<p role="alert">{error}</p>}
