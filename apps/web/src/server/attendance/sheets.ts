@@ -108,6 +108,10 @@ export function readDailySheet(actor:ActorContext,id:string,date:string){
     const context=await classDay(tx,id,date);
     const [sheet]=await tx<StoredSheet[]>`
       select ${sheetFields(tx)} from app.attendance_sheet where class_id=${id} and school_date=${date}::date`;
+    if(actor.persona==="admin"){
+      await requireCapability(tx,actor,"attendance.supervise");
+      if(sheet?.state!=="approved")throw new ApiError("forbidden");
+    }
     return view(tx,context,date,sheet);
   });
 }
