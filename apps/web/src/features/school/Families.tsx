@@ -16,6 +16,7 @@ import { dictionary, localizedError } from "@/i18n";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { InviteGuardianButton } from "@/features/identity/Invitations";
 import { ScopeSheet } from "@/ui/Shell";
+import { NewFamilyForm, AddFamilyChildForm } from "./NewFamily";
 import { readDirectorySearch, writeDirectorySearch } from "./directory-filter-state";
 
 const copy = {
@@ -75,15 +76,16 @@ export function Families({ locale }: { locale: Locale }) {
   const initialLink = recordId.safeParse(search.get("link")).data;
   const forStudent = recordId.safeParse(search.get("forStudent")).data;
   const add = search.get("add");
-  const mode: Mode = guardian || add === "guardian" || search.get("view") === "guardians" ? "guardians" : "students";
-  const target = add === "guardian" || add === "student" ? "new" : (mode === "guardians" ? guardian : student);
+  const creating = add === "family" || add === "guardian" || add === "student";
+  const mode: Mode = student || search.get("view") === "students" ? "students" : "guardians";
+  const target = creating ? undefined : (mode === "guardians" ? guardian : student);
   const [refresh, setRefresh] = useState(0);
   function select(nextMode: Mode, id?: string) {
     const url = new URL(window.location.href);
     for (const key of ["guardian","student","link","add","view"]) url.searchParams.delete(key);
     if (nextMode === "guardians") url.searchParams.set("view", "guardians");
     else url.searchParams.delete("forStudent");
-    if (id === "new") url.searchParams.set("add", nextMode === "guardians" ? "guardian" : "student");
+    if (id === "new") url.searchParams.set("add", "family");
     else if (id) url.searchParams.set(nextMode === "guardians" ? "guardian" : "student", id);
     window.history.replaceState(null, "", url);
   }
@@ -99,8 +101,9 @@ export function Families({ locale }: { locale: Locale }) {
         <section className="auth-card">
           <h2>{mode === "students" ? dictionary(locale).students : text.family}</h2>
           <RecordPicker locale={locale} mode={mode} key={`${mode}:${refresh}`} select={id => select(mode,id)} persistSearch />
-          <button className="primary-button" onClick={() => select(mode,"new")}>{mode === "students" ? text.createPupil : text.createAdult}</button>
+          <button className="primary-button" onClick={() => select("guardians","new")}>{locale === "ar" ? "إضافة أسرة جديدة" : "Neue Familie hinzufügen"}</button>
         </section>
+        {creating && <NewFamilyForm locale={locale} saved={(id)=>{select("guardians",id);setRefresh(v=>v+1);}} cancel={()=>select("guardians")}/>}
         {target && <RecordEditor locale={locale} mode={mode} target={target} key={`${mode}:${target}:${forStudent ?? ""}`} initialLink={initialLink} forStudent={forStudent}
           saved={(id) => { select(mode,id); setRefresh(value => value + 1); }} />}
       </div>
@@ -196,6 +199,7 @@ function RecordEditor({ locale, mode, target, initialLink, forStudent, saved }: 
       </div>}
       {reload.data && "links" in reload.data && <Relationships locale={locale} record={reload.data} initialLink={initialLink}
         forStudent={forStudent} changed={reload.retry} />}
+      {reload.data && "links" in reload.data && <AddFamilyChildForm locale={locale} guardianId={reload.data.id} saved={reload.retry} />}
     </section>
   );
 }
