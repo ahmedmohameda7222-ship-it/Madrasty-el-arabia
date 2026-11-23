@@ -7,7 +7,6 @@ for (const scenario of [
   { actor:"guardian-de", persona:"guardian", locale:"de", path:"homework", expected:"Für dieses Kind sind derzeit keine Hausaufgaben eingetragen." },
   { actor:"guardian-ar", persona:"guardian", locale:"ar", path:"exams", expected:"لا توجد امتحانات مسجلة لهذا الطفل حاليًا." },
   { actor:"teacher", persona:"teacher", locale:"de", path:"evaluations", expected:"Für Sie sind derzeit keine Klassen zur Beurteilung verfügbar." },
-  { actor:"admin", persona:"admin", locale:"ar", path:"exams", expected:"لا توجد فصول أو مواد متاحة لعرض الامتحانات حاليًا." },
 ] as const) {
   test(scenario.persona + " " + scenario.locale + " " + scenario.path + " explains missing academic records without unauthorized action", async ({page,context}) => {
     const school=schoolFixtures();
@@ -28,3 +27,20 @@ for (const scenario of [
     } finally { await school.close(); }
   });
 }
+
+test("Admin old academic exam link redirects to safe class monitoring, not an exam editor",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("admin","admin");
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto("/ar/school/more/exams");
+    await expect(page).toHaveURL(/\/ar\/school\/more\/oversight(?:\?.*)?$/);
+    await expect(page.getByRole("heading",{name:"الفصول",exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"إضافة امتحان"})).toHaveCount(0);
+    await expect(page.locator("html")).toHaveAttribute("dir","rtl");
+    mkdirSync("qa-artifacts/ui-after",{recursive:true});
+    await page.screenshot({path:"qa-artifacts/ui-after/UIX08-admin-ar-exams-safe-monitor-390.png",animations:"disabled"});
+  }finally{await school.close();}
+});
