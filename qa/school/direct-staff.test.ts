@@ -31,7 +31,7 @@ test("only Hauptadmin can create an Admin; delegated staff manager can create a 
     });
     const created=directStaffAccountSchema.parse(result.payload.data);
     assert.equal(created.role,"teacher");
-    const profiles=(await fixtureApi(school,"/school/staff",{token:office})).payload.data;
+    const profiles=(await fixtureApi(school,"/school/staff",{token:admin})).payload.data;
     assert.equal(profiles.some((p:{id:string;accountId:string})=>p.id===created.staffId&&p.accountId===created.accountId),true);
 
     const nextAdmin=directStaffAccountInput.parse({

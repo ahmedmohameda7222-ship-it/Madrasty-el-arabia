@@ -148,11 +148,9 @@ grant execute on function app.hauptadmin_account_id(),app.is_hauptadmin(),
   app.provision_staff_account(uuid,text,text,text,text,text,text[])
 to app_runtime;
 
--- Staff invitation managers are also legitimate profile editors.
-create or replace function app.staff_editor() returns boolean
-language sql stable set search_path = pg_catalog
-as $$ select app.has_capability('school.manage') or app.has_capability('academics.supervise')
-  or app.has_capability('staff.invite') $$;
+-- Do not broaden app.staff_editor(): it also protects class assignments,
+-- teaching contracts and school-year tables. Staff inviters use only the
+-- narrowly authorized SECURITY DEFINER provision_staff_account() operation.
 
 -- Staff onboarding audit actions must be recorded by delegated staff managers.
 update app.audit_action_rule set allowed_capabilities =

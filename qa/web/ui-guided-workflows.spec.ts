@@ -53,3 +53,17 @@ test("a finance-only administrator has no pupil navigation or school-wide pupil 
     await school.close();
   }
 });
+
+test("an invitation-only administrator can provision teachers without school administration access",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const token=await school.bearer("office","admin");
+    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.goto("/de/school/more/assignments");
+    await expect(page.getByRole("heading",{name:"Lehrkraft hinzufügen"}).first()).toBeVisible();
+    await expect(page.getByRole("textbox",{name:"E-Mail-Adresse"})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Admin hinzufügen"})).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Klasseneinsätze"})).toHaveCount(0);
+  }finally{await school.close();}
+});
