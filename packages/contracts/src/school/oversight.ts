@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { schoolDateSchema } from "./calendar";
+import { schoolDateSchema } from "../http";
 
 export const adminClassOversightRow = z.object({
   classId: z.uuid(),
