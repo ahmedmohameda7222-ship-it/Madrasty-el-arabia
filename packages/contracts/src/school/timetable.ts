@@ -34,10 +34,11 @@ export const timetableSaveInput = z.object({
   yearId: z.uuid(), yearRevision: revisionSchema, slots: timetableReviewedSlot.array().min(1).max(60),
 });
 export const timetablePatchInput = z.union([
-  z.object({ revision: revisionSchema, cancel: z.literal(true) }),
-  z.object({ revision: revisionSchema, yearRevision: revisionSchema, slot: timetableReviewedSlot }),
+  // Dated branches MUST precede legacy forms: Zod strips unknown object keys.
   z.object({ revision: revisionSchema, date: schoolDateSchema, scope: z.enum(["single","future"]), cancel: z.literal(true) }),
   z.object({ revision: revisionSchema, yearRevision: revisionSchema, date: schoolDateSchema, scope: z.enum(["single","future"]), slot: timetableReviewedSlot }),
+  z.object({ revision: revisionSchema, cancel: z.literal(true) }).strict(),
+  z.object({ revision: revisionSchema, yearRevision: revisionSchema, slot: timetableReviewedSlot }).strict(),
 ]);
 export const timetableIssue = z.object({
   field: z.enum(["assignmentId","subjectId","roomId","weekday","start","end","from","untilExclusive","classId","staffId"]),
