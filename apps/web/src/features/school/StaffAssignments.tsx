@@ -18,7 +18,7 @@ const words = {
     choose:"اختر", name:"الاسم المهني", role:"الدور المهني", teacher:"مدرس", admin:"إدارة", principal:"مدير", deputy:"وكيل", office:"موظف مكتب",
     titleAr:"المسمى بالعربية", titleDe:"المسمى بالألمانية", email:"بريد العمل", phone:"هاتف العمل", account:"حساب المدرسة", noAccount:"بدون ربط",
     from:"بداية السريان", until:"تاريخ الانتهاء (غير مشمول)", save:"حفظ", class:"الفصل", year:"السنة الدراسية", kind:"نوع التكليف",
-    primary:"مدرس", subject:"مدرس", course:"المادة", staff:"الموظف المكلّف", caps:"صلاحيات التكليف",
+    primary:"مدرس", support:"مدرس", subject:"مدرس", course:"المادة", staff:"الموظف المكلّف", caps:"صلاحيات التكليف",
     replace:"استبدال المكلّف", end:"تعديل الانتهاء", revoke:"إلغاء التكليف", substitute:"تكليف بديل", substitutes:"البدلاء",
     active:"ساري", ended:"ملغى", overview:"تكليفاتي", search:"بحث باسم الموظف", more:"عرض المزيد",
   },
@@ -26,7 +26,7 @@ const words = {
     choose:"Auswählen", name:"Dienstlicher Name", role:"Dienstliche Rolle", teacher:"Lehrkraft", admin:"Admin", principal:"Schulleitung", deputy:"Stellvertretung", office:"Schulbüro",
     titleAr:"Funktion auf Arabisch", titleDe:"Funktion auf Deutsch", email:"Dienstliche E-Mail", phone:"Diensttelefon", account:"Schulkonto", noAccount:"Ohne Verknüpfung",
     from:"Gültig ab", until:"Gültig bis (ausschließlich)", save:"Speichern", class:"Klasse", year:"Schuljahr", kind:"Aufgabe",
-    primary:"Lehrkraft", subject:"Lehrkraft", course:"Fach", staff:"Beauftragte Person", caps:"Berechtigungen",
+    primary:"Lehrkraft", support:"Lehrkraft", subject:"Lehrkraft", course:"Fach", staff:"Beauftragte Person", caps:"Berechtigungen",
     replace:"Person ablösen", end:"Ende ändern", revoke:"Einsatz widerrufen", substitute:"Vertretung beauftragen", substitutes:"Vertretungen",
     active:"Gültig", ended:"Widerrufen", overview:"Meine Einsätze", search:"Nach Namen suchen", more:"Weitere anzeigen",
   },
@@ -157,8 +157,8 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
             <option value="">{text.choose}</option>{classList.map((item)=><option value={item.id} key={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
           </select></label>}
         </div>
-        {classId&&!rows.some(a=>a.kind==="primary"&&!a.revoked&&a.untilExclusive>new Date().toISOString().slice(0,10))&&
-          <AssignmentForm key={classId} classId={classId} locale={locale}
+        {classId&&
+          <AssignmentForm key={classId} classId={classId} locale={locale} hasLeader={rows.some(a=>a.kind==="primary"&&!a.revoked&&a.untilExclusive>new Date().toISOString().slice(0,10))}
             people={people.filter((item)=>item.role==="teacher"&&item.accountId&&!item.disabled)} saved={()=>setReload(reload+1)} />}
       </section>
       {classId&&rows.map((item)=><AssignmentCard key={item.id} item={item} locale={locale}
@@ -217,15 +217,15 @@ function StaffSelect({locale,people}:{locale:Locale;people:StaffProfile[]}) {
     {people.map((entry)=><option value={entry.id} key={entry.id}>{entry.displayName}</option>)}</select></label>;
 }
 
-function AssignmentForm({classId,locale,people,saved}:{classId:string;locale:Locale;people:StaffProfile[];saved:()=>void}) {
+function AssignmentForm({classId,locale,people,saved,hasLeader}:{classId:string;locale:Locale;people:StaffProfile[];saved:()=>void;hasLeader:boolean}) {
   const text=words[locale],command=useAdminCommand(),operation=useOperation(locale);
   return <form className="auth-form" onSubmit={(event)=>{
     event.preventDefault();
     const data=new FormData(event.currentTarget);
     void operation.run(async()=>{
       await command(`${area}/classes/${classId}/assignments`,"POST",{
-        kind:"primary",staffId:data.get("staffId"),subjectId:null,
-        from:data.get("from"),untilExclusive:data.get("until"),capabilities:[...assignmentActions],
+        kind:hasLeader?"support":"primary",staffId:data.get("staffId"),subjectId:null,
+        from:data.get("from"),untilExclusive:data.get("until"),capabilities:hasLeader?assignmentActions.filter(a=>a!=="attendance.mark"&&a!=="attendance.approve"):[...assignmentActions],
       },assignmentSchema);saved();
     });
   }}>
@@ -256,7 +256,7 @@ function AssignmentCard({item,locale,people,saved}:{item:Assignment;locale:Local
     });
   };
   return <section className="auth-card">
-    <h3><bdi>{item.staffName}</bdi> · {item.kind==="primary"?text.primary:(locale==="ar"?item.subjectNameAr:item.subjectNameDe)}</h3>
+    <h3><bdi>{item.staffName}</bdi> · {item.kind!=="subject"?text.primary:(locale==="ar"?item.subjectNameAr:item.subjectNameDe)}</h3>
     <p><bdi>{item.from} – {item.untilExclusive}</bdi> · {item.revoked?text.ended:text.active}</p>
     <p>{item.capabilities.map((cap)=>actionLabel[cap][locale==="ar"?0:1]).join(" · ")}</p>
     {item.substitutes.length>0&&<div><h4>{text.substitutes}</h4><ul>{item.substitutes.map((entry)=><li key={entry.id}>
