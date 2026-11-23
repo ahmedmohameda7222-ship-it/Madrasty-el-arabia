@@ -1,8 +1,7 @@
-import { notFound,redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { Locale } from "@madrasty/contracts";
 import { z } from "zod";
 import { Homework } from "@/features/academics/Homework";
-import { mayUse } from "@/server/access/capabilities";
 import { webSchoolSession } from "@/server/identity/web-session";
 
 export default async function HomeworkPage({params,searchParams}:{
@@ -12,7 +11,6 @@ export default async function HomeworkPage({params,searchParams}:{
   if(!session)redirect(`/${locale}/account/sign-in`);
   // Admin academic monitoring has a dedicated published-only read view.
   if(session.activePersona==="admin")redirect(`/${locale}/school/more/oversight`);
-  if(session.activePersona==="admin"&&!await mayUse(session,"academics.supervise"))notFound();
   return <Homework locale={locale} initialChild={z.uuid().safeParse(query.child).data}
     initialWork={z.uuid().safeParse(query.work).data}/>;
 }
