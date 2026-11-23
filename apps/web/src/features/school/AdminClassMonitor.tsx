@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useMemo,useState,type ReactNode} from "react";
 import {
   yearSchema,adminMonitorClass,adminMonitorDashboard,adminMonitorStudent,
   type Locale,type AdminMonitorDashboard,type AdminMonitorStudent,
@@ -45,7 +45,7 @@ const copy={
   attendanceHelp:"Nur bestätigte Einträge der Lehrkraft",present:"Anwesend",late:"Verspätet",
   absent_unexcused:"Fehlt",absent_excused:"Entschuldigt",unmarked:"Nicht erfasst",
   noData:"Noch keine offiziellen Daten",noOfficial:"Noch kein veröffentlichtes Ergebnis",
-  noGrades:"Noch keine veröffentlichten Ergebnisse",
+  noGrades:"Noch kein veröffentlichtes Ergebnis",
   details:"Details",profile:"Schülerprofil",viewProfile:"Schülerprofil ansehen",
   backClass:"Zurück zur Klasse",score:"Punkte",subject:"Fach",announced:"Angekündigt",
   publishedCount:"Ergebnisse veröffentlicht",max:"Höchstpunktzahl",
@@ -79,7 +79,7 @@ function labelStatus(status:string|null,t:Copy){
 function Count({label,value}:{label:string;value:string|number}){
  return <div className={styles.metric}><span>{label}</span><strong>{value}</strong></div>;
 }
-function Topic({title,meta,children}:{title:string;meta?:string;children?:React.ReactNode}){
+function Topic({title,meta,children}:{title:string;meta?:string;children?:ReactNode}){
  return <article className={styles.topic}><div className={styles.topicTitle}><strong>{title}</strong>{meta&&<span>{meta}</span>}</div>{children}</article>;
 }
 
