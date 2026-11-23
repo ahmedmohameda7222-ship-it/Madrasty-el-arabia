@@ -1,10 +1,10 @@
 -- Directly provision Admin and Lehrkraft accounts, preserving the original Hauptadmin.
 set local search_path = pg_catalog, public, extensions;
 
--- Internal legacy designations are consolidated as Administration, without deleting profiles.
+-- Drop the old role CHECK before converting records; otherwise the first UPDATE fails.
+alter table app.staff_profile drop constraint if exists staff_profile_role_check;
 update app.staff_profile set role = 'admin', revision = revision + 1
 where role in ('principal','deputy','office');
-alter table app.staff_profile drop constraint if exists staff_profile_role_check;
 alter table app.staff_profile add constraint staff_profile_role_check check (role in ('teacher','admin'));
 
 create function app.hauptadmin_account_id() returns uuid
@@ -153,3 +153,9 @@ create or replace function app.staff_editor() returns boolean
 language sql stable set search_path = pg_catalog
 as $$ select app.has_capability('school.manage') or app.has_capability('academics.supervise')
   or app.has_capability('staff.invite') $$;
+
+-- Staff onboarding audit actions must be recorded by delegated staff managers.
+update app.audit_action_rule set allowed_capabilities =
+  array_append(allowed_capabilities, 'staff.invite')
+where action in ('school.staff_created','school.staff_updated')
+  and not ('staff.invite'=any(allowed_capabilities));
