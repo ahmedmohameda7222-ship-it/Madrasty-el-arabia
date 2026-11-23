@@ -117,7 +117,10 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     const room=await command("/school/classes","class-teachers-ui",{
       yearId:year.id,code:"QA_CLASS_TEAM",nameAr:"فصل المعلمين",nameDe:"Klassenlehrkräfte",capacity:20,
     });
-    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await context.addCookies([
+      {name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},
+      {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
+    ]);
     await page.goto(`/de/school/more/classes?year=${year.id}&class=${room.id}`);
     await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
     await page.getByRole("button",{name:"Lehrkraft zuweisen"}).click();
