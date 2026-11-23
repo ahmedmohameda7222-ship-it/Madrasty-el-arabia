@@ -1,5 +1,5 @@
 import {expect,test} from "@playwright/test";
-import {localOrigin} from "../fixtures/origin";
+import {localOrigin} from "../support/target";
 import {schoolFixtures} from "../fixtures/school";
 import {setUpCalendar} from "../fixtures/calendar";
 
