@@ -68,7 +68,15 @@ select jsonb_build_object(
       'time',left(a.exam_time::text,5),'kind',a.exam_kind,'maxScore',a.max_score,
       'subjectAr',s.name_ar,'subjectDe',s.name_de,
       'publishedCount',(select count(*)::integer from app.exam_result r
-        where r.exam_id=e.id and r.published_id is not null))
+        where r.exam_id=e.id and r.published_id is not null),
+      'publishedResults',coalesce((select jsonb_agg(jsonb_build_object(
+        'studentId',student.id,'studentName',student.display_name,
+        'score',publication.score,'maxScore',publication.max_score,'feedback',publication.feedback)
+        order by student.display_name,student.id)
+        from app.exam_result result
+        join app.exam_result_publication publication on publication.id=result.published_id
+        join app.student student on student.id=result.student_id
+        where result.exam_id=e.id),'[]'::jsonb))
       order by a.exam_date desc,e.id)
     from app.exam e join app.exam_announcement a on a.id=e.announced_id
     join app.class_subject o on o.id=e.offering_id join app.subject s on s.id=o.subject_id
@@ -78,7 +86,12 @@ select jsonb_build_object(
     select jsonb_agg(jsonb_build_object('id',h.id,'title',h.title,'instructions',h.instructions,
       'issuedOn',h.issued_on::text,'dueOn',h.due_on::text,'subjectAr',s.name_ar,
       'subjectDe',s.name_de,'publishedCount',(select count(*)::integer from app.homework_roster r
-        where r.homework_id=h.id and r.marked_at is not null))
+        where r.homework_id=h.id and r.marked_at is not null),
+      'publishedResults',coalesce((select jsonb_agg(jsonb_build_object(
+        'studentId',student.id,'studentName',student.display_name,'score',row.score,
+        'maxScore',20,'feedback',row.feedback) order by student.display_name,student.id)
+        from app.homework_roster row join app.student student on student.id=row.student_id
+        where row.homework_id=h.id and row.marked_at is not null),'[]'::jsonb))
       order by h.issued_on desc,h.id)
     from app.homework h join app.class_subject o on o.id=h.offering_id
     join app.subject s on s.id=o.subject_id where o.class_id=c.id
@@ -87,7 +100,12 @@ select jsonb_build_object(
     select jsonb_agg(jsonb_build_object('id',a.id,'title',a.title,'date',a.activity_date::text,
       'maxScore',a.max_score,'subjectAr',s.name_ar,'subjectDe',s.name_de,
       'publishedCount',(select count(*)::integer from app.activity_mark m
-        where m.activity_id=a.id and m.visible_at is not null))
+        where m.activity_id=a.id and m.visible_at is not null),
+      'publishedResults',coalesce((select jsonb_agg(jsonb_build_object(
+        'studentId',student.id,'studentName',student.display_name,'score',mark.score,
+        'maxScore',a.max_score,'feedback',null) order by student.display_name,student.id)
+        from app.activity_mark mark join app.student student on student.id=mark.student_id
+        where mark.activity_id=a.id and mark.visible_at is not null),'[]'::jsonb))
       order by a.activity_date desc,a.id)
     from app.assessed_activity a join app.class_subject o on o.id=a.offering_id
     join app.subject s on s.id=o.subject_id where o.class_id=c.id
