@@ -49,6 +49,13 @@ test("Admin monitors teaching records without exam, homework or attendance write
    // Open sheets are teacher working data, not a published Admin record.
    await fixtureApi(school,`/attendance/classes/${apple.id}/days/${clock.day}`,
      {token:admin,persona:"admin",status:403});
+   // An older Admin overview endpoint must also hide the open sheet state.
+   const oversight=(await fixtureApi(school,`/school/oversight?date=${clock.day}`,
+     {token:admin,persona:"admin"})).payload.data;
+   const monitoredClass=oversight.classes.find((row:{classId:string})=>row.classId===apple.id);
+   assert.ok(monitoredClass);
+   assert.equal(monitoredClass.attendanceState,"not_started",
+     "An open teacher sheet must not appear in the Admin monitoring response");
  }finally{await school.close();}
 });
 
