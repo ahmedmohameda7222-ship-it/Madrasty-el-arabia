@@ -87,6 +87,9 @@ export function readAttendanceClasses(actor:ActorContext,requested?:string){
 }
 
 export function readPendingSheets(actor:ActorContext,input:z.infer<typeof attendancePendingQuery>){
+  // Only teacher-facing workflows may query open sheets. Admin monitoring
+  // receives approved attendance through its separate published-only projection.
+  if(actor.persona==="admin")throw new ApiError("forbidden");
   return withActor(actor,async(tx)=>{
     await requireCapability(tx,actor,"attendance.supervise");
     const date=await schoolDate(tx,input.date);
