@@ -33,6 +33,7 @@ android {
 
     defaultConfig {
         applicationId = schoolPackage.orElse("de.madrasty.app.prelaunch").get()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = 26
         targetSdk = 37
         versionCode = schoolVersionCode.get()
@@ -69,6 +70,10 @@ dependencies {
     implementation(libs.okhttp)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
 }
