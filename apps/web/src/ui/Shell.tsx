@@ -17,11 +17,11 @@ type Destination = "home" | "students" | "attendance" | "children" | "messages" 
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 const childScope = z.uuid();
 
-export function SchoolHeader({ locale, children, alternateHref }: { locale: Locale; children?: ReactNode; alternateHref?: string }) {
+export function SchoolHeader({ locale, children, alternateHref, brandHref }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string }) {
   const text = dictionary(locale);
   return (
     <header className="school-header">
-      <Link className="brand" href={`/${locale}`} aria-label={text.school}>
+      <Link className="brand" href={brandHref ?? `/${locale}`} aria-label={text.school}>
         <Image src="/school-192.png" alt="" width={44} height={44} />
         <span>{text.school}</span>
       </Link>
@@ -103,7 +103,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   return (
     <div className="school-shell">
       <a className="skip-link" href="#school-content">{text.skip}</a>
-      <SchoolHeader locale={locale} alternateHref={pathname.replace(/^\/(ar|de)(?=\/|$)/, locale === "ar" ? "/de" : "/ar") + (search ? "?" + search : "")}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
+      <SchoolHeader locale={locale} brandHref={`${root}/home`} alternateHref={pathname.replace(/^\/(ar|de)(?=\/|$)/, locale === "ar" ? "/de" : "/ar") + (search ? "?" + search : "")}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation} data-columns={destinations.length}>
           {destinations.map((tab) => (
