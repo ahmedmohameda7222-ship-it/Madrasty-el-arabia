@@ -1,7 +1,7 @@
 name: UI remediation - isolated static verification
 on:
   push:
-    branches: ["fix/emil-ui-motion-audit-2026-11-21", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "fix/calendar-dark-theme-header-spacing-2026-11-23", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24"]
+    branches: ["fix/emil-ui-motion-audit-2026-11-21", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "fix/calendar-dark-theme-header-spacing-2026-11-23", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24"]
   # Feature-branch push already covers draft PR updates; avoid duplicate disposable Supabase jobs.
 permissions:
   contents: read
@@ -25,6 +25,8 @@ jobs:
         run: node --test qa/screenshot-audit-policy.test.mjs
       - name: Test QA-only dev-badge policy
         run: node --test qa/qa-overlay-policy.test.mjs
+      - name: Check finance mobile structure
+        run: node --test qa/finance-mobile-ux.test.mjs
       - name: Verify TypeScript
         run: pnpm check:types
       - name: Build web without deployment
