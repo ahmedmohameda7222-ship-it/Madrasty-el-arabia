@@ -14,7 +14,7 @@ import {stopCopy,StopFacts} from "./stop-ui";
 const records=enrollmentStop.array();
 export function StopQueue({locale,id,student,staff}:{locale:Locale;id?:string;student?:string;staff:boolean}){
   const text=stopCopy[locale],root=`/${locale}/school/more/enrollment-stops`;
-  const [status,setStatus]=useState(staff?"pending":""),[refresh,setRefresh]=useState(0),[notice,setNotice]=useState("");
+  const [status,setStatus]=useState(""),[refresh,setRefresh]=useState(0),[notice,setNotice]=useState("");
   const queue=useAcademicPage(id?null:`/enrollment-stops?limit=25${status?"&status="+status:""}${student?"&studentId="+student:""}`,records,refresh);
   const detail=useTimetableRead(id?`/enrollment-stops/${id}`:null,enrollmentStop,refresh);
   return <section className="auth-card auth-form">
