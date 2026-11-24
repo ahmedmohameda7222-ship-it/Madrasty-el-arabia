@@ -89,7 +89,7 @@ begin
   return new_id;
 end
 $$;
-revoke all on function app.cashbook_movements(),app.cashbook_report(date),app.post_cashbook_entry(text,date,bigint,text) from public,anon,authenticated,service_role;
+revoke all on function app.cashbook_movements(),app.cashbook_report(date),app.post_cashbook_entry(text,date,bigint,text) from public,anon,authenticated,service_role,app_runtime;
 grant execute on function app.cashbook_report(date),app.post_cashbook_entry(text,date,bigint,text) to app_runtime;
 insert into app.audit_action_rule(action,resource_kind,change_category,allowed_capabilities,link_kind)
 values ('finance.cashbook_posted','finance','creation',array['finance.post','finance.read'],null);
