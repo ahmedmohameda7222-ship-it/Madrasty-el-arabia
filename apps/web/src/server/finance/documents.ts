@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { createRequire } from "node:module";
 import { join, dirname } from "node:path";
 import { readFile } from "node:fs/promises";
-import type { InvoiceDetail, ReceiptDetail, Locale } from "@madrasty/contracts";
+import type { InvoiceDetail, ReceiptDetail, Locale, CashbookMonth } from "@madrasty/contracts";
 
 const W=1240,H=1754,margin=90,bodyWidth=W-margin*2,accent="#21665b",ink="#173b35",muted="#546660";
 type Block={text:string;value?:string;size?:number;color?:string;bold?:boolean;gap?:number};
@@ -123,4 +123,12 @@ export async function receiptPdf(item:ReceiptDetail,locale:Locale){
 }
 export function pdfResponse(body:Buffer,filename:string){
   return new Response(new Uint8Array(body),{headers:{"Content-Type":"application/pdf","Content-Disposition":'attachment; filename="'+filename.replace(/[^A-Za-z0-9_.-]/g,"_")+'.pdf"',"X-Content-Type-Options":"nosniff","Cache-Control":"private, no-store"}});
+}
+
+export async function cashbookPdf(item:CashbookMonth,locale:Locale){
+  const ar=locale==="ar",m=(v:number)=>money(v,item.currency,locale),t=ar?{opening:"رصيد البداية",income:"المقبوضات",expenses:"المصروفات",deposit:"الإيداعات البنكية",refund:"المبالغ المرتجعة",correction:"التصحيحات",closing:"رصيد النهاية",entries:"الحركات"}:{opening:"Anfangsbestand",income:"Einnahmen",expenses:"Ausgaben",deposit:"Bankeinzahlungen",refund:"Erstattungen",correction:"Korrekturen",closing:"Endbestand",entries:"Buchungen"};
+  return renderDocument(ar?"دفتر الخزنة":"Kassenbuch",item.month,locale,[
+    pair(t.opening,m(item.openingMinor)),pair(t.income,m(item.incomeMinor)),pair(t.expenses,m(item.expenseMinor)),pair(t.deposit,m(item.depositsMinor)),pair(t.refund,m(item.refundsMinor)),pair(t.correction,m(item.correctionsMinor)),{...pair(t.closing,m(item.closingMinor)),bold:true},heading(t.entries),
+    ...item.entries.map(e=>pair(e.date+" · "+e.description,m(e.signedMinor))),
+  ]);
 }
