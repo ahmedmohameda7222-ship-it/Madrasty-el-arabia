@@ -149,6 +149,27 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     }));
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.omar)?.outcome, "stopped");
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.ahmed)?.outcome, "ready");
+    const otherProfile=(await fixtureApi(school,`/finance/children/${ids.other}/payer`,{token:finance})).payload.data;
+    const otherPayer=otherProfile.choices.find((g:{activeAccount:boolean})=>g.activeAccount);
+    assert.ok(otherPayer);
+    if(!otherProfile.designations.some((d:{effectiveFromMonth:string})=>d.effectiveFromMonth===clock.month)){
+      await send(`/finance/children/${ids.other}/payer`,"other-payer",{guardianId:otherPayer.id,effectiveFromMonth:clock.month,revision:otherProfile.revision},"PUT",200);
+    }
+    const config=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    const enabled=await send("/finance/automatic-billing","enable-auto",{enabled:true,startMonth:clock.month,revision:config.revision},"PUT",200);
+    try {
+      assert.ok(process.env.SCHOOL_WORKER_SECRET);
+      const dispatch=await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
+      assert.ok(typeof dispatch.payload.data.automaticBilling.issued==="number");
+      const first=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
+      assert.equal(first.filter((row:{kind:string})=>row.kind==="monthly").length,1);
+      await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
+      const again=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
+      assert.deepEqual(again.map((row:{id:string})=>row.id),first.map((row:{id:string})=>row.id));
+      await fixtureApi(school,"/finance/automatic-billing",{token:payer,status:403});
+    } finally {
+      await send("/finance/automatic-billing","restore-auto",{enabled:true,startMonth:clock.nextMonth,revision:enabled.revision},"PUT",200);
+    }
     const historical = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(historical.balanceMinor, 3200);
   } finally {

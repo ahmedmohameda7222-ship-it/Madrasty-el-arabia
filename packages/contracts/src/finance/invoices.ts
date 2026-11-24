@@ -66,3 +66,6 @@ export const invoiceDetail=invoiceSummary.extend({
 export type InvoicePreview=z.infer<typeof invoicePreview>;
 export type InvoiceDetail=z.infer<typeof invoiceDetail>;
 export type FeeLine=z.infer<typeof feeLine>;
+
+export const autoBillingSettings=z.object({enabled:z.boolean(),startMonth:billingMonth,schoolMonth:billingMonth,revision:revisionSchema,missingPayers:z.int().min(0)});
+export const autoBillingUpdate=autoBillingSettings.pick({enabled:true,startMonth:true,revision:true}).strict();

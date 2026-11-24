@@ -14,10 +14,10 @@ import {receiptCopy} from "./receipt-ui";
 const rows=invoiceSummary.array();
 export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=false}:{locale:Locale;invoice?:string;student?:string;period?:string;canPost:boolean;canIssue?:boolean}){
   const text=billingCopy[locale],root=`/${locale}/school/more/invoices`;
-  const [month,setMonth]=useState(period??""),[state,setState]=useState("");
+  const [month,setMonth]=useState(period??""),[state,setState]=useState(""),[query,setQuery]=useState(""),[search,setSearch]=useState("");
   const valid=billingMonth.safeParse(month),filter=invoiceState.safeParse(state);
   const details=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail);
-  const list=useAcademicPage(invoice?null:`/finance/invoices?limit=25${valid.success?"&period="+valid.data:""}${student?"&studentId="+student:""}${filter.success?"&state="+filter.data:""}`,rows,0);
+  const list=useAcademicPage(invoice?null:`/finance/invoices?limit=25${valid.success?"&period="+valid.data:""}${student?"&studentId="+student:""}${filter.success?"&state="+filter.data:""}${query?"&q="+encodeURIComponent(query):""}`,rows,0);
   return <section className="auth-card auth-form">
     <h1>{text.invoices}</h1>
     {invoice?<><Link className="plain-button" href={root}>{text.back}</Link>
@@ -44,6 +44,10 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
       </div>}</TimetableRead>
     </>:<>
       {canIssue&&<Link className="primary-button" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"+ إصدار فاتورة":"+ Neue Rechnung"}</Link>}
+      <form className="auth-form" onSubmit={e=>{e.preventDefault();setQuery(search.trim());}}>
+        <label>{text.search}<input type="search" value={search} maxLength={100} onChange={e=>setSearch(e.target.value)}/></label>
+        <button className="plain-button" type="submit">{text.find}</button>
+      </form>
       <div className="header-actions">
         <label>{text.period}<input dir="ltr" type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/></label>
         <label>{text.status}<select value={state} onChange={(event)=>setState(event.target.value)}>
