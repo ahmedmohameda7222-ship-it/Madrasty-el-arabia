@@ -20,3 +20,13 @@ test("cash balance precedes overview metrics and advanced details are collapsed"
 test("invoice and payment lists group rows with amount and accessible links", () => {
   for(const file of ["InvoiceDetails.tsx","Reconciliation.tsx"]) assert.match(source(file), /className=\{css\.recordList\}/, file);
 });
+
+test("Android finance lists use Material list items and advanced report filters are optional", () => {
+  const android=new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/", import.meta.url);
+  for(const file of ["InvoiceDetails.kt","Reconciliation.kt"]) assert.match(readFileSync(new URL(file,android),"utf8"), /FinanceRecordRow\(/);
+  assert.match(readFileSync(new URL("FinanceReports.kt",android),"utf8"), /if \(showFilters\)/);
+  assert.match(readFileSync(new URL("FinanceExtras.kt",android),"utf8"), /if \(addMovement\)/);
+});
+test("overview payment action is capability-gated", () => {
+  assert.match(source("FinanceOverview.tsx"), /canPost&&<Link[^>]*record-payment/);
+});
