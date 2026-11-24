@@ -72,6 +72,16 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(ahmed.issueInstructions.iban, bank.iban);
     assert.match(ahmed.issueInstructions.reference, /MA-\d+/);
     await fixtureApi(school, `/finance/invoices/${ahmed.id}`, { token: nonpayer, status: 404 });
+    for (const locale of ["de","ar"] as const) {
+      const doc = await fixtureApi(school, `/finance/invoices/${ahmed.id}/pdf?locale=${locale}`, {token:payer,locale});
+      assert.match(doc.response.headers.get("content-type")??"", /application\/pdf/);
+      assert.match(doc.response.headers.get("cache-control")??"", /no-store/);
+      const bytes=Buffer.from(await doc.response.arrayBuffer());
+      assert.equal(bytes.subarray(0,8).toString(),"%PDF-1.4");
+      assert.match(bytes.subarray(-20).toString(),/%%EOF/);
+    }
+    await fixtureApi(school, `/finance/invoices/${ahmed.id}/pdf`, {token:nonpayer,status:404});
+
     const receipt = receiptMutation.parse(await send("/finance/receipts", "single-receipt", {
       externalReceiptRef: `${school.run}-BANK-01`, method: "bank", receivedDate: clock.day, currency: "EUR",
       amountMinor: 3200, invoiceId: ahmed.id, verified: true,

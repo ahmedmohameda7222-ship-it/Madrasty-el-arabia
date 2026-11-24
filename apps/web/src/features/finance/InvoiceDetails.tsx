@@ -23,6 +23,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
     {invoice?<><Link className="plain-button" href={root}>{text.back}</Link>
       <TimetableRead locale={locale} result={details}>{(item)=><div className="auth-form">
         <h2><bdi>{item.invoiceNumber}</bdi> · <bdi>{item.studentName}</bdi></h2>
+        <a className="plain-button" href={`/api/v1/finance/invoices/${item.id}/pdf?locale=${locale}`} download>{locale==="ar"?"تحميل الفاتورة PDF":"Rechnung als PDF"}</a>
         <p><bdi>{item.studentNumber}</bdi> · <bdi>{item.period}</bdi> · {text[item.kind]}</p>
         <p>{text.payer} · <bdi>{item.payerName}</bdi></p>
         <p>{text.due} · <bdi>{item.dueDate}</bdi> · {text[item.state]}</p>
