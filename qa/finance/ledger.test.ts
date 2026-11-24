@@ -124,6 +124,10 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const restored = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(restored.balanceMinor, 3200);
 
+    const overviewBefore=(await fixtureApi(school,"/finance/overview",{token:finance})).payload.data;
+    assert.equal(overviewBefore.month,clock.month);
+    assert.equal(overviewBefore.months.length,6);
+    await fixtureApi(school,"/finance/overview",{token:payer,status:403});
     const cashBefore=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
     const donation={date:clock.day,kind:"donation",amountMinor:5000,description:"Synthetic donation"};
     const movement=await send("/finance/cashbook","donation",donation);
@@ -159,6 +163,21 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     }));
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.omar)?.outcome, "stopped");
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.ahmed)?.outcome, "ready");
+    const futureBatch=invoiceBatch.parse(await send("/finance/invoice-batches","future-issue",{previewId:nextMonth.previewId,revision:nextMonth.revision}));
+    assert.equal(futureBatch.issuedIds.length,1);
+    const future=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${futureBatch.issuedIds[0]}`,{token:payer})).payload.data);
+    const freshOmar=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${omar.id}`,{token:payer})).payload.data);
+    const familyInput={externalReceiptRef:`${school.run}-CASH-FAMILY`,method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:200,verified:true,allocations:[
+      {invoiceId:future.id,invoiceRevision:future.revision,amountMinor:100},{invoiceId:freshOmar.id,invoiceRevision:freshOmar.revision,amountMinor:100}
+    ]};
+    const family=receiptMutation.parse(await send("/finance/receipts","family-cash",familyInput));
+    assert.equal(family.items.length,2);
+    assert.equal(family.remainderMinor,0);
+    assert.deepEqual(await send("/finance/receipts","family-cash",familyInput),family);
+    const familyBook=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    assert.equal(familyBook.balanceMinor-cashAfter.balanceMinor,200);
+    await send(`/finance/receipts/${family.id}/reversals`,"void-family",{kind:"void_receipt",revision:family.revision,reason:"Synthetic family payment correction"});
+
     const otherProfile=(await fixtureApi(school,`/finance/children/${ids.other}/payer`,{token:finance})).payload.data;
     const otherPayer=otherProfile.choices.find((g:{activeAccount:boolean})=>g.activeAccount);
     assert.ok(otherPayer);
