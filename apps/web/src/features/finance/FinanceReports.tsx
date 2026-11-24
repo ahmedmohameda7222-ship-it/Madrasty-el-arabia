@@ -72,10 +72,10 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
     setFilters(next);edit(next);persist(next);update((n)=>n+1);
   }
   const classChoices=summary.value?.data?.classes??[];
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{text.title}</h1>
     {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh}/>}
-    <details className={css.panel}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
+    <details className={css.disclosure}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">
         <label>{text.period}<input type="month" dir="ltr" aria-describedby="date-format-finance-month" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>
@@ -136,11 +136,11 @@ function ReportBody({locale,data,filters,refresh,focus}:{
     <ConfirmedAt locale={locale} value={data.cutoff}/>
     {data.totals.map((value)=>{
       const money=(label:string,amount:number|null)=>amount===null?null:<><dt>{label}</dt><dd><bdi dir="ltr">{financeAmount(amount,value.currency)}</bdi></dd></>;
-      return <div className="timetable-day auth-form" key={value.currency}>
+      return <div className={css.summaryGroup} key={value.currency}>
         <h2><bdi>{value.currency}</bdi></h2>
         <div className={css.metrics}>{([[text.collectible,value.collectibleMinor],[text.applied,value.appliedMinor],[text.outstanding,value.outstandingMinor],[text.late,value.overdueMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi>{financeAmount(amount,value.currency)}</bdi></strong></div>)}</div>
         <div className={css.panel}><small>{locale==="ar"?"نسبة تحصيل الفواتير":"Zahlungsquote"}</small><strong>{value.collectibleMinor>0?Math.round(value.appliedMinor/value.collectibleMinor*100):0}%</strong><progress max={100} value={value.collectibleMinor>0?Math.min(100,value.appliedMinor/value.collectibleMinor*100):0}/></div>
-        <details><summary>{locale==="ar"?"تفاصيل الحساب":"Weitere Kennzahlen"}</summary><dl className="account-values">
+        <details className={css.disclosure}><summary>{locale==="ar"?"تفاصيل الحساب":"Weitere Kennzahlen"}</summary><dl className="account-values">
           <dt>{text.invoiceCount}</dt><dd>{value.invoiceCount}</dd>
           {money(text.billed,value.billedMinor)}{money(text.collectible,value.collectibleMinor)}
           {money(text.applied,value.appliedMinor)}{money(text.outstanding,value.outstandingMinor)}{money(text.late,value.overdueMinor)}
@@ -155,7 +155,7 @@ function ReportBody({locale,data,filters,refresh,focus}:{
         </div>
       </div>;
     })}
-    {isSchool&&data.totals.length>0&&<p>{text.matchingScope}</p>}
+    {isSchool&&data.totals.length>0&&<details className={css.disclosure}><summary>{locale==="ar"?"طريقة الحساب":"Berechnung"}</summary><p>{text.matchingScope}</p></details>}
     <div className="header-actions">
       <h2>{text.statement}</h2>
       {data.canExport&&<button type="button" className="plain-button" disabled={busy} onClick={()=>void download()}>{text.export}</button>}

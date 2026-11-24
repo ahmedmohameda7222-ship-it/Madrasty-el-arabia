@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {invoiceDetail,receiptMutation,receiptOptions,recordReceiptInput,type Locale} from "@madrasty/contracts";
@@ -13,7 +15,7 @@ type Options=ReturnType<typeof receiptOptions.parse>;
 export function RecordPayment({locale,invoice}:{locale:Locale;invoice?:string}){
   const text=receiptCopy[locale],options=useTimetableRead("/finance/receipt-options",receiptOptions);
   const selected=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail);
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{text.record}</h1>
     <Link className="plain-button" href={`/${locale}/school/more/receipts`}>{text.queue}</Link>
     <TimetableRead locale={locale} result={options}>{(value)=>invoice?
@@ -76,10 +78,10 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
           <button type="button" className="plain-button" onClick={()=>setRows(list=>list.filter((_,j)=>i!==j))}>{text.remove}</button>
         </div>)}
         <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة":"+ Rechnung auswählen"}</button>
-        <label>{ar?"إجمالي المبلغ المستلم":"Erhaltener Gesamtbetrag"} <bdi>{currency}</bdi><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
+        <label className={css.amountInput}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
         <p>{text.applied} · <bdi>{financeAmount(assigned,currency)}</bdi></p>
         {received!==null&&received>=assigned&&<p>{text.remainder} · <bdi>{financeAmount(received-assigned,currency)}</bdi></p>}
-        <label><input type="checkbox" checked={verified} onChange={event=>setVerified(event.target.checked)}/>{text.verification}</label>
+        <label className={css.checkRow}><input type="checkbox" checked={verified} onChange={event=>setVerified(event.target.checked)}/>{text.verification}</label>
         <button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button>
       </form>
       {picker&&<InvoicePicker locale={locale} currency={currency} exclude={rows.map(r=>r.invoice.id)} onPick={pick}/>}

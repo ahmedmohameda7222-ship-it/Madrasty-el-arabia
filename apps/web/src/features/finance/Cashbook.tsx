@@ -27,7 +27,8 @@ function CashbookContents({locale,data,refresh}:{locale:Locale;data:CashbookMont
   const t=copy[locale],money=(n:number)=>financeAmount(Math.abs(n),data.currency),signed=(n:number)=>(n<0?"−":"+")+money(n);
   return <>
     <div className={css.balance}><span>{t.balance}</span><strong><bdi>{data.balanceMinor<0?"−":""}{money(data.balanceMinor)}</bdi></strong></div>
-    <div className={css.metrics}>{([["opening",data.openingMinor],["in",data.incomeMinor],["out",data.expenseMinor],["deposits",data.depositsMinor],["refunds",data.refundsMinor],["corrections",data.correctionsMinor],["closing",data.closingMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div>
+    <div className={css.metrics}>{([["in",data.incomeMinor],["out",data.expenseMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div>
+    <details className={css.disclosure}><summary>{locale==="ar"?"تفاصيل الشهر":"Monatsdetails"}</summary><div className={css.metrics}>{([["opening",data.openingMinor],["deposits",data.depositsMinor],["refunds",data.refundsMinor],["corrections",data.correctionsMinor],["closing",data.closingMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div></details>
     {data.canPost&&<CashMovement locale={locale} data={data} refresh={refresh}/>}
     <div className="header-actions">{data.entryCount===data.entries.length&&<a className="plain-button" download href={"/api/v1/finance/cashbook/export?month="+data.month}>{t.export}</a>}{data.entryCount<=100&&<a className="plain-button" download href={"/api/v1/finance/cashbook/pdf?month="+data.month+"&locale="+locale}>PDF</a>}</div>
     {data.entryCount>data.entries.length&&<p>{t.limited}</p>}

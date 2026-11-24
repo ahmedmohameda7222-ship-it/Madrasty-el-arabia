@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import Link from "next/link";
 import {useState} from "react";
 import {enrollmentStop,stopState,type EnrollmentStop,type Locale} from "@madrasty/contracts";
@@ -17,7 +19,7 @@ export function StopQueue({locale,id,student,staff}:{locale:Locale;id?:string;st
   const [status,setStatus]=useState(""),[refresh,setRefresh]=useState(0),[notice,setNotice]=useState("");
   const queue=useAcademicPage(id?null:`/enrollment-stops?limit=25${status?"&status="+status:""}${student?"&studentId="+student:""}`,records,refresh);
   const detail=useTimetableRead(id?`/enrollment-stops/${id}`:null,enrollmentStop,refresh);
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{staff?text.staffTitle:text.title}</h1>
     {notice&&<p role="status">{notice}</p>}
     {id?<><Link className="plain-button" href={root}>{text.back}</Link>

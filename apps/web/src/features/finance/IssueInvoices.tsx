@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {
@@ -21,7 +23,7 @@ type Options=ReturnType<typeof billingOptions.parse>;
 
 export function IssueInvoices({locale,initialStudent,mayConfigureBank}:{locale:Locale;initialStudent?:string;mayConfigureBank:boolean}){
   const setup=useTimetableRead("/finance/billing-options",billingOptions),text=billingCopy[locale];
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{text.issue}</h1>
     <TimetableRead locale={locale} result={setup}>{(options)=><InvoiceIssuer locale={locale} initial={options} preferred={initialStudent}
       mayConfigureBank={mayConfigureBank}/>}</TimetableRead>

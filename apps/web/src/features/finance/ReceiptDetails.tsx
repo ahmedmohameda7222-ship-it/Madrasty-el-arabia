@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {receiptAllocationInput,receiptDetail,receiptMutation,receiptReversalInput,type Locale,type ReceiptStaffDetail} from "@madrasty/contracts";
@@ -15,7 +17,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
   const text=receiptCopy[locale],root=`/${locale}/school/more`;
   const [version,setVersion]=useState(0),[notice,setNotice]=useState("");
   const details=useTimetableRead(`/finance/receipts/${id}`,receiptDetail,version);
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{text.title}</h1>
     <Link className="plain-button" href={`${root}/${staff?"receipts":"invoices"}`}>{text.back}</Link>
     {notice&&<p role="status">{notice}</p>}

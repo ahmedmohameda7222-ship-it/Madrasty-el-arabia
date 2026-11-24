@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import {AutomaticBilling} from "./AutomaticBilling";
 import {useState,type FormEvent} from "react";
 import {
@@ -16,7 +18,7 @@ type Billing=ReturnType<typeof billingOptions.parse>;
 
 export function FeeSettings({locale,student}:{locale:Locale;student?:string}){
   const text=billingCopy[locale],options=useTimetableRead("/finance/billing-options",billingOptions);
-  return <div className="auth-form"><AutomaticBilling locale={locale}/><section className="auth-card auth-form"><h1>{text.settings}</h1>
+  return <div className={css.workspace}><h1>{text.settings}</h1><AutomaticBilling locale={locale}/><section className={`${css.panel} auth-form`}>
     <TimetableRead locale={locale} result={options}>{(context)=><SettingsForm locale={locale} options={context} student={student}/>}</TimetableRead>
   </section></div>;
 }
@@ -42,7 +44,7 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
     finally{setPending(false);}
   }
   return <>
-    <div className="header-actions">
+    <div className={css.tabs}>
       <button className="plain-button" type="button" aria-pressed={tab==="tariffs"} onClick={()=>setTab("tariffs")}>{text.tariffs}</button>
       <button className="plain-button" type="button" aria-pressed={tab==="payer"} onClick={()=>setTab("payer")}>{text.payer}</button>
     </div>
