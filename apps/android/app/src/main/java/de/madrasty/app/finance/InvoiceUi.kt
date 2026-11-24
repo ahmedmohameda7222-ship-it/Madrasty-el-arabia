@@ -40,7 +40,7 @@ import java.util.Currency
 internal fun FinancePage(label: Int, back: () -> Unit, content: @Composable () -> Unit) {
     BackHandler(onBack = back)
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
+        Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TextButton(onClick = back) { Text(stringResource(R.string.back)) }

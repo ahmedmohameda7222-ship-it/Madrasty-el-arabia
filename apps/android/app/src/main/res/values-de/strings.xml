@@ -626,4 +626,15 @@
     <string name="finance_auto_start">Startmonat</string>
     <string name="finance_auto_enabled">Automatisch ausstellen</string>
     <string name="finance_auto_missing">Schüler ohne Zahlungspflichtige: %1$d</string>
+    <string name="finance_filters">Filter</string>
+    <string name="finance_more_details">Weitere Kennzahlen</string>
+    <string name="finance_new_movement">Neue Buchung</string>
+    <string name="finance_my_payments">Meine Zahlungen</string>
+    <string name="finance_my_invoices">Meine Rechnungen</string>
+    <string name="finance_invoice_history">Rechnungen und Belege</string>
+    <string name="finance_choose_month">Monat auswählen</string>
+    <string name="finance_my_children">Alle meine Kinder</string>
+    <string name="finance_no_invoices">Noch keine Rechnungen</string>
+    <string name="finance_no_invoices_hint">Hier erscheinen die Gebühren und Zahlungen Ihrer Kinder nach Ausstellung der Rechnungen.</string>
+    <string name="finance_fees_total">Gebühren</string>
 </resources>

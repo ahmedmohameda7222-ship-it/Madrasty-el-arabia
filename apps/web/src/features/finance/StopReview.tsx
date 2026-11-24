@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {stopRefund,stopRefundReceipt,stopResolution,stopReviewDetail,stopReviewState,stopReviewSummary,type StopReviewDetail,type Locale} from "@madrasty/contracts";
@@ -18,7 +20,7 @@ export function StopReview({locale,id}:{locale:Locale;id?:string}){
   const [state,setState]=useState("open"),[refresh,setRefresh]=useState(0),[notice,setNotice]=useState("");
   const list=useAcademicPage(id?null:`/finance/stop-reviews?limit=25${state?"&status="+state:""}`,reviews,refresh);
   const detail=useTimetableRead(id?`/finance/stop-reviews/${id}`:null,stopReviewDetail,refresh);
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{text.reviewTitle}</h1>
     {notice&&<p role="status">{notice}</p>}
     {id?<><Link href={`${root}/stop-reviews`} className="plain-button">{text.back}</Link>

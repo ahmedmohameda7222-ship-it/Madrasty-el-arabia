@@ -54,15 +54,41 @@ private data class ReportFilters(
 @Composable
 internal fun FinanceReports(
     model: IdentityViewModel, initialStudent: String?, staff: Boolean,
-    openInvoice: (String) -> Unit, openReceipt: (String) -> Unit, openMatching: () -> Unit, close: () -> Unit,
+    openInvoice: (String) -> Unit, openReceipt: (String) -> Unit, openMatching: () -> Unit, close: () -> Unit, openInvoices: (String?, String?) -> Unit,
 ) {
     var draft by remember(initialStudent) { mutableStateOf(ReportFilters(student = initialStudent)) }
     var filters by remember(initialStudent) { mutableStateOf(ReportFilters(student = initialStudent)) }
     var version by remember { mutableIntStateOf(0) }
+    var showFilters by remember { mutableStateOf(false) }
     val read = academicRead("/finance/reports/summary?${filters.query()}", version) { model.financeObject(it) }
-    FinancePage(R.string.finance_report_title, close) {
+    FinancePage(if (staff) R.string.finance_report_title else R.string.finance_my_payments, close) {
         AsyncSurface(read) { data ->
-            ReportForm(draft, { draft = it }, data, staff)
+            if (data.getString("scope") == "payer") {
+                FinancePayerSummary(data.financeRows("totals")) { openInvoices(filters.student, filters.period.ifBlank { null }) }
+                var showHistory by remember { mutableStateOf(false) }
+                TextButton(onClick = { showHistory = !showHistory }) { Text(stringResource(R.string.finance_invoice_history)) }
+                if (showHistory) {
+                    val query = filters.copy(asOf = data.getString("asOf")).query(data.getString("cutoff"))
+                    if (data.getBoolean("canExport")) ExportStatement(model, data.getString("asOf"), query)
+                    academicPages(model, "/finance/reports/statement?limit=25&$query", version) { rows ->
+                        for (row in rows) ReportLine(row, openInvoice, openReceipt, null)
+                    }
+                }
+                TextButton(onClick = { showFilters = !showFilters }) { Text(stringResource(R.string.finance_choose_month)) }
+                if (showFilters) {
+                    Field(R.string.fee_month, draft.period) { draft = draft.copy(period = financeDigits(it).take(7)) }
+                    Button(onClick = { filters = draft; version++; showFilters = false }, enabled = draft.valid(data.getString("schoolDate"))) { Text(stringResource(R.string.finance_report_apply)) }
+                }
+                if (filters.student != null) TextButton(onClick = { filters = filters.copy(student = null); draft = filters; version++ }) { Text(stringResource(R.string.finance_my_children)) }
+                return@AsyncSurface
+            }
+            TextButton(onClick = { showFilters = !showFilters }) { Text(stringResource(R.string.finance_filters)) }
+            if (showFilters) {
+                ReportForm(draft, { draft = it }, data, staff)
+                Button(onClick = { filters = draft; version++; showFilters = false }, enabled = draft.valid(data.getString("schoolDate"))) {
+                    Text(stringResource(R.string.finance_report_apply))
+                }
+            }
             if (filters.student != null) {
                 Text(stringResource(R.string.finance_report_selected))
                 TextButton(onClick = {
@@ -70,9 +96,6 @@ internal fun FinanceReports(
                     draft = filters
                     version++
                 }) { Text(stringResource(R.string.finance_report_all_pupils)) }
-            }
-            Button(onClick = { filters = draft; version++ }, enabled = draft.valid(data.getString("schoolDate"))) {
-                Text(stringResource(R.string.finance_report_apply))
             }
             ReportResults(model, data, filters, version, openInvoice, openReceipt, openMatching, focus = { selected ->
                 filters = selected
@@ -143,11 +166,19 @@ private fun ReportTotals(row: JSONObject, overdue: () -> Unit, matching: () -> U
     HorizontalDivider()
     val currency = row.getString("currency")
     Text(isolate(currency), style = MaterialTheme.typography.titleMedium)
-    Text(stringResource(R.string.finance_report_invoices, row.getLong("invoiceCount")))
-    for ((field, label) in totalLabels) {
-        if (!row.isNull(field)) Text(stringResource(label) + " · " + financeMoney(row.getLong(field), currency))
+    var showDetails by remember { mutableStateOf(false) }
+    val keyFields = setOf("collectibleMinor", "appliedMinor", "outstandingMinor", "overdueMinor")
+    for ((field, label) in totalLabels.filterKeys { it in keyFields }) {
+        if (!row.isNull(field)) FinanceBalanceCard(stringResource(label), financeMoney(row.getLong(field), currency))
     }
-    Text(stringResource(R.string.finance_report_receipts, row.getLong("receiptCount")))
+    TextButton(onClick = { showDetails = !showDetails }) { Text(stringResource(R.string.finance_more_details)) }
+    if (showDetails) {
+        Text(stringResource(R.string.finance_report_invoices, row.getLong("invoiceCount")))
+        for ((field, label) in totalLabels.filterKeys { it !in keyFields }) {
+            if (!row.isNull(field)) Text(stringResource(label) + " · " + financeMoney(row.getLong(field), currency))
+        }
+        Text(stringResource(R.string.finance_report_receipts, row.getLong("receiptCount")))
+    }
     val late = row.getLong("overdueCount")
     if (late > 0) TextButton(onClick = overdue) { Text(stringResource(R.string.finance_report_late_queue, late)) }
     val unmatched = row.optLong("matchingCount", 0)

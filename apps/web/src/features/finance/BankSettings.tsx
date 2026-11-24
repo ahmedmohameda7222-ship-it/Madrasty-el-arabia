@@ -1,5 +1,7 @@
 "use client";
 
+import css from "./FinanceWorkspace.module.css";
+
 import {useState,type FormEvent} from "react";
 import {z} from "zod";
 import {
@@ -37,7 +39,7 @@ export function BankSettings({locale}:{locale:Locale}){
   const labels=copy[locale];
   const [version,setVersion]=useState(0),[receipt,setReceipt]=useState<string>();
   const settings=useTimetableRead("/finance/bank",schoolBank,version);
-  return <section className="auth-card auth-form">
+  return <section className={`${css.workspace} auth-form`}>
     <h1>{labels.title}</h1>
     {receipt&&<p role="status">{labels.saved} · <bdi dir="ltr">{receipt}</bdi></p>}
     <TimetableRead locale={locale} result={settings}>{(value)=><BankEditor key={value.revision} locale={locale} settings={value}

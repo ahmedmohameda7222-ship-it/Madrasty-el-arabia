@@ -1,5 +1,7 @@
 package de.madrasty.app.finance
 
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -21,24 +23,34 @@ internal fun Reconciliation(model: IdentityViewModel, initial: String?, canPost:
     var state by remember(initial) { mutableStateOf(initial ?: "") }
     var cashbook by remember { mutableStateOf(false) }
     FinancePage(R.string.receipt_queue, close) {
-        FilterChip(!cashbook,{cashbook=false},label={Text(stringResource(R.string.receipt_queue))})
-        FilterChip(cashbook,{cashbook=true},label={Text(stringResource(R.string.cashbook_title))})
+        FlowRow {
+            FilterChip(!cashbook,{cashbook=false},label={Text(stringResource(R.string.receipt_queue))})
+            FilterChip(cashbook,{cashbook=true},label={Text(stringResource(R.string.cashbook_title))})
+        }
         if(cashbook){CashbookPanel(model)}else{
+        if (canPost) Button(onClick = record) { Text(stringResource(R.string.receipt_record)) }
         TextButton(onClick=review){Text(stringResource(R.string.stop_review_title))}
-        if (canPost) TextButton(onClick = record) { Text(stringResource(R.string.receipt_record)) }
-        FilterChip(state.isEmpty(), { state = "" }, label = { Text(stringResource(R.string.receipt_all)) })
-        for (key in listOf("needs_matching", "allocated", "voided")) {
-            FilterChip(state == key, { state = key }, label = { Text(stringResource(receiptStateLabel(key))) })
+        var showFilters by remember { mutableStateOf(false) }
+        TextButton(onClick={showFilters=!showFilters}) { Text(stringResource(R.string.finance_filters)) }
+        if (showFilters) FlowRow {
+            FilterChip(state.isEmpty(), { state = "" }, label = { Text(stringResource(R.string.receipt_all)) })
+            for (key in listOf("needs_matching", "allocated", "voided")) {
+                FilterChip(state == key, { state = key }, label = { Text(stringResource(receiptStateLabel(key))) })
+            }
         }
         val filter = if (state.isEmpty()) "" else "&state=$state"
         academicPages(model, "/finance/receipts?limit=25$filter", model.attendanceNetworkRevision) { rows ->
             for (row in rows) {
                 HorizontalDivider()
-                TextButton(onClick = { open(row.getString("id")) }) { Text(isolate(row.getString("receiptNumber"))) }
-                Text(stringResource(receiptStateLabel(row.getString("state"))) + " · " + isolate(row.getString("receivedDate")))
-                Text(stringResource(receiptMethodLabel(row.getString("method"))) + " · " +
-                    financeMoney(row.getLong("amountMinor"), row.getString("currency")))
-                Text(stringResource(R.string.receipt_remainder) + " · " + financeMoney(row.getLong("remainderMinor"), row.getString("currency")))
+                val currency = row.getString("currency")
+                FinanceRecordRow(
+                    title = isolate(row.getString("receiptNumber")),
+                    subtitle = isolate(row.getString("receivedDate")) + " · " + stringResource(receiptMethodLabel(row.getString("method"))),
+                    amount = financeMoney(row.getLong("amountMinor"), currency),
+                    status = stringResource(receiptStateLabel(row.getString("state"))),
+                    onClick = { open(row.getString("id")) },
+                )
+                if (row.getLong("remainderMinor") > 0) Text(stringResource(R.string.receipt_remainder) + " · " + financeMoney(row.getLong("remainderMinor"), currency))
             }
         }
         }

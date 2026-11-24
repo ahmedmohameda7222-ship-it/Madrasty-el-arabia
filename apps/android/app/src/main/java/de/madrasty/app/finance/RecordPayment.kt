@@ -1,6 +1,7 @@
 package de.madrasty.app.finance
 
 import android.net.Uri
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -64,7 +65,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     }
     if(prepared!=null){
         Text(stringResource(receiptMethodLabel(method))+" · "+isolate(date))
-        Text(financeMoney(prepared.getLong("amountMinor"),currency))
+        FinanceBalanceCard(stringResource(R.string.receipt_total),financeMoney(prepared.getLong("amountMinor"),currency))
         for((invoice,value) in rows){Text(receiptInvoiceLabel(invoice));Text(isolate(value))}
         TextButton(onClick={review=null}) {Text(stringResource(R.string.fee_edit))}
         Submit(true,R.string.receipt_confirm,success=null){
@@ -73,9 +74,12 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         }
         return
     }
+    Field(R.string.receipt_total,amount){amount=it.take(24)}
     if(setup.getBoolean("cashEnabled")){
-        FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
-        FilterChip(method=="bank",{method="bank"},label={Text(stringResource(R.string.receipt_bank))})
+        FlowRow {
+            FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
+            FilterChip(method=="bank",{method="bank"},label={Text(stringResource(R.string.receipt_bank))})
+        }
     }else Text(stringResource(R.string.receipt_bank))
     if(method=="bank")Field(R.string.receipt_reference,reference){reference=it.take(160)}
     Field(R.string.receipt_date,date){date=financeDigits(it).take(10)}
@@ -84,13 +88,12 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         Field(R.string.receipt_allocation_amount,row.second){value->rows=rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r}}
         TextButton(onClick={rows=rows.filterIndexed{i,_->i!=index}}){Text(stringResource(R.string.fee_remove_line))}
     }
-    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_choose_invoice))}
+    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_optional_invoice))}
     if(choose)ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet()){ invoice->
         rows=rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency))
         amount=financePlainAmount(rows.sumOf{financeMinor(it.second,currency,it.first.getLong("balanceMinor"))?:0L},currency)
         choose=false
     }
-    Field(R.string.receipt_total,amount){amount=it.take(24)}
     FilterChip(verified,{verified=!verified},label={Text(stringResource(R.string.receipt_confirmed_external))})
     val allocations=rows.map{(invoice,value)->financeMinor(value,currency,invoice.getLong("balanceMinor"))}
     val minor=financeMinor(amount,currency,100_000_000_000_000)

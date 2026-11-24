@@ -21,7 +21,7 @@ export function SchoolHeader({ locale, children, alternateHref, brandHref }: { l
   const text = dictionary(locale);
   return (
     <header className="school-header">
-      <Link className="brand" href={brandHref ?? `/${locale}`} aria-label={text.school}>
+      <Link className="brand" href={brandHref ?? `/${locale}`} aria-label={text.school} title={text.school}>
         <Image src="/school-192.png" alt="" width={44} height={44} />
         <span>{text.school}</span>
       </Link>

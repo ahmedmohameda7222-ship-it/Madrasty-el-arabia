@@ -7,6 +7,7 @@ import {useSchoolCommand} from "@/api/commands";
 import {useAccountScope} from "@/ui/AccountScope";
 import {financeAmount,inputAmountMinor} from "./invoice-ui";
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 
 const copy={
  ar:{title:"دفتر الخزنة",balance:"رصيد الخزنة الحالي",opening:"رصيد بداية الشهر",closing:"رصيد نهاية الفترة",income:"إيراد إضافي",donation:"تبرع",expense:"مصروف",bank_deposit:"إيداع في البنك",fee:"اشتراك نقدي",void:"تصحيح إيصال",refund:"رد مبلغ",in:"إجمالي المقبوض",out:"المصروفات",deposits:"الإيداعات البنكية",refunds:"المبالغ المرتجعة",corrections:"تصحيحات",month:"الشهر",new:"إضافة حركة",type:"نوع الحركة",date:"التاريخ",amount:"المبلغ",description:"السبب / البيان",save:"حفظ الحركة",review:"مراجعة",edit:"تعديل",saved:"تم تسجيل الحركة",empty:"لا توجد حركات",limited:"يتم عرض آخر ١٠٠٠ حركة.",export:"تحميل CSV"},
@@ -18,7 +19,7 @@ export function Cashbook({locale}:{locale:Locale}){
   return <section className={css.workspace}>
     <h1>{t.title}</h1>
     <TimetableRead locale={locale} result={result}>{data=><>
-      <label className={css.control}>{t.month}<input type="month" dir="ltr" value={month||data.month} max={data.schoolDate.slice(0,7)} onChange={e=>setMonth(e.target.value)}/></label>
+      <FinanceDateField className={css.control} locale={locale} label={t.month} type="month" value={month||data.month} max={data.schoolDate.slice(0,7)} onChange={e=>setMonth(e.target.value)}/>
       <CashbookContents key={data.month} locale={locale} data={data} refresh={()=>update(n=>n+1)}/>
     </>}</TimetableRead>
   </section>;
@@ -27,7 +28,8 @@ function CashbookContents({locale,data,refresh}:{locale:Locale;data:CashbookMont
   const t=copy[locale],money=(n:number)=>financeAmount(Math.abs(n),data.currency),signed=(n:number)=>(n<0?"−":"+")+money(n);
   return <>
     <div className={css.balance}><span>{t.balance}</span><strong><bdi>{data.balanceMinor<0?"−":""}{money(data.balanceMinor)}</bdi></strong></div>
-    <div className={css.metrics}>{([["opening",data.openingMinor],["in",data.incomeMinor],["out",data.expenseMinor],["deposits",data.depositsMinor],["refunds",data.refundsMinor],["corrections",data.correctionsMinor],["closing",data.closingMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div>
+    <div className={css.metrics}>{([["in",data.incomeMinor],["out",data.expenseMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div>
+    <details className={css.disclosure}><summary>{locale==="ar"?"تفاصيل الشهر":"Monatsdetails"}</summary><div className={css.metrics}>{([["opening",data.openingMinor],["deposits",data.depositsMinor],["refunds",data.refundsMinor],["corrections",data.correctionsMinor],["closing",data.closingMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div></details>
     {data.canPost&&<CashMovement locale={locale} data={data} refresh={refresh}/>}
     <div className="header-actions">{data.entryCount===data.entries.length&&<a className="plain-button" download href={"/api/v1/finance/cashbook/export?month="+data.month}>{t.export}</a>}{data.entryCount<=100&&<a className="plain-button" download href={"/api/v1/finance/cashbook/pdf?month="+data.month+"&locale="+locale}>PDF</a>}</div>
     {data.entryCount>data.entries.length&&<p>{t.limited}</p>}
@@ -54,7 +56,7 @@ function CashMovement({locale,data,refresh}:{locale:Locale;data:CashbookMonth;re
       {error&&<p role="alert">{error}</p>}
       {preview?<><p>{t[kind]} · <bdi>{date}</bdi> · <bdi>{financeAmount(input.data?.amountMinor??0,data.currency)}</bdi></p><p>{description}</p></>:<>
         <label>{t.type}<select value={kind} onChange={e=>setKind(cashMovementKind.parse(e.target.value))}>{cashMovementKind.options.map(k=><option key={k} value={k}>{t[k]}</option>)}</select></label>
-        <label>{t.date}<input type="date" dir="ltr" max={data.schoolDate} value={date} onChange={e=>setDate(e.target.value)}/></label>
+        <FinanceDateField locale={locale} label={t.date} type="date" max={data.schoolDate} value={date} onChange={e=>setDate(e.target.value)}/>
         <label>{t.amount}<input inputMode="decimal" dir="ltr" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
         <label>{t.description}<textarea value={description} maxLength={500} onChange={e=>setDescription(e.target.value)}/></label>
       </>}

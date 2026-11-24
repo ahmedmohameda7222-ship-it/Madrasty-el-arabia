@@ -383,7 +383,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             {state.open(WorkspacePage.Receipts(id=it))},state::back,{state.open(WorkspacePage.StopReviews())})
         is WorkspacePage.FinanceReport -> FinanceReports(model,page.student,rights.receiptViewer,
             {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},
-            {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back)
+            {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back,{student,period->state.open(WorkspacePage.Invoices(student=student,period=period))})
         is WorkspacePage.Stops -> StopQueue(model,page.id,page.student,rights.stopManager,
             {state.open(WorkspacePage.Stops(id=it))},state::back)
         is WorkspacePage.StopReviews -> StopReview(model,page.id,{state.open(WorkspacePage.StopReviews(it))},
@@ -530,7 +530,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     }
     if(rights.invoiceViewer||rights.bank||rights.receiptViewer){
         SettingsGroup(R.string.settings_group_finance) {
-            if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),R.string.finance_report_title)
+            if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),if(rights.persona==Persona.Guardian)R.string.finance_my_payments else R.string.finance_report_title)
             if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
             if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
             if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)

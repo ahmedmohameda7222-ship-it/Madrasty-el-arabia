@@ -15,6 +15,6 @@ export default async function InvoicesPage({params,searchParams}:{
     const [read,issue]=await Promise.all([mayUse(session,"finance.read"),mayUse(session,"finance.issue")]);
     if(!read&&!issue&&!canPost)notFound();
   }
-  return <InvoiceDetails locale={locale} canPost={canPost} canIssue={canIssue} invoice={z.uuid().safeParse(query.invoice).data}
+  return <InvoiceDetails locale={locale} staff={session.activePersona!=="guardian"} canPost={canPost} canIssue={canIssue} invoice={z.uuid().safeParse(query.invoice).data}
     student={z.uuid().safeParse(query.student).data} period={billingMonth.safeParse(query.period).data}/>;
 }

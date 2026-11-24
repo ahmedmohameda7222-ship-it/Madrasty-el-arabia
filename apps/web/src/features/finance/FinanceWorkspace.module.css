@@ -15,3 +15,90 @@
 
 .panel progress{width:100%;height:.75rem;accent-color:var(--primary)}
 .chart{display:grid;gap:.7rem}.chart>div{display:grid;grid-template-columns:6rem minmax(0,1fr) auto;gap:.6rem;align-items:center;font-size:.85rem}.track{display:flex;height:12px;border-radius:6px;background:var(--rule);overflow:hidden;direction:ltr}.track span{background:var(--primary)}.track span+span{background:var(--muted)}@media(max-width:380px){.chart>div{grid-template-columns:1fr auto}.track{grid-row:2;grid-column:1/-1}}
+
+/* Finance surfaces are grouped lists and lightweight sections, not authentication cards. */
+.workspace{gap:1.1rem;min-inline-size:0;max-inline-size:100%;margin-block:1rem;padding:0}
+.workspace :is(h1,h2,h3,p),.summaryGroup :is(h2,p){margin-block:0}
+.workspace :is(h2,h3){font-size:1.05rem;line-height:1.35}
+.workspace :is(input,select,textarea),.panel :is(input,select,textarea){box-sizing:border-box;max-inline-size:100%;min-inline-size:0;font:inherit}
+.workspace :is(input:not([type=checkbox]):not([type=radio]),select,textarea){inline-size:100%;min-block-size:48px;border:1px solid var(--rule);border-radius:12px;padding:.65rem .8rem;background:var(--card);color:var(--ink)}
+.workspace :is(button,a[class],summary){min-block-size:44px}
+.workspace :is(button,a,summary,input,select,textarea):focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.workspace :global(.header-actions){gap:.6rem;align-items:end;flex-wrap:wrap;min-inline-size:0}
+.workspace :global(.header-actions)>label{flex:1 1 10rem;min-inline-size:0}
+.workspace :global(.auth-form){gap:.85rem;margin-block-start:0;min-inline-size:0}
+.workspace :global(.timetable-day){margin:0;min-inline-size:0;padding:.85rem;border-radius:14px}
+.workspace :global(.group-list){min-inline-size:0}
+.workspace bdi{overflow-wrap:anywhere}
+.workspace .checkRow,.panel .checkRow{display:flex;align-items:center;gap:.65rem;min-block-size:48px}
+.checkRow input{flex:none}
+.amountInput input{font-size:1.55rem!important;font-weight:600;font-variant-numeric:tabular-nums}
+.secondary,.recordRow small{color:var(--muted);font-size:.875rem}
+.balance{gap:.65rem;padding:1.1rem 1.15rem}
+.balanceRows{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;font-size:.9rem;border-block-start:1px solid var(--rule);padding-block-start:.65rem}
+.balanceRows bdi{text-align:end;font-variant-numeric:tabular-nums}
+.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}
+.metrics>div{border:0;background:var(--card);padding:.8rem;min-inline-size:0}
+.metrics strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.summaryGroup{display:grid;gap:.8rem;min-inline-size:0}
+.recordList{margin:0;padding:0;list-style:none;display:grid;background:var(--card);border:1px solid var(--rule);border-radius:16px;overflow:hidden;min-inline-size:0}
+.recordList>li+li,.recordList>a+a{border-block-start:1px solid var(--rule)}
+.recordRow{display:flex;align-items:center;gap:.65rem;padding:.8rem 1rem;min-block-size:52px;text-decoration:none;color:var(--ink);min-inline-size:0}
+.recordRow>span:first-child{flex:1;min-inline-size:0;overflow-wrap:anywhere}
+.recordRow>strong:first-child{flex:1;min-inline-size:0}
+.recordRow span:not(.chevron){display:grid;gap:.3rem}
+.recordValue{text-align:end;min-inline-size:0;max-inline-size:48%;font-variant-numeric:tabular-nums}
+.recordValue small[data-state=paid],.recordValue small[data-state=allocated]{color:var(--primary)}
+.chevron{flex:none;inline-size:.45rem;block-size:.45rem;border-block-start:1.5px solid var(--muted);border-inline-end:1.5px solid var(--muted);transform:rotate(45deg);margin-inline-start:.15rem}
+:global([dir=rtl]) .chevron{transform:rotate(-45deg)}
+.disclosure{border:1px solid var(--rule);border-radius:14px;background:var(--card);padding-inline:1rem;min-inline-size:0}
+.disclosure>summary{cursor:pointer;padding-block:.8rem;font-weight:600;line-height:1.4}
+.disclosure[open]>summary{border-block-end:1px solid var(--rule);margin-block-end:.8rem}
+.disclosure[open]{padding-block-end:1rem}
+.search{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:.5rem}
+.tabs{display:flex;gap:.35rem;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:.25rem}
+.tabs>a,.tabs>button{flex:1;min-inline-size:0;text-align:center;white-space:normal}
+.tabs button[aria-pressed=true]{background:color-mix(in srgb,var(--primary) 12%,var(--card));border-color:var(--primary)}
+@media(max-width:350px){.recordRow{padding:.7rem;gap:.45rem}.metrics>div{padding:.65rem}.search{grid-template-columns:1fr}.balanceRows{grid-template-columns:1fr auto}}
+@media(min-width:760px){.workspace{gap:1.25rem}.metrics{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}}
+
+/* Second visual QA pass: compact forms and primary actions. */
+.workspace{gap:.8rem;margin-block:.5rem;inline-size:100%;max-inline-size:64rem;margin-inline:auto}
+.workspace :global(.auth-form){gap:.65rem}
+.workspace :global(.primary-button){margin-block-start:0}
+.workspace :global(.header-actions){justify-content:flex-start}
+.workspace label{min-inline-size:0}
+.workspace .checkRow,.panel .checkRow{display:flex;gap:.6rem;align-items:center;min-block-size:44px}
+.workspace .checkRow input{inline-size:20px;block-size:20px;min-block-size:20px;padding:0;flex:none}
+.narrowForm{max-inline-size:42rem}
+.fieldPair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+.formAction{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding-block:.5rem;background:var(--canvas)}
+.formAction>:global(.primary-button){flex:1 1 10rem}
+.formAction>:global(.plain-button){flex:1 1 6rem}
+.sectionHeading{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.search{grid-template-columns:minmax(0,1fr) auto}
+.searchLabel{font-size:.875rem}
+.search button{padding-inline:.65rem;min-inline-size:44px}
+@media(max-width:350px){.fieldPair{grid-template-columns:1fr}.search{grid-template-columns:minmax(0,1fr) auto}}
+@media(min-width:760px){.workspace{gap:1rem;margin-block:.75rem}.narrowForm{max-inline-size:42rem}.workspace>:global(.primary-button),.workspace>:global(.plain-button){justify-self:start}.workspace .search{max-inline-size:42rem}.workspace .formAction{max-inline-size:42rem}}
+
+.amountLabel{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+.amountLabel bdi{color:var(--muted);font-size:.875rem}
+.secondaryLinks{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem}
+.secondaryLinks>a{display:inline-flex;align-items:center;min-block-size:44px;font-size:.9rem;font-weight:600}
+
+/* Keep full student names readable and native picker text uncramped on phones. */
+.dateContext{display:block;color:var(--muted);font-size:.8rem;line-height:1.3;overflow-wrap:anywhere}
+@media(max-width:430px){
+  .recordRow.invoiceRow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.35rem .55rem}
+  .recordRow.invoiceRow>span:first-child{display:contents}
+  .invoiceRow>span:first-child>strong{grid-column:1/-1;grid-row:1;min-inline-size:0;overflow-wrap:anywhere}
+  .invoiceRow>span:first-child>small{grid-column:1;grid-row:2;min-inline-size:0;overflow-wrap:anywhere}
+  .invoiceRow>.recordValue{grid-column:2;grid-row:2;max-inline-size:none}
+  .invoiceRow>.chevron{grid-column:3;grid-row:2}
+}
+@media(max-width:400px){.fieldPair{grid-template-columns:1fr}}
+
+/* Fee settings labels must fit even in the smallest German viewport. */
+.feeTabs{align-items:stretch}
+@media(max-width:430px){.feeTabs{display:grid;grid-template-columns:minmax(0,1fr)}.feeTabs>button{overflow-wrap:anywhere}}

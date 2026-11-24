@@ -1,5 +1,6 @@
 package de.madrasty.app.finance
 
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -35,8 +36,10 @@ internal fun FeeSettings(model: IdentityViewModel, initialStudent: String?, clos
     FinancePage(R.string.fee_settings, close) {
         if(bank!=null)TextButton(onClick=bank){Text(stringResource(R.string.finance_bank))}
         AutomaticBillingPanel(model)
-        FilterChip(!payerTab, { payerTab = false }, label = { Text(stringResource(R.string.fee_tariffs)) })
-        FilterChip(payerTab, { payerTab = true }, label = { Text(stringResource(R.string.fee_payer)) })
+        FlowRow {
+            FilterChip(!payerTab, { payerTab = false }, label = { Text(stringResource(R.string.fee_tariffs)) })
+            FilterChip(payerTab, { payerTab = true }, label = { Text(stringResource(R.string.fee_payer)) })
+        }
         AsyncSurface(context) { options ->
             val month = options.getString("schoolMonth")
             if (!payerTab) TariffEditor(model, options)

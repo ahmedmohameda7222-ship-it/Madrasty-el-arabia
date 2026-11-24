@@ -626,4 +626,15 @@
     <string name="finance_auto_start">شهر البداية</string>
     <string name="finance_auto_enabled">إصدار تلقائي</string>
     <string name="finance_auto_missing">طلاب بدون مسؤول سداد: %1$d</string>
+    <string name="finance_filters">تصفية</string>
+    <string name="finance_more_details">تفاصيل الحساب</string>
+    <string name="finance_new_movement">إضافة حركة</string>
+    <string name="finance_my_payments">مدفوعاتي</string>
+    <string name="finance_my_invoices">فواتيري</string>
+    <string name="finance_invoice_history">الفواتير والإيصالات</string>
+    <string name="finance_choose_month">اختيار الشهر</string>
+    <string name="finance_my_children">كل أطفالي</string>
+    <string name="finance_no_invoices">لا توجد فواتير بعد</string>
+    <string name="finance_no_invoices_hint">هنا هتلاقي رسوم أطفالك ومدفوعاتك بعد إصدار الفواتير.</string>
+    <string name="finance_fees_total">المطلوب</string>
 </resources>
