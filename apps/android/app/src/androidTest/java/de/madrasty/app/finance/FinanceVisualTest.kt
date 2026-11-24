@@ -101,6 +101,8 @@ class FinanceVisualTest {
             }
         }
         compose.onNodeWithText(if (payer) (if (ar) "مدفوعاتي" else "Meine Zahlungen") else (if (ar) "الفواتير" else "Rechnungen")).assertIsDisplayed()
+        val longName = if (ar) "عبد الرحمن محمد أحمد إبراهيم مصطفى عبد الله السيد محمود" else "Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk"
+        compose.onNodeWithText(longName).assertIsDisplayed()
         compose.waitForIdle()
         instrumentation.waitForIdleSync()
         // Capture the app window, not unrelated emulator launcher/system dialogs.

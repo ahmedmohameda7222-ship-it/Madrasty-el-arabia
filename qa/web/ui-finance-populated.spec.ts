@@ -7,7 +7,7 @@ import { schoolClock as clock } from "../fixtures/clock";
 import { fixtureApi } from "../support/api";
 import { localOrigin } from "../support/target";
 import { invoiceDetail, invoicePreview, invoiceBatch } from "../../packages/contracts/src/finance/invoices";
-import { receiptMutation } from "../../packages/contracts/src/finance/receipts";
+import { receiptDetail, receiptMutation } from "../../packages/contracts/src/finance/receipts";
 
 // Run only AFTER the shared UI suite; all writes are to the disposable QA school.
 async function seedFinance(school: FixtureSchool) {
@@ -51,6 +51,8 @@ async function seedFinance(school: FixtureSchool) {
       invoice=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+id,{token:finance,persona:"admin"})).payload.data);
     }
     expect(invoice.state).toBe(row.paid===row.amount?"paid":row.paid>0?"partial":"unpaid");
+    expect(invoice.balanceMinor).toBe(row.amount-row.paid);
+    expect(invoice.allocatedMinor).toBe(row.paid);
     records.push({invoice,receiptId,label:row.label});
   }
   await send("/finance/cashbook","donation",{kind:"donation",date:clock.day,amountMinor:5000,description:"QA Spende – تبرع تجريبي"});
@@ -92,6 +94,41 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
         await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
         const page=await context.newPage();
         const record=records.find(x=>x.label===s.record)!;
+        const actorOptions={token,persona:s.persona,locale:s.locale};
+        const visibleInvoice=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+record.invoice.id,actorOptions)).payload.data);
+        expect(visibleInvoice.receiptIds).toHaveLength(1);
+        const visibleReceiptId=visibleInvoice.receiptIds[0];
+        const receiptResponse=await fixtureApi(school,"/finance/receipts/"+visibleReceiptId,actorOptions);
+        const visibleReceipt=receiptDetail.parse(receiptResponse.payload.data);
+        expect(visibleReceipt.id).toBe(visibleReceiptId);
+        expect(visibleReceipt.scope).toBe(s.persona==="admin"?"staff":"payer");
+        expect(visibleReceipt.amountMinor).toBe(s.record==="A"?3200:1200);
+        expect(visibleReceipt.appliedMinor).toBe(visibleReceipt.amountMinor);
+        expect(visibleReceipt.allocations.map(x=>x.invoiceId)).toEqual([record.invoice.id]);
+        for(const path of ["/finance/invoices/"+record.invoice.id+"/pdf","/finance/receipts/"+visibleReceiptId+"/pdf"]){
+          const doc=await fixtureApi(school,path+"?locale="+s.locale,actorOptions);
+          expect(doc.response.headers.get("content-type")).toContain("application/pdf");
+          expect(doc.response.headers.get("cache-control")).toContain("no-store");
+          const bytes=Buffer.from(await doc.response.arrayBuffer());
+          expect(bytes.subarray(0,8).toString()).toBe("%PDF-1.4");
+          expect(bytes.subarray(-30).toString()).toContain("%%EOF");
+        }
+        if(s.persona==="guardian"){
+          expect(receiptResponse.payload.data).not.toHaveProperty("externalReceiptRef");
+          expect(receiptResponse.payload.data).not.toHaveProperty("history");
+          expect(receiptResponse.payload.data).not.toHaveProperty("remainderMinor");
+          const otherActor=s.actor==="guardian-de"?"guardian-ar":"guardian-de";
+          const other=records.find(x=>x.label===(s.record==="A"?"B":"A"))!;
+          const otherToken=await school.bearer(otherActor,"guardian");
+          const otherInvoice=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+other.invoice.id,{token:otherToken,persona:"guardian"})).payload.data);
+          expect(otherInvoice.receiptIds).toHaveLength(1);
+          const otherReceiptId=otherInvoice.receiptIds[0];
+          for(const path of ["/finance/invoices/"+other.invoice.id,"/finance/invoices/"+other.invoice.id+"/pdf",
+            "/finance/receipts/"+otherReceiptId,"/finance/receipts/"+otherReceiptId+"/pdf",
+            "/finance/receipts/"+record.receiptId,"/finance/receipts/"+record.receiptId+"/pdf"]){
+            await fixtureApi(school,path,{...actorOptions,status:404});
+          }
+        }
         const root="/"+s.locale+"/school/more/";
         for(const [width,theme] of [[320,"dark"],[390,"light"],[430,"light"],[1280,"light"]] as const){
           await page.setViewportSize({width,height:844});
@@ -101,6 +138,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           await go("finance-reports");
           await expect(page.getByText(s.persona==="admin"?(s.locale==="ar"?"رصيد الخزنة الحالي":"Aktueller Kassenbestand"):(s.locale==="ar"?"المبلغ المتبقي":"Offener Betrag"),{exact:true}).first()).toBeVisible();
           await capture(page,prefix+"overview");
+          if(s.persona==="guardian"&&(width===320||width===390)){
+            await page.getByText(s.locale==="ar"?"الفواتير والإيصالات":"Rechnungen und Belege",{exact:true}).click();
+            await capture(page,prefix+"overview-expanded");
+          }
           await go("invoices");
           await expect(page.locator('a[href*="invoice='+record.invoice.id+'"]')).toBeVisible();
           if(s.persona==="admin")for(const row of records)await expect(page.locator('a[href*="invoice='+row.invoice.id+'"]')).toBeVisible();
@@ -109,19 +150,30 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             await expect(page.locator('a[href*="invoice='+foreign.invoice.id+'"]')).toHaveCount(0);
             await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
           }
+          if(width<=430){
+            const row=page.locator('a[href*="invoice='+record.invoice.id+'"]');
+            const name=row.locator("strong").first();
+            await expect(name).toHaveText(record.invoice.studentName);
+            const rowBounds=await row.boundingBox(),nameBounds=await name.boundingBox();
+            expect(nameBounds!.width).toBeGreaterThan(rowBounds!.width*0.75);
+          }
           await capture(page,prefix+"invoices");
           await go("invoices?invoice="+record.invoice.id);
-          await expect(page.locator('a[download][href*="/finance/invoices/"]')).toBeVisible();
+          const invoicePdfLink=page.locator('a[download][href*="/finance/invoices/"]');
+          await expect(invoicePdfLink).toBeVisible();
+          await expect(invoicePdfLink).toHaveAttribute("href","/api/v1/finance/invoices/"+record.invoice.id+"/pdf?locale="+s.locale);
           await capture(page,prefix+"invoice-detail");
           // Follow the invoice's persona-scoped receipt link, not the staff ledger ID.
           const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
           await expect(receiptLink).toHaveCount(1);
           const receiptHref=await receiptLink.getAttribute("href");
-          expect(receiptHref).toBeTruthy();
+          expect(receiptHref).toBe(root+"receipts?receipt="+visibleReceiptId);
           if(s.persona==="admin")expect(receiptHref).toContain("receipt="+record.receiptId);
           else expect(receiptHref).not.toContain("receipt="+record.receiptId);
           await receiptLink.click();
-          await expect(page.locator('a[download][href*="/finance/receipts/"]')).toBeVisible();
+          const receiptPdfLink=page.locator('a[download][href*="/finance/receipts/"]');
+          await expect(receiptPdfLink).toBeVisible();
+          await expect(receiptPdfLink).toHaveAttribute("href","/api/v1/finance/receipts/"+visibleReceiptId+"/pdf?locale="+s.locale);
           await capture(page,prefix+"receipt-detail");
           if(s.persona==="admin"){
             await go("receipts");
@@ -129,7 +181,14 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             await capture(page,prefix+"receipts");
             await go("receipts?view=cashbook");
             await expect(page.getByText("QA Spende – تبرع تجريبي",{exact:true})).toBeVisible();
+            await expect(page.getByText("QA Material – أدوات مدرسية",{exact:true})).toBeVisible();
             await capture(page,prefix+"cashbook");
+            if(width===320||width===390){
+              await page.getByText(s.locale==="ar"?"تفاصيل الشهر":"Monatsdetails",{exact:true}).click();
+              await page.getByRole("button",{name:s.locale==="ar"?"إضافة حركة":"Neue Buchung",exact:true}).click();
+              await expect(page.locator('.school-content textarea')).toBeVisible();
+              await capture(page,prefix+"cashbook-expanded");
+            }
             if(width===320||width===390){
               const unpaid=records.find(x=>x.label==="C")!.invoice;
               await go("record-payment?invoice="+unpaid.id);

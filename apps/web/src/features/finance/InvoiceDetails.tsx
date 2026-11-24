@@ -1,6 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 
 import Link from "next/link";
 import {useState} from "react";
@@ -50,14 +51,14 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
         <button className="plain-button" type="submit">{text.find}</button>
       </form>}
       <details className={css.disclosure}><summary>{locale==="ar"?"تصفية":"Filter"}</summary><div className="header-actions">
-        <label>{text.period}<input dir="ltr" type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/></label>
+        <FinanceDateField locale={locale} label={text.period} type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/>
         <label>{text.status}<select value={state} onChange={(event)=>setState(event.target.value)}>
           <option value="">{text.allStates}</option>{invoiceState.options.map((key)=><option value={key} key={key}>{text[key]}</option>)}
         </select></label>
       </div></details>
       <AcademicPageItems locale={locale} page={list} emptyMessage={locale==="ar"?(staff?"لا توجد فواتير تطابق الاختيار.":"لا توجد فواتير لأطفالك في الفترة المختارة. ستظهر هنا عند إصدارها."):(staff?"Keine Rechnungen für diese Auswahl.":"Hier erscheinen die Rechnungen Ihrer Kinder, sobald sie ausgestellt sind.")}>{(invoices)=><ul className={css.recordList}>
         {invoices.map((item)=><li key={item.id}>
-          <Link className={css.recordRow} href={`${root}?invoice=${item.id}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{item.period}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
+          <Link className={`${css.recordRow} ${css.invoiceRow}`} href={`${root}?invoice=${item.id}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{item.period}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
         </li>)}
       </ul>}</AcademicPageItems>
     </>}

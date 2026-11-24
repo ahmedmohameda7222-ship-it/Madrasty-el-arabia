@@ -1,6 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 import {useState,type FormEvent} from "react";
 import {automaticBillingInput,automaticBillingSettings,type Locale} from "@madrasty/contracts";
 import {useTimetableRead,TimetableRead,timetableError} from "@/features/school/timetable/shared";
@@ -21,7 +22,7 @@ function BillingForm({locale,data,refresh}:{locale:Locale;data:Settings;refresh:
   return <form className="auth-form" onSubmit={save}>
     <p className={css.secondary}>{ar?"فاتورة شهرية للطلاب النشطين فقط.":"Monatsrechnung nur für aktive Schüler."}</p>
     <label className={css.checkRow}><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>{ar?"إصدار تلقائي":"Automatisch ausstellen"}</label>
-    <label>{ar?"شهر البداية":"Startmonat"}<input type="month" dir="ltr" min={data.schoolMonth} value={month} onChange={e=>setMonth(e.target.value)} required/></label>
+    <FinanceDateField locale={locale} label={ar?"شهر البداية":"Startmonat"} type="month" min={data.schoolMonth} value={month} onChange={e=>setMonth(e.target.value)} required/>
     {data.missingPayers>0&&<p className="notice">{data.missingPayers} {ar?"طالب يحتاج تحديد مسؤول السداد هذا الشهر.":"Schüler benötigen diesen Monat eine zahlungspflichtige Person."}</p>}
     {error&&<p role="alert">{error}</p>}
     <button className="primary-button" disabled={busy||!input.success||month<data.schoolMonth||(enabled===data.enabled&&month===data.startMonth)}>{ar?"حفظ":"Speichern"}</button>

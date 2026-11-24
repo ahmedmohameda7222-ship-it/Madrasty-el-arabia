@@ -12,6 +12,7 @@ import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,financeAmount} from "./invoice-ui";
 import {receiptCopy} from "./receipt-ui";
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 import {FinanceOverview} from "./FinanceOverview";
 import {readFinanceReportContext,writeFinanceReportContext} from "./report-context";
 
@@ -107,7 +108,7 @@ export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Loca
     </form></details>}
     <TimetableRead locale={locale} result={summary}>{(data)=><ReportBody locale={locale} data={data} filters={filters}
       refresh={refresh} focus={focus}/>}</TimetableRead>
-    {!staff&&<details className={css.disclosure}><summary>{locale==="ar"?"اختيار الشهر":"Monat auswählen"}</summary><form className="auth-form" onSubmit={apply}><label>{billingCopy[locale].period}<input type="month" dir="ltr" value={draft.period??""} onChange={event=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>{filters.studentId&&<button type="button" className="plain-button" onClick={()=>focus({studentId:undefined})}>{locale==="ar"?"كل أطفالي":"Alle meine Kinder"}</button>}<button className="primary-button" type="submit">{text.apply}</button></form></details>}
+    {!staff&&<details className={css.disclosure}><summary>{locale==="ar"?"اختيار الشهر":"Monat auswählen"}</summary><form className="auth-form" onSubmit={apply}><FinanceDateField locale={locale} label={billingCopy[locale].period} type="month" value={draft.period??""} onChange={event=>patch("period",billingMonth.safeParse(event.target.value).data)}/>{filters.studentId&&<button type="button" className="plain-button" onClick={()=>focus({studentId:undefined})}>{locale==="ar"?"كل أطفالي":"Alle meine Kinder"}</button>}<button className="primary-button" type="submit">{text.apply}</button></form></details>}
   </section>;
 }
 

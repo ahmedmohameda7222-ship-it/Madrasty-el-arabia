@@ -1,6 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
@@ -118,7 +119,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         <button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button>
       </div>
     </div>:<form className="auth-form" onSubmit={(event)=>void showPreview(event)}>
-      <div className={css.fieldPair}><label>{text.period}<input dir="ltr" type="month" value={period} required onChange={(event)=>changePeriod(event.target.value)}/></label>
+      <div className={css.fieldPair}><FinanceDateField locale={locale} label={text.period} type="month" value={period} required onChange={(event)=>changePeriod(event.target.value)}/>
       <label>{locale==="ar"?"نوع الفاتورة":"Rechnungsart"}<select value={kind} onChange={(event)=>{
         const selected=event.target.value==="manual"?"manual":"monthly";
         setKind(selected);if(selected==="manual")setExplicit(true);setPicked([]);setInitialId(preferred);setManualKey(undefined);
@@ -129,7 +130,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         <option value="">{text.allClasses}</option>
         {current.classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
       </select></label>}
-      <label>{text.due}<input dir="ltr" type="date" value={dueDate} onChange={(event)=>setDueDate(event.target.value)}/></label>
+      <FinanceDateField locale={locale} label={text.due} type="date" value={dueDate} onChange={(event)=>setDueDate(event.target.value)}/>
       {kind==="monthly"&&<label className={css.checkRow}><input type="checkbox" checked={explicit} onChange={(event)=>setExplicit(event.target.checked)}/>{text.pupils}</label>}
       {!explicit&&<p className={css.secondary}>{locale==="ar"?"كل الطلبة المؤهلين":"Alle berechtigten Schüler"}</p>}
       {explicit&&<div className="auth-form">

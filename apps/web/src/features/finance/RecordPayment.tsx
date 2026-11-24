@@ -1,6 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
@@ -70,7 +71,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
         <div className={css.fieldPair}>
         {options.cashEnabled&&<label>{ar?"طريقة الدفع":"Zahlungsart"}<select value={method} onChange={event=>setMethod(event.target.value==="cash"?"cash":"bank")}><option value="cash">{text.cash}</option><option value="bank">{text.bank}</option></select></label>}
         {!options.cashEnabled&&<p>{text.bank}</p>}
-        <label>{text.received}<input type="date" dir="ltr" value={date} max={options.schoolDate} onChange={event=>setDate(event.target.value)} required/></label>
+        <FinanceDateField locale={locale} label={text.received} type="date" value={date} max={options.schoolDate} onChange={event=>setDate(event.target.value)} required/>
         </div>
         {method==="bank"&&<label>{text.reference}<input value={reference} maxLength={160} onChange={event=>setReference(event.target.value)} required/></label>}
         {rows.length>0&&<h2>{ar?"الفواتير المختارة":"Ausgewählte Rechnungen"}</h2>}

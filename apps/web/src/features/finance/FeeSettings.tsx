@@ -1,6 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
+import {FinanceDateField} from "./FinanceDateField";
 
 import {useState,type FormEvent} from "react";
 import {
@@ -58,7 +59,7 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
           <button className="plain-button" type="button" disabled={pending} onClick={()=>setPreview(undefined)}>{text.edit}</button>
         </div>
       </div>:<form className="auth-form" onSubmit={(event)=>{event.preventDefault();if(validated.success)setPreview(validated.data);}}>
-        <label>{text.effective}<input type="month" dir="ltr" value={month} min={options.schoolMonth} onChange={(event)=>setMonth(event.target.value)} required/></label>
+        <FinanceDateField locale={locale} label={text.effective} type="month" value={month} min={options.schoolMonth} onChange={(event)=>setMonth(event.target.value)} required/>
         <label>{text.dueDay}<input type="number" dir="ltr" min={1} max={31} value={day} onChange={(event)=>setDay(event.target.value)} required/></label>
         <label>{locale==="ar"?"الاشتراك الشهري لكل طالب":"Monatsbeitrag pro Schüler"} <bdi>{options.currency}</bdi><input dir="ltr" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} required/></label>
         <button className="primary-button" type="submit" disabled={!validated.success||month<options.schoolMonth}>{text.preview}</button>
@@ -105,7 +106,7 @@ function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnT
         <label>{text.guardian}<select value={guardian} onChange={(event)=>setGuardian(event.target.value)}>
           {profile.choices.map((item)=><option key={item.id} value={item.id}>{item.displayName}{!item.activeAccount?" · "+text.activeLater:""}</option>)}
         </select></label>
-        <label>{text.effective}<input type="month" dir="ltr" min={month} value={effective} onChange={(event)=>setEffective(event.target.value)} required/></label>
+        <FinanceDateField locale={locale} label={text.effective} type="month" min={month} value={effective} onChange={(event)=>setEffective(event.target.value)} required/>
       </>}
       <div className="header-actions">
         <button className="primary-button" type="submit" disabled={pending||!input.success||effective<month}>{pending?text.busy:review?text.save:text.preview}</button>

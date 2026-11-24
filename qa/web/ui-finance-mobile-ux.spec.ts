@@ -38,6 +38,16 @@ for (const scenario of scenarios) {
           }
           if(route==="invoices"&&scenario.persona==="guardian")await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
           if(route==="issue-invoices")await expect(page.getByRole("combobox",{name:scenario.locale==="ar"?"نوع الفاتورة":"Rechnungsart",exact:true})).toBeVisible();
+          if(["issue-invoices","record-payment","fee-settings","receipts?view=cashbook"].includes(route)){
+            const fields=page.locator('.school-content input:is([type=date],[type=month]):visible');
+            expect(await fields.count()).toBeGreaterThan(0);
+            for(const field of await fields.all()){
+              const hintId=await field.getAttribute("aria-describedby");
+              expect(hintId).toMatch(/^finance-date-/);
+              await expect(page.locator('[id="'+hintId+'"]')).toBeVisible();
+              await expect(field).toHaveAttribute("lang",scenario.locale==="ar"?"ar-EG":"de-DE");
+            }
+          }
           const file=route.replace(/[^a-z0-9-]/g,"-");
           await page.screenshot({path:"qa-artifacts/ui-after/finance-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled",fullPage:true});
           if(route==="issue-invoices"||route==="record-payment"){

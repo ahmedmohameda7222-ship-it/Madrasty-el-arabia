@@ -1,6 +1,8 @@
 package de.madrasty.app.finance
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,17 +33,30 @@ internal fun FinanceBalanceCard(label: String, amount: String) {
 
 @Composable
 internal fun FinanceRecordRow(title: String, subtitle: String, amount: String, status: String, onClick: () -> Unit) {
-    ListItem(
-        modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick),
-        headlineContent = { Text(title) },
-        supportingContent = { Text(subtitle) },
-        trailingContent = {
-            Column(horizontalAlignment = Alignment.End) {
-                Text(amount, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.End)
-                Text(status, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-            }
-        },
-    )
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val compact = maxWidth <= 400.dp
+        ListItem(
+            modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick),
+            headlineContent = { Text(title) },
+            supportingContent = {
+                if (compact) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(subtitle, modifier = Modifier.weight(1f))
+                        FinanceRecordAmount(amount, status)
+                    }
+                } else Text(subtitle)
+            },
+            trailingContent = if (compact) null else {{ FinanceRecordAmount(amount, status) }},
+        )
+    }
+}
+
+@Composable
+private fun FinanceRecordAmount(amount: String, status: String) {
+    Column(horizontalAlignment = Alignment.End) {
+        Text(amount, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.End)
+        Text(status, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+    }
 }
 
 @Composable
