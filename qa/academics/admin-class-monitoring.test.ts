@@ -131,8 +131,11 @@ test("Admin sees attendance rows only after approval, not while the sheet is ope
   const admin=await school.bearer("admin","admin");
   const teacher=await school.bearer("teacher","teacher");
   const {apple,ids}=await setUpCalendar(school,admin);
-  // Use a separate school day: other fixture tests assert clock.day is untouched.
-  const day=clock.homeworkDue;
+  // Use a distinct day in the current billing month, never a future month.
+  // A published roster is immutable. A later finance suite must be able to
+  // declare a next-month pause without corrupting this official evidence.
+  const dayOfMonth=Number(clock.day.slice(8,10));
+  const day=clock.month+"-"+String(dayOfMonth>2?dayOfMonth-2:dayOfMonth+2).padStart(2,"0");
   const daily=`/attendance/classes/${apple.id}/days/${day}`;
   const opened=(await fixtureApi(school,daily+"/open",{
     method:"POST",token:teacher,persona:"teacher",key:randomUUID(),body:{},status:[200,201]})).payload.data;
