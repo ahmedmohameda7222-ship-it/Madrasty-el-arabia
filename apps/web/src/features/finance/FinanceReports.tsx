@@ -12,7 +12,7 @@ import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,financeAmount} from "./invoice-ui";
 import {receiptCopy} from "./receipt-ui";
 import css from "./FinanceWorkspace.module.css";
-import {FinanceDateField} from "./FinanceDateField";
+import {FinanceDateField,financeDate} from "./FinanceDateField";
 import {FinanceOverview} from "./FinanceOverview";
 import {readFinanceReportContext,writeFinanceReportContext} from "./report-context";
 
@@ -31,8 +31,8 @@ const copy={
   de:{
     title:"Finanzübersicht",period:"Abrechnungsmonat",asOf:"Stand am",from:"Zahlungseingang ab",through:"Zahlungseingang bis",
     apply:"Bericht anzeigen",classes:"Klasse im Abrechnungsmonat",allClasses:"Alle Klassen",allPupils:"Alle Schüler im Bericht",
-    filteredPupil:"Ausgewählter Schüler",allStates:"Alle Status",overdue:"Überfällig",billed:"In Rechnung gestellt",collectible:"Einziehbare Gebühren",
-    applied:"Rechnungen zugeordnet",outstanding:"Offene Summe",late:"Überfällige Summe",received:"Erfasste Zahlungen",net:"Nettoeingang",
+    filteredPupil:"Ausgewählter Schüler",allStates:"Alle Status",overdue:"Überfällig",billed:"In Rechnung gestellt",collectible:"Sollbetrag",
+    applied:"Bezahlt",outstanding:"Offen",late:"Überfällig",received:"Erfasste Zahlungen",net:"Nettoeingang",
     matched:"Zahlungseingänge für angezeigte Rechnungen",reversed:"Aufgehobene Zuordnungen",voided:"Stornierte Zahlungen",refunded:"Erstattete Zahlungen",
     unmatched:"Für den Abgleich verfügbar",invoiceCount:"Anzahl Rechnungen",receiptCount:"Anzahl Belege",lateQueue:"Überfällige Rechnungen",
     matchQueue:"Aktueller Zahlungsabgleich",matchingScope:"Zahlungseingänge und verfügbare Beträge gelten schulweit nach Eingangsdatum.",
@@ -79,7 +79,7 @@ export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Loca
     {staff&&<details className={css.disclosure}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">
-        <label>{text.period}<input type="month" dir="ltr" aria-describedby="date-format-finance-month" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>
+        <FinanceDateField locale={locale} label={text.period} type="month" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/>
         {staff&&classChoices.length>0&&<label>{text.classes}<select value={draft.classId??""} onChange={(event)=>patch("classId",event.target.value||undefined)}>
           <option value="">{text.allClasses}</option>
           {classChoices.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe} · {item.yearStart.slice(0,4)}</option>)}
@@ -88,23 +88,14 @@ export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Loca
           <option value="">{text.allStates}</option>
           {financeReportStatus.options.map((key)=><option key={key} value={key}>{key==="overdue"?text.overdue:billingCopy[locale][key]}</option>)}
         </select></label>
-        <label>{text.asOf}<input type="date" dir="ltr" aria-describedby="date-format-finance-day" value={draft.asOf??""} max={summary.value?.data?.schoolDate}
-          onChange={(event)=>patch("asOf",event.target.value||undefined)}/></label>
+        <FinanceDateField locale={locale} label={text.asOf} type="date" value={draft.asOf??""} max={summary.value?.data?.schoolDate} onChange={(event)=>patch("asOf",event.target.value||undefined)}/>
       </div>
       <div className="header-actions">
-        <label>{text.from}<input type="date" dir="ltr" aria-describedby="date-format-finance-day" value={draft.receivedFrom??""} max={draft.receivedThrough}
-          onChange={(event)=>patch("receivedFrom",event.target.value||undefined)}/></label>
-        <label>{text.through}<input type="date" dir="ltr" aria-describedby="date-format-finance-day" min={draft.receivedFrom} value={draft.receivedThrough??""}
-          onChange={(event)=>patch("receivedThrough",event.target.value||undefined)}/></label>
+        <FinanceDateField locale={locale} label={text.from} type="date" value={draft.receivedFrom??""} max={draft.receivedThrough} onChange={(event)=>patch("receivedFrom",event.target.value||undefined)}/>
+        <FinanceDateField locale={locale} label={text.through} type="date" min={draft.receivedFrom} value={draft.receivedThrough??""} onChange={(event)=>patch("receivedThrough",event.target.value||undefined)}/>
         {filters.studentId&&<button type="button" className="plain-button" onClick={()=>focus({studentId:undefined})}>{text.allPupils}</button>}
         <button type="submit" className="primary-button" disabled={!financeReportQuery.safeParse(draft).success}>{text.apply}</button>
       </div>
-      <small className="date-format-hint" id="date-format-finance-day">{locale==="ar"
-        ?"تنسيق التاريخ المعروض يعتمد على المتصفح. مثال: ٣١/١٢/٢٠٢٦؛ يمكنك الاختيار من التقويم."
-        :"Das angezeigte Datumsformat hängt vom Browser ab. Beispiel: 31.12.2026; Datum im Kalender wählen."}</small>
-      <small className="date-format-hint" id="date-format-finance-month">{locale==="ar"
-        ?"تنسيق الشهر المعروض يعتمد على المتصفح. مثال: ١٢/٢٠٢٦؛ اختر الشهر والسنة."
-        :"Das angezeigte Monatsformat hängt vom Browser ab. Beispiel: 12.2026; Monat und Jahr auswählen."}</small>
     </form></details>}
     <TimetableRead locale={locale} result={summary}>{(data)=><ReportBody locale={locale} data={data} filters={filters}
       refresh={refresh} focus={focus}/>}</TimetableRead>
@@ -139,29 +130,28 @@ function ReportBody({locale,data,filters,refresh,focus}:{
   if(data.scope==="payer")return <>
     {data.totals.length===0&&<div className={css.panel}><h2>{locale==="ar"?"لا توجد فواتير بعد":"Noch keine Rechnungen"}</h2><p className={css.secondary}>{locale==="ar"?"هنا هتلاقي رسوم أطفالك ومدفوعاتك بعد إصدار الفواتير.":"Hier sehen Sie die Gebühren und Zahlungen Ihrer Kinder, sobald Rechnungen ausgestellt wurden."}</p></div>}
     {data.totals.map(value=><div key={value.currency} className={css.summaryGroup}>
-      <div className={css.balance}><small>{locale==="ar"?"المبلغ المتبقي":"Offener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(value.outstandingMinor,value.currency)}</bdi></strong></div>
-      <div className={css.metrics}>{([[locale==="ar"?"المطلوب":"Gebühren",value.collectibleMinor],[locale==="ar"?"المدفوع":"Bezahlt",value.appliedMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi dir="ltr">{financeAmount(amount,value.currency)}</bdi></strong></div>)}</div>
+      <div className={css.balance}><small>{locale==="ar"?"المبلغ المتبقي":"Offener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(value.outstandingMinor,value.currency,locale)}</bdi></strong></div>
+      <div className={css.metrics}>{([[locale==="ar"?"المطلوب":"Gebühren",value.collectibleMinor],[locale==="ar"?"المدفوع":"Bezahlt",value.appliedMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi dir="ltr">{financeAmount(amount,value.currency,locale)}</bdi></strong></div>)}</div>
     </div>)}
     <Link className="primary-button" href={`${root}/invoices${invoiceParams.size?"?"+invoiceParams.toString():""}`}>{locale==="ar"?"فواتيري":"Meine Rechnungen"}</Link>
     {data.totals.length>0&&<details className={css.disclosure}><summary>{locale==="ar"?"الفواتير والإيصالات":"Rechnungen und Belege"}</summary><AcademicPageItems locale={locale} page={page} emptyMessage={locale==="ar"?"لا توجد حركات مالية.":"Keine Buchungen."}>{rows=><ul className="group-list">{rows.map(item=><StatementLine key={item.kind+":"+item.id} locale={locale} item={item}/>)}</ul>}</AcademicPageItems></details>}
     {data.canExport&&<button type="button" className="plain-button" disabled={busy} onClick={()=>void download()}>{text.export}</button>}
     {failed&&<p role="alert">{text.exportFailed}</p>}
-    <p className={css.secondary}>{locale==="ar"?"حتى":"Stand"} · <bdi>{data.asOf}</bdi></p>
+    <p className={css.secondary}>{locale==="ar"?"حتى":"Stand"} · <bdi>{financeDate(data.asOf,locale)}</bdi></p>
   </>;
   return <>
-    <p>{text.asOf} · <bdi>{data.asOf}</bdi>{filters.studentId&&" · "+text.filteredPupil}</p>
+    <p>{text.asOf} · <bdi>{financeDate(data.asOf,locale)}</bdi>{filters.studentId&&" · "+text.filteredPupil}</p>
     <ConfirmedAt locale={locale} value={data.cutoff}/>
     {data.totals.map((value)=>{
-      const money=(label:string,amount:number|null)=>amount===null?null:<><dt>{label}</dt><dd><bdi dir="ltr">{financeAmount(amount,value.currency)}</bdi></dd></>;
+      const money=(label:string,amount:number|null)=>amount===null?null:<div><dt>{label}</dt><dd><bdi dir="ltr">{financeAmount(amount,value.currency,locale)}</bdi></dd></div>;
       return <div className={css.summaryGroup} key={value.currency}>
         <h2><bdi>{value.currency}</bdi></h2>
-        <div className={css.metrics}>{([[text.collectible,value.collectibleMinor],[text.applied,value.appliedMinor],[text.outstanding,value.outstandingMinor],[text.late,value.overdueMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi>{financeAmount(amount,value.currency)}</bdi></strong></div>)}</div>
+        <div className={css.metrics}>{([[text.collectible,value.collectibleMinor],[text.applied,value.appliedMinor],[text.outstanding,value.outstandingMinor],[text.late,value.overdueMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi>{financeAmount(amount,value.currency,locale)}</bdi></strong></div>)}</div>
         <div className={css.panel}><small>{locale==="ar"?"نسبة تحصيل الفواتير":"Zahlungsquote"}</small><strong>{value.collectibleMinor>0?Math.round(value.appliedMinor/value.collectibleMinor*100):0}%</strong><progress max={100} value={value.collectibleMinor>0?Math.min(100,value.appliedMinor/value.collectibleMinor*100):0}/></div>
-        <details className={css.disclosure}><summary>{locale==="ar"?"تفاصيل الحساب":"Weitere Kennzahlen"}</summary><dl className="account-values">
-          <dt>{text.invoiceCount}</dt><dd>{value.invoiceCount}</dd>
-          {money(text.billed,value.billedMinor)}{money(text.collectible,value.collectibleMinor)}
-          {money(text.applied,value.appliedMinor)}{money(text.outstanding,value.outstandingMinor)}{money(text.late,value.overdueMinor)}
-          <dt>{text.receiptCount}</dt><dd>{value.receiptCount}</dd>
+        <details className={css.disclosure}><summary>{locale==="ar"?"تفاصيل الحساب":"Weitere Kennzahlen"}</summary><dl className={css.valueRows}>
+          <div><dt>{text.invoiceCount}</dt><dd>{value.invoiceCount}</dd></div>
+          {money(text.billed,value.billedMinor)}
+          <div><dt>{text.receiptCount}</dt><dd>{value.receiptCount}</dd></div>
           {money(text.received,value.receivedMinor)}{money(text.net,value.netReceivedMinor)}{money(text.matched,value.matchedReceivedMinor)}
           {money(text.reversed,value.reversedMinor)}{money(text.voided,value.voidedMinor)}{money(text.refunded,value.refundedMinor)}
           {money(text.unmatched,value.unmatchedMinor)}
@@ -184,7 +174,7 @@ function ReportBody({locale,data,filters,refresh,focus}:{
 }
 
 function StatementLine({locale,item,focus}:{locale:Locale;item:FinanceStatementEntry;focus?:(values:Partial<FinanceReportQuery>)=>void}){
-  const text=copy[locale],root=`/${locale}/school/more`,number=(amount:number)=><bdi dir="ltr">{financeAmount(amount,item.currency)}</bdi>;
+  const text=copy[locale],root=`/${locale}/school/more`,number=(amount:number)=><bdi dir="ltr">{financeAmount(amount,item.currency,locale)}</bdi>;
   const status=item.state==="overdue"?text.overdue:item.state in receiptCopy[locale]
     ?receiptCopy[locale][item.state as "allocated"|"needs_matching"|"voided"]:billingCopy[locale][item.state as "unpaid"|"partial"|"paid"|"cancelled"];
   return <li className="timetable-day auth-form">
@@ -197,9 +187,9 @@ function StatementLine({locale,item,focus}:{locale:Locale;item:FinanceStatementE
     <div className="header-actions">
       {item.invoiceId&&<Link href={`${root}/invoices?invoice=${item.invoiceId}`}><bdi>{item.invoiceNumber}</bdi></Link>}
       {item.receiptId&&<Link href={`${root}/receipts?receipt=${item.receiptId}`}><bdi>{item.receiptNumber}</bdi></Link>}
-      {item.period&&<bdi>{item.period}</bdi>}
+      {item.period&&<bdi>{financeDate(item.period,locale,"month")}</bdi>}
     </div>
     <ConfirmedAt locale={locale} value={item.occurredAt}/>
-    {item.receivedDate&&<p>{receiptCopy[locale].received} · <bdi>{item.receivedDate}</bdi></p>}
+    {item.receivedDate&&<p>{receiptCopy[locale].received} · <bdi>{financeDate(item.receivedDate,locale)}</bdi></p>}
   </li>;
 }

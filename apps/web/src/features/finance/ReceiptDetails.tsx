@@ -22,7 +22,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
     <Link className="plain-button" href={`${root}/${staff?"receipts":"invoices"}`}>{text.back}</Link>
     {notice&&<p role="status">{notice}</p>}
     <TimetableRead locale={locale} result={details}>{(item)=>{
-      const money=(value:number)=><bdi dir="ltr">{financeAmount(value,item.currency)}</bdi>;
+      const money=(value:number)=><bdi dir="ltr">{financeAmount(value,item.currency,locale)}</bdi>;
       return <div className="auth-form">
         <h2><bdi>{item.receiptNumber}</bdi></h2>
         <a className="plain-button" href={`/api/v1/finance/receipts/${item.id}/pdf?locale=${locale}`} download>{locale==="ar"?"تحميل إثبات السداد PDF":"Zahlungsbestätigung als PDF"}</a>
@@ -76,7 +76,7 @@ function ReceiptActions({locale,item,refresh}:{locale:Locale;item:ReceiptStaffDe
   let candidate:Proposal|undefined;
   if(tab==="allocate"&&allocation.success&&total<=item.remainderMinor)candidate={endpoint:"allocations",input:allocation.data};
   if(tab!=="allocate"&&reversal.success)candidate={endpoint:"reversals",input:reversal.data};
-  const money=(value:number)=><bdi dir="ltr">{financeAmount(value,currency)}</bdi>;
+  const money=(value:number)=><bdi dir="ltr">{financeAmount(value,currency,locale)}</bdi>;
   const amountText=(value:number)=>financeAmount(value,currency).split(" ")[0];
   function choose(selectedTab:typeof tab){
     setTab(selectedTab);setPreview(undefined);setError("");

@@ -1,7 +1,7 @@
 name: UI remediation - isolated static verification
 on:
   push:
-    branches: ["fix/emil-ui-motion-audit-2026-11-21", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "fix/calendar-dark-theme-header-spacing-2026-11-23", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24"]
+    branches: ["fix/emil-ui-motion-audit-2026-11-21", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "fix/calendar-dark-theme-header-spacing-2026-11-23", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24"]
   # Feature-branch push already covers draft PR updates; avoid duplicate disposable Supabase jobs.
 permissions:
   contents: read
@@ -120,3 +120,47 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
           pnpm exec playwright test --config qa/ui-compatibility.config.ts
+
+  finance-ios-webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install pinned dependencies and WebKit
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps webkit
+      - name: Start isolated school and run iPhone-emulated WebKit finance
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pwsh -NoProfile -File qa/start-stack.ps1
+          mkdir -p qa-artifacts/server
+          # Keep the established restricted local HTTP fixture environment.
+          # Each independent screenshot route opens in a fresh page to isolate dev HMR.
+          pwsh -NoProfile -File qa/local.ps1 -Serve > qa-artifacts/server/webkit.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm exec playwright test --config qa/ui-finance-ios.config.ts
+      - name: Preserve WebKit finance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrasty-finance-ios-webkit
+          path: |
+            qa-artifacts/ui-finance-ios-results.json
+            qa-artifacts/ui-finance-ios-test-results/
+            qa-artifacts/ui-after/finance-*
+          retention-days: 7
+          if-no-files-found: warn

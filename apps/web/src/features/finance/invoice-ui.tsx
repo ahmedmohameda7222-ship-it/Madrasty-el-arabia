@@ -1,4 +1,5 @@
 "use client";
+import css from "./FinanceWorkspace.module.css";
 
 import type {FeeLine,Locale} from "@madrasty/contracts";
 
@@ -48,7 +49,8 @@ const digits=(value:string)=>value.replace(/[٠-٩۰-۹]/g,(digit)=>String(
 function currencyDigits(currency:string){
   return new Intl.NumberFormat("en",{style:"currency",currency}).resolvedOptions().maximumFractionDigits??2;
 }
-export function financeAmount(amount:number,currency:string){
+export function financeAmount(amount:number,currency:string,locale?:Locale){
+  if(locale)return new Intl.NumberFormat(locale==="ar"?"ar-EG":"de-DE",{style:"currency",currency}).format(amount/10**currencyDigits(currency));
   const places=currencyDigits(currency),denominator=10n**BigInt(places),value=BigInt(amount);
   return (value/denominator).toString()+(places?"."+(value%denominator).toString().padStart(places,"0"):"")+" "+currency;
 }
@@ -88,7 +90,7 @@ export function FeeLinesEditor({locale,lines,update,currency,busy=false}:{
 }
 
 export function FeeLines({locale,lines,currency}:{locale:Locale;lines:FeeLine[];currency:string}){
-  return <ul className="group-list">{lines.map((line,index)=><li className="group-row" key={index}>
-    <bdi>{locale==="ar"?line.titleAr:line.titleDe}</bdi><bdi dir="ltr">{financeAmount(line.amountMinor,currency)}</bdi>
+  return <ul className={css.feeLines}>{lines.map((line,index)=><li key={index}>
+    <bdi>{locale==="ar"?line.titleAr:line.titleDe}</bdi><bdi dir="ltr">{financeAmount(line.amountMinor,currency,locale)}</bdi>
   </li>)}</ul>;
 }

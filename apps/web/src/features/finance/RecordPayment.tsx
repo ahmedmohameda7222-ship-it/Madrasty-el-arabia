@@ -61,9 +61,9 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
       <Link className="plain-button" href={`/${locale}/school/more/receipts?receipt=${receipt.id}`}>{text.open}</Link></div>}
     {preview?<div className="auth-form">
       <p>{text[preview.method]} · <bdi>{preview.receivedDate}</bdi></p>
-      <div className={css.balance}><small>{ar?"المبلغ المستلم":"Erhaltener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(preview.amountMinor,currency)}</bdi></strong></div>
-      {rows.map(r=><p key={r.invoice.id}><bdi>{r.invoice.studentName}</bdi> · <bdi>{r.invoice.invoiceNumber}</bdi> · <bdi>{financeAmount(inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)??0,currency)}</bdi></p>)}
-      <p>{text.remainder} · <bdi>{financeAmount(preview.amountMinor-assigned,currency)}</bdi></p>
+      <div className={css.balance}><small>{ar?"المبلغ المستلم":"Erhaltener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(preview.amountMinor,currency,locale)}</bdi></strong></div>
+      {rows.map(r=><p key={r.invoice.id}><bdi>{r.invoice.studentName}</bdi> · <bdi>{r.invoice.invoiceNumber}</bdi> · <bdi>{financeAmount(inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)??0,currency,locale)}</bdi></p>)}
+      <p>{text.remainder} · <bdi>{financeAmount(preview.amountMinor-assigned,currency,locale)}</bdi></p>
       <div className={css.formAction}><button type="button" className="primary-button" disabled={busy} onClick={()=>void confirm()}>{text.confirm}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button></div>
     </div>:<>
       <form className="auth-form" onSubmit={prepare}>
@@ -77,13 +77,13 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
         {rows.length>0&&<h2>{ar?"الفواتير المختارة":"Ausgewählte Rechnungen"}</h2>}
         {rows.map((r,i)=><div key={r.invoice.id} className="timetable-day auth-form">
           <p><bdi>{r.invoice.studentName}</bdi> · <bdi>{r.invoice.period}</bdi> · <bdi>{r.invoice.invoiceNumber}</bdi></p>
-          <p>{billingCopy[locale].balance} · <bdi>{financeAmount(r.invoice.balanceMinor,currency)}</bdi></p>
+          <p>{billingCopy[locale].balance} · <bdi>{financeAmount(r.invoice.balanceMinor,currency,locale)}</bdi></p>
           <label>{text.amount}<input dir="ltr" inputMode="decimal" value={r.amount} onChange={e=>setRows(list=>list.map((x,j)=>i===j?{...x,amount:e.target.value}:x))}/></label>
           <button type="button" className="plain-button" onClick={()=>setRows(list=>list.filter((_,j)=>i!==j))}>{text.remove}</button>
         </div>)}
         <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)"}</button>
-        {rows.length>0&&<p className={css.secondary}>{text.applied} · <bdi>{financeAmount(assigned,currency)}</bdi></p>}
-        {received!==null&&received>assigned&&<p className={css.secondary}>{text.remainder} · <bdi>{financeAmount(received-assigned,currency)}</bdi></p>}
+        {rows.length>0&&<p className={css.secondary}>{text.applied} · <bdi>{financeAmount(assigned,currency,locale)}</bdi></p>}
+        {received!==null&&received>assigned&&<p className={css.secondary}>{text.remainder} · <bdi>{financeAmount(received-assigned,currency,locale)}</bdi></p>}
         <label className={css.checkRow}><input type="checkbox" checked={verified} onChange={event=>setVerified(event.target.checked)}/>{text.verification}</label>
         <div className={css.formAction}><button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button></div>
       </form>

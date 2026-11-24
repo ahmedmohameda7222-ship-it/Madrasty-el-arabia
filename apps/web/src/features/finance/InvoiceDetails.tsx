@@ -1,7 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
-import {FinanceDateField} from "./FinanceDateField";
+import {FinanceDateField,financeDate} from "./FinanceDateField";
 
 import Link from "next/link";
 import {useState} from "react";
@@ -24,25 +24,39 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
   return <section className={`${css.workspace} auth-form`}>
     <h1>{text.invoices}</h1>
     {invoice?<><Link className="plain-button" href={root}>{text.back}</Link>
-      <TimetableRead locale={locale} result={details}>{(item)=><div className="auth-form">
-        <h2><bdi>{item.studentName}</bdi></h2><div className={css.balance}><small>{text.balance}</small><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></strong><span>{text[item.state]}</span></div><p className={css.secondary}><bdi>{item.invoiceNumber}</bdi></p>
-        <a className="plain-button" href={`/api/v1/finance/invoices/${item.id}/pdf?locale=${locale}`} download>{locale==="ar"?"تحميل الفاتورة PDF":"Rechnung als PDF"}</a>
-        <p><bdi>{item.studentNumber}</bdi> · <bdi>{item.period}</bdi> · {text[item.kind]}</p>
-        <p>{text.payer} · <bdi>{item.payerName}</bdi></p>
-        <p>{text.due} · <bdi>{item.dueDate}</bdi> · {text[item.state]}</p>
-        <ConfirmedAt locale={locale} value={item.issuedAt}/>
+      <TimetableRead locale={locale} result={details}>{(item)=><div className={css.invoiceDetail}>
+        <p className={css.secondary}>{text[item.kind]} · <bdi>{financeDate(item.period,locale,"month")}</bdi></p>
+        <div className={css.invoiceBalance}>
+          <small>{text.balance}</small>
+          <strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency,locale)}</bdi></strong>
+          <span className={css.statePill} data-state={item.state}>{text[item.state]}</span>
+          <small>{text.due} · <bdi>{financeDate(item.dueDate,locale)}</bdi></small>
+        </div>
+        <div className={css.invoiceActions}>
+          {canPost&&item.state!=="cancelled"&&<Link className="primary-button" href={`/${locale}/school/more/record-payment?invoice=${item.id}`}>{receiptCopy[locale].record}</Link>}
+          <a className="plain-button" href={`/api/v1/finance/invoices/${item.id}/pdf?locale=${locale}`} download>
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>
+            {locale==="ar"?"تحميل الفاتورة PDF":"Rechnung als PDF"}</a>
+        </div>
+        <dl className={css.valueRows}>
+          <div><dt>{locale==="ar"?"الطالب":"Schüler"}</dt><dd><bdi>{item.studentName}</bdi><small><bdi>{item.studentNumber}</bdi></small></dd></div>
+          <div><dt>{locale==="ar"?"رقم الفاتورة":"Rechnungsnummer"}</dt><dd><bdi>{item.invoiceNumber}</bdi></dd></div>
+          <div><dt>{text.payer}</dt><dd><bdi>{item.payerName}</bdi></dd></div>
+        </dl>
         <FeeLines locale={locale} lines={item.lines} currency={item.currency}/>
-        <p>{text.total} · <bdi dir="ltr">{financeAmount(item.totalMinor,item.currency)}</bdi></p>
-        <p>{text.allocated} · <bdi dir="ltr">{financeAmount(item.allocatedMinor,item.currency)}</bdi></p>
-        {item.paymentInstructions&&<TransferDetails locale={locale} details={item.paymentInstructions}/>}
-        {item.issueInstructions&&<details><summary>{text.issueSnapshot}</summary><TransferDetails locale={locale} details={item.issueInstructions}/></details>}
-        {!item.paymentInstructions&&item.balanceMinor>0&&item.state!=="cancelled"&&<p>{locale==="ar"?"السداد نقدًا لدى المدرسة":"Barzahlung bei der Schule"}</p>}
-        {item.receiptIds.length>0&&<ul className="group-list">{item.receiptIds.map((id,index)=><li key={id}>
-          <Link className="plain-button" href={`/${locale}/school/more/receipts?receipt=${id}`}>{receiptCopy[locale].open} {index+1}</Link>
+        <dl className={css.valueRows}>
+          <div><dt>{text.total}</dt><dd><bdi dir="ltr">{financeAmount(item.totalMinor,item.currency,locale)}</bdi></dd></div>
+          <div><dt>{text.allocated}</dt><dd><bdi dir="ltr">{financeAmount(item.allocatedMinor,item.currency,locale)}</bdi></dd></div>
+        </dl>
+        {item.paymentInstructions&&(staff?<details className={css.disclosure}><summary>{locale==="ar"?"بيانات التحويل الحالية":"Aktuelle Überweisungsdaten"}</summary><TransferDetails locale={locale} details={item.paymentInstructions} showTitle={false} guidance={false}/></details>:<TransferDetails locale={locale} details={item.paymentInstructions}/>)}
+        {item.issueInstructions&&<details className={css.disclosure}><summary>{text.issueSnapshot}</summary><TransferDetails locale={locale} details={item.issueInstructions} showTitle={false} guidance={false}/></details>}
+        {!item.paymentInstructions&&item.balanceMinor>0&&item.state!=="cancelled"&&<p className={css.secondary}>{locale==="ar"?"السداد نقدًا لدى المدرسة":"Barzahlung bei der Schule"}</p>}
+        {item.receiptIds.length>0&&<ul className={css.recordList}>{item.receiptIds.map((id,index)=><li key={id}>
+          <Link className={css.recordRow} href={`/${locale}/school/more/receipts?receipt=${id}`}><span>{receiptCopy[locale].open} {index+1}</span><span className={css.chevron} aria-hidden="true"/></Link>
         </li>)}</ul>}
-        {canPost&&item.state!=="cancelled"&&<Link className="plain-button" href={`/${locale}/school/more/record-payment?invoice=${item.id}`}>{receiptCopy[locale].record}</Link>}
         {item.canInquire&&<StartConversation locale={locale} label={text.ask} target={{kind:"office",id:"accounts"}}
           context={{kind:"invoice",id:item.id}}/>}
+        <ConfirmedAt locale={locale} value={item.issuedAt}/>
       </div>}</TimetableRead>
     </>:<>
       {canIssue&&<Link className="primary-button" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"+ إصدار فاتورة":"+ Neue Rechnung"}</Link>}
@@ -58,7 +72,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
       </div></details>
       <AcademicPageItems locale={locale} page={list} emptyMessage={locale==="ar"?(staff?"لا توجد فواتير تطابق الاختيار.":"لا توجد فواتير لأطفالك في الفترة المختارة. ستظهر هنا عند إصدارها."):(staff?"Keine Rechnungen für diese Auswahl.":"Hier erscheinen die Rechnungen Ihrer Kinder, sobald sie ausgestellt sind.")}>{(invoices)=><ul className={css.recordList}>
         {invoices.map((item)=><li key={item.id}>
-          <Link className={`${css.recordRow} ${css.invoiceRow}`} href={`${root}?invoice=${item.id}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{item.period}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
+          <Link className={`${css.recordRow} ${css.invoiceRow}`} href={`${root}?invoice=${item.id}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency,locale)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
         </li>)}
       </ul>}</AcademicPageItems>
     </>}

@@ -25,7 +25,7 @@ export function Cashbook({locale}:{locale:Locale}){
   </section>;
 }
 function CashbookContents({locale,data,refresh}:{locale:Locale;data:CashbookMonth;refresh:()=>void}){
-  const t=copy[locale],money=(n:number)=>financeAmount(Math.abs(n),data.currency),signed=(n:number)=>(n<0?"−":"+")+money(n);
+  const t=copy[locale],money=(n:number)=>financeAmount(Math.abs(n),data.currency,locale),signed=(n:number)=>(n<0?"−":"+")+money(n);
   return <>
     <div className={css.balance}><span>{t.balance}</span><strong><bdi>{data.balanceMinor<0?"−":""}{money(data.balanceMinor)}</bdi></strong></div>
     <div className={css.metrics}>{([["in",data.incomeMinor],["out",data.expenseMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div>
@@ -54,7 +54,7 @@ function CashMovement({locale,data,refresh}:{locale:Locale;data:CashbookMonth;re
     {message&&<p role="status">{message}</p>}
     {!open?<button className="primary-button" type="button" onClick={()=>{setOpen(true);setMessage("");}}>{t.new}</button>:<form className="auth-form" onSubmit={save}>
       {error&&<p role="alert">{error}</p>}
-      {preview?<><p>{t[kind]} · <bdi>{date}</bdi> · <bdi>{financeAmount(input.data?.amountMinor??0,data.currency)}</bdi></p><p>{description}</p></>:<>
+      {preview?<><p>{t[kind]} · <bdi>{date}</bdi> · <bdi>{financeAmount(input.data?.amountMinor??0,data.currency,locale)}</bdi></p><p>{description}</p></>:<>
         <label>{t.type}<select value={kind} onChange={e=>setKind(cashMovementKind.parse(e.target.value))}>{cashMovementKind.options.map(k=><option key={k} value={k}>{t[k]}</option>)}</select></label>
         <FinanceDateField locale={locale} label={t.date} type="date" max={data.schoolDate} value={date} onChange={e=>setDate(e.target.value)}/>
         <label>{t.amount}<input inputMode="decimal" dir="ltr" value={amount} onChange={e=>setAmount(e.target.value)}/></label>

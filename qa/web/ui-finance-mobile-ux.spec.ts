@@ -1,6 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { schoolFixtures } from "../fixtures/school";
+import { setUpCalendar } from "../fixtures/calendar";
+import { fixtureApi } from "../support/api";
 import { localOrigin } from "../support/target";
 
 const scenarios = [
@@ -12,12 +14,18 @@ const scenarios = [
 for (const scenario of scenarios) {
   test.describe("finance locale "+scenario.actor+" "+scenario.locale,()=>{
   test.use({locale:scenario.locale==="ar"?"ar-EG":"de-DE"});
-  test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({page, context}) => {
+  test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({context,browserName}) => {
     test.setTimeout(360_000);
     const school = schoolFixtures();
     try {
       await school.seed();
       const token = await school.bearer(scenario.actor, scenario.persona);
+      // This dedicated WebKit job starts with a new disposable school, unlike
+      // the shared Chromium suite. Cashbook needs a configured school currency.
+      if(browserName==="webkit"&&scenario.persona==="admin"){
+        await setUpCalendar(school,token);
+        await fixtureApi(school,"/finance/cashbook",{token,persona:"admin"});
+      }
       await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
       mkdirSync("qa-artifacts/ui-after", {recursive:true});
       const routes = scenario.persona === "admin"
@@ -25,6 +33,8 @@ for (const scenario of scenarios) {
         : ["finance-reports","invoices"];
       for (const route of routes) {
         for (const [width,theme] of [[390,"light"],[320,"dark"],[430,"light"],[1280,"light"]] as const) {
+          const page=await context.newPage();
+          try {
           await page.setViewportSize({width,height:844});
           await page.emulateMedia({colorScheme:theme,reducedMotion:"reduce"});
           const response=await page.goto("/"+scenario.locale+"/school/more/"+route);
@@ -32,20 +42,36 @@ for (const scenario of scenarios) {
           await expect(page.locator(".school-content h1").first()).toBeVisible();
           await expect(page.locator('.school-content [data-async-state="loading"]')).toHaveCount(0);
           expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
+          if(route==="receipts?view=cashbook")await expect(page.locator('.school-content [data-async-state="error"],.school-content [data-async-state="forbidden"]')).toHaveCount(0);
           if(route==="fee-settings"){
+            await expect(page.getByRole("switch",{name:scenario.locale==="ar"?"إصدار تلقائي":"Automatisch ausstellen"})).toBeVisible();
             await expect(page.locator(".school-content h1")).toHaveCount(1);
             await expect(page.getByRole("heading",{name:scenario.locale==="ar"?"الفواتير الشهرية التلقائية":"Automatische Monatsrechnungen",exact:true})).toHaveCount(1);
           }
           if(route==="invoices"&&scenario.persona==="guardian")await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
           if(route==="issue-invoices")await expect(page.getByRole("combobox",{name:scenario.locale==="ar"?"نوع الفاتورة":"Rechnungsart",exact:true})).toBeVisible();
-          if(["issue-invoices","record-payment","fee-settings","receipts?view=cashbook"].includes(route)){
+          if(route==="finance-reports"&&scenario.persona==="admin"){
+            await page.getByText(scenario.locale==="ar"?"تصفية التقرير":"Bericht filtern",{exact:true}).click();
+          }
+          if(["issue-invoices","record-payment","fee-settings","receipts?view=cashbook"].includes(route)||(route==="finance-reports"&&scenario.persona==="admin")){
             const fields=page.locator('.school-content input:is([type=date],[type=month]):visible');
+            await expect(fields.first(),route+" must render a date field").toBeVisible();
             expect(await fields.count()).toBeGreaterThan(0);
             for(const field of await fields.all()){
               const hintId=await field.getAttribute("aria-describedby");
               expect(hintId).toMatch(/^finance-date-/);
               await expect(page.locator('[id="'+hintId+'"]')).toBeVisible();
               await expect(field).toHaveAttribute("lang",scenario.locale==="ar"?"ar-EG":"de-DE");
+              const fit=await field.evaluate(el=>{
+                const box=el.getBoundingClientRect(),label=el.closest("label")!.getBoundingClientRect();
+                const container=el.closest(".school-content")!.getBoundingClientRect();
+                return box.left>=label.left-1&&box.right<=label.right+1&&box.left>=container.left-1&&box.right<=container.right+1;
+              });
+              expect(fit,"native field must fit its label, not just the viewport").toBe(true);
+              const visual=page.locator('[id="'+hintId+'"]');
+              await expect(visual).not.toBeEmpty();
+              if(await field.inputValue()==="")await expect(visual).toContainText(scenario.locale==="ar"?/اختر/:/wählen/);
+              else if(scenario.locale==="de")await expect(visual).not.toContainText(/December|October|January|February/);
             }
           }
           const file=route.replace(/[^a-z0-9-]/g,"-");
@@ -62,6 +88,10 @@ for (const scenario of scenarios) {
               });
               expect(fits,"fee settings label stays inside its own touch target").toBe(true);
             }
+            if(width>=320&&width<=430){
+              const a=await tariff.boundingBox(),b=await payer.boundingBox();
+              expect(Math.abs(a!.y-b!.y),"compact fee tabs share one row").toBeLessThanOrEqual(1);
+            }
             await payer.scrollIntoViewIfNeeded();
             await expect(payer).toBeInViewport();
             await page.screenshot({path:"qa-artifacts/ui-after/finance-action-"+scenario.actor+"-"+scenario.locale+"-fee-settings-"+width+"-"+theme+".png",animations:"disabled"});
@@ -74,6 +104,7 @@ for (const scenario of scenarios) {
             expect(visible).toBe(true);
             await page.screenshot({path:"qa-artifacts/ui-after/finance-action-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled"});
           }
+          } finally { await page.close(); }
         }
       }
     } finally { await school.close(); }
