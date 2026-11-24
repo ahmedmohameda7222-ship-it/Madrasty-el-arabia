@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_title">Profil</string>
+    <string name="profile_welcome">Hallo</string>
+    <string name="profile_welcome_name">Hallo, %1$s</string>
+    <string name="profile_mine">Meine Daten</string>
+    <string name="profile_children">Meine Kinder</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_birth">Geburtsdatum</string>
+    <string name="profile_choose_date">Datum auswählen</string>
+    <string name="profile_clear">Datum entfernen</string>
+    <string name="profile_age">Alter: %1$d Jahre</string>
+    <string name="profile_phone">Handynummer</string>
+    <string name="profile_address">Wohnadresse für Notfälle (optional)</string>
+    <string name="profile_save">Speichern</string>
+    <string name="profile_reload">Daten aktualisieren</string>
+</resources>

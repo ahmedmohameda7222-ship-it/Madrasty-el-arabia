@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_title">الملف الشخصي</string>
+    <string name="profile_welcome">مرحبًا</string>
+    <string name="profile_welcome_name">مرحبًا، %1$s</string>
+    <string name="profile_mine">بياناتي</string>
+    <string name="profile_children">أبنائي</string>
+    <string name="profile_name">الاسم</string>
+    <string name="profile_birth">تاريخ الميلاد</string>
+    <string name="profile_choose_date">اختر التاريخ</string>
+    <string name="profile_clear">حذف التاريخ</string>
+    <string name="profile_age">العمر: %1$d سنة</string>
+    <string name="profile_phone">رقم الهاتف</string>
+    <string name="profile_address">عنوان المنزل للطوارئ (اختياري)</string>
+    <string name="profile_save">حفظ</string>
+    <string name="profile_reload">تحديث البيانات</string>
+</resources>

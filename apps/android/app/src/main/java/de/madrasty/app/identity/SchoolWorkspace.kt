@@ -92,6 +92,7 @@ import org.json.JSONObject
 internal sealed interface WorkspacePage {
     data object Tabs : WorkspacePage
     data object Account : WorkspacePage
+    data object Profile : WorkspacePage
     data object Security : WorkspacePage
     data object Directory : WorkspacePage
     data class Thread(val id:String) : WorkspacePage
@@ -322,6 +323,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
     }
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)
+        WorkspacePage.Profile -> ProfileScreen(model,state::back)
         WorkspacePage.Account -> AccountScreen(model,state::back) { state.open(WorkspacePage.Security) }
         WorkspacePage.Security -> SecurityScreen(model,session,state::back)
         WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
@@ -396,7 +398,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
     SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,notificationAction={
         NotificationAction(model){state.open(WorkspacePage.Notifications())}
     }){tab->
-        Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
+        if(tab!=SchoolTab.Home)Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
         when(tab){
             SchoolTab.Home -> SchoolHomeScreen(
                 model,session.actor.persona,state.workDate,{state.workDate=it},
@@ -454,6 +456,7 @@ private fun FamilyWorkspace(model:IdentityViewModel,page:WorkspacePage.Family,cl
 @Composable
 private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:SchoolNavigation,rights:SchoolRights){
     SettingsGroup(R.string.settings_group_account) {
+        OpenPage(state,WorkspacePage.Profile,R.string.profile_title)
         OpenPage(state,WorkspacePage.Security,R.string.security)
         OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
         OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)

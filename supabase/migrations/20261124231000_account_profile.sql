@@ -22,7 +22,7 @@ language plpgsql security definer set search_path=pg_catalog
 as $$
 declare next_revision integer;
 begin
-  if not app.guard_actor() or app.actor_persona() is distinct from 'guardian'::app.persona then
+  if app.guard_actor() is not true or app.actor_persona() is distinct from 'guardian'::app.persona then
     raise exception 'Access denied' using errcode='42501';
   end if;
   if birthday is not null and (birthday < date '1900-01-01' or birthday > current_date) then

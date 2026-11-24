@@ -33,6 +33,7 @@ import de.madrasty.app.api.WirePage
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.loadAccountSurface
+import de.madrasty.app.identity.ProfileGreeting
 import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.Persona
@@ -88,6 +89,7 @@ fun SchoolHomeScreen(
     val locales = LocalConfiguration.current.locales
     val language = locales[0].language
     val refresh = foregroundVersion()
+    ProfileGreeting(model,refresh)
     when (persona) {
         Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,openSetup,
             openMore,addGuardian,openEvents,openNews,openIssue,openAnnouncement,language,refresh)
