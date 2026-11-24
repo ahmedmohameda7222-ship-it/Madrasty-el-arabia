@@ -1,7 +1,6 @@
 import "server-only";
 import sharp from "sharp";
-import { createRequire } from "node:module";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import type { InvoiceDetail, ReceiptDetail, Locale, CashbookMonth } from "@madrasty/contracts";
 
@@ -21,8 +20,7 @@ const pair=(text:string,value:string):Block=>({text,value});
 const heading=(text:string):Block=>({text,size:31,bold:true,color:accent,gap:22});
 
 async function fontPath(){
-  const require=createRequire(join(process.cwd(),"package.json"));
-  const root=dirname(require.resolve("@fontsource/ibm-plex-sans-arabic/package.json"));
+  const root=join(process.cwd(),"node_modules","@fontsource","ibm-plex-sans-arabic");
   const arabic=join(root,"files","ibm-plex-sans-arabic-arabic-400-normal.woff2");
   // Register both subsets with Pango before drawing mixed-language records.
   await sharp({text:{text:"Madrasty",font:"IBM Plex Sans Arabic 22",fontfile:join(root,"files","ibm-plex-sans-arabic-latin-400-normal.woff2"),rgba:true}}).png().toBuffer();
