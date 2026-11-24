@@ -66,33 +66,28 @@ export default async function SchoolPage({ params, searchParams }: {
               href={`/${locale}/school/more/timetable`}>{locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}</Link>}
             {session.activePersona==="teacher" && <Link className="more-row" href={`/${locale}/school/more/attendance`}>{locale === "ar" ? "مراجعة الحضور" : "Anwesenheit prüfen"}</Link>}
           </div></MoreGroup>}
-        {(placement || calendar || academic || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
+        {(placement || calendar || academic || stopManager || session.activePersona==="guardian") && <MoreGroup group="admissions"><summary>{locale==="ar"?"القيد وشؤون الطلبة":"Aufnahme und Schulverwaltung"}</summary><div className="more-rows">
             {(calendar || placement || academic) && <Link className="more-row" href={`/${locale}/school/more/classes`}>{locale === "ar" ? "الفصول وقيد الطلبة" : "Klassen und Einschreibungen"}</Link>}
             {calendar && <Link className="more-row" href={`/${locale}/school/more/calendar`}>{locale === "ar" ? "السنة الدراسية والتقويم" : "Schuljahr und Kalender"}</Link>}
+            {(stopManager||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/enrollment-stops`}>{locale==="ar"?"التوقف المؤقت":"Teilnahmepausen"}</Link>}
           </div>
         </MoreGroup>}
-        {(finance||billing||posting||stopManager||session.activePersona==="guardian")&&<MoreGroup group="finance">
+        {(finance||billing||posting||bank||session.activePersona==="guardian")&&<MoreGroup group="finance">
           <summary>{locale==="ar"?"الحسابات":"Buchhaltung"}</summary>
           <div className="more-rows">
+            {(finance||posting||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/finance-reports`}>{locale==="ar"?"نظرة مالية":"Finanzübersicht"}</Link>}
             {(finance||billing||posting||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/invoices`}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>}
-            {(stopManager||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/enrollment-stops`}>{locale==="ar"?"وقف القيد":"Teilnahmepause"}</Link>}
-            {(finance||posting)&&<Link className="more-row" href={`/${locale}/school/more/stop-reviews`}>{locale==="ar"?"تسويات وقف القيد":"Gebühren bei Teilnahmepausen"}</Link>}
-            {(finance||posting||session.activePersona==="guardian")&&<Link className="more-row"
-              href={`/${locale}/school/more/finance-reports`}>{locale==="ar"?"كشف الحساب":"Gebührenübersicht"}</Link>}
-            {(finance||posting)&&<Link className="more-row" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"مطابقة الإيصالات":"Zahlungen abgleichen"}</Link>}
-            {posting&&<Link className="more-row" href={`/${locale}/school/more/record-payment`}>{locale==="ar"?"تسجيل سداد":"Zahlung erfassen"}</Link>}
-            {billing&&<Link className="more-row" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"إصدار الفواتير":"Rechnungen ausstellen"}</Link>}
-            {billing&&<Link className="more-row" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الرسوم":"Gebühreneinstellungen"}</Link>}
+            {(finance||posting)&&<Link className="more-row" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link>}
+            {(billing||bank)&&<Link className="more-row" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الحسابات":"Einstellungen"}</Link>}
           </div>
         </MoreGroup>}
-        {(access || audit || moderation || delivery || bank) && <MoreGroup group="permissions">
+        {(access || audit || moderation || delivery) && <MoreGroup group="permissions">
           <summary>{locale === "ar" ? "الصلاحيات والتدقيق" : "Berechtigungen und Protokoll"}</summary>
           <div className="more-rows">
             {access && <Link className="more-row" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
             {audit && <Link className="more-row" href={`/${locale}/school/more/audit`}>{locale === "ar" ? "سجل التدقيق" : "Änderungsprotokoll"}</Link>}
             {moderation&&<Link className="more-row" href={`/${locale}/school/more/message-reports`}>{locale==="ar"?"بلاغات الرسائل":"Gemeldete Nachrichten"}</Link>}
             {delivery&&<Link className="more-row" href={`/${locale}/school/more/delivery-status`}>{locale==="ar"?"حالة التوصيل":"Zustellstatus"}</Link>}
-            {bank&&<Link className="more-row" href={`/${locale}/school/more/bank`}>{locale==="ar"?"حساب التحصيل":"Zahlungskonto"}</Link>}
           </div>
         </MoreGroup>}
         <MoreGroup group="communication"><summary>{locale==="ar"?"التواصل والنشر":"Kommunikation"}</summary><div className="more-rows">

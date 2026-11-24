@@ -51,7 +51,7 @@ internal fun StopQueue(model: IdentityViewModel, id: String?, student: String?, 
 
 @Composable
 private fun StopRows(model: IdentityViewModel, student: String?, staff: Boolean, refresh: Int, open: (String) -> Unit) {
-    var state by remember(staff) { mutableStateOf(if (staff) "pending" else "") }
+    var state by remember(staff) { mutableStateOf("") }
     HorizontalDivider()
     FlowRow {
         FilterChip(state.isEmpty(), { state = "" }, label = { Text(stringResource(R.string.fee_all_states)) })

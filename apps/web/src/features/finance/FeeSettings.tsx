@@ -1,5 +1,6 @@
 "use client";
 
+import {AutomaticBilling} from "./AutomaticBilling";
 import {useState,type FormEvent} from "react";
 import {
   billingOptions,billingPupil,feeTariff,feeTariffInput,payerEdit,payerProfile,type Locale,
@@ -8,35 +9,35 @@ import {useSchoolCommand} from "@/api/commands";
 import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
-import {billingCopy,emptyFeeLine,FeeLines,FeeLinesEditor,formatFeeLines} from "./invoice-ui";
+import {billingCopy,FeeLines,inputAmountMinor} from "./invoice-ui";
 
 const tariffs=feeTariff.array(),pupils=billingPupil.array();
 type Billing=ReturnType<typeof billingOptions.parse>;
 
 export function FeeSettings({locale,student}:{locale:Locale;student?:string}){
   const text=billingCopy[locale],options=useTimetableRead("/finance/billing-options",billingOptions);
-  return <section className="auth-card auth-form"><h1>{text.settings}</h1>
+  return <div className="auth-form"><AutomaticBilling locale={locale}/><section className="auth-card auth-form"><h1>{text.settings}</h1>
     <TimetableRead locale={locale} result={options}>{(context)=><SettingsForm locale={locale} options={context} student={student}/>}</TimetableRead>
-  </section>;
+  </section></div>;
 }
 function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;student?:string}){
   const text=billingCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
   const [tab,setTab]=useState<"tariffs"|"payer">(student?"payer":"tariffs");
   const [month,setMonth]=useState(options.schoolMonth),[day,setDay]=useState(String(options.dueDay??1));
-  const [lines,setLines]=useState([emptyFeeLine()]),[revision,setRevision]=useState(0);
+  const [amount,setAmount]=useState(""),[revision,setRevision]=useState(0);
   const [preview,setPreview]=useState<ReturnType<typeof feeTariffInput.parse>>(),[selected,setSelected]=useState(student);
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
   const [pending,setPending]=useState(false),[notice,setNotice]=useState(""),[error,setError]=useState("");
   const records=useAcademicPage(tab==="tariffs"?"/finance/tariffs?limit=25":null,tariffs,revision);
   const candidates=useAcademicPage(tab==="payer"&&!selected?`/finance/pupils?limit=25&period=${options.schoolMonth}&q=${encodeURIComponent(query)}`:null,pupils,revision);
   const profile=useTimetableRead(tab==="payer"&&selected?`/finance/children/${selected}/payer`:null,payerProfile,revision);
-  const validated=feeTariffInput.safeParse({effectiveFromMonth:month,dueDay:Number(day),lines:formatFeeLines(lines,options.currency)});
+  const validated=feeTariffInput.safeParse({effectiveFromMonth:month,dueDay:Number(day),lines:[{titleAr:"اشتراك شهري",titleDe:"Monatsbeitrag",amountMinor:options.currency?inputAmountMinor(amount,options.currency):null}]});
   async function save(){
     if(!preview||pending)return;
     setPending(true);setError("");setNotice("");
     try{
       await command("/finance/tariffs","POST",preview,feeTariff);
-      setPreview(undefined);setLines([emptyFeeLine()]);setNotice(text.saved);setRevision((value)=>value+1);
+      setPreview(undefined);setAmount("");setNotice(text.saved);setRevision((value)=>value+1);
     }catch(problem){setError(timetableError(locale,problem));}
     finally{setPending(false);}
   }
@@ -58,7 +59,7 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
       </div>:<form className="auth-form" onSubmit={(event)=>{event.preventDefault();if(validated.success)setPreview(validated.data);}}>
         <label>{text.effective}<input type="month" dir="ltr" value={month} min={options.schoolMonth} onChange={(event)=>setMonth(event.target.value)} required/></label>
         <label>{text.dueDay}<input type="number" dir="ltr" min={1} max={31} value={day} onChange={(event)=>setDay(event.target.value)} required/></label>
-        <FeeLinesEditor locale={locale} lines={lines} update={setLines} currency={options.currency}/>
+        <label>{locale==="ar"?"الاشتراك الشهري لكل طالب":"Monatsbeitrag pro Schüler"} <bdi>{options.currency}</bdi><input dir="ltr" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} required/></label>
         <button className="primary-button" type="submit" disabled={!validated.success||month<options.schoolMonth}>{text.preview}</button>
       </form>}
       <AcademicPageItems locale={locale} page={records}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id} className="timetable-day">

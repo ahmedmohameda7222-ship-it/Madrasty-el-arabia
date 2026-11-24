@@ -22,6 +22,8 @@ import de.madrasty.app.school.schoolCommand
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.isolate
 import org.json.JSONObject
+import org.json.JSONArray
+import java.util.UUID
 
 @Composable
 internal fun RecordPayment(
@@ -42,70 +44,63 @@ internal fun RecordPayment(
 
 @Composable
 private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JSONObject?, openReceipt: (String) -> Unit) {
-    val currency = setup.getString("currency")
-    val today = setup.getString("schoolDate")
-    val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
-    var method by remember { mutableStateOf("bank") }
+    val currency=setup.getString("currency")
+    val today=setup.getString("schoolDate")
+    val attempts=remember { mutableMapOf<String,Pair<String,String>>() }
+    var method by remember { mutableStateOf(if(setup.getBoolean("cashEnabled")) "cash" else "bank") }
     var date by remember(today) { mutableStateOf(today) }
     var reference by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
+    var cashReference by remember { mutableStateOf("CASH-"+UUID.randomUUID()) }
+    var rows by remember(initial) { mutableStateOf(initial?.takeIf{it.getLong("balanceMinor")>0L}?.let{listOf(it to financePlainAmount(it.getLong("balanceMinor"),currency))}?:emptyList()) }
+    var amount by remember(initial) { mutableStateOf(initial?.takeIf{it.getLong("balanceMinor")>0L}?.let{financePlainAmount(it.getLong("balanceMinor"),currency)}?:"") }
     var verified by remember { mutableStateOf(false) }
-    var invoice by remember(initial) { mutableStateOf(initial) }
     var choose by remember { mutableStateOf(false) }
     var review by remember { mutableStateOf<JSONObject?>(null) }
     var result by remember { mutableStateOf<JSONObject?>(null) }
-    val selected = invoice
-    val prepared = review
+    val prepared=review
     result?.let { receipt ->
-        Text(isolate(receipt.getString("receiptNumber")) + " · " + stringResource(receiptStateLabel(receipt.getString("state"))))
-        TextButton(onClick = { openReceipt(receipt.getString("id")) }) { Text(stringResource(R.string.receipt_open)) }
+        Text(isolate(receipt.getString("receiptNumber"))+" · "+stringResource(receiptStateLabel(receipt.getString("state"))))
+        TextButton(onClick={openReceipt(receipt.getString("id"))}) {Text(stringResource(R.string.receipt_open))}
     }
-    if (prepared != null) {
-        Text(stringResource(receiptMethodLabel(prepared.getString("method"))) + " · " + isolate(prepared.getString("receivedDate")))
-        Text(isolate(prepared.getString("externalReceiptRef")))
-        Text(financeMoney(prepared.getLong("amountMinor"), currency))
-        selected?.let { Text(receiptInvoiceLabel(it)) }
-        val exact = selected != null && selected.optString("currency") == currency && selected.optLong("balanceMinor") == prepared.getLong("amountMinor")
-        Text(stringResource(if (exact) R.string.receipt_exact else R.string.receipt_unmatched))
-        TextButton(onClick = { review = null }) { Text(stringResource(R.string.fee_edit)) }
-        Submit(true, R.string.receipt_confirm, success = null) {
-            val resultRow = model.schoolCommand(attempts, "/finance/receipts", "POST", prepared)
-            result = resultRow
-            review = null
-            reference = ""
-            amount = ""
-            verified = false
-            invoice = null
+    if(prepared!=null){
+        Text(stringResource(receiptMethodLabel(method))+" · "+isolate(date))
+        Text(financeMoney(prepared.getLong("amountMinor"),currency))
+        for((invoice,value) in rows){Text(receiptInvoiceLabel(invoice));Text(isolate(value))}
+        TextButton(onClick={review=null}) {Text(stringResource(R.string.fee_edit))}
+        Submit(true,R.string.receipt_confirm,success=null){
+            result=model.schoolCommand(attempts,"/finance/receipts","POST",prepared)
+            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";verified=false;rows=emptyList()
         }
         return
     }
-    if (setup.getBoolean("cashEnabled")) {
-        FilterChip(method == "bank", { method = "bank" }, label = { Text(stringResource(R.string.receipt_bank)) })
-        FilterChip(method == "cash", { method = "cash" }, label = { Text(stringResource(R.string.receipt_cash)) })
-    } else Text(stringResource(R.string.receipt_bank))
-    Field(R.string.receipt_reference, reference) { reference = it.take(160) }
-    Field(R.string.receipt_date, date) { date = financeDigits(it).take(10) }
-    Text(isolate(currency))
-    Field(R.string.finance_amount, amount) { amount = it.take(24) }
-    selected?.let {
-        Text(receiptInvoiceLabel(it))
-        TextButton(onClick = { invoice = null }) { Text(stringResource(R.string.receipt_without_invoice)) }
+    if(setup.getBoolean("cashEnabled")){
+        FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
+        FilterChip(method=="bank",{method="bank"},label={Text(stringResource(R.string.receipt_bank))})
+    }else Text(stringResource(R.string.receipt_bank))
+    if(method=="bank")Field(R.string.receipt_reference,reference){reference=it.take(160)}
+    Field(R.string.receipt_date,date){date=financeDigits(it).take(10)}
+    for((index,row) in rows.withIndex()){
+        Text(receiptInvoiceLabel(row.first))
+        Field(R.string.receipt_allocation_amount,row.second){value->rows=rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r}}
+        TextButton(onClick={rows=rows.filterIndexed{i,_->i!=index}}){Text(stringResource(R.string.fee_remove_line))}
     }
-    TextButton(onClick = { choose = !choose }) { Text(stringResource(R.string.receipt_optional_invoice)) }
-    if (choose) ReceiptInvoicePicker(model, currency) { invoice = it; choose = false }
-    FilterChip(verified, { verified = !verified }, label = { Text(stringResource(R.string.receipt_confirmed_external)) })
-    val minor = financeMinor(amount, currency, 100_000_000_000_000)
-    val ref = reference.trim()
-    val ready = minor != null && verified && ref.isNotEmpty() && ref.none { it.isISOControl() || Character.getType(it) == Character.FORMAT.toInt() } &&
-        validFinanceDate(date) && date >= "1900-01-01" && date <= today
-    Button(onClick = {
-        val input = JSONObject().put("externalReceiptRef", ref).put("receivedDate", date).put("method", method)
-            .put("currency", currency).put("amountMinor", minor).put("verified", true)
-        selected?.let { input.put("invoiceId", it.getString("id")) }
-        review = input
-        result = null
-        choose = false
-    }, enabled = ready) { Text(stringResource(R.string.fee_preview)) }
+    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_choose_invoice))}
+    if(choose)ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet()){ invoice->
+        rows=rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency))
+        amount=financePlainAmount(rows.sumOf{financeMinor(it.second,currency,it.first.getLong("balanceMinor"))?:0L},currency)
+        choose=false
+    }
+    Field(R.string.receipt_total,amount){amount=it.take(24)}
+    FilterChip(verified,{verified=!verified},label={Text(stringResource(R.string.receipt_confirmed_external))})
+    val allocations=rows.map{(invoice,value)->financeMinor(value,currency,invoice.getLong("balanceMinor"))}
+    val minor=financeMinor(amount,currency,100_000_000_000_000)
+    val ref=if(method=="cash")cashReference else reference.trim()
+    val ready=minor!=null&&verified&&ref.isNotEmpty()&&ref.none{it.isISOControl()||Character.getType(it)==Character.FORMAT.toInt()}&&validFinanceDate(date)&&date>="1900-01-01"&&date<=today&&allocations.all{it!=null}&&allocations.filterNotNull().sum()<=minor
+    Button(enabled=ready,onClick={
+        val input=JSONObject().put("externalReceiptRef",ref).put("receivedDate",date).put("method",method).put("currency",currency).put("amountMinor",minor).put("verified",true)
+        if(rows.isNotEmpty())input.put("allocations",JSONArray().apply{rows.forEachIndexed{i,row->put(JSONObject().put("invoiceId",row.first.getString("id")).put("invoiceRevision",row.first.getInt("revision")).put("amountMinor",allocations[i]))}})
+        review=input;result=null;choose=false
+    }){Text(stringResource(R.string.fee_preview))}
 }
 
 @Composable

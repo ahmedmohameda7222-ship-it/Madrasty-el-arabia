@@ -11,11 +11,13 @@ import {useAccountScope} from "@/ui/AccountScope";
 import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,financeAmount} from "./invoice-ui";
 import {receiptCopy} from "./receipt-ui";
+import css from "./FinanceWorkspace.module.css";
+import {FinanceOverview} from "./FinanceOverview";
 import {readFinanceReportContext,writeFinanceReportContext} from "./report-context";
 
 const copy={
   ar:{
-    title:"كشف الحساب",period:"شهر إصدار الرسوم",asOf:"الأرصدة في تاريخ",from:"السداد المستلم من",through:"السداد المستلم حتى",
+    title:"نظرة مالية",period:"شهر إصدار الرسوم",asOf:"الأرصدة في تاريخ",from:"السداد المستلم من",through:"السداد المستلم حتى",
     apply:"عرض التقرير",classes:"الفصل في فترة الفاتورة",allClasses:"كل الفصول",allPupils:"كل الطلبة في الكشف",
     filteredPupil:"كشف الطالب المحدد",allStates:"كل الحالات",overdue:"متأخر",billed:"الرسوم الصادرة",collectible:"الرسوم المستحقة للتحصيل",
     applied:"المخصص على الفواتير",outstanding:"إجمالي المتبقي",late:"المتأخر",received:"المدفوعات المسجلة",net:"صافي المقبوض",
@@ -26,7 +28,7 @@ const copy={
     adjustment:"تسوية رسوم",refund:"رد مبلغ مسجل",balance:"الرصيد في تاريخ الكشف",export:"تنزيل CSV",exportFailed:"تعذّر تنزيل التقرير. راجع الصلاحية أو ضيّق نطاق التواريخ.",
   },
   de:{
-    title:"Gebührenübersicht",period:"Abrechnungsmonat",asOf:"Stand am",from:"Zahlungseingang ab",through:"Zahlungseingang bis",
+    title:"Finanzübersicht",period:"Abrechnungsmonat",asOf:"Stand am",from:"Zahlungseingang ab",through:"Zahlungseingang bis",
     apply:"Bericht anzeigen",classes:"Klasse im Abrechnungsmonat",allClasses:"Alle Klassen",allPupils:"Alle Schüler im Bericht",
     filteredPupil:"Ausgewählter Schüler",allStates:"Alle Status",overdue:"Überfällig",billed:"In Rechnung gestellt",collectible:"Einziehbare Gebühren",
     applied:"Rechnungen zugeordnet",outstanding:"Offene Summe",late:"Überfällige Summe",received:"Erfasste Zahlungen",net:"Nettoeingang",
@@ -72,6 +74,8 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
   const classChoices=summary.value?.data?.classes??[];
   return <section className="auth-card auth-form">
     <h1>{text.title}</h1>
+    {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh}/>}
+    <details className={css.panel}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">
         <label>{text.period}<input type="month" dir="ltr" aria-describedby="date-format-finance-month" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>
@@ -100,7 +104,7 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
       <small className="date-format-hint" id="date-format-finance-month">{locale==="ar"
         ?"تنسيق الشهر المعروض يعتمد على المتصفح. مثال: ١٢/٢٠٢٦؛ اختر الشهر والسنة."
         :"Das angezeigte Monatsformat hängt vom Browser ab. Beispiel: 12.2026; Monat und Jahr auswählen."}</small>
-    </form>
+    </form></details>
     <TimetableRead locale={locale} result={summary}>{(data)=><ReportBody locale={locale} data={data} filters={filters}
       refresh={refresh} focus={focus}/>}</TimetableRead>
   </section>;
@@ -134,7 +138,9 @@ function ReportBody({locale,data,filters,refresh,focus}:{
       const money=(label:string,amount:number|null)=>amount===null?null:<><dt>{label}</dt><dd><bdi dir="ltr">{financeAmount(amount,value.currency)}</bdi></dd></>;
       return <div className="timetable-day auth-form" key={value.currency}>
         <h2><bdi>{value.currency}</bdi></h2>
-        <dl className="account-values">
+        <div className={css.metrics}>{([[text.collectible,value.collectibleMinor],[text.applied,value.appliedMinor],[text.outstanding,value.outstandingMinor],[text.late,value.overdueMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi>{financeAmount(amount,value.currency)}</bdi></strong></div>)}</div>
+        <div className={css.panel}><small>{locale==="ar"?"نسبة تحصيل الفواتير":"Zahlungsquote"}</small><strong>{value.collectibleMinor>0?Math.round(value.appliedMinor/value.collectibleMinor*100):0}%</strong><progress max={100} value={value.collectibleMinor>0?Math.min(100,value.appliedMinor/value.collectibleMinor*100):0}/></div>
+        <details><summary>{locale==="ar"?"تفاصيل الحساب":"Weitere Kennzahlen"}</summary><dl className="account-values">
           <dt>{text.invoiceCount}</dt><dd>{value.invoiceCount}</dd>
           {money(text.billed,value.billedMinor)}{money(text.collectible,value.collectibleMinor)}
           {money(text.applied,value.appliedMinor)}{money(text.outstanding,value.outstandingMinor)}{money(text.late,value.overdueMinor)}
@@ -142,7 +148,7 @@ function ReportBody({locale,data,filters,refresh,focus}:{
           {money(text.received,value.receivedMinor)}{money(text.net,value.netReceivedMinor)}{money(text.matched,value.matchedReceivedMinor)}
           {money(text.reversed,value.reversedMinor)}{money(text.voided,value.voidedMinor)}{money(text.refunded,value.refundedMinor)}
           {money(text.unmatched,value.unmatchedMinor)}
-        </dl>
+        </dl></details>
         <div className="header-actions">
           {value.overdueCount>0&&<button type="button" className="plain-button" onClick={()=>focus({status:"overdue",asOf:data.asOf,cutoff:data.cutoff})}>{text.lateQueue} · {value.overdueCount}</button>}
           {value.matchingCount!==null&&value.matchingCount>0&&<Link className="plain-button" href={`${root}/receipts?state=needs_matching`}>{text.matchQueue} · {value.matchingCount}</Link>}

@@ -93,12 +93,16 @@ export async function finalizeReceiptPosting(tx:Transaction,actor:ActorContext,r
 
 export async function recordReceipt(actor:ActorContext,key:string|null,input:z.infer<typeof recordReceiptInput>){
   const recorded=await commitCommand(actor,"finance.receipt.record",key,hashCommand(input),{
-    authorize:(tx)=>requireReceiptPosting(tx,actor,undefined,input.invoiceId?[input.invoiceId]:[]),
+    authorize:(tx)=>requireReceiptPosting(tx,actor,undefined,input.allocations?.map(line=>line.invoiceId)??(input.invoiceId?[input.invoiceId]:[])),
     mutate:async(tx)=>{
       const [row]=await tx<MutationRow[]>`select ${receiptMutationFields(tx)}
         from app.record_finance_receipt(${input.externalReceiptRef},${input.method},${input.receivedDate}::date,
           ${input.currency},${input.amountMinor}::bigint,${input.invoiceId??null}::uuid,${input.verified})`;
-      return finalizeReceiptPosting(tx,actor,row);
+      const receipt=await finalizeReceiptPosting(tx,actor,row);
+      if(!input.allocations)return receipt;
+      const [allocated]=await tx<MutationRow[]>`select ${receiptMutationFields(tx)}
+        from app.allocate_finance_receipt(${receipt.id},${receipt.revision},${tx.json(input.allocations)})`;
+      return finalizeReceiptPosting(tx,actor,allocated);
     },
   });
   return recorded.data;

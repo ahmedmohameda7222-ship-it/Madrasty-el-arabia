@@ -442,8 +442,8 @@
     <string name="finance_reference">مرجع التحويل (Verwendungszweck)</string>
     <string name="finance_external">نفّذ التحويل من تطبيق البنك.</string>
     <string name="finance_bank_changed">حساب التحصيل اتغيّر بعد إصدار الفاتورة. استخدم البيانات المحدّثة للتحويل.</string>
-    <string name="settings_group_finance">الرسوم والتحويلات</string>
-    <string name="fee_settings">إعدادات الرسوم</string>
+    <string name="settings_group_finance">الحسابات</string>
+    <string name="fee_settings">إعدادات الحسابات</string>
     <string name="fee_tariffs">التعريفات</string>
     <string name="fee_payer">مسؤول السداد</string>
     <string name="fee_issue">إصدار الفواتير</string>
@@ -493,7 +493,7 @@
     <string name="fee_ask">اسأل الحسابات عن الفاتورة</string>
     <string name="receipt_title">الإيصالات</string>
     <string name="receipt_record">تسجيل سداد</string>
-    <string name="receipt_queue">مطابقة الإيصالات</string>
+    <string name="receipt_queue">المدفوعات</string>
     <string name="receipt_needs_matching">يحتاج مطابقة</string>
     <string name="receipt_allocated_status">مخصص بالكامل</string>
     <string name="receipt_voided">ملغى محاسبيًا</string>
@@ -530,7 +530,7 @@
     <string name="receipt_exact">هيتخصص المبلغ فورًا لو لسه مساوي للرصيد المستحق وقت الحفظ.</string>
     <string name="receipt_unmatched">هيتسجل المبلغ ويحتاج مطابقة يدوية.</string>
     <string name="receipt_stale">الإيصال أو الفاتورة اتغيّروا. راجع البيانات من جديد.</string>
-    <string name="finance_report_title">كشف الحساب</string>
+    <string name="finance_report_title">نظرة مالية</string>
     <string name="finance_report_period">شهر إصدار الرسوم (YYYY-MM)</string>
     <string name="finance_report_class">الفصل في فترة الفاتورة</string>
     <string name="finance_report_asof">الأرصدة في تاريخ (YYYY-MM-DD)</string>
@@ -564,7 +564,7 @@
     <string name="finance_report_export_failed">تعذّر تنزيل التقرير. راجع الصلاحية أو ضيّق نطاق التواريخ.</string>
     <string name="stop_title">وقف القيد</string>
     <string name="stop_staff_queue">طلبات وقف القيد</string>
-    <string name="stop_new_request">طلب وقف القيد</string>
+    <string name="stop_new_request">تسجيل توقف مؤقت</string>
     <string name="stop_open_request">فتح الطلب</string>
     <string name="stop_child">الطالب</string>
     <string name="stop_last">آخر شهر حضور (YYYY-MM)</string>
@@ -574,11 +574,11 @@
     <string name="stop_indefinite">لأجل غير محدد</string>
     <string name="stop_reason">سبب الطلب</string>
     <string name="stop_note">ملاحظة القرار</string>
-    <string name="stop_submit">إرسال الطلب</string>
+    <string name="stop_submit">تأكيد التوقف</string>
     <string name="stop_withdraw">سحب الطلب</string>
     <string name="stop_pending">بانتظار القرار</string>
     <string name="stop_withdrawn">اتسحب</string>
-    <string name="stop_approved">اتوافق عليه</string>
+    <string name="stop_approved">تم تسجيل التوقف</string>
     <string name="stop_rejected">اترَفض</string>
     <string name="stop_approve">الموافقة على الطلب</string>
     <string name="stop_reject">رفض الطلب</string>
@@ -613,4 +613,17 @@
     <string name="android_upgrade_available">في إصدار أحدث من تطبيق المدرسة.</string>
     <string name="android_upgrade_download">تنزيل التحديث من المدرسة</string>
     <string name="android_upgrade_browser">افتح صفحة التثبيت من موقع المدرسة في المتصفح.</string>
+    <string name="cashbook_title">دفتر الخزنة</string>
+    <string name="cashbook_income">إيراد</string>
+    <string name="cashbook_donation">تبرع</string>
+    <string name="cashbook_expense">مصروف</string>
+    <string name="cashbook_deposit">إيداع في البنك</string>
+    <string name="cashbook_balance">رصيد الخزنة</string>
+    <string name="cashbook_description">السبب</string>
+    <string name="cashbook_month">الشهر</string>
+    <string name="finance_pdf">تحميل PDF</string>
+    <string name="finance_auto">الفواتير الشهرية التلقائية</string>
+    <string name="finance_auto_start">شهر البداية</string>
+    <string name="finance_auto_enabled">إصدار تلقائي</string>
+    <string name="finance_auto_missing">طلاب بدون مسؤول سداد: %1$d</string>
 </resources>

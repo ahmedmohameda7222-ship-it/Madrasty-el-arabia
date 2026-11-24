@@ -60,9 +60,15 @@ export const invoiceSummary=z.object({
   revision:revisionSchema,
 });
 export const invoiceDetail=invoiceSummary.extend({
-  lines:invoiceLines,paymentInstructions:transferInstructions.nullable(),issueInstructions:transferInstructions,
+  lines:invoiceLines,paymentInstructions:transferInstructions.nullable(),issueInstructions:transferInstructions.nullable(),
   receiptIds:id.array(),canInquire:z.boolean(),
 });
 export type InvoicePreview=z.infer<typeof invoicePreview>;
 export type InvoiceDetail=z.infer<typeof invoiceDetail>;
 export type FeeLine=z.infer<typeof feeLine>;
+
+export const autoBillingSettings=z.object({enabled:z.boolean(),startMonth:billingMonth,schoolMonth:billingMonth,revision:revisionSchema,missingPayers:z.int().min(0)});
+export const autoBillingUpdate=autoBillingSettings.pick({enabled:true,startMonth:true,revision:true}).strict();
+
+export const automaticBillingInput=z.object({enabled:z.boolean(),startMonth:billingMonth,revision:z.int().positive()}).strict();
+export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative()});

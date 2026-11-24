@@ -88,7 +88,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
       <Link className="plain-button" href={`${root}/fee-settings`}>{text.settings}</Link>
       <Link className="plain-button" href={`${root}/invoices`}>{text.invoices}</Link>
     </div>
-    {!initial.bankReady&&<p>{text.bank_missing} {mayConfigureBank&&<Link href={`${root}/bank`}>{text.bank}</Link>}</p>}
+    {!initial.bankReady&&<p>{locale==="ar"?"السداد النقدي متاح. حساب التحويل اختياري.":"Barzahlung möglich. Bankkonto optional."} {mayConfigureBank&&<Link href={`${root}/bank`}>{text.bank}</Link>}</p>}
     {error&&<p role="alert">{error}</p>}
     {receipt&&<div className="notice auth-form" role="status">
       <p>{text.issued} · {receipt.issuedIds.length} · {text.existing} {receipt.existingIds.length} · {text.skipped} {receipt.skipped.length}</p>

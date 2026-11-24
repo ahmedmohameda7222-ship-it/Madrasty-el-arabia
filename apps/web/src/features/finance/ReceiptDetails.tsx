@@ -23,6 +23,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
       const money=(value:number)=><bdi dir="ltr">{financeAmount(value,item.currency)}</bdi>;
       return <div className="auth-form">
         <h2><bdi>{item.receiptNumber}</bdi></h2>
+        <a className="plain-button" href={`/api/v1/finance/receipts/${item.id}/pdf?locale=${locale}`} download>{locale==="ar"?"تحميل إثبات السداد PDF":"Zahlungsbestätigung als PDF"}</a>
         <p>{text[item.method]} · <bdi>{item.receivedDate}</bdi></p>
         <ConfirmedAt locale={locale} value={item.recordedAt}/>
         <p>{text.total} · {money(item.amountMinor)}</p>

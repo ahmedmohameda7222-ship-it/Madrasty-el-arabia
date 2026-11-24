@@ -27,12 +27,14 @@ import de.madrasty.app.ui.isolate
 import org.json.JSONObject
 
 @Composable
-internal fun FeeSettings(model: IdentityViewModel, initialStudent: String?, close: () -> Unit) {
+internal fun FeeSettings(model: IdentityViewModel, initialStudent: String?, close: () -> Unit, bank: (() -> Unit)? = null) {
     var payerTab by remember(initialStudent) { mutableStateOf(initialStudent != null) }
     var student by remember(initialStudent) { mutableStateOf(initialStudent) }
     var revision by remember { mutableIntStateOf(0) }
     val context = academicRead("/finance/billing-options", revision) { model.financeObject(it) }
     FinancePage(R.string.fee_settings, close) {
+        if(bank!=null)TextButton(onClick=bank){Text(stringResource(R.string.finance_bank))}
+        AutomaticBillingPanel(model)
         FilterChip(!payerTab, { payerTab = false }, label = { Text(stringResource(R.string.fee_tariffs)) })
         FilterChip(payerTab, { payerTab = true }, label = { Text(stringResource(R.string.fee_payer)) })
         AsyncSurface(context) { options ->
@@ -62,7 +64,7 @@ private fun TariffEditor(model: IdentityViewModel, options: JSONObject) {
     val currency = options.string("currency")
     var month by remember(firstMonth) { mutableStateOf(firstMonth) }
     var day by remember { mutableStateOf(options.string("dueDay") ?: "1") }
-    var lines by remember { mutableStateOf(listOf(DraftFeeLine())) }
+    var amount by remember { mutableStateOf("") }
     var preview by remember { mutableStateOf<JSONObject?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
@@ -70,9 +72,9 @@ private fun TariffEditor(model: IdentityViewModel, options: JSONObject) {
     if (prepared == null) {
         Field(R.string.fee_effective, month) { month = financeDigits(it).take(7) }
         Field(R.string.fee_due_day, day) { day = financeDigits(it).take(2) }
-        FeeLineFields(lines, { lines = it }, currency)
+        Field(R.string.fee_monthly,amount){amount=it.take(24)}
         val due = day.toIntOrNull()
-        val items = feeLineInput(lines, currency)
+        val items = feeLineInput(listOf(DraftFeeLine("اشتراك شهري","Monatsbeitrag",amount)), currency)
         Button(
             enabled = validBillingMonth(month) && month >= firstMonth && due != null && due in 1..31 && items != null,
             onClick = { preview = JSONObject().put("effectiveFromMonth", month).put("dueDay", due).put("lines", items) },
@@ -85,7 +87,7 @@ private fun TariffEditor(model: IdentityViewModel, options: JSONObject) {
         Submit(true) {
             model.schoolCommand(attempts, "/finance/tariffs", "POST", prepared)
             preview = null
-            lines = listOf(DraftFeeLine())
+            amount = ""
             refresh++
         }
     }

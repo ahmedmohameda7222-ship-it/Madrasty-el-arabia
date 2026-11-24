@@ -16,6 +16,7 @@ for(const scenario of [
       await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
       await page.setViewportSize({width:390,height:844});
       await page.goto("/"+scenario.locale+"/school/"+scenario.path);
+      if(scenario.path==="more/finance-reports")await page.getByText("تصفية التقرير",{exact:true}).click();
       const dateFields=page.locator(".school-content input[type='date']");
       const monthFields=page.locator(".school-content input[type='month']");
       await expect(dateFields).toHaveCount(scenario.dates);

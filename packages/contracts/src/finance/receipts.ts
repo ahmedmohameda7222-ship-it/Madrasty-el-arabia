@@ -10,10 +10,10 @@ const reversalReason=z.string().trim().min(3).max(500);
 const method=z.enum(["bank","cash"]);
 export const receiptState=z.enum(["needs_matching","allocated","voided"]);
 export const receiptOptions=z.object({schoolDate:schoolDateSchema,currency,cashEnabled:z.boolean()});
-export const recordReceiptInput=z.object({
-  externalReceiptRef:externalReference,method,receivedDate:schoolDateSchema,currency,amountMinor:positive,invoiceId:id.optional(),verified:z.literal(true),
-}).strict();
 const allocateLine=z.object({invoiceId:id,amountMinor:lineAmount,invoiceRevision:revisionSchema}).strict();
+export const recordReceiptInput=z.object({
+  externalReceiptRef:externalReference,method,receivedDate:schoolDateSchema,currency,amountMinor:positive,invoiceId:id.optional(),allocations:allocateLine.array().min(1).max(100).optional(),verified:z.literal(true),
+}).strict().refine(value=>!value.allocations||(!value.invoiceId&&new Set(value.allocations.map(line=>line.invoiceId)).size===value.allocations.length&&value.allocations.reduce((sum,line)=>sum+line.amountMinor,0)<=value.amountMinor),{path:["allocations"]});
 export const receiptAllocationInput=z.object({
   revision:revisionSchema,lines:allocateLine.array().min(1).max(100),
 }).strict().refine((value)=>new Set(value.lines.map((line)=>line.invoiceId)).size===value.lines.length,{path:["lines"]});

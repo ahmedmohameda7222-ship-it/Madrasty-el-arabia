@@ -36,6 +36,7 @@ internal fun ReceiptDetails(model: IdentityViewModel, id: String, invoice: (Stri
     FinancePage(R.string.receipt_title, close) {
         notice?.let { Text(stringResource(it)) }
         AsyncSurface(read) { item ->
+            FinancePdfButton(model,"receipts",item.getString("id"),item.getString("receiptNumber"))
             ReceiptDocument(item, invoice)
             if (item.getString("scope") == "staff" && item.getBoolean("canPost")) {
                 key(item.getInt("revision"), refresh) {
