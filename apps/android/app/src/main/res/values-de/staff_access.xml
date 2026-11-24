@@ -29,7 +29,6 @@
     <string name="permission_finance_post">Zahlungen erfassen</string>
     <string name="permission_finance_export">Abrechnungen exportieren</string>
     <string name="permission_bank_configure">Zahlungskonto ändern</string>
-    <string name="permission_audit_read">Aktivitätsprotokoll einsehen</string>
     <string name="permission_student_affairs">Postfach Schulbüro</string>
     <string name="permission_accounts">Postfach Buchhaltung</string>
 </resources>

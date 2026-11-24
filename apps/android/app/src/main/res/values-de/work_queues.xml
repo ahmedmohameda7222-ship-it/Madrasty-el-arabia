@@ -13,7 +13,6 @@
     <string name="queue_unapproved_attendance">Offene Anwesenheitsfreigaben</string>
     <string name="queue_noncontinuation">Anträge zur Abmeldung</string>
     <string name="queue_settlements">Zahlungen zur Prüfung</string>
-    <string name="queue_failed_deliveries">Fehlgeschlagene Zustellungen</string>
     <string name="home_attendance_action">Anwesenheit öffnen</string>
     <string name="home_child_action">Kind öffnen</string>
     <string name="home_lessons_today">Unterricht heute</string>

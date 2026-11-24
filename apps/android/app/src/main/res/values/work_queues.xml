@@ -13,7 +13,6 @@
     <string name="queue_unapproved_attendance">حضور بانتظار الاعتماد</string>
     <string name="queue_noncontinuation">طلبات وقف القيد</string>
     <string name="queue_settlements">مدفوعات للمراجعة</string>
-    <string name="queue_failed_deliveries">إرسال تعذّر تسليمه</string>
     <string name="home_attendance_action">افتح الحضور</string>
     <string name="home_child_action">افتح بيانات الطفل</string>
     <string name="home_lessons_today">دروس اليوم</string>

@@ -29,7 +29,6 @@
     <string name="permission_finance_post">تسجيل المدفوعات</string>
     <string name="permission_finance_export">تصدير الحسابات</string>
     <string name="permission_bank_configure">تغيير حساب التحصيل</string>
-    <string name="permission_audit_read">عرض سجل العمليات</string>
     <string name="permission_student_affairs">صندوق شؤون الطلبة</string>
     <string name="permission_accounts">صندوق الحسابات</string>
 </resources>

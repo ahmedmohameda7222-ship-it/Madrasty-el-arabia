@@ -52,7 +52,6 @@ sealed interface SchoolWorkTarget {
     data class AttendanceSheet(val classId:String,val date:String):SchoolWorkTarget
     data class EnrollmentStop(val id:String):SchoolWorkTarget
     data class ReceiptMatch(val id:String):SchoolWorkTarget
-    data class DeliveryReview(val id:String):SchoolWorkTarget
     data class GuardianLink(val guardianId: String,val linkId: String) : SchoolWorkTarget
     data class FamilyImport(val jobId: String) : SchoolWorkTarget
     data class ClassAssignment(val classId: String,val yearId: String) : SchoolWorkTarget
@@ -62,7 +61,7 @@ private val queueLabels = mapOf(
     "guardian_links" to R.string.queue_guardian_links,"family_imports" to R.string.queue_family_imports,
     "class_assignments" to R.string.queue_class_assignments,"bounced_invites" to R.string.queue_bounced_invites,
     "unapproved_attendance" to R.string.queue_unapproved_attendance,"noncontinuation_requests" to R.string.queue_noncontinuation,
-    "settlement_review" to R.string.queue_settlements,"failed_deliveries" to R.string.queue_failed_deliveries,
+    "settlement_review" to R.string.queue_settlements,
 )
 
 @Composable
@@ -265,7 +264,6 @@ fun SchoolWorkQueueScreen(model: IdentityViewModel, selection: WorkQueueSelectio
                     "attendance_sheet" -> SchoolWorkTarget.AttendanceSheet(target.getString("classId"),target.getString("date"))
                     "enrollment_stop" -> SchoolWorkTarget.EnrollmentStop(target.getString("requestId"))
                     "receipt_match" -> SchoolWorkTarget.ReceiptMatch(target.getString("receiptId"))
-                    "delivery_review" -> SchoolWorkTarget.DeliveryReview(target.getString("deliveryId"))
                     "guardian_link" -> SchoolWorkTarget.GuardianLink(target.getString("guardianId"),target.getString("linkId"))
                     "family_import" -> SchoolWorkTarget.FamilyImport(target.getString("jobId"))
                     "class_assignment" -> SchoolWorkTarget.ClassAssignment(target.getString("classId"),target.getString("yearId"))
