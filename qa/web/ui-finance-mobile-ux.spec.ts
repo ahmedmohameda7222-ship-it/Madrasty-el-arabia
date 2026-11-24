@@ -50,6 +50,22 @@ for (const scenario of scenarios) {
           }
           const file=route.replace(/[^a-z0-9-]/g,"-");
           await page.screenshot({path:"qa-artifacts/ui-after/finance-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled",fullPage:true});
+          if(route==="fee-settings"){
+            const tariff=page.getByRole("button",{name:scenario.locale==="ar"?"التعريفات":"Gebührentarife",exact:true});
+            const payer=page.getByRole("button",{name:scenario.locale==="ar"?"مسؤول السداد":"Zahlungspflichtige Person",exact:true});
+            for(const button of [tariff,payer]){
+              await expect(button).toBeVisible();
+              const fits=await button.evaluate(el=>{
+                const box=el.getBoundingClientRect(),range=document.createRange();
+                range.selectNodeContents(el);
+                return box.height>=44&&[...range.getClientRects()].every(r=>r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1);
+              });
+              expect(fits,"fee settings label stays inside its own touch target").toBe(true);
+            }
+            await payer.scrollIntoViewIfNeeded();
+            await expect(payer).toBeInViewport();
+            await page.screenshot({path:"qa-artifacts/ui-after/finance-action-"+scenario.actor+"-"+scenario.locale+"-fee-settings-"+width+"-"+theme+".png",animations:"disabled"});
+          }
           if(route==="issue-invoices"||route==="record-payment"){
             const action=page.locator(".school-content button[type=submit].primary-button").last();
             await action.scrollIntoViewIfNeeded();

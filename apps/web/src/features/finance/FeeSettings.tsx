@@ -44,7 +44,7 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
     finally{setPending(false);}
   }
   return <>
-    <div className={css.tabs}>
+    <div className={`${css.tabs} ${css.feeTabs}`}>
       <button className="plain-button" type="button" aria-pressed={tab==="tariffs"} onClick={()=>setTab("tariffs")}>{text.tariffs}</button>
       <button className="plain-button" type="button" aria-pressed={tab==="payer"} onClick={()=>setTab("payer")}>{text.payer}</button>
     </div>
