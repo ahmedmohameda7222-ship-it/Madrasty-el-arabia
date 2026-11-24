@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { schoolDateSchema, type Locale } from "@madrasty/contracts";
 import { z } from "zod";
 import { SchoolHome } from "@/features/school/SchoolHome";
+import { schoolProfile } from "@/server/identity/profile";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { schoolMenuAccess, mayUse } from "@/server/access/capabilities";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
@@ -27,17 +28,18 @@ export default async function SchoolPage({ params, searchParams }: {
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","audit.read","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
-  const { capabilities, moderation, delivery, stopManager } = tab === "more"
+  const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
+  const { capabilities, moderation, stopManager } = tab === "more"
     ? await schoolMenuAccess(session, menuKeys)
-    : { capabilities: [], moderation: false, delivery: false, stopManager: false };
-  const [access, calendar, placement, teacherInvites, academic, audit, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
+    : { capabilities: [], moderation: false, stopManager: false };
+  const [access, calendar, placement, teacherInvites, academic, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
   const invites = teacherInvites || placement;
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
+  const welcome=tab==="home"?await schoolProfile(session):null;
   return (
     <>
-      <h1>{tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
+      <h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
       {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
@@ -81,13 +83,11 @@ export default async function SchoolPage({ params, searchParams }: {
             {(billing||bank)&&<Link className="more-row" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الحسابات":"Einstellungen"}</Link>}
           </div>
         </MoreGroup>}
-        {(access || audit || moderation || delivery) && <MoreGroup group="permissions">
-          <summary>{locale === "ar" ? "الصلاحيات والتدقيق" : "Berechtigungen und Protokoll"}</summary>
+        {(access || moderation) && <MoreGroup group="permissions">
+          <summary>{locale === "ar" ? "الصلاحيات" : "Berechtigungen"}</summary>
           <div className="more-rows">
             {access && <Link className="more-row" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
-            {audit && <Link className="more-row" href={`/${locale}/school/more/audit`}>{locale === "ar" ? "سجل التدقيق" : "Änderungsprotokoll"}</Link>}
             {moderation&&<Link className="more-row" href={`/${locale}/school/more/message-reports`}>{locale==="ar"?"بلاغات الرسائل":"Gemeldete Nachrichten"}</Link>}
-            {delivery&&<Link className="more-row" href={`/${locale}/school/more/delivery-status`}>{locale==="ar"?"حالة التوصيل":"Zustellstatus"}</Link>}
           </div>
         </MoreGroup>}
         <MoreGroup group="communication"><summary>{locale==="ar"?"التواصل والنشر":"Kommunikation"}</summary><div className="more-rows">
@@ -99,6 +99,7 @@ export default async function SchoolPage({ params, searchParams }: {
         <MoreGroup group="account">
           <summary>{locale === "ar" ? "الحساب والجهاز" : "Konto und Gerät"}</summary>
           <div className="more-rows">
+            <Link className="more-row" href={`/${locale}/account/profile`}>{locale==="ar"?"الملف الشخصي":"Profil"}</Link>
             <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "تفضيلات الحساب والإشعارات" : "Konto und Benachrichtigungen"}</Link>
             <Link className="more-row" href={`/${locale}/account/security`}>{locale === "ar" ? "الأمان والاسترجاع" : "Sicherheit und Wiederherstellung"}</Link>
           </div>

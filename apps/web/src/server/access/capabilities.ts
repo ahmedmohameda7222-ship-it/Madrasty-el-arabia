@@ -66,18 +66,17 @@ export function mayUse(session: SchoolSession, key: Capability) {
 export async function schoolMenuAccess(session: SchoolSession, keys: readonly Capability[]) {
   const isAdmin = session.activePersona === "admin";
   if (session.activePersona === "guardian" || (isAdmin && session.assurance !== "aal2")) {
-    return { capabilities: [] as Capability[], moderation: false, delivery: false, stopManager: false };
+    return { capabilities: [] as Capability[], moderation: false, stopManager: false };
   }
   const [access] = await withActor({
     requestId: crypto.randomUUID(), accountId: session.accountId, sessionId: session.sessionId,
     persona: session.activePersona, assurance: session.assurance,
-  }, tx => tx<{ capabilities: Capability[]; moderation: boolean; delivery: boolean; stopManager: boolean }[]>`
+  }, tx => tx<{ capabilities: Capability[]; moderation: boolean; stopManager: boolean }[]>`
     select
       case when ${isAdmin} then array(
         select key from unnest(${tx.array([...keys])}::text[]) as item(key) where app.has_capability(key)
       ) else array[]::text[] end as capabilities,
       case when ${isAdmin} then app.can_manage_chat_reports() else false end as moderation,
-      app.may_operate_delivery_queue() as delivery,
       case when ${isAdmin} then app.enrollment_stop_staff() else false end as "stopManager"
   `);
   return access;

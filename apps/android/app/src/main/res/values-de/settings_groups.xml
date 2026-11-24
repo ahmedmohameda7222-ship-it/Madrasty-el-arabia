@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_group_account">Konto und Gerät</string>
+    <string name="settings_group_school">Schulverwaltung</string>
+    <string name="settings_group_access">Berechtigungen</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_group_account">الحساب والجهاز</string>
+    <string name="settings_group_school">إدارة المدرسة</string>
+    <string name="settings_group_access">الصلاحيات</string>
+</resources>

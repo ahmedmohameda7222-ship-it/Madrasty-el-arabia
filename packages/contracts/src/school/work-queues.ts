@@ -3,7 +3,7 @@ import { pageQuerySchema, schoolDateSchema } from "../http";
 
 export const schoolQueueKeySchema = z.enum(["guardian_links","family_imports","class_assignments"]);
 export const dashboardModuleKeySchema = z.enum([
-  "bounced_invites","unapproved_attendance","noncontinuation_requests","settlement_review","failed_deliveries",
+  "bounced_invites","unapproved_attendance","noncontinuation_requests","settlement_review",
 ]);
 export const workQueueKeySchema = z.union([schoolQueueKeySchema,dashboardModuleKeySchema]);
 export type WorkQueueKey = z.infer<typeof workQueueKeySchema>;
@@ -14,7 +14,6 @@ const target = z.discriminatedUnion("kind",[
   z.object({kind:z.literal("attendance_sheet"),classId:z.uuid(),date:schoolDateSchema}),
   z.object({kind:z.literal("enrollment_stop"),requestId:z.uuid()}),
   z.object({kind:z.literal("receipt_match"),receiptId:z.uuid()}),
-  z.object({kind:z.literal("delivery_review"),deliveryId:z.uuid()}),
   z.object({kind:z.literal("guardian_link"),guardianId:z.uuid(),linkId:z.uuid()}),
   z.object({kind:z.literal("family_import"),jobId:z.uuid()}),
   z.object({kind:z.literal("class_assignment"),classId:z.uuid(),yearId:z.uuid()}),

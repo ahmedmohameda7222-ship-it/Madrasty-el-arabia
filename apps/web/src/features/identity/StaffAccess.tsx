@@ -60,10 +60,6 @@ const names = {
     "تغيير حساب التحصيل",
     "Zahlungskonto ändern"
   ],
-  "audit.read": [
-    "عرض سجل العمليات",
-    "Aktivitätsprotokoll einsehen"
-  ],
   "student_affairs": [
     "صندوق شؤون الطلبة",
     "Postfach Schulbüro"

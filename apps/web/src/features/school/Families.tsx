@@ -249,6 +249,8 @@ function ProfileForm({ locale, mode, record, saved }: {
       {child && <label>{text.state}<select name="state" defaultValue={child.state}>
         <option value="active">{text.active}</option><option value="inactive">{text.inactive}</option>
       </select></label>}
+      {record?.birthDate&&<p>{locale==="ar"?"تاريخ الميلاد":"Geburtsdatum"}: <bdi>{record.birthDate}</bdi></p>}
+      {adult?.emergencyAddress&&<p>{locale==="ar"?"عنوان المنزل للطوارئ":"Wohnadresse für Notfälle"}: <bdi>{adult.emergencyAddress}</bdi></p>}
       {!isStudent && <>
         <label>{text.email}<input name="email" type="email" dir="ltr" defaultValue={adult?.contactEmail ?? ""} readOnly={adult?.linkedAccount} /></label>
         <label>{text.phone}<input name="phone" type="tel" dir="ltr" defaultValue={adult?.contactPhone ?? ""} maxLength={48} /></label>

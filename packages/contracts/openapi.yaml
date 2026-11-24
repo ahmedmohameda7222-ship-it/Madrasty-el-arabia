@@ -329,7 +329,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: {"type":"object","required":["revision","personas","capabilities","inboxAssignments"],"properties":{"revision":{"type":"integer","minimum":1},"personas":{"type":"array","items":{"type":"string","enum":["admin","teacher","guardian"]}},"capabilities":{"type":"array","items":{"type":"object","required":["key","validFrom","validUntil"],"properties":{"key":{"type":"string","enum":["access.manage","school.manage","students.manage","applications.manage","attendance.supervise","academics.supervise","comms.publish","finance.read","finance.issue","finance.post","finance.export","bank.configure","audit.read"]},"validFrom":{"type":"string","format":"date-time"},"validUntil":{"type":["string","null"],"format":"date-time"}}}},"inboxAssignments":{"type":"array","items":{"type":"object","required":["key","validFrom","validUntil"],"properties":{"key":{"type":"string","enum":["student_affairs","accounts"]},"validFrom":{"type":"string","format":"date-time"},"validUntil":{"type":["string","null"],"format":"date-time"}}}}}}
+            schema: {"type":"object","required":["revision","personas","capabilities","inboxAssignments"],"properties":{"revision":{"type":"integer","minimum":1},"personas":{"type":"array","items":{"type":"string","enum":["admin","teacher","guardian"]}},"capabilities":{"type":"array","items":{"type":"object","required":["key","validFrom","validUntil"],"properties":{"key":{"type":"string","enum":["access.manage","school.manage","students.manage","applications.manage","attendance.supervise","academics.supervise","comms.publish","finance.read","finance.issue","finance.post","finance.export","bank.configure"]},"validFrom":{"type":"string","format":"date-time"},"validUntil":{"type":["string","null"],"format":"date-time"}}}},"inboxAssignments":{"type":"array","items":{"type":"object","required":["key","validFrom","validUntil"],"properties":{"key":{"type":"string","enum":["student_affairs","accounts"]},"validFrom":{"type":"string","format":"date-time"},"validUntil":{"type":["string","null"],"format":"date-time"}}}}}}
       responses:
         '200':
           description: Accepted and scoped response
@@ -1545,6 +1545,34 @@ paths:
               schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"substitute":{"type":"boolean"}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe","substitute"]}}},"required":["data"]}
         default:
           $ref: '#/components/responses/AuthError'
+  /account/profile:
+    get:
+      operationId: readAccountProfile
+      summary: Read own profile and approved linked children
+      responses:
+        '200':
+          description: Own role-scoped profile
+          content:
+            application/json:
+              schema: {type: object, required: [data], properties: {data: {$ref: '#/components/schemas/AccountProfile'}}}
+        '401':
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateAccountProfile
+      summary: Update own guardian or linked child profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AccountProfilePatch'}
+      responses:
+        '200':
+          description: Saved revision
+          content:
+            application/json:
+              schema: {type: object, required: [data], properties: {data: {type: object, required: [revision], properties: {revision: {type: integer, minimum: 1}}}}}
+        '401':
+          $ref: '#/components/responses/AuthError'
   /account/preferences:
     get:
       operationId: readAccountPreferences
@@ -1819,59 +1847,6 @@ paths:
                     type: object
                     properties:
                       nextCursor: { type: string, format: uuid }
-        default:
-          $ref: '#/components/responses/AuthError'
-  /school/audit:
-    get:
-      operationId: readSchoolAudit
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - {"name":"from","in":"query","schema":{"type":"string","format":"date"}}
-        - {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
-        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
-        - {"name":"action","in":"query","schema":{"type":"string"}}
-        - {"name":"actorId","in":"query","schema":{"type":"string","format":"uuid"}}
-        - {"name":"resourceKind","in":"query","schema":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]}}
-        - {"name":"cursor","in":"query","schema":{"type":"string","maxLength":256}}
-        - {"name":"limit","in":"query","schema":{"type":"integer","minimum":1,"maximum":100}}
-      responses:
-        '200':
-          description: Audit metadata visible to the current actor
-          content:
-            application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/SchoolAuditEntry"}},"meta":{"type":"object","required":[],"properties":{"nextCursor":{"type":"string","maxLength":256}}}}}
-        default:
-          $ref: '#/components/responses/AuthError'
-  /school/audit/filters:
-    get:
-      operationId: readSchoolAuditFilters
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - {"name":"from","in":"query","schema":{"type":"string","format":"date"}}
-        - {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
-        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
-        - {"name":"actorQuery","in":"query","schema":{"type":"string","maxLength":100}}
-      responses:
-        '200':
-          description: Audit metadata visible to the current actor
-          content:
-            application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolAuditFilters"}}}
-        default:
-          $ref: '#/components/responses/AuthError'
-  /school/audit/{id}:
-    get:
-      operationId: readSchoolAuditEntry
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"],"default":"ar"}}
-      responses:
-        '200':
-          description: Audit metadata visible to the current actor
-          content:
-            application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/SchoolAuditEntry"}}}
         default:
           $ref: '#/components/responses/AuthError'
   /attendance/classes:
@@ -3765,59 +3740,6 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/PushStatus"}}}
         default:
           $ref: '#/components/responses/AuthError'
-  /delivery-status:
-    get:
-      operationId: listInstitutionalDeliveryStatus
-      summary: Read permitted institutional delivery history
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - { name: id, in: query, schema: { type: string, format: uuid } }
-        - {"$ref":"#/components/parameters/Limit"}
-        - {"$ref":"#/components/parameters/Cursor"}
-        - {"name":"kind","in":"query","required":false,"schema":{"type":"string","enum":["invite_guardian","invite_teacher","broadcast","attendance","academics","finance","school"]}}
-        - {"name":"state","in":"query","required":false,"schema":{"type":"string","enum":["queued","accepted","delivered","failed","bounced","uncertain","suppressed"]}}
-      responses:
-        '200':
-          description: Read permitted institutional delivery history
-          content:
-            application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"$ref":"#/components/schemas/DeliveryStatusItem"}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
-        default:
-          $ref: '#/components/responses/AuthError'
-  /delivery-status/access:
-    get:
-      operationId: readDeliveryQueueAccess
-      summary: Read access to institutional delivery operations
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      responses:
-        '200':
-          description: Read access to institutional delivery operations
-          content:
-            application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"allowed":{"type":"boolean"}},"required":["allowed"]}}}
-        default:
-          $ref: '#/components/responses/AuthError'
-  /delivery-status/{id}/redrive:
-    post:
-      operationId: redriveFailedDelivery
-      summary: Queue a retry for an eligible and reconciled delivery
-      security: [{ webSession: [] }, { nativeBearer: [] }]
-      parameters:
-        - {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}
-        - {"$ref":"#/components/parameters/IdempotencyKey"}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {"type":"object","properties":{"revision":{"type":"integer","minimum":1}},"required":["revision"]}
-      responses:
-        '200':
-          description: Queue a retry for an eligible and reconciled delivery
-          content:
-            application/json:
-              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"revision":{"type":"integer","minimum":1},"state":{"const":"queued"}},"required":["id","revision","state"]}}}
-        default:
-          $ref: '#/components/responses/AuthError'
   /internal/dispatch:
     post:
       operationId: dispatchSchoolDelivery
@@ -4691,6 +4613,50 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    AccountProfile:
+      type: object
+      required: [displayName, guardian, children]
+      properties:
+        displayName: {type: [string, 'null']}
+        guardian:
+          type: [object, 'null']
+          required: [revision, birthDate, phone, emergencyAddress]
+          properties:
+            revision: {type: integer, minimum: 1}
+            birthDate: {type: [string, 'null'], format: date}
+            phone: {type: [string, 'null'], maxLength: 48}
+            emergencyAddress: {type: [string, 'null'], maxLength: 500}
+        children:
+          type: array
+          items:
+            type: object
+            required: [id, displayName, birthDate, age, revision]
+            properties:
+              id: {type: string, format: uuid}
+              displayName: {type: string}
+              birthDate: {type: [string, 'null'], format: date}
+              age: {type: [integer, 'null'], minimum: 0}
+              revision: {type: integer, minimum: 1}
+    AccountProfilePatch:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [kind, revision, birthDate, phone, emergencyAddress]
+          properties:
+            kind: {const: guardian}
+            revision: {type: integer, minimum: 1}
+            birthDate: {type: [string, 'null'], format: date}
+            phone: {type: [string, 'null'], maxLength: 48}
+            emergencyAddress: {type: [string, 'null'], maxLength: 500}
+        - type: object
+          additionalProperties: false
+          required: [kind, id, revision, birthDate, displayName]
+          properties:
+            kind: {const: child}
+            id: {type: string, format: uuid}
+            revision: {type: integer, minimum: 1}
+            birthDate: {type: [string, 'null'], format: date}
+            displayName: {type: string, minLength: 1, maxLength: 200}
     AndroidClientVersions: {"type":"object","required":["minimumVersionCode","suggestedVersionCode","suggestedVersionName","downloadUrl","sha256"],"properties":{"minimumVersionCode":{"type":"integer","minimum":1,"maximum":2100000000},"suggestedVersionCode":{"type":"integer","minimum":1,"maximum":2100000000},"suggestedVersionName":{"type":"string","minLength":1,"maxLength":40},"downloadUrl":{"type":"string","format":"uri"},"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}}
     SchoolResourceKind: {"type":"string","enum":["notice","thread","broadcast","child","attendance","exam","evaluation","activity","homework","application","invoice","receipt","fee_stop"]}
     SchoolResourceLink: {"type":"object","required":["kind","id"],"properties":{"kind":{"$ref":"#/components/schemas/SchoolResourceKind"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}}}
@@ -4745,7 +4711,6 @@ components:
     SchoolNewsEntry: {"type":"object","properties":{"kind":{"const":"news"},"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"state":{"type":"string","enum":["draft","published","withdrawn"]},"publishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"updatedAt":{"type":"string","format":"date-time"},"revision":{"type":"integer","minimum":1},"canEdit":{"type":"boolean"}},"required":["kind","id","audience","sourceLocale","copy","classAr","classDe","state","publishedAt","updatedAt","revision","canEdit"]}
     SchoolEventEntry: {"type":"object","properties":{"kind":{"const":"event"},"id":{"type":"string","format":"uuid"},"audience":{"$ref":"#/components/schemas/PublishingAudience"},"sourceLocale":{"type":"string","enum":["ar","de"]},"copy":{"type":"object","properties":{"ar":{"$ref":"#/components/schemas/BroadcastText"},"de":{"$ref":"#/components/schemas/BroadcastText"}},"required":[]},"classAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"classDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"state":{"type":"string","enum":["draft","published","withdrawn"]},"publishedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"updatedAt":{"type":"string","format":"date-time"},"revision":{"type":"integer","minimum":1},"canEdit":{"type":"boolean"},"timing":{"$ref":"#/components/schemas/SchoolEventTiming"},"timezone":{"type":"string"}},"required":["kind","id","audience","sourceLocale","copy","classAr","classDe","state","publishedAt","updatedAt","revision","canEdit","timing","timezone"]}
     SchoolPublishingOptions: {"type":"object","properties":{"schoolDate":{"type":"string","format":"date"},"timezone":{"type":"string"},"schoolWide":{"type":"boolean"},"classes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"},"canWrite":{"type":"boolean"}},"required":["id","code","nameAr","nameDe","canWrite"]}}},"required":["schoolDate","timezone","schoolWide","classes"]}
-    DeliveryStatusItem: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["invite_guardian","invite_teacher","broadcast","attendance","academics","finance","school"]},"state":{"type":"string","enum":["queued","accepted","delivered","failed","bounced","uncertain","suppressed"]},"channel":{"type":"string","enum":["email","push"]},"dueAt":{"type":"string","format":"date-time"},"createdAt":{"type":"string","format":"date-time"},"updatedAt":{"type":"string","format":"date-time"},"attempts":{"type":"integer","minimum":0},"revision":{"type":"integer","minimum":1},"canRedrive":{"type":"boolean"},"failure":{"anyOf":[{"type":"string","maxLength":80},{"type":"null"}]}},"required":["id","kind","state","channel","dueAt","createdAt","updatedAt","attempts","revision","canRedrive","failure"]}
     NoticeTarget: {"oneOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["thread","broadcast","child","application","invoice","receipt","fee_stop"]},"id":{"type":"string","format":"uuid"}},"required":["kind","id"]},{"type":"object","properties":{"kind":{"type":"string","enum":["exam","evaluation","activity","homework"]},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"}},"required":["kind","id","childId"]},{"type":"object","properties":{"kind":{"const":"attendance"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}},"required":["kind","id","childId","date"]}]}
     NoticeDestination: {"oneOf":[{"type":"object","properties":{"state":{"const":"open"},"targets":{"type":"array","items":{"$ref":"#/components/schemas/NoticeTarget"},"minItems":1,"maxItems":50}},"required":["state","targets"]},{"type":"object","properties":{"state":{"const":"unavailable"}},"required":["state"]}]}
     NotificationRecord: {"type":"object","properties":{"id":{"type":"string","format":"uuid"},"template":{"type":"string"},"title":{"type":"string"},"createdAt":{"type":"string","format":"date-time"},"readAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"superseded":{"type":"boolean"}},"required":["id","template","title","createdAt","readAt","superseded"]}
@@ -4819,11 +4784,9 @@ components:
     AttendanceRow: {"type":"object","required":["id","studentId","studentNumber","displayName","enrollmentId","status","revision","locked","confirmedArrivalAt"],"properties":{"id":{"type":"string","format":"uuid"},"studentId":{"type":"string","format":"uuid"},"studentNumber":{"type":"string"},"displayName":{"type":"string"},"enrollmentId":{"type":"string","format":"uuid"},"status":{"anyOf":[{"type":"string","enum":["present","late","absent_unexcused","absent_excused"]},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"locked":{"type":"boolean"},"confirmedArrivalAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]}}}
     DailyAttendanceSheet: {"type":"object","required":["id","classroom","yearId","schoolDate","state","teachingDay","closedReason","canMark","canApprove","rosterRevision","approvalRevision","approvedAt","rows","counts"],"properties":{"id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"classroom":{"type":"object","required":["id","code","nameAr","nameDe"],"properties":{"id":{"type":"string","format":"uuid"},"code":{"type":"string"},"nameAr":{"type":"string"},"nameDe":{"type":"string"}}},"yearId":{"type":"string","format":"uuid"},"schoolDate":{"type":"string","format":"date"},"state":{"type":"string","enum":["unstarted","open","approved"]},"teachingDay":{"type":"boolean"},"closedReason":{"anyOf":[{"type":"string"},{"type":"null"}]},"canMark":{"type":"boolean"},"canApprove":{"type":"boolean"},"rosterRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"approvalRevision":{"anyOf":[{"type":"integer","minimum":1},{"type":"null"}]},"approvedAt":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"rows":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"counts":{"type":"object","required":["unmarked","present","late","absent_unexcused","absent_excused"],"properties":{"unmarked":{"type":"integer","minimum":0},"present":{"type":"integer","minimum":0},"late":{"type":"integer","minimum":0},"absent_unexcused":{"type":"integer","minimum":0},"absent_excused":{"type":"integer","minimum":0}}}}}
     AttendanceChanges: {"type":"object","required":["applied","skippedLocked","conflicts"],"properties":{"applied":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"skippedLocked":{"type":"array","items":{"$ref":"#/components/schemas/AttendanceRow"}},"conflicts":{"type":"array","items":{"type":"object","required":["rowId","reason","current"],"properties":{"rowId":{"type":"string","format":"uuid"},"reason":{"type":"string","enum":["stale","locked","arrival_confirmed","outside_roster"]},"current":{"anyOf":[{"$ref":"#/components/schemas/AttendanceRow"},{"type":"null"}]}}}}}}
-    SchoolAuditEntry: {"type":"object","required":["id","occurredAt","actorDisplay","action","resourceKind","changeCategory","requestId"],"properties":{"id":{"type":"string","format":"uuid"},"occurredAt":{"type":"string","format":"date-time"},"actorDisplay":{"type":"string"},"action":{"type":"string"},"resourceKind":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]},"changeCategory":{"type":"string","enum":["permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication"]},"requestId":{"type":"string","format":"uuid"},"permittedResourceLink":{"oneOf":[{"type":"object","required":["kind"],"properties":{"kind":{"enum":["access","calendar","assignments","timetable","invitations","applications"]}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"enum":["student","import"]},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"guardian"},"id":{"type":"string","format":"uuid"},"linkId":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id","yearId"],"properties":{"kind":{"const":"class"},"id":{"type":"string","format":"uuid"},"yearId":{"type":"string","format":"uuid"}}}]}}}
-    SchoolAuditFilters: {"type":"object","required":["timezone","actions","actors"],"properties":{"timezone":{"type":"string"},"actions":{"type":"array","items":{"type":"object","required":["action","resourceKind","changeCategory"],"properties":{"action":{"type":"string"},"resourceKind":{"type":"string","enum":["access","calendar","assignments","family","imports","invitation","application","timetable","attendance","academics","bank","finance","communications"]},"changeCategory":{"type":"string","enum":["permissions","revocation","settings","creation","update","approval","transfer","withdrawal","correction","reversal","publication"]}}}},"actors":{"type":"array","items":{"type":"object","required":["id","displayName"],"properties":{"id":{"type":"string","format":"uuid"},"displayName":{"type":"string"}}}}}}
     SchoolWorkQueueKey:
       type: string
-      enum: [guardian_links, family_imports, class_assignments, bounced_invites, unapproved_attendance, noncontinuation_requests, settlement_review, failed_deliveries]
+      enum: [guardian_links, family_imports, class_assignments, bounced_invites, unapproved_attendance, noncontinuation_requests, settlement_review]
     SchoolWorkQueues:
       oneOf:
         - type: object
@@ -4877,7 +4840,6 @@ components:
             - {type: object, required: [kind, classId, date], properties: {kind: {const: attendance_sheet}, classId: {type: string, format: uuid}, date: {type: string, format: date}}}
             - {type: object, required: [kind, requestId], properties: {kind: {const: enrollment_stop}, requestId: {type: string, format: uuid}}}
             - {type: object, required: [kind, receiptId], properties: {kind: {const: receipt_match}, receiptId: {type: string, format: uuid}}}
-            - {type: object, required: [kind, deliveryId], properties: {kind: {const: delivery_review}, deliveryId: {type: string, format: uuid}}}
             - type: object
               required: [kind, guardianId, linkId]
               properties:

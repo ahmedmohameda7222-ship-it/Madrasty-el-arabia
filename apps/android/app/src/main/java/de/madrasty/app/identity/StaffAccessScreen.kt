@@ -88,7 +88,6 @@ private val capabilities = mapOf(
     "finance.post" to R.string.permission_finance_post,
     "finance.export" to R.string.permission_finance_export,
     "bank.configure" to R.string.permission_bank_configure,
-    "audit.read" to R.string.permission_audit_read,
 )
 private val inboxes = mapOf(
     "student_affairs" to R.string.permission_student_affairs,

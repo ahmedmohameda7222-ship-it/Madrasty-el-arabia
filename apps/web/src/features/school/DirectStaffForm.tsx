@@ -36,7 +36,6 @@ const grants:Record<string,[string,string]>={
   "finance.post":["المدفوعات","Zahlungen erfassen"],
   "finance.export":["التصدير المالي","Abrechnungen exportieren"],
   "bank.configure":["إعداد البنك","Zahlungskonto konfigurieren"],
-  "audit.read":["سجل العمليات","Aktivitätsprotokoll"],
 };
 const yearList=yearSchema.array(), classList=schoolClassSchema.array();
 type Year=z.infer<typeof yearSchema>;
