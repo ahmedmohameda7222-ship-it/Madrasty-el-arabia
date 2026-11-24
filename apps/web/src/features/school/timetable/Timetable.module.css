@@ -8,10 +8,11 @@
   color:var(--muted);margin:0 0 .35rem}
 .hero h1 {margin:.1rem 0 .55rem;font-size:clamp(1.5rem,3vw,2.25rem);line-height:1.2}
 .hero p {margin:.25rem 0;color:var(--muted)}
-.toolbar {display:flex;flex-wrap:wrap;gap:.7rem;align-items:end}
-.toolbar label {display:grid;gap:.25rem;min-width:170px;font-weight:600}
-.toolbar input,.toolbar select,.fields input,.fields select {width:100%;min-height:44px;border-radius:11px;
+.toolbar {display:flex;flex-wrap:wrap;gap:.7rem;align-items:end;min-inline-size:0;max-inline-size:100%}
+.toolbar label {display:grid;grid-template-columns:minmax(0,1fr);gap:.25rem;min-width:170px;max-inline-size:100%;font-weight:600}
+.toolbar input,.toolbar select,.fields input,.fields select {width:100%;min-inline-size:0;max-inline-size:100%;box-sizing:border-box;min-height:44px;border-radius:11px;
   border:1px solid var(--rule);background:var(--card);color:inherit;padding:.55rem .7rem}
+.toolbar input[type="date"] {display:block;appearance:none;-webkit-appearance:none}
 .toolbarActions,.editorActions {display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .pickerPanel {border:1px solid var(--rule);border-radius:20px;padding:clamp(1rem,2.5vw,1.75rem);
   background:var(--card)}
@@ -91,7 +92,8 @@
  .day {min-height:0}
  .dayHead {display:flex;justify-content:space-between;align-items:center}
  .classCard {min-height:105px}
- .toolbar label {min-width:0;flex:1}
+ .summary>.toolbar {inline-size:100%}
+ .toolbar label {min-inline-size:0;flex:1 1 100%}
  .editor,.pickerPanel {border-radius:16px}
 }
 @media (prefers-reduced-motion:reduce) {.classCard {transition:none}.classCard:hover {transform:none}}
