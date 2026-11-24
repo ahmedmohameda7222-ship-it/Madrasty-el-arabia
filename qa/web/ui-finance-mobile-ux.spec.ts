@@ -1,6 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { schoolFixtures } from "../fixtures/school";
+import { setUpCalendar } from "../fixtures/calendar";
+import { fixtureApi } from "../support/api";
 import { localOrigin } from "../support/target";
 
 const scenarios = [
@@ -12,12 +14,18 @@ const scenarios = [
 for (const scenario of scenarios) {
   test.describe("finance locale "+scenario.actor+" "+scenario.locale,()=>{
   test.use({locale:scenario.locale==="ar"?"ar-EG":"de-DE"});
-  test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({context}) => {
+  test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({context,browserName}) => {
     test.setTimeout(360_000);
     const school = schoolFixtures();
     try {
       await school.seed();
       const token = await school.bearer(scenario.actor, scenario.persona);
+      // This dedicated WebKit job starts with a new disposable school, unlike
+      // the shared Chromium suite. Cashbook needs a configured school currency.
+      if(browserName==="webkit"&&scenario.persona==="admin"){
+        await setUpCalendar(school,token);
+        await fixtureApi(school,"/finance/cashbook",{token,persona:"admin"});
+      }
       await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
       mkdirSync("qa-artifacts/ui-after", {recursive:true});
       const routes = scenario.persona === "admin"
@@ -34,6 +42,7 @@ for (const scenario of scenarios) {
           await expect(page.locator(".school-content h1").first()).toBeVisible();
           await expect(page.locator('.school-content [data-async-state="loading"]')).toHaveCount(0);
           expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
+          if(route==="receipts?view=cashbook")await expect(page.locator('.school-content [data-async-state="error"],.school-content [data-async-state="forbidden"]')).toHaveCount(0);
           if(route==="fee-settings"){
             await expect(page.getByRole("switch",{name:scenario.locale==="ar"?"إصدار تلقائي":"Automatisch ausstellen"})).toBeVisible();
             await expect(page.locator(".school-content h1")).toHaveCount(1);
@@ -46,6 +55,7 @@ for (const scenario of scenarios) {
           }
           if(["issue-invoices","record-payment","fee-settings","receipts?view=cashbook"].includes(route)||(route==="finance-reports"&&scenario.persona==="admin")){
             const fields=page.locator('.school-content input:is([type=date],[type=month]):visible');
+            await expect(fields.first(),route+" must render a date field").toBeVisible();
             expect(await fields.count()).toBeGreaterThan(0);
             for(const field of await fields.all()){
               const hintId=await field.getAttribute("aria-describedby");
