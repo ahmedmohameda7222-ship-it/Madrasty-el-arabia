@@ -50,9 +50,6 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Prepare disposable synthetic database
         run: pwsh -NoProfile -File qa/start-stack.ps1
-      - name: Install WebKit for admin mobile visual verification
-        if: github.ref == 'refs/heads/feat/admin-start-redesign-2026-11-24'
-        run: pnpm exec playwright install --with-deps webkit
       - name: Check first-run setup, queues and protected finance records
         shell: bash
         run: |
@@ -63,20 +60,49 @@ jobs:
           pnpm exec tsx --env-file-if-exists=qa/.env.local --test --test-name-pattern="unconfigured school" qa/contracts/fixtures.test.ts
           pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/academics/attendance.test.ts
           pnpm qa:finance
-          if [[ "$GITHUB_REF" == "refs/heads/feat/admin-start-redesign-2026-11-24" ]]; then
-            pnpm qa:web --project=webkit ui-admin-start-redesign.spec.ts ui-work-queues-ready.spec.ts
-          fi
-      - name: Preserve admin dashboard mobile screenshots
-        if: always() && github.ref == 'refs/heads/feat/admin-start-redesign-2026-11-24'
+      - name: Show safe finance renderer diagnostics on failure
+        if: failure()
+        shell: bash
+        run: grep -E 'Finance PDF stage|API request failed' "$RUNNER_TEMP/madrasty-qa-web.log" || true
+  admin-start-verification:
+    if: github.ref == 'refs/heads/feat/admin-start-redesign-2026-11-24' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Set isolated dashboard QA workspace
+        run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install pinned dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Prepare dashboard-only database
+        run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Install WebKit
+        run: pnpm exec playwright install --with-deps webkit
+      - name: Verify admin dashboard API then browser against the isolated fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-admin-start.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/admin-start/overview.test.ts
+          pnpm qa:web --project=webkit ui-admin-start-redesign.spec.ts ui-work-queues-ready.spec.ts
+      - name: Preserve dashboard mobile screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: admin-start-webkit-mobile
           path: qa-artifacts/admin-start/
           if-no-files-found: warn
-      - name: Show safe finance renderer diagnostics on failure
-        if: failure()
-        shell: bash
-        run: grep -E 'Finance PDF stage|API request failed' "$RUNNER_TEMP/madrasty-qa-web.log" || true
   domain-acceptance:
     if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24"]'), github.ref)
     runs-on: ubuntu-latest

@@ -17,9 +17,15 @@ test("admin dashboard is compact, localized, theme-safe and uses real notebook a
     const path=`/attendance/classes/${apple.id}/days/${clock.day}`;
     const write=(suffix:string)=>({method:"POST" as const,token:teacher,persona:"teacher" as const,key:school.run+".visual."+suffix});
     const sheet=(await fixtureApi(school,path+"/open",{...write("open"),body:{},status:[200,201]})).payload.data;
-    await fixtureApi(school,`/attendance/sheets/${sheet.id}/mark-present`,{...write("mark"),body:{rows:sheet.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))}});
-    const current=(await fixtureApi(school,path,{token:teacher})).payload.data;
-    await fixtureApi(school,`/attendance/sheets/${sheet.id}/approve`,{...write("approve"),body:{approvalRevision:current.approvalRevision,expectedRows:current.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))}});
+    // A standalone visual run can prepare an open sheet; after overview.test.ts,
+    // reuse the real immutable approved record rather than reopening or modifying it.
+    if(sheet.state!=="approved"){
+      await fixtureApi(school,`/attendance/sheets/${sheet.id}/mark-present`,{...write("mark"),body:{rows:sheet.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))}});
+      const current=(await fixtureApi(school,path,{token:teacher})).payload.data;
+      await fixtureApi(school,`/attendance/sheets/${sheet.id}/approve`,{...write("approve"),body:{approvalRevision:current.approvalRevision,expectedRows:current.rows.map((row:{id:string;revision:number})=>({rowId:row.id,revision:row.revision}))}});
+    }
+    const dashboard=(await fixtureApi(school,"/school/work-queues",{token:admin})).payload.data;
+    expect(dashboard.overview.attendance.present).toBeGreaterThan(0);
     await context.addCookies([{name:"madrasty-session",value:admin,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     mkdirSync("qa-artifacts/admin-start",{recursive:true});
     for(const locale of ["de","ar"] as const)for(const width of [320,390])for(const theme of ["light","dark"] as const){
