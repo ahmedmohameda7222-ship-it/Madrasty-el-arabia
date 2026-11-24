@@ -15,11 +15,10 @@ const eligibleSql = {
   unapproved_attendance: "attendance.supervise",
   noncontinuation_requests: null,
   settlement_review: null,
-  failed_deliveries: null,
 } satisfies Record<WorkQueueKey,string|null>;
 const keys=Object.keys(eligibleSql) as WorkQueueKey[];
 const priority = [
-  "unapproved_attendance", "bounced_invites", "failed_deliveries", "noncontinuation_requests",
+  "unapproved_attendance", "bounced_invites", "noncontinuation_requests",
   "settlement_review", "guardian_links", "class_assignments", "family_imports",
 ] satisfies WorkQueueKey[];
 
@@ -30,7 +29,6 @@ async function visibleKeys(tx:Transaction) {
       when 'bounced_invites' then app.has_capability('students.manage') or app.has_capability('staff.invite')
       when 'noncontinuation_requests' then app.enrollment_stop_staff()
       when 'settlement_review' then app.finance_receipt_staff()
-      when 'failed_deliveries' then app.may_operate_delivery_queue()
       else app.has_capability(candidate.capability)
     end as allowed
     from unnest(${tx.array(keys)}::text[],${tx.array(keys.map(key=>eligibleSql[key]))}::text[]) with ordinality as candidate(key,capability,ord)

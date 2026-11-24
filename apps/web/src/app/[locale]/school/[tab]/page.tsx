@@ -27,11 +27,11 @@ export default async function SchoolPage({ params, searchParams }: {
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
   if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
   const text = dictionary(locale);
-  const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","audit.read","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
-  const { capabilities, moderation, delivery, stopManager } = tab === "more"
+  const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
+  const { capabilities, moderation, stopManager } = tab === "more"
     ? await schoolMenuAccess(session, menuKeys)
-    : { capabilities: [], moderation: false, delivery: false, stopManager: false };
-  const [access, calendar, placement, teacherInvites, academic, audit, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
+    : { capabilities: [], moderation: false, stopManager: false };
+  const [access, calendar, placement, teacherInvites, academic, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
   const invites = teacherInvites || placement;
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
@@ -81,13 +81,11 @@ export default async function SchoolPage({ params, searchParams }: {
             {(billing||bank)&&<Link className="more-row" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الحسابات":"Einstellungen"}</Link>}
           </div>
         </MoreGroup>}
-        {(access || audit || moderation || delivery) && <MoreGroup group="permissions">
-          <summary>{locale === "ar" ? "الصلاحيات والتدقيق" : "Berechtigungen und Protokoll"}</summary>
+        {(access || moderation) && <MoreGroup group="permissions">
+          <summary>{locale === "ar" ? "الصلاحيات" : "Berechtigungen"}</summary>
           <div className="more-rows">
             {access && <Link className="more-row" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
-            {audit && <Link className="more-row" href={`/${locale}/school/more/audit`}>{locale === "ar" ? "سجل التدقيق" : "Änderungsprotokoll"}</Link>}
             {moderation&&<Link className="more-row" href={`/${locale}/school/more/message-reports`}>{locale==="ar"?"بلاغات الرسائل":"Gemeldete Nachrichten"}</Link>}
-            {delivery&&<Link className="more-row" href={`/${locale}/school/more/delivery-status`}>{locale==="ar"?"حالة التوصيل":"Zustellstatus"}</Link>}
           </div>
         </MoreGroup>}
         <MoreGroup group="communication"><summary>{locale==="ar"?"التواصل والنشر":"Kommunikation"}</summary><div className="more-rows">

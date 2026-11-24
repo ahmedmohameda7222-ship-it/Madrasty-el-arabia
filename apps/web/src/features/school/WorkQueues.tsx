@@ -13,10 +13,10 @@ import { TimetableRead, timetableError, useTimetableRead } from "./timetable/sha
 const queueLabels: Record<Locale,Record<WorkQueueKey,string>> = {
   ar:{guardian_links:"روابط الأسر للمراجعة",family_imports:"دفعات استيراد مفتوحة",class_assignments:"فصول ينقصها تكليف",
     bounced_invites:"دعوات تعذّر تسليمها",unapproved_attendance:"حضور بانتظار الاعتماد",noncontinuation_requests:"طلبات وقف القيد",
-    settlement_review:"مدفوعات للمراجعة",failed_deliveries:"إرسال تعذّر تسليمه"},
+    settlement_review:"مدفوعات للمراجعة"},
   de:{guardian_links:"Familienverknüpfungen zur Prüfung",family_imports:"Offene Familienimporte",class_assignments:"Klassen mit fehlendem Einsatz",
     bounced_invites:"Nicht zugestellte Einladungen",unapproved_attendance:"Offene Anwesenheitsfreigaben",noncontinuation_requests:"Anträge zur Abmeldung",
-    settlement_review:"Zahlungen zur Prüfung",failed_deliveries:"Fehlgeschlagene Zustellungen"},
+    settlement_review:"Zahlungen zur Prüfung"},
 };
 const copy={
   ar:{work:"مهام المدرسة",date:"المهام حتى تاريخ",apply:"عرض المهام",open:"فتح المهام",unavailable:"تعذّر تحميل العدد",
@@ -144,7 +144,6 @@ function action(locale:Locale,entry:QueueItem) {
   if(target.kind==="enrollment_stop")return `${base}/more/enrollment-stops?request=${target.requestId}`;
   if(target.kind==="attendance_sheet")return `${base}/more/attendance?class=${target.classId}&date=${target.date}`;
   if(target.kind==="receipt_match")return `${base}/more/receipts?receipt=${target.receiptId}`;
-  if(target.kind==="delivery_review")return `${base}/more/delivery-status?job=${target.deliveryId}`;
   if(target.kind==="bounced_invite")return `/${locale}/school/students?invite=${target.invitationId}`;
   return `${base}/more/assignments?year=${target.yearId}&class=${target.classId}`;
 }

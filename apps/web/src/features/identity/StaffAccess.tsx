@@ -225,7 +225,7 @@ export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount
               <>
                 <fieldset disabled={busy || ownAccount === target}>
                   <legend>{text.grants}</legend>
-                  {capabilityKeys.map((key) => {
+                  {capabilityKeys.filter(key=>key!=="audit.read").map((key) => {
                     const item = edit.capabilities.find((grant) => grant.key === key);
                     return (
                       <div className="access-item" key={key}>
