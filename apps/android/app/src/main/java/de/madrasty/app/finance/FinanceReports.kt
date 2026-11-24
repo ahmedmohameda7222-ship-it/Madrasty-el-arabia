@@ -69,6 +69,7 @@ internal fun FinanceReports(
                 TextButton(onClick = { showHistory = !showHistory }) { Text(stringResource(R.string.finance_invoice_history)) }
                 if (showHistory) {
                     val query = filters.copy(asOf = data.getString("asOf")).query(data.getString("cutoff"))
+                    if (data.getBoolean("canExport")) ExportStatement(model, data.getString("asOf"), query)
                     academicPages(model, "/finance/reports/statement?limit=25&$query", version) { rows ->
                         for (row in rows) ReportLine(row, openInvoice, openReceipt, null)
                     }

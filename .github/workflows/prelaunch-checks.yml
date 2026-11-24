@@ -168,7 +168,7 @@ jobs:
             chmod +x apps/android/gradlew
             ./apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest --no-daemon --stacktrace
             mkdir -p qa-artifacts/native-finance-${{ matrix.width }}
-            adb pull /sdcard/Android/data/de.madrasty.app.prelaunch/files/finance-qa/. qa-artifacts/native-finance-${{ matrix.width }}/
+            adb pull /sdcard/Download/madrasty-finance-qa/. qa-artifacts/native-finance-${{ matrix.width }}/
             test "$(find qa-artifacts/native-finance-${{ matrix.width }} -name '*.png' | wc -l)" -eq 4
       - name: Preserve native finance layout evidence
         if: always()

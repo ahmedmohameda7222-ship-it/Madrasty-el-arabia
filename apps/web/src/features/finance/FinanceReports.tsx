@@ -132,14 +132,19 @@ function ReportBody({locale,data,filters,refresh,focus}:{
     }catch{setFailed(true);}
     finally{setBusy(false);}
   }
+  const invoiceParams=new URLSearchParams();
+  if(filters.studentId)invoiceParams.set("student",filters.studentId);
+  if(filters.period)invoiceParams.set("period",filters.period);
   if(data.scope==="payer")return <>
     {data.totals.length===0&&<div className={css.panel}><h2>{locale==="ar"?"لا توجد فواتير بعد":"Noch keine Rechnungen"}</h2><p className={css.secondary}>{locale==="ar"?"هنا هتلاقي رسوم أطفالك ومدفوعاتك بعد إصدار الفواتير.":"Hier sehen Sie die Gebühren und Zahlungen Ihrer Kinder, sobald Rechnungen ausgestellt wurden."}</p></div>}
     {data.totals.map(value=><div key={value.currency} className={css.summaryGroup}>
       <div className={css.balance}><small>{locale==="ar"?"المبلغ المتبقي":"Offener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(value.outstandingMinor,value.currency)}</bdi></strong></div>
       <div className={css.metrics}>{([[locale==="ar"?"المطلوب":"Gebühren",value.collectibleMinor],[locale==="ar"?"المدفوع":"Bezahlt",value.appliedMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi dir="ltr">{financeAmount(amount,value.currency)}</bdi></strong></div>)}</div>
     </div>)}
-    <Link className="primary-button" href={`${root}/invoices${filters.studentId||filters.period?"?"+new URLSearchParams({...filters.studentId?{student:filters.studentId}:{},...filters.period?{period:filters.period}:{}}).toString():""}`}>{locale==="ar"?"فواتيري":"Meine Rechnungen"}</Link>
+    <Link className="primary-button" href={`${root}/invoices${invoiceParams.size?"?"+invoiceParams.toString():""}`}>{locale==="ar"?"فواتيري":"Meine Rechnungen"}</Link>
     {data.totals.length>0&&<details className={css.disclosure}><summary>{locale==="ar"?"الفواتير والإيصالات":"Rechnungen und Belege"}</summary><AcademicPageItems locale={locale} page={page} emptyMessage={locale==="ar"?"لا توجد حركات مالية.":"Keine Buchungen."}>{rows=><ul className="group-list">{rows.map(item=><StatementLine key={item.kind+":"+item.id} locale={locale} item={item}/>)}</ul>}</AcademicPageItems></details>}
+    {data.canExport&&<button type="button" className="plain-button" disabled={busy} onClick={()=>void download()}>{text.export}</button>}
+    {failed&&<p role="alert">{text.exportFailed}</p>}
     <p className={css.secondary}>{locale==="ar"?"حتى":"Stand"} · <bdi>{data.asOf}</bdi></p>
   </>;
   return <>

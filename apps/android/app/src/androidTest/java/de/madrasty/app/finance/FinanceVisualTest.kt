@@ -1,6 +1,10 @@
 package de.madrasty.app.finance
 
+import android.content.ContentValues
 import android.content.res.Configuration
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +30,6 @@ import org.json.JSONObject
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.io.File
 import java.util.Locale
 
 /**
@@ -97,11 +100,17 @@ class FinanceVisualTest {
         compose.waitForIdle()
         instrumentation.waitForIdleSync()
         val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
-        val directory = requireNotNull(target.getExternalFilesDir("finance-qa"))
-        directory.mkdirs()
-        val file = File(directory, "finance-native-fixture-${if(payer) "payer" else "admin"}-$language-${if(dark) "dark" else "light"}.png")
-        file.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
-        assertTrue(file.length() > 0)
+        check(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        val name = "finance-native-fixture-${if(payer) "payer" else "admin"}-$language-${if(dark) "dark" else "light"}.png"
+        val resolver = target.contentResolver
+        val uri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/madrasty-finance-qa")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }))
+        requireNotNull(resolver.openOutputStream(uri)).use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
         bitmap.recycle()
     }
 }

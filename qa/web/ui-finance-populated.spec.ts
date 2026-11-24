@@ -27,7 +27,7 @@ async function seedFinance(school: FixtureSchool) {
     const profile=(await fixtureApi(school,path,{token:finance,persona:"admin"})).payload.data;
     const guardian=profile.choices.find((one:{displayName:string})=>one.displayName===name);
     expect(guardian?.id).toBeTruthy();
-    const active=[...profile.designations].filter((x:{effectiveFromMonth:string})=>x.effectiveFromMonth<=clock.month).sort((a,b)=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth))[0];
+    const active=[...profile.designations].filter((x:{effectiveFromMonth:string})=>x.effectiveFromMonth<=clock.month).sort((a:{effectiveFromMonth:string},b:{effectiveFromMonth:string})=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth))[0];
     if(active?.guardianId!==guardian.id)await send(path,"payer-"+id,{guardianId:guardian.id,effectiveFromMonth:clock.month,revision:profile.revision},"PUT");
   }
   const cases=[
