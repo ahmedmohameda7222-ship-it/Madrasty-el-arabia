@@ -50,6 +50,9 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Prepare disposable synthetic database
         run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Install WebKit for admin mobile visual verification
+        if: github.ref == 'refs/heads/feat/admin-start-redesign-2026-11-24'
+        run: pnpm exec playwright install --with-deps webkit
       - name: Check first-run setup, queues and protected finance records
         shell: bash
         run: |
@@ -60,6 +63,16 @@ jobs:
           pnpm exec tsx --env-file-if-exists=qa/.env.local --test --test-name-pattern="unconfigured school" qa/contracts/fixtures.test.ts
           pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/academics/attendance.test.ts
           pnpm qa:finance
+          if [[ "$GITHUB_REF" == "refs/heads/feat/admin-start-redesign-2026-11-24" ]]; then
+            pnpm qa:web --project=webkit ui-admin-start-redesign.spec.ts ui-work-queues-ready.spec.ts
+          fi
+      - name: Preserve admin dashboard mobile screenshots
+        if: always() && github.ref == 'refs/heads/feat/admin-start-redesign-2026-11-24'
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-start-webkit-mobile
+          path: qa-artifacts/admin-start/
+          if-no-files-found: warn
       - name: Show safe finance renderer diagnostics on failure
         if: failure()
         shell: bash

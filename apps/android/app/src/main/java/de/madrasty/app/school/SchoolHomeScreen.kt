@@ -55,6 +55,7 @@ import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.RoleHero
+import de.madrasty.app.ui.AdminRoleHero
 import de.madrasty.app.ui.isolate
 import org.json.JSONArray
 import org.json.JSONObject
@@ -160,7 +161,7 @@ private fun AdminHome(
         for(row in queues.filter{it.optString("state")=="ready"&&it.optInt("count")>0}.take(2)){
             snippets.add(numbers.format(row.getInt("count"))+" "+stringResource(queueLabels.getValue(row.getString("key"))))
         }
-        RoleHero(Persona.Admin,stringResource(R.string.queue_title),detail+(if(snippets.isNotEmpty())" · "+snippets.joinToString(" · ") else ""),stringResource(R.string.queue_open),tasks)
+        AdminRoleHero(stringResource(R.string.queue_title),detail,stringResource(R.string.queue_open),snippets,tasks)
         if(unavailable&&total>0)Text(stringResource(R.string.queue_unavailable),style=MaterialTheme.typography.bodySmall)
         val overview=summary.optJSONObject("overview")
         if(overview!=null){

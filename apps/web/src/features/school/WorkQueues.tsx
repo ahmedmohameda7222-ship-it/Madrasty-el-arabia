@@ -126,13 +126,13 @@ export function AdminWork({locale,initialDay,tasksOnly=false}:{locale:Locale;ini
     return <div className="admin-start">
       <div className="admin-start-date">{dateLabel(summary.today,locale)} <Link href={`/${locale}/account/profile`}>{t.profile}</Link></div>
       <div className="admin-start-hero">
-        <RoleHero persona="admin" title={text.work} detail={detail+(active.length?" · "+active.slice(0,2).map(row=>`${number(row.state==="ready"?row.count:0)} ${queueLabels[locale][row.key]}`).join(" · "):"")} action={{href:tasksHref,label:text.open}}/>
+        <RoleHero persona="admin" title={text.work} detail={detail} emphasizeDetail highlights={active.slice(0,2).map(row=>`${number(row.state==="ready"?row.count:0)} ${queueLabels[locale][row.key]}`)} action={{href:tasksHref,label:text.open}}/>
         {unavailable&&total>0&&<p className="admin-start-muted">{t.partial}</p>}
       </div>
       {metrics.length>0&&<section className="admin-start-section"><h2>{t.overview}</h2>
         <dl className="admin-start-metrics">{metrics.map(key=><div key={key} className="admin-start-panel">
           <Icon name={key==="students"?"students":key==="classes"?"school":"teacher"}/>
-          <dd>{number(overview![key]!)}</dd><dt>{labels[key]}</dt>
+          <dt>{labels[key]}</dt><dd>{number(overview![key]!)}</dd>
         </div>)}</dl>
         {overview?.mayMonitor&&<Link className="admin-start-inline" href={`${base}/more/oversight`}>{t.classMonitor}<Icon name="chevron"/></Link>}
       </section>}

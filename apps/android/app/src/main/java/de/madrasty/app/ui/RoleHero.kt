@@ -27,7 +27,16 @@ import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
 
 @Composable
-fun RoleHero(persona: Persona, title: String, detail: String, action: String, onAction: () -> Unit) {
+fun RoleHero(persona: Persona, title: String, detail: String, action: String, onAction: () -> Unit) =
+    RoleHeroContent(persona,title,detail,action,emptyList(),false,onAction)
+
+@Composable
+fun AdminRoleHero(title:String,detail:String,action:String,highlights:List<String>,onAction:()->Unit) =
+    RoleHeroContent(Persona.Admin,title,detail,action,highlights,true,onAction)
+
+@Composable
+private fun RoleHeroContent(persona: Persona, title: String, detail: String, action: String,
+    highlights:List<String>, emphasizeDetail:Boolean,onAction: () -> Unit) {
     val (background, artwork) = when (persona) {
         Persona.Admin -> Color(0xFF2355A0) to R.drawable.notebook_admin
         Persona.Teacher -> Color(0xFF096656) to R.drawable.notebook_teacher
@@ -41,7 +50,8 @@ fun RoleHero(persona: Persona, title: String, detail: String, action: String, on
         CompositionLocalProvider(LocalContentColor provides Color.White) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-                Text(detail)
+                Text(detail,style=if(emphasizeDetail)MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge)
+                highlights.forEach{Text(it,style=MaterialTheme.typography.bodySmall)}
                 Button(
                     onClick = onAction,
                     colors = ButtonDefaults.buttonColors(
