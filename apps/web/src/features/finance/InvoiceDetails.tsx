@@ -49,6 +49,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
         <button className="plain-button" type="submit">{text.find}</button>
       </form>
       <div className="header-actions">
+        <label>{text.search}<input type="search" value={search} maxLength={100} onChange={event=>setSearch(event.target.value)}/></label>
         <label>{text.period}<input dir="ltr" type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/></label>
         <label>{text.status}<select value={state} onChange={(event)=>setState(event.target.value)}>
           <option value="">{text.allStates}</option>{invoiceState.options.map((key)=><option value={key} key={key}>{text[key]}</option>)}

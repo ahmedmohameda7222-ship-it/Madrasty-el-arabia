@@ -16,7 +16,7 @@ export default async function FinanceReportsPage({params,searchParams}:{
     if(!read&&!post)notFound();
   }
   return <FinanceReports locale={locale} staff={staff} initial={{
-    studentId:z.uuid().safeParse(query.student).data,period:billingMonth.safeParse(query.period).data,
+    studentId:z.uuid().safeParse(query.student).data,period:billingMonth.safeParse(query.period).data??(staff?new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit"}).format(new Date()):undefined),
     status:financeReportStatus.safeParse(query.status).data,asOf:schoolDateSchema.safeParse(query.asOf).data,
   }}/>;
 }
