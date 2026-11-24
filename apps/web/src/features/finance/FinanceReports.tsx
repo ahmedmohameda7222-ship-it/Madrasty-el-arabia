@@ -15,7 +15,7 @@ import {readFinanceReportContext,writeFinanceReportContext} from "./report-conte
 
 const copy={
   ar:{
-    title:"كشف الحساب",period:"شهر إصدار الرسوم",asOf:"الأرصدة في تاريخ",from:"السداد المستلم من",through:"السداد المستلم حتى",
+    title:"نظرة مالية",period:"شهر إصدار الرسوم",asOf:"الأرصدة في تاريخ",from:"السداد المستلم من",through:"السداد المستلم حتى",
     apply:"عرض التقرير",classes:"الفصل في فترة الفاتورة",allClasses:"كل الفصول",allPupils:"كل الطلبة في الكشف",
     filteredPupil:"كشف الطالب المحدد",allStates:"كل الحالات",overdue:"متأخر",billed:"الرسوم الصادرة",collectible:"الرسوم المستحقة للتحصيل",
     applied:"المخصص على الفواتير",outstanding:"إجمالي المتبقي",late:"المتأخر",received:"المدفوعات المسجلة",net:"صافي المقبوض",
@@ -26,7 +26,7 @@ const copy={
     adjustment:"تسوية رسوم",refund:"رد مبلغ مسجل",balance:"الرصيد في تاريخ الكشف",export:"تنزيل CSV",exportFailed:"تعذّر تنزيل التقرير. راجع الصلاحية أو ضيّق نطاق التواريخ.",
   },
   de:{
-    title:"Gebührenübersicht",period:"Abrechnungsmonat",asOf:"Stand am",from:"Zahlungseingang ab",through:"Zahlungseingang bis",
+    title:"Finanzübersicht",period:"Abrechnungsmonat",asOf:"Stand am",from:"Zahlungseingang ab",through:"Zahlungseingang bis",
     apply:"Bericht anzeigen",classes:"Klasse im Abrechnungsmonat",allClasses:"Alle Klassen",allPupils:"Alle Schüler im Bericht",
     filteredPupil:"Ausgewählter Schüler",allStates:"Alle Status",overdue:"Überfällig",billed:"In Rechnung gestellt",collectible:"Einziehbare Gebühren",
     applied:"Rechnungen zugeordnet",outstanding:"Offene Summe",late:"Überfällige Summe",received:"Erfasste Zahlungen",net:"Nettoeingang",

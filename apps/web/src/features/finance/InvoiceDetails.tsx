@@ -12,7 +12,7 @@ import {TransferDetails} from "./TransferDetails";
 import {receiptCopy} from "./receipt-ui";
 
 const rows=invoiceSummary.array();
-export function InvoiceDetails({locale,invoice,student,period,canPost}:{locale:Locale;invoice?:string;student?:string;period?:string;canPost:boolean}){
+export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=false}:{locale:Locale;invoice?:string;student?:string;period?:string;canPost:boolean;canIssue?:boolean}){
   const text=billingCopy[locale],root=`/${locale}/school/more/invoices`;
   const [month,setMonth]=useState(period??""),[state,setState]=useState("");
   const valid=billingMonth.safeParse(month),filter=invoiceState.safeParse(state);
@@ -41,6 +41,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost}:{locale:L
           context={{kind:"invoice",id:item.id}}/>}
       </div>}</TimetableRead>
     </>:<>
+      {canIssue&&<Link className="primary-button" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"+ إصدار فاتورة":"+ Neue Rechnung"}</Link>}
       <div className="header-actions">
         <label>{text.period}<input dir="ltr" type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/></label>
         <label>{text.status}<select value={state} onChange={(event)=>setState(event.target.value)}>
