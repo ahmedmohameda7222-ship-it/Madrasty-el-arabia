@@ -29,14 +29,14 @@ async function fontPath(){
   return arabic;
 }
 async function renderDocument(title:string,number:string,locale:Locale,blocks:Block[]){
-  const rtl=locale==="ar",t=labels[locale],fontfile=await fontPath();
-  const logo=await readFile(join(process.cwd(),"public","school-192.png")).then(b=>sharp(b).resize(80,80,{fit:"contain"}).png().toBuffer());
+  const rtl=locale==="ar",t=labels[locale],fontfile=await fontPath().catch(cause=>{console.error("Finance PDF stage: font initialization",cause instanceof Error?cause.name:"unknown");throw cause;});
+  const logo=await readFile(join(process.cwd(),"public","school-192.png")).then(b=>sharp(b).resize(80,80,{fit:"contain"}).png().toBuffer()).catch(cause=>{console.error("Finance PDF stage: logo initialization",cause instanceof Error?cause.name:"unknown");throw cause;});
   type Layer={input:Buffer;left:number;top:number};
   let layers:Layer[]=[],y=0;
   const pages:Buffer[]=[];
   const raster=async(text:string,width:number,size:number,color:string,bold=false,align:"left"|"right"=rtl?"right":"left")=>{
     const markup='<span foreground="'+color+'">'+(bold?"<b>":"")+esc(text||" ")+(bold?"</b>":"")+"</span>";
-    const {data,info}=await sharp({text:{text:markup,font:"IBM Plex Sans Arabic "+size,fontfile,width,align,rgba:true,wrap:"word-char"}}).png().toBuffer({resolveWithObject:true});
+    const {data,info}=await sharp({text:{text:markup,font:"IBM Plex Sans Arabic "+size,fontfile,width,align,rgba:true,wrap:"word-char"}}).png().toBuffer({resolveWithObject:true}).catch(cause=>{console.error("Finance PDF stage: text raster",cause instanceof Error?cause.name:"unknown");throw cause;});
     return {data,width:info.width,height:info.height};
   };
   const put=async(text:string,left:number,top:number,width:number,size:number,color:string,bold=false,align:"left"|"right"=rtl?"right":"left")=>{
@@ -56,7 +56,7 @@ async function renderDocument(title:string,number:string,locale:Locale,blocks:Bl
   async function finish(){
     await put(t.snapshot+": "+date(new Date().toISOString(),locale),margin,H-105,bodyWidth-130,19,muted);
     await put(t.page+" "+(pages.length+1),W-margin-125,H-105,125,19,muted,false,"right");
-    pages.push(await sharp({create:{width:W,height:H,channels:3,background:"#ffffff"}}).composite(layers).jpeg({quality:94,chromaSubsampling:"4:4:4"}).toBuffer());
+    pages.push(await sharp({create:{width:W,height:H,channels:3,background:"#ffffff"}}).composite(layers).jpeg({quality:94,chromaSubsampling:"4:4:4"}).toBuffer().catch(cause=>{console.error("Finance PDF stage: page composite",cause instanceof Error?cause.name:"unknown");throw cause;}));
   }
   await start();
   for(const block of blocks){
