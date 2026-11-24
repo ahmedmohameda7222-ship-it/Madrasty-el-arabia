@@ -69,6 +69,7 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const omar = invoices.find((invoice) => invoice.studentId === ids.omar);
     assert.ok(ahmed && omar);
     assert.equal(ahmed.totalMinor, 3200);
+    assert.ok(ahmed.issueInstructions);
     assert.equal(ahmed.issueInstructions.iban, bank.iban);
     assert.match(ahmed.issueInstructions.reference, /MA-\d+/);
     await fixtureApi(school, `/finance/invoices/${ahmed.id}`, { token: nonpayer, status: 404 });

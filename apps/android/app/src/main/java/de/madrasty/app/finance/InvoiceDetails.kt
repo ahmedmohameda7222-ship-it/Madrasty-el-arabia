@@ -80,7 +80,7 @@ private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: 
     Text(stringResource(R.string.fee_balance) + " · " + financeMoney(item.getLong("balanceMinor"), currency))
     item.optJSONObject("paymentInstructions")?.let { TransferDetails(it) }
     TextButton(onClick = { snapshot = !snapshot }) { Text(stringResource(R.string.fee_snapshot)) }
-    if (snapshot) TransferDetails(item.getJSONObject("issueInstructions"))
+    if (snapshot) item.optJSONObject("issueInstructions")?.let { TransferDetails(it) }
     val receipts = item.getJSONArray("receiptIds")
     for (index in 0 until receipts.length()) {
         TextButton(onClick = { receipt(receipts.getString(index)) }) { Text(stringResource(R.string.receipt_open) + " " + (index + 1)) }

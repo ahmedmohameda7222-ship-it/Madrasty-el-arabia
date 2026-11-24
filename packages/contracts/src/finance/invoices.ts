@@ -60,7 +60,7 @@ export const invoiceSummary=z.object({
   revision:revisionSchema,
 });
 export const invoiceDetail=invoiceSummary.extend({
-  lines:invoiceLines,paymentInstructions:transferInstructions.nullable(),issueInstructions:transferInstructions,
+  lines:invoiceLines,paymentInstructions:transferInstructions.nullable(),issueInstructions:transferInstructions.nullable(),
   receiptIds:id.array(),canInquire:z.boolean(),
 });
 export type InvoicePreview=z.infer<typeof invoicePreview>;

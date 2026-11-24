@@ -45,7 +45,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     val currency = setup.getString("currency")
     val today = setup.getString("schoolDate")
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
-    var method by remember { mutableStateOf("bank") }
+    var method by remember { mutableStateOf(if (setup.getBoolean("cashEnabled")) "cash" else "bank") }
     var date by remember(today) { mutableStateOf(today) }
     var reference by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }

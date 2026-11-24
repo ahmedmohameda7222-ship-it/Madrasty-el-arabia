@@ -33,7 +33,8 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
         <p>{text.allocated} · <bdi dir="ltr">{financeAmount(item.allocatedMinor,item.currency)}</bdi></p>
         <p>{text.balance} · <bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></p>
         {item.paymentInstructions&&<TransferDetails locale={locale} details={item.paymentInstructions}/>}
-        <details><summary>{text.issueSnapshot}</summary><TransferDetails locale={locale} details={item.issueInstructions}/></details>
+        {item.issueInstructions&&<details><summary>{text.issueSnapshot}</summary><TransferDetails locale={locale} details={item.issueInstructions}/></details>}
+        {!item.paymentInstructions&&item.balanceMinor>0&&item.state!=="cancelled"&&<p>{locale==="ar"?"السداد نقدًا لدى المدرسة":"Barzahlung bei der Schule"}</p>}
         {item.receiptIds.length>0&&<ul className="group-list">{item.receiptIds.map((id,index)=><li key={id}>
           <Link className="plain-button" href={`/${locale}/school/more/receipts?receipt=${id}`}>{receiptCopy[locale].open} {index+1}</Link>
         </li>)}</ul>}

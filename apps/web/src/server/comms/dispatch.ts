@@ -126,6 +126,10 @@ async function dispatchPush(job:Job){
 }
 
 export async function dispatchSchoolDelivery(){
+  const automaticBilling=await withDeliveryWorker(async tx=>{
+    const [row]=await tx<{issued:number}[]>`select app.issue_automatic_monthly_fees(30) as issued`;
+    return {issued:row.issued};
+  }).catch(()=>{console.warn("Automatic monthly billing unavailable");return {state:"unavailable"} as const;});
   const projection=await projectSchoolNotifications().catch(()=>{
     console.warn("School notification projection unavailable");
     return {state:"unavailable"} as const;
@@ -148,7 +152,7 @@ export async function dispatchSchoolDelivery(){
       else pending++;
     }
   }
-  return {claimed:jobs.length,accepted,suppressed,pending,projection};
+  return {claimed:jobs.length,accepted,suppressed,pending,projection,automaticBilling};
 }
 
 export async function applyProviderEmailEvent(request:Request){
