@@ -37,7 +37,7 @@ for (const scenario of scenarios) {
             await expect(page.getByRole("heading",{name:scenario.locale==="ar"?"الفواتير الشهرية التلقائية":"Automatische Monatsrechnungen",exact:true})).toHaveCount(1);
           }
           if(route==="invoices"&&scenario.persona==="guardian")await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
-          if(route==="issue-invoices")await expect(page.getByLabel(scenario.locale==="ar"?"نوع الفاتورة":"Rechnungsart",{exact:true})).toBeVisible();
+          if(route==="issue-invoices")await expect(page.getByRole("combobox",{name:scenario.locale==="ar"?"نوع الفاتورة":"Rechnungsart",exact:true})).toBeVisible();
           const file=route.replace(/[^a-z0-9-]/g,"-");
           await page.screenshot({path:"qa-artifacts/ui-after/finance-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled",fullPage:true});
           if(route==="issue-invoices"||route==="record-payment"){
