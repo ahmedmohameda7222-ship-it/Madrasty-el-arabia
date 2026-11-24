@@ -27,7 +27,7 @@ function RequestForm({locale,initialStudent,month,submitted}:{
   const choices=useAcademicPage("/me/children?limit=50",pupils,0);
   const start=billingMonth.safeParse(last).success?nextBillingMonth(last):undefined;
   const end=duration==="one_month"&&start?nextBillingMonth(start):null;
-  const input=stopSubmit.safeParse({studentId:student,lastAttendanceMonth:last,duration,reason});
+  const input=stopSubmit.safeParse({studentId:student,lastAttendanceMonth:last,duration,reason:reason.trim()||(locale==="ar"?"توقف مؤقت":"Teilnahmepause")});
   const valid=input.success&&last>=month&&!!start&&(duration==="indefinite"||!!end);
   const root=`/${locale}/school/more/enrollment-stops`;
   async function save(event:FormEvent){
@@ -60,7 +60,7 @@ function RequestForm({locale,initialStudent,month,submitted}:{
         <label>{text.duration}<select value={duration} onChange={(event)=>setDuration(event.target.value==="indefinite"?"indefinite":"one_month")}>
           <option value="one_month">{text.one_month}</option><option value="indefinite">{text.indefinite}</option>
         </select></label>
-        <label>{text.reason}<textarea value={reason} minLength={3} maxLength={800} onChange={(event)=>setReason(event.target.value)} required/></label>
+        <label>{text.reason} ({locale==="ar"?"اختياري":"optional"})<textarea value={reason} minLength={3} maxLength={800} onChange={(event)=>setReason(event.target.value)} required/></label>
       </>}
       <div className="header-actions">
         <button type="submit" className="primary-button" disabled={!valid||busy}>{preview?text.submit:text.preview}</button>

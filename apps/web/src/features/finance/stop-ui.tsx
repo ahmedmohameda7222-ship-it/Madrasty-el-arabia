@@ -5,10 +5,10 @@ import {ConfirmedAt} from "@/ui/RecordValues";
 
 export const stopCopy={
   ar:{
-    title:"وقف القيد",staffTitle:"طلبات وقف القيد",newRequest:"طلب وقف القيد",child:"الطالب",last:"آخر شهر حضور",
+    title:"وقف القيد",staffTitle:"فترات التوقف",newRequest:"تسجيل توقف مؤقت",child:"الطالب",last:"آخر شهر حضور",
     start:"يبدأ الوقف من",end:"القيد يستأنف من",indefinite:"لأجل غير محدد",one_month:"شهر واحد",duration:"مدة الوقف",
-    reason:"سبب الطلب",note:"ملاحظة القرار",preview:"مراجعة",edit:"تعديل",submit:"إرسال الطلب",withdraw:"سحب الطلب",
-    confirm:"تأكيد",all:"كل الحالات",pending:"بانتظار القرار",withdrawn:"اتسحب",approved:"اتوافق عليه",rejected:"اترَفض",
+    reason:"سبب الطلب",note:"ملاحظة القرار",preview:"مراجعة",edit:"تعديل",submit:"تأكيد التوقف",withdraw:"سحب الطلب",
+    confirm:"تأكيد",all:"كل الحالات",pending:"بانتظار القرار",withdrawn:"اتسحب",approved:"تم تسجيل التوقف",rejected:"اترَفض",
     approve:"الموافقة على الطلب",reject:"رفض الطلب",back:"رجوع",choose:"اختار طالب",review:"المراجعة المالية",
     open:"مفتوحة",waived:"اتسوت الرسوم",retained:"الرسوم مستمرة",reviewTitle:"تسويات وقف القيد",
     original:"الرسوم وقت الإصدار",collectible:"الرسوم المستحقة",originalPaid:"المخصص وقت الموافقة",activePaid:"المخصص الآن",
@@ -21,11 +21,11 @@ export const stopCopy={
     refundSaved:"تم تسجيل رد المبلغ خارجيًا",dismiss:"إغلاق",missingEvidence:"راجع كل إيصال وأضف إثبات للمبلغ المخصص منه بالكامل.",
   },
   de:{
-    title:"Teilnahmepause",staffTitle:"Anträge auf Teilnahmepause",newRequest:"Teilnahmepause beantragen",child:"Schüler",
+    title:"Teilnahmepause",staffTitle:"Teilnahmepausen",newRequest:"Teilnahme pausieren",child:"Schüler",
     last:"Letzter Teilnahmemonat",start:"Beginn der Pause",end:"Wiederaufnahme ab",indefinite:"Unbefristet",one_month:"Ein Monat",
     duration:"Dauer der Pause",reason:"Begründung",note:"Vermerk zur Entscheidung",preview:"Prüfen",edit:"Bearbeiten",
-    submit:"Antrag stellen",withdraw:"Antrag zurückziehen",confirm:"Bestätigen",all:"Alle Status",pending:"Entscheidung ausstehend",
-    withdrawn:"Zurückgezogen",approved:"Genehmigt",rejected:"Abgelehnt",approve:"Antrag genehmigen",reject:"Antrag ablehnen",
+    submit:"Pause bestätigen",withdraw:"Antrag zurückziehen",confirm:"Bestätigen",all:"Alle Status",pending:"Entscheidung ausstehend",
+    withdrawn:"Zurückgezogen",approved:"Erfasst",rejected:"Abgelehnt",approve:"Antrag genehmigen",reject:"Antrag ablehnen",
     back:"Zurück",choose:"Schüler auswählen",review:"Finanzielle Klärung",open:"Offen",waived:"Gebühren aufgehoben",
     retained:"Gebühren bleiben bestehen",reviewTitle:"Gebühren bei Teilnahmepausen",original:"Gebühren bei Ausstellung",
     collectible:"Einziehbare Gebühren",originalPaid:"Zuordnung bei Genehmigung",activePaid:"Aktuelle Zuordnung",
