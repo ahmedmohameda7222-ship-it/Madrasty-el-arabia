@@ -2,6 +2,8 @@ package de.madrasty.app.finance
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -79,7 +81,7 @@ internal fun CashbookPanel(model:IdentityViewModel){
     val read=academicRead("/finance/cashbook"+if(validBillingMonth(month))"?month=$month" else "",refresh){model.financeObject(it)}
     AsyncSurface(read){data->
         val currency=data.getString("currency")
-        Text(stringResource(R.string.cashbook_balance)+" · "+financeMoney(data.getLong("balanceMinor"),currency),style=MaterialTheme.typography.titleLarge)
+        FinanceBalanceCard(stringResource(R.string.cashbook_balance),financeMoney(data.getLong("balanceMinor"),currency))
         Text(isolate(data.getString("month")))
         for((field,label) in listOf("incomeMinor" to R.string.cashbook_income,"expenseMinor" to R.string.cashbook_expense,"depositsMinor" to R.string.cashbook_deposit))Text(stringResource(label)+" · "+financeMoney(data.getLong(field),currency))
         if(data.getBoolean("canPost")){
@@ -89,14 +91,18 @@ internal fun CashbookPanel(model:IdentityViewModel){
             var day by remember{mutableStateOf(data.getString("schoolDate"))}
             var amount by remember{mutableStateOf("")}
             var reason by remember{mutableStateOf("")}
-            for((wire,label) in kinds)FilterChip(kind==wire,{kind=wire},label={Text(stringResource(label))})
+            var addMovement by remember{mutableStateOf(false)}
+            Button(onClick={addMovement=!addMovement}){Text(stringResource(if(addMovement) R.string.fee_edit else R.string.finance_new_movement))}
+            if (addMovement) {
+            FlowRow { for((wire,label) in kinds)FilterChip(kind==wire,{kind=wire},label={Text(stringResource(label))}) }
             Field(R.string.receipt_date,day){day=financeDigits(it).take(10)}
             Field(R.string.finance_amount,amount){amount=it.take(24)}
             Field(R.string.cashbook_description,reason){reason=it.take(500)}
             val minor=financeMinor(amount,currency,100_000_000_000_000)
             Submit(minor!=null&&validFinanceDate(day)&&day<=data.getString("schoolDate")&&reason.trim().length>=3){
                 model.schoolCommand(attempts,"/finance/cashbook","POST",JSONObject().put("date",day).put("kind",kind).put("amountMinor",minor).put("description",reason.trim()))
-                amount="";reason="";refresh++
+                amount="";reason="";addMovement=false;refresh++
+            }
             }
         }
         for(entry in data.financeRows("entries")){

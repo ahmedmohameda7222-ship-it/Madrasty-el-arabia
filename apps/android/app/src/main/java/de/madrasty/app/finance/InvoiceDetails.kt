@@ -1,5 +1,7 @@
 package de.madrasty.app.finance
 
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +34,7 @@ internal fun InvoiceDetails(
             val details = academicRead("/finance/invoices/$id", model.attendanceNetworkRevision) { model.financeObject(it) }
             AsyncSurface(details) { item -> InvoiceDocument(model, item, thread, receipt, payment) }
         } else {
-            if(issue!=null) TextButton(onClick=issue){Text(stringResource(R.string.fee_issue))}
+            if(issue!=null) Button(onClick=issue){Text(stringResource(R.string.fee_issue))}
             InvoiceList(model, student, period, open)
         }
     }
@@ -43,9 +45,13 @@ private fun InvoiceList(model: IdentityViewModel, student: String?, period: Stri
     var month by remember(period) { mutableStateOf(period.orEmpty()) }
     var state by remember { mutableStateOf("") }
     Field(R.string.fee_month, month) { month = financeDigits(it).take(7) }
-    FilterChip(state.isEmpty(), { state = "" }, label = { Text(stringResource(R.string.fee_all_states)) })
-    for ((key, title) in invoiceStates) {
-        FilterChip(state == key, { state = key }, label = { Text(stringResource(title)) })
+    var showFilters by remember { mutableStateOf(false) }
+    TextButton(onClick = { showFilters = !showFilters }) { Text(stringResource(R.string.finance_filters)) }
+    if (showFilters) FlowRow {
+        FilterChip(state.isEmpty(), { state = "" }, label = { Text(stringResource(R.string.fee_all_states)) })
+        for ((key, title) in invoiceStates) {
+            FilterChip(state == key, { state = key }, label = { Text(stringResource(title)) })
+        }
     }
     val filter = buildString {
         student?.let { append("&studentId=").append(it) }
@@ -55,12 +61,14 @@ private fun InvoiceList(model: IdentityViewModel, student: String?, period: Stri
     academicPages(model, "/finance/invoices?limit=25$filter", model.attendanceNetworkRevision) { rows ->
         for (item in rows) {
             HorizontalDivider()
-            TextButton(onClick = { open(item.getString("id")) }) {
-                Text(isolate(item.getString("invoiceNumber")) + " · " + isolate(item.getString("studentName")))
-            }
             val stateLabel = invoiceStates.getValue(item.getString("state"))
-            Text(isolate(item.getString("period")) + " · " + stringResource(stateLabel) + " · " +
-                financeMoney(item.getLong("balanceMinor"), item.getString("currency")))
+            FinanceRecordRow(
+                title = isolate(item.getString("studentName")),
+                subtitle = isolate(item.getString("period")) + " · " + isolate(item.getString("invoiceNumber")),
+                amount = financeMoney(item.getLong("balanceMinor"), item.getString("currency")),
+                status = stringResource(stateLabel),
+                onClick = { open(item.getString("id")) },
+            )
         }
     }
 }
@@ -69,7 +77,9 @@ private fun InvoiceList(model: IdentityViewModel, student: String?, period: Stri
 private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: (String) -> Unit, receipt: (String) -> Unit, payment: ((String) -> Unit)?) {
     val currency = item.getString("currency")
     var snapshot by remember(item.getString("id")) { mutableStateOf(false) }
-    Text(isolate(item.getString("invoiceNumber")), style = MaterialTheme.typography.titleLarge)
+    Text(isolate(item.getString("studentName")), style = MaterialTheme.typography.titleLarge)
+    FinanceBalanceCard(stringResource(R.string.fee_balance), financeMoney(item.getLong("balanceMinor"), currency))
+    Text(isolate(item.getString("invoiceNumber")), style = MaterialTheme.typography.bodyMedium)
     FinancePdfButton(model,"invoices",item.getString("id"),item.getString("invoiceNumber"))
     Text(pupilFinanceLabel(item))
     val kind = if (item.getString("kind") == "monthly") R.string.fee_monthly else R.string.fee_manual
@@ -81,7 +91,6 @@ private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: 
     FeeLineSummary(item.financeRows("lines"), currency)
     Text(stringResource(R.string.fee_total) + " · " + financeMoney(item.getLong("totalMinor"), currency))
     Text(stringResource(R.string.fee_allocated) + " · " + financeMoney(item.getLong("allocatedMinor"), currency))
-    Text(stringResource(R.string.fee_balance) + " · " + financeMoney(item.getLong("balanceMinor"), currency))
     item.optJSONObject("paymentInstructions")?.let { TransferDetails(it) }
     TextButton(onClick = { snapshot = !snapshot }) { Text(stringResource(R.string.fee_snapshot)) }
     if (snapshot) item.optJSONObject("issueInstructions")?.let { TransferDetails(it) }

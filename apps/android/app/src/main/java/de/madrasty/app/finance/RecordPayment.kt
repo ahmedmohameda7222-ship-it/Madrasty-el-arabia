@@ -1,6 +1,7 @@
 package de.madrasty.app.finance
 
 import android.net.Uri
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -64,7 +65,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     }
     if(prepared!=null){
         Text(stringResource(receiptMethodLabel(method))+" · "+isolate(date))
-        Text(financeMoney(prepared.getLong("amountMinor"),currency))
+        FinanceBalanceCard(stringResource(R.string.receipt_total),financeMoney(prepared.getLong("amountMinor"),currency))
         for((invoice,value) in rows){Text(receiptInvoiceLabel(invoice));Text(isolate(value))}
         TextButton(onClick={review=null}) {Text(stringResource(R.string.fee_edit))}
         Submit(true,R.string.receipt_confirm,success=null){
@@ -74,8 +75,10 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         return
     }
     if(setup.getBoolean("cashEnabled")){
-        FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
-        FilterChip(method=="bank",{method="bank"},label={Text(stringResource(R.string.receipt_bank))})
+        FlowRow {
+            FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
+            FilterChip(method=="bank",{method="bank"},label={Text(stringResource(R.string.receipt_bank))})
+        }
     }else Text(stringResource(R.string.receipt_bank))
     if(method=="bank")Field(R.string.receipt_reference,reference){reference=it.take(160)}
     Field(R.string.receipt_date,date){date=financeDigits(it).take(10)}

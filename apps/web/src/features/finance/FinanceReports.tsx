@@ -48,7 +48,7 @@ function queryString(filters:FinanceReportQuery){
   return search.toString();
 }
 
-export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boolean;initial:FinanceReportQuery}){
+export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Locale;staff:boolean;initial:FinanceReportQuery;canPost?:boolean}){
   const text=copy[locale];
   const routeParams=useSearchParams();
   const [filters,setFilters]=useState(()=>({...initial,...readFinanceReportContext(routeParams)}));
@@ -74,7 +74,7 @@ export function FinanceReports({locale,staff,initial}:{locale:Locale;staff:boole
   const classChoices=summary.value?.data?.classes??[];
   return <section className={`${css.workspace} auth-form`}>
     <h1>{text.title}</h1>
-    {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh}/>}
+    {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh} canPost={canPost}/>}
     <details className={css.disclosure}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">

@@ -28,7 +28,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
         <a className="plain-button" href={`/api/v1/finance/receipts/${item.id}/pdf?locale=${locale}`} download>{locale==="ar"?"تحميل إثبات السداد PDF":"Zahlungsbestätigung als PDF"}</a>
         <p>{text[item.method]} · <bdi>{item.receivedDate}</bdi></p>
         <ConfirmedAt locale={locale} value={item.recordedAt}/>
-        <p>{text.total} · {money(item.amountMinor)}</p>
+        <div className={css.balance}><small>{text.total}</small><strong>{money(item.amountMinor)}</strong></div>
         {item.scope==="staff"&&<>
           <p>{text[item.state]} · <bdi>{item.externalReceiptRef}</bdi></p>
           <p>{text.active} · {money(item.activeMinor)}</p>
@@ -46,7 +46,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
         </li>)}</ul>
         {item.scope==="staff"&&<>
           {item.canPost&&<ReceiptActions key={item.revision} locale={locale} item={item} refresh={(message)=>{setNotice(message);setVersion((n)=>n+1);}}/>}
-          <details><summary>{text.history}</summary><ul className="group-list">{item.history.map((entry)=><li key={entry.revision}>
+          <details className={css.disclosure}><summary>{text.history}</summary><ul className="group-list">{item.history.map((entry)=><li key={entry.revision}>
             <p>{entry.kind==="record"?text.recorded:entry.kind==="allocate"?text.allocateEvent:entry.kind==="unapply"?text.reversed:entry.kind==="refund"?text.refund:text.voidEvent}</p>
             <ConfirmedAt locale={locale} value={entry.postedAt}/>
             {entry.reason&&<p><bdi>{entry.reason}</bdi></p>}
