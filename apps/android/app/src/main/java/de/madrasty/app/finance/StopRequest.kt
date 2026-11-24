@@ -47,7 +47,7 @@ private fun RequestForm(model: IdentityViewModel, initial: String?, todayMonth: 
     val proposal = review
     val confirmation = saved
     if (confirmation != null) {
-        Text(stringResource(R.string.stop_pending))
+        Text(stringResource(R.string.stop_approved))
         TextButton(onClick = { open(confirmation) }) { Text(stringResource(R.string.stop_open_request)) }
         TextButton(onClick = { saved = null }) { Text(stringResource(R.string.stop_new_request)) }
         return
@@ -83,10 +83,10 @@ private fun RequestForm(model: IdentityViewModel, initial: String?, todayMonth: 
     FilterChip(temporary, { temporary = true }, label = { Text(stringResource(R.string.stop_one_month)) })
     FilterChip(!temporary, { temporary = false }, label = { Text(stringResource(R.string.stop_indefinite)) })
     Field(R.string.stop_reason, reason) { reason = it.take(800) }
-    Button(enabled = chosen != null && begins != null && last >= todayMonth && (!temporary || ends != null) && reason.trim().length >= 3,
+    Button(enabled = chosen != null && begins != null && last >= todayMonth && (!temporary || ends != null) ,
         onClick = {
             review = JSONObject().put("studentId", chosen).put("lastAttendanceMonth", last)
-                .put("duration", if (temporary) "one_month" else "indefinite").put("reason", reason.trim())
+                .put("duration", if (temporary) "one_month" else "indefinite").put("reason", reason.trim().ifBlank { "Teilnahmepause" })
         }
     ) { Text(stringResource(R.string.fee_preview)) }
 }

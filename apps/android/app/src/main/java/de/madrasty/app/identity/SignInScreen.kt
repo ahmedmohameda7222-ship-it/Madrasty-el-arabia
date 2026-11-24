@@ -181,6 +181,15 @@ class IdentityViewModel(application: Application) : AndroidViewModel(application
         return result
     }
 
+    suspend fun schoolFinancePdf(path:String):ByteArray {
+        val expected=session?.actor?:throw HttpFailure(401,"unauthenticated")
+        val result=repository.financePdf(path)
+        val refreshed=repository.snapshot()
+        if(refreshed?.actor!=expected||session?.actor!=expected)throw HttpFailure(403,"forbidden")
+        if(session?.expiresAt!=refreshed.expiresAt)session=refreshed
+        return result
+    }
+
     suspend fun readAttendanceDraft(slot:String):JSONObject?{
         val actor=session?.actor?:return null
         return withContext(Dispatchers.IO){runCatching{attendanceDrafts.read(actor,slot)}.getOrNull()}

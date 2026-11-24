@@ -187,6 +187,34 @@ class AuthRepository internal constructor(context: Context, private val attendan
         }
     }
 
+    suspend fun financePdf(path:String):ByteArray=io {
+        require(path.matches(Regex("/finance/(invoices|receipts)/[a-fA-F0-9-]{36}/pdf[?]locale=(ar|de)")))
+        val mime="application/pdf"
+        val limit=20*1024*1024
+        val expected=active?.actor?:throw HttpFailure(401,"unauthenticated")
+        fun fetch(token:String):ByteArray {
+            val request=Request.Builder().url("$apiOrigin/api/v1$path").header("Accept",mime)
+                .header("Authorization","Bearer $token").header("X-School-Persona",expected.persona.name.lowercase()).build()
+            return http.newCall(request).execute().use{response->
+                if(!response.isSuccessful)throw HttpFailure(response.code,null)
+                val length=response.body.contentLength()
+                val source=response.body.source()
+                if(response.header("Content-Type")!=mime||length>limit||source.request(limit.toLong()+1))throw IOException("Invalid PDF")
+                val bytes=source.readByteArray()
+                if(bytes.size<8||!bytes.copyOfRange(0,5).contentEquals("%PDF-".toByteArray()))throw IOException("Invalid PDF")
+                bytes
+            }
+        }
+        try{fetch(access?:throw HttpFailure(401,"unauthenticated"))}
+        catch(error:HttpFailure){
+            if(error.status!=401)throw error
+            val refresh=store.read("refresh")?:throw error
+            val session=adopt(providerToken("refresh_token",JSONObject().put("refresh_token",refresh)))
+            if(session.actor!=expected)throw HttpFailure(403,"forbidden")
+            fetch(checkNotNull(access))
+        }
+    }
+
     fun attendanceNoticeStream(path: String, after: String?): Flow<JSONObject> = callbackFlow {
         require(path.matches(Regex("/attendance/classes/[a-fA-F0-9-]{36}/days/[0-9-]{10}")))
         val request = io {

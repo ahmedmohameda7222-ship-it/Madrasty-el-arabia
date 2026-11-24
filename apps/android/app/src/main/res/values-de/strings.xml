@@ -442,8 +442,8 @@
     <string name="finance_reference">Verwendungszweck</string>
     <string name="finance_external">Führe die Überweisung in deiner Banking-App aus.</string>
     <string name="finance_bank_changed">Das Zahlungskonto wurde nach der Rechnungsstellung geändert. Verwende die aktualisierten Daten.</string>
-    <string name="settings_group_finance">Gebühren und Überweisungen</string>
-    <string name="fee_settings">Gebühreneinstellungen</string>
+    <string name="settings_group_finance">Buchhaltung</string>
+    <string name="fee_settings">Einstellungen</string>
     <string name="fee_tariffs">Tarife</string>
     <string name="fee_payer">Zahlungspflichtige Person</string>
     <string name="fee_issue">Rechnungen ausstellen</string>
@@ -493,7 +493,7 @@
     <string name="fee_ask">Rechnung mit der Buchhaltung klären</string>
     <string name="receipt_title">Belege</string>
     <string name="receipt_record">Zahlung erfassen</string>
-    <string name="receipt_queue">Zahlungen abgleichen</string>
+    <string name="receipt_queue">Zahlungen</string>
     <string name="receipt_needs_matching">Abgleich erforderlich</string>
     <string name="receipt_allocated_status">Vollständig zugeordnet</string>
     <string name="receipt_voided">Buchhalterisch storniert</string>
@@ -530,7 +530,7 @@
     <string name="receipt_exact">Der Betrag wird sofort zugeordnet, wenn er beim Speichern dem offenen Saldo entspricht.</string>
     <string name="receipt_unmatched">Der Zahlungseingang wird erfasst und muss manuell zugeordnet werden.</string>
     <string name="receipt_stale">Beleg oder Rechnung wurden geändert. Bitte erneut prüfen.</string>
-    <string name="finance_report_title">Gebührenübersicht</string>
+    <string name="finance_report_title">Finanzübersicht</string>
     <string name="finance_report_period">Abrechnungsmonat (YYYY-MM)</string>
     <string name="finance_report_class">Klasse im Abrechnungsmonat</string>
     <string name="finance_report_asof">Stand am (YYYY-MM-DD)</string>
@@ -564,7 +564,7 @@
     <string name="finance_report_export_failed">Download fehlgeschlagen. Berechtigung oder Zeitraum prüfen.</string>
     <string name="stop_title">Teilnahmepause</string>
     <string name="stop_staff_queue">Anträge auf Teilnahmepause</string>
-    <string name="stop_new_request">Teilnahmepause beantragen</string>
+    <string name="stop_new_request">Teilnahme pausieren</string>
     <string name="stop_open_request">Antrag öffnen</string>
     <string name="stop_child">Schüler</string>
     <string name="stop_last">Letzter Teilnahmemonat (YYYY-MM)</string>
@@ -574,11 +574,11 @@
     <string name="stop_indefinite">Unbefristet</string>
     <string name="stop_reason">Begründung</string>
     <string name="stop_note">Vermerk zur Entscheidung</string>
-    <string name="stop_submit">Antrag stellen</string>
+    <string name="stop_submit">Pause bestätigen</string>
     <string name="stop_withdraw">Antrag zurückziehen</string>
     <string name="stop_pending">Entscheidung ausstehend</string>
     <string name="stop_withdrawn">Zurückgezogen</string>
-    <string name="stop_approved">Genehmigt</string>
+    <string name="stop_approved">Pause erfasst</string>
     <string name="stop_rejected">Abgelehnt</string>
     <string name="stop_approve">Antrag genehmigen</string>
     <string name="stop_reject">Antrag ablehnen</string>
@@ -613,4 +613,17 @@
     <string name="android_upgrade_available">Eine neue App-Version ist verfügbar.</string>
     <string name="android_upgrade_download">Update über die Schule laden</string>
     <string name="android_upgrade_browser">Öffne die Installationsseite der Schule im Browser.</string>
+    <string name="cashbook_title">Kassenbuch</string>
+    <string name="cashbook_income">Einnahme</string>
+    <string name="cashbook_donation">Spende</string>
+    <string name="cashbook_expense">Ausgabe</string>
+    <string name="cashbook_deposit">Bankeinzahlung</string>
+    <string name="cashbook_balance">Kassenbestand</string>
+    <string name="cashbook_description">Grund</string>
+    <string name="cashbook_month">Monat</string>
+    <string name="finance_pdf">PDF herunterladen</string>
+    <string name="finance_auto">Automatische Monatsrechnungen</string>
+    <string name="finance_auto_start">Startmonat</string>
+    <string name="finance_auto_enabled">Automatisch ausstellen</string>
+    <string name="finance_auto_missing">Schüler ohne Zahlungspflichtige: %1$d</string>
 </resources>

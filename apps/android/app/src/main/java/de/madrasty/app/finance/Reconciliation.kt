@@ -17,9 +17,14 @@ import de.madrasty.app.ui.isolate
 
 @Composable
 internal fun Reconciliation(model: IdentityViewModel, initial: String?, canPost: Boolean,
-    record: () -> Unit, open: (String) -> Unit, close: () -> Unit) {
-    var state by remember(initial) { mutableStateOf(initial ?: "needs_matching") }
+    record: () -> Unit, open: (String) -> Unit, close: () -> Unit, review: () -> Unit) {
+    var state by remember(initial) { mutableStateOf(initial ?: "") }
+    var cashbook by remember { mutableStateOf(false) }
     FinancePage(R.string.receipt_queue, close) {
+        FilterChip(!cashbook,{cashbook=false},label={Text(stringResource(R.string.receipt_queue))})
+        FilterChip(cashbook,{cashbook=true},label={Text(stringResource(R.string.cashbook_title))})
+        if(cashbook){CashbookPanel(model)}else{
+        TextButton(onClick=review){Text(stringResource(R.string.stop_review_title))}
         if (canPost) TextButton(onClick = record) { Text(stringResource(R.string.receipt_record)) }
         FilterChip(state.isEmpty(), { state = "" }, label = { Text(stringResource(R.string.receipt_all)) })
         for (key in listOf("needs_matching", "allocated", "voided")) {
@@ -35,6 +40,7 @@ internal fun Reconciliation(model: IdentityViewModel, initial: String?, canPost:
                     financeMoney(row.getLong("amountMinor"), row.getString("currency")))
                 Text(stringResource(R.string.receipt_remainder) + " · " + financeMoney(row.getLong("remainderMinor"), row.getString("currency")))
             }
+        }
         }
     }
 }

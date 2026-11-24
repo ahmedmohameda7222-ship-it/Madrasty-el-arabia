@@ -367,20 +367,20 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         is WorkspacePage.Delivery -> DeliveryStatus(model,page.id,state::back)
         WorkspacePage.Bank -> BankSettings(model,state::back)
-        is WorkspacePage.FeeSettings -> FeeSettings(model,page.student,state::back)
+        is WorkspacePage.FeeSettings -> FeeSettings(model,page.student,state::back,if(rights.bank)({state.open(WorkspacePage.Bank)})else null)
         is WorkspacePage.IssueInvoices -> IssueInvoices(model,page.student,
             if(rights.bank) ({state.open(WorkspacePage.Bank)}) else null,
             {state.open(WorkspacePage.FeeSettings(it))}, {id,period->state.open(WorkspacePage.Invoices(id,period=period))},state::back)
         is WorkspacePage.Invoices -> InvoiceDetails(model,page.id,page.student,page.period,
             {state.open(WorkspacePage.Invoices(id=it))},state::openThread,
             {state.open(WorkspacePage.Receipts(id=it))},
-            if(rights.posting) ({id->state.open(WorkspacePage.Payment(id))}) else null,state::back)
+            if(rights.posting) ({id->state.open(WorkspacePage.Payment(id))}) else null,state::back,if(rights.billing)({state.open(WorkspacePage.IssueInvoices(page.student))})else null)
         is WorkspacePage.Payment -> RecordPayment(model,page.invoice,{state.open(WorkspacePage.Receipts(id=it))},
             {state.open(WorkspacePage.Receipts())},state::back)
         is WorkspacePage.Receipts -> if(page.id!=null)ReceiptDetails(model,page.id,
             {state.open(WorkspacePage.Invoices(id=it))},state::back)
         else Reconciliation(model,page.state,rights.posting,{state.open(WorkspacePage.Payment())},
-            {state.open(WorkspacePage.Receipts(id=it))},state::back)
+            {state.open(WorkspacePage.Receipts(id=it))},state::back,{state.open(WorkspacePage.StopReviews())})
         is WorkspacePage.FinanceReport -> FinanceReports(model,page.student,rights.receiptViewer,
             {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},
             {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back)
@@ -525,17 +525,16 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
             if(rights.students||rights.teacherInvites)OpenPage(state,WorkspacePage.Invitations(),R.string.invite_title)
         }
     }
-    if(rights.invoiceViewer||rights.bank||rights.stopManager){
+    if(rights.stopManager||rights.persona==Persona.Guardian){
+        OpenPage(state,WorkspacePage.Stops(),R.string.stop_title)
+    }
+    if(rights.invoiceViewer||rights.bank||rights.receiptViewer){
         SettingsGroup(R.string.settings_group_finance) {
-            if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
-            if(rights.stopManager||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.Stops(),R.string.stop_title)
-            if(rights.receiptViewer)OpenPage(state,WorkspacePage.StopReviews(),R.string.stop_review_title)
             if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),R.string.finance_report_title)
+            if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
             if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
-            if(rights.posting)OpenPage(state,WorkspacePage.Payment(),R.string.receipt_record)
             if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
-            if(rights.billing)OpenPage(state,WorkspacePage.IssueInvoices(),R.string.fee_issue)
-            if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.finance_bank)
+            else if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.fee_settings)
         }
     }
     if(rights.access||rights.audit||rights.moderation||rights.delivery){

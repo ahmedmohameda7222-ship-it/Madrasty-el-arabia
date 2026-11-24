@@ -25,13 +25,16 @@ import org.json.JSONObject
 @Composable
 internal fun InvoiceDetails(
     model: IdentityViewModel, id: String?, student: String?, period: String?,
-    open: (String) -> Unit, thread: (String) -> Unit, receipt: (String) -> Unit, payment: ((String) -> Unit)?, close: () -> Unit,
+    open: (String) -> Unit, thread: (String) -> Unit, receipt: (String) -> Unit, payment: ((String) -> Unit)?, close: () -> Unit, issue: (() -> Unit)? = null,
 ) {
     FinancePage(R.string.fee_invoices, close) {
         if (id != null) {
             val details = academicRead("/finance/invoices/$id", model.attendanceNetworkRevision) { model.financeObject(it) }
             AsyncSurface(details) { item -> InvoiceDocument(model, item, thread, receipt, payment) }
-        } else InvoiceList(model, student, period, open)
+        } else {
+            if(issue!=null) TextButton(onClick=issue){Text(stringResource(R.string.fee_issue))}
+            InvoiceList(model, student, period, open)
+        }
     }
 }
 
@@ -67,6 +70,7 @@ private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: 
     val currency = item.getString("currency")
     var snapshot by remember(item.getString("id")) { mutableStateOf(false) }
     Text(isolate(item.getString("invoiceNumber")), style = MaterialTheme.typography.titleLarge)
+    FinancePdfButton(model,"invoices",item.getString("id"),item.getString("invoiceNumber"))
     Text(pupilFinanceLabel(item))
     val kind = if (item.getString("kind") == "monthly") R.string.fee_monthly else R.string.fee_manual
     Text(isolate(item.getString("period")) + " · " + stringResource(kind))
@@ -85,7 +89,7 @@ private fun InvoiceDocument(model: IdentityViewModel, item: JSONObject, thread: 
     for (index in 0 until receipts.length()) {
         TextButton(onClick = { receipt(receipts.getString(index)) }) { Text(stringResource(R.string.receipt_open) + " " + (index + 1)) }
     }
-    if (payment != null && item.getString("state") != "cancelled") {
+    if (payment != null && item.getLong("balanceMinor") > 0L) {
         TextButton(onClick = { payment(item.getString("id")) }) { Text(stringResource(R.string.receipt_record)) }
     }
     if (item.getBoolean("canInquire")) {
