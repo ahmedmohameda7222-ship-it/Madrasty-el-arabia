@@ -112,20 +112,11 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       body: { studentId: ids.omar, lastAttendanceMonth: clock.month, duration: "one_month", reason: "Synthetic school break" },
     })).payload.data);
     assert.equal(stop.startMonth, clock.nextMonth);
-    const dashboard = await fixtureApi(school, `/school/work-queues?asOf=${queueDate}`, {token:admin,persona:"admin"});
-    const pending = dashboard.payload.data.queues.find((row: {key:string}) => row.key==="noncontinuation_requests");
-    assert.equal(pending?.state, "ready");
-    assert.ok(pending.count > 0);
-    const queue = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:admin,persona:"admin"});
-    assert.ok(queue.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
-    await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:payer,persona:"guardian",status:404});
-    const decision = enrollmentStop.parse((await fixtureApi(school, `/enrollment-stops/${stop.id}/decision`, {
-      method: "POST", token: admin, persona: "admin", key: `${school.run}.approve-omar`,
-      body: { decision: "approve", revision: stop.revision },
-    })).payload.data);
-    assert.equal(decision.state, "approved");
+    assert.equal(stop.state,"approved");
+    assert.equal(stop.canDecide,false);
     const resolved = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:admin,persona:"admin"});
     assert.ok(!resolved.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
+    await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:payer,persona:"guardian",status:404});
     const nextMonth = invoicePreview.parse(await send("/finance/invoice-previews", "next-month-preview", {
       ...selection, period: clock.nextMonth,
     }));
