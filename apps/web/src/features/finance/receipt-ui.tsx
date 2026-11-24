@@ -4,6 +4,7 @@ import {useState,type FormEvent} from "react";
 import {billingMonth,invoiceSummary,type Locale} from "@madrasty/contracts";
 import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {billingCopy,financeAmount} from "./invoice-ui";
+import {FinanceDateField,financeDate} from "./FinanceDateField";
 
 export const receiptCopy={
   ar:{
@@ -48,7 +49,7 @@ export function InvoicePicker({locale,currency,exclude=[],refresh=0,onPick}:{
   return <div className="auth-form">
     <form className="auth-form" onSubmit={searchInvoices}>
       <label>{text.search}<input type="search" value={search} maxLength={100} onChange={(event)=>setSearch(event.target.value)}/></label>
-      <label>{billingCopy[locale].period}<input type="month" dir="ltr" value={month} onChange={(event)=>setMonth(event.target.value)}/></label>
+      <FinanceDateField locale={locale} label={billingCopy[locale].period} type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/>
       <label>{billingCopy[locale].status}<select value={state} onChange={(event)=>setState(event.target.value==="partial"?"partial":"unpaid")}>
         <option value="unpaid">{billingCopy[locale].unpaid}</option><option value="partial">{billingCopy[locale].partial}</option>
       </select></label>
@@ -58,7 +59,7 @@ export function InvoicePicker({locale,currency,exclude=[],refresh=0,onPick}:{
       .filter((item)=>item.currency===currency&&item.balanceMinor>0&&!exclude.includes(item.id))
       .map((item)=><li className="timetable-day" key={item.id}>
         <p><bdi>{item.studentName}</bdi> · <bdi>{item.studentNumber}</bdi> · <bdi>{item.invoiceNumber}</bdi></p>
-        <p><bdi>{item.period}</bdi> · <bdi dir="ltr">{financeAmount(item.balanceMinor,currency)}</bdi></p>
+        <p><bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi dir="ltr">{financeAmount(item.balanceMinor,currency,locale)}</bdi></p>
         <button type="button" className="plain-button" onClick={()=>onPick(item)}>{text.use}</button>
       </li>)}</ul>}</AcademicPageItems>
   </div>;

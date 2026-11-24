@@ -1,7 +1,7 @@
 "use client";
 
 import css from "./FinanceWorkspace.module.css";
-import {FinanceDateField} from "./FinanceDateField";
+import {FinanceDateField,financeDate} from "./FinanceDateField";
 
 import {useState,type FormEvent} from "react";
 import {
@@ -45,13 +45,13 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
   }
   return <>
     <div className={`${css.tabs} ${css.feeTabs}`}>
-      <button className="plain-button" type="button" aria-pressed={tab==="tariffs"} onClick={()=>setTab("tariffs")}>{text.tariffs}</button>
-      <button className="plain-button" type="button" aria-pressed={tab==="payer"} onClick={()=>setTab("payer")}>{text.payer}</button>
+      <button className="plain-button" type="button" aria-label={text.tariffs} aria-pressed={tab==="tariffs"} onClick={()=>setTab("tariffs")}>{locale==="ar"?"الرسوم":"Gebühren"}</button>
+      <button className="plain-button" type="button" aria-label={text.payer} aria-pressed={tab==="payer"} onClick={()=>setTab("payer")}>{locale==="ar"?"مسؤول السداد":"Zahler"}</button>
     </div>
     {tab==="tariffs"?<>
       {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
       {preview&&options.currency?<div className="notice auth-form">
-        <p>{text.effective} · <bdi>{preview.effectiveFromMonth}</bdi></p>
+        <p>{text.effective} · <bdi>{financeDate(preview.effectiveFromMonth,locale,"month")}</bdi></p>
         <p>{text.dueDay} · <bdi>{preview.dueDay}</bdi></p>
         <FeeLines locale={locale} lines={preview.lines} currency={options.currency}/>
         <div className="header-actions">
@@ -61,11 +61,11 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
       </div>:<form className="auth-form" onSubmit={(event)=>{event.preventDefault();if(validated.success)setPreview(validated.data);}}>
         <FinanceDateField locale={locale} label={text.effective} type="month" value={month} min={options.schoolMonth} onChange={(event)=>setMonth(event.target.value)} required/>
         <label>{text.dueDay}<input type="number" dir="ltr" min={1} max={31} value={day} onChange={(event)=>setDay(event.target.value)} required/></label>
-        <label>{locale==="ar"?"الاشتراك الشهري لكل طالب":"Monatsbeitrag pro Schüler"} <bdi>{options.currency}</bdi><input dir="ltr" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} required/></label>
+        <label><span className={css.amountLabel}><span>{locale==="ar"?"الاشتراك الشهري لكل طالب":"Monatsbeitrag pro Schüler"}</span><bdi>{options.currency}</bdi></span><input dir="ltr" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} required/></label>
         <button className="primary-button" type="submit" disabled={!validated.success||month<options.schoolMonth}>{text.preview}</button>
       </form>}
       <AcademicPageItems locale={locale} page={records}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id} className="timetable-day">
-        <details><summary>{text.effective} · <bdi>{item.effectiveFromMonth}</bdi></summary>
+        <details><summary>{text.effective} · <bdi>{financeDate(item.effectiveFromMonth,locale,"month")}</bdi></summary>
           <p>{text.dueDay} · {item.dueDay}</p><FeeLines locale={locale} lines={item.lines} currency={item.currency}/>
         </details>
       </li>)}</ul>}</AcademicPageItems>
@@ -115,7 +115,7 @@ function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnT
     </form>}
     {error&&<p role="alert">{error}</p>}
     <ul className="group-list">{profile.designations.map((item)=><li key={item.revision}>
-      <bdi>{item.effectiveFromMonth}</bdi> · <bdi>{item.guardianName}</bdi>
+      <bdi>{financeDate(item.effectiveFromMonth,locale,"month")}</bdi> · <bdi>{item.guardianName}</bdi>
     </li>)}</ul>
   </div>;
 }

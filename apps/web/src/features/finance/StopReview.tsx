@@ -1,4 +1,5 @@
 "use client";
+import {FinanceDateField,financeDate} from "./FinanceDateField";
 
 import css from "./FinanceWorkspace.module.css";
 
@@ -32,7 +33,7 @@ export function StopReview({locale,id}:{locale:Locale;id?:string}){
       </select></label>
       <AcademicPageItems locale={locale} page={list}>{(items)=><ul className="group-list">{items.map((item)=><li className="timetable-day" key={item.id}>
         <Link className="group-row" href={`${root}/stop-reviews?review=${item.id}`}><bdi>{item.studentName}</bdi> · <bdi>{item.invoiceNumber}</bdi></Link>
-        <p>{text[item.state]} · {billingCopy[locale][item.kind]} · <bdi>{item.period}</bdi> · <bdi dir="ltr">{financeAmount(item.originalAllocatedMinor,item.currency)}</bdi></p>
+        <p>{text[item.state]} · {billingCopy[locale][item.kind]} · <bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi dir="ltr">{financeAmount(item.originalAllocatedMinor,item.currency,locale)}</bdi></p>
       </li>)}</ul>}</AcademicPageItems>
     </>}
   </section>;
@@ -40,12 +41,12 @@ export function StopReview({locale,id}:{locale:Locale;id?:string}){
 
 function ReviewDocument({locale,item,updated}:{locale:Locale;item:StopReviewDetail;updated:(message:string)=>void}){
   const text=stopCopy[locale],root=`/${locale}/school/more`;
-  const money=(amount:number)=><bdi dir="ltr">{financeAmount(amount,item.currency)}</bdi>;
+  const money=(amount:number)=><bdi dir="ltr">{financeAmount(amount,item.currency,locale)}</bdi>;
   const [refund,setRefund]=useState<string>();
   return <div className="auth-form">
     <h2><bdi>{item.studentName}</bdi> · <bdi>{item.studentNumber}</bdi></h2>
     <Link href={`${root}/invoices?invoice=${item.invoiceId}`}><bdi>{item.invoiceNumber}</bdi></Link>
-    <p>{text[item.state]} · {billingCopy[locale][item.kind]} · <bdi>{item.period}</bdi></p>
+    <p>{text[item.state]} · {billingCopy[locale][item.kind]} · <bdi>{financeDate(item.period,locale,"month")}</bdi></p>
     <ConfirmedAt locale={locale} value={item.resolvedAt??item.openedAt}/>
     <dl className="account-values">
       <dt>{text.original}</dt><dd>{money(item.originalMinor)}</dd>
@@ -95,9 +96,9 @@ function RefundForm({locale,item,receiptId,available,updated}:{
     <p>{text.refundHint}</p>
     {error&&<p role="alert">{error}</p>}
     {preview&&input.success?<p><bdi>{input.data.externalRefundRef}</bdi> · <bdi>{input.data.refundedDate}</bdi> ·
-      <bdi dir="ltr">{financeAmount(input.data.amountMinor,item.currency)}</bdi></p>:<>
+      <bdi dir="ltr">{financeAmount(input.data.amountMinor,item.currency,locale)}</bdi></p>:<>
       <label>{text.refundRef}<input value={reference} maxLength={160} onChange={(event)=>setReference(event.target.value)} required/></label>
-      <label>{text.refundDate}<input type="date" dir="ltr" value={date} onChange={(event)=>setDate(event.target.value)} required/></label>
+      <FinanceDateField locale={locale} label={text.refundDate} type="date" value={date} onChange={(event)=>setDate(event.target.value)} required/>
       <label>{text.refundAmount}<input dir="ltr" inputMode="decimal" value={amount} maxLength={24} onChange={(event)=>setAmount(event.target.value)} required/></label>
       <label><input type="checkbox" checked={verified} onChange={(event)=>setVerified(event.target.checked)}/>{text.verifyRefund}</label>
     </>}
@@ -141,7 +142,7 @@ function ResolutionForm({locale,item,updated}:{locale:Locale;item:StopReviewDeta
         {item.evidence.map((one)=><label key={one.id}>
           <input type="checkbox" disabled={one.kind==="refund"} checked={selected.includes(one.id)}
             onChange={(event)=>setSelected((previous)=>event.target.checked?[...previous,one.id]:previous.filter((id)=>id!==one.id))}/>
-          {one.kind==="refund"?text.refundProof:text.reallocation} · <bdi>{one.reference}</bdi> · <bdi dir="ltr">{financeAmount(one.amountMinor,item.currency)}</bdi>
+          {one.kind==="refund"?text.refundProof:text.reallocation} · <bdi>{one.reference}</bdi> · <bdi dir="ltr">{financeAmount(one.amountMinor,item.currency,locale)}</bdi>
         </label>)}
       </fieldset>}
       {resolution==="waive"&&!eligible&&<p>{text.missingEvidence}</p>}

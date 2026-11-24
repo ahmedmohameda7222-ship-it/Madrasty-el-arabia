@@ -23,7 +23,7 @@ export function Reconciliation({locale,enabled,initialState}:{locale:Locale;enab
       {receiptState.options.map((one)=><option key={one} value={one}>{text[one]}</option>)}
     </select></label>
     <AcademicPageItems locale={locale} page={page} emptyMessage={locale==="ar"?"لا توجد مدفوعات في الاختيار الحالي.":"Keine Zahlungen für diese Auswahl."}>{(items)=><ul className={css.recordList}>{items.map((item)=><li key={item.id}>
-      <Link className={css.recordRow} href={`${root}/receipts?receipt=${item.id}`}><span><strong><bdi>{item.receiptNumber}</bdi></strong><small><bdi>{item.receivedDate}</bdi> · {text[item.method]}</small>{item.remainderMinor>0&&<small>{text.remainder} · <bdi dir="ltr">{financeAmount(item.remainderMinor,item.currency)}</bdi></small>}</span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.amountMinor,item.currency)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
+      <Link className={css.recordRow} href={`${root}/receipts?receipt=${item.id}`}><span><strong><bdi>{item.receiptNumber}</bdi></strong><small><bdi>{item.receivedDate}</bdi> · {text[item.method]}</small>{item.remainderMinor>0&&<small>{text.remainder} · <bdi dir="ltr">{financeAmount(item.remainderMinor,item.currency,locale)}</bdi></small>}</span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.amountMinor,item.currency,locale)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
     </li>)}</ul>}</AcademicPageItems>
   </section>;
 }

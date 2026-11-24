@@ -1,7 +1,8 @@
 "use client";
 
 import type {Locale,TransferInstructions} from "@madrasty/contracts";
-import {CopyValue} from "@/ui/RecordValues";
+import {CopyValue,formatMoney} from "@/ui/RecordValues";
+import css from "./FinanceWorkspace.module.css";
 
 export const transferCopy={
   ar:{title:"بيانات التحويل البنكي",beneficiary:"اسم المستفيد",iban:"آيبان (IBAN)",amount:"المبلغ",reference:"مرجع التحويل (Verwendungszweck)",
@@ -21,15 +22,15 @@ function plainAmount(amount:number,currency:string){
   return (value/divisor).toString()+"."+(value%divisor).toString().padStart(digits,"0");
 }
 
-export function TransferDetails({locale,details}:{locale:Locale;details:TransferInstructions}){
+export function TransferDetails({locale,details,showTitle=true,guidance=true}:{locale:Locale;details:TransferInstructions;showTitle?:boolean;guidance?:boolean}){
   const text=transferCopy[locale],amount=plainAmount(details.amountMinor,details.currency);
-  return <section className="auth-form">
-    <h2>{text.title}</h2>
+  return <section className={css.transferRows}>
+    {showTitle&&<h2>{text.title}</h2>}
     {details.bankChanged&&<p className="notice" role="status">{text.changed}</p>}
-    <CopyValue locale={locale} label={text.beneficiary} value={details.beneficiary}/>
-    <CopyValue locale={locale} label={text.iban} value={details.iban} display={displayIban(details.iban)}/>
-    <CopyValue locale={locale} label={text.amount} value={amount} display={amount+" "+details.currency}/>
-    <CopyValue locale={locale} label={text.reference} value={details.reference}/>
-    <p>{text.external}</p>
+    <CopyValue compact locale={locale} label={text.beneficiary} value={details.beneficiary}/>
+    <CopyValue compact locale={locale} label={text.iban} value={details.iban} display={displayIban(details.iban)}/>
+    <CopyValue compact locale={locale} label={text.amount} value={amount} display={formatMoney(details.amountMinor,details.currency,locale)}/>
+    <CopyValue compact locale={locale} label={text.reference} value={details.reference}/>
+    {guidance&&<p className={css.secondary}>{text.external}</p>}
   </section>;
 }

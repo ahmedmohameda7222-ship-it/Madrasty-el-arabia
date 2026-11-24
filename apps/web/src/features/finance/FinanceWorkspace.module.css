@@ -102,3 +102,68 @@
 /* Fee settings labels must fit even in the smallest German viewport. */
 .feeTabs{align-items:stretch}
 @media(max-width:430px){.feeTabs{display:grid;grid-template-columns:minmax(0,1fr)}.feeTabs>button{overflow-wrap:anywhere}}
+
+/* iOS follow-up: keep native hit area and ISO value, independently bound visible display. */
+.dateField{display:grid;gap:.35rem;min-inline-size:0;max-inline-size:100%}
+.dateControl{position:relative;display:flex;align-items:center;justify-content:space-between;gap:.65rem;min-inline-size:0;max-inline-size:100%;inline-size:100%;min-block-size:48px;box-sizing:border-box;border:1px solid var(--rule);border-radius:12px;padding:.55rem .8rem;background:var(--card);color:var(--ink)}
+.dateControl>.dateContext{font:inherit;color:inherit;min-inline-size:0;overflow-wrap:anywhere}
+.dateControl[data-empty=true]>.dateContext,.dateIcon{color:var(--muted)}
+.dateIcon{flex:none}
+.dateControl:focus-within{outline:2px solid var(--primary);outline-offset:2px}
+.dateControl>input,.workspace .dateControl>input,.panel .dateControl>input{position:absolute;inset:0;display:block;box-sizing:border-box;min-inline-size:0;max-inline-size:100%;inline-size:100%;block-size:100%;min-block-size:0;max-block-size:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer;z-index:1}
+.dateControl>input::-webkit-calendar-picker-indicator{position:absolute;inset:0;inline-size:100%;block-size:100%;margin:0;padding:0;cursor:pointer}
+.dateFallback{display:grid;gap:.3rem;min-inline-size:0}
+.dateFallback>input{min-inline-size:0;max-inline-size:100%;width:100%;box-sizing:border-box}
+.workspace :global(.header-actions)>label{flex:1 1 11rem;max-inline-size:100%}
+.workspace :global(.header-actions)>button[type=submit]{flex:1 1 auto}
+.workspace :is(input,select,textarea),.panel :is(input,select,textarea){margin-inline:0}
+.workspace :is(h1,h2,h3){overflow-wrap:anywhere}
+.workspace :is(details)>summary,.panel :is(details)>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.65rem;min-block-size:44px;cursor:pointer}
+.workspace details>summary::-webkit-details-marker,.panel details>summary::-webkit-details-marker{display:none}
+.workspace details>summary::after,.panel details>summary::after{content:"";flex:none;inline-size:.5rem;block-size:.5rem;border-inline-end:1.5px solid var(--muted);border-block-start:1.5px solid var(--muted);transform:rotate(45deg);margin-inline-end:.2rem}
+:global([dir=rtl]) .workspace details>summary::after,:global([dir=rtl]) .panel details>summary::after{transform:rotate(-135deg)}
+.workspace details[open]>summary::after,.panel details[open]>summary::after{transform:rotate(135deg)}
+.valueRows{display:grid;gap:0;margin:0;min-inline-size:0;background:var(--card);border-radius:14px;padding-inline:.85rem}
+.valueRows>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:.6rem;align-items:center;padding-block:.6rem;min-inline-size:0}
+.valueRows>div+div{border-block-start:1px solid var(--rule)}
+.valueRows dt{margin:0;color:var(--muted);font-size:.875rem;line-height:1.35;overflow-wrap:anywhere;min-inline-size:0}
+.valueRows dd{margin:0;text-align:end;font-size:.95rem;font-weight:600;line-height:1.4;overflow-wrap:anywhere;min-inline-size:0;max-inline-size:13rem;font-variant-numeric:tabular-nums}
+.valueRows dd small{display:block;color:var(--muted);font-size:.75rem;font-weight:400}
+.disclosure .valueRows{padding-inline:0}
+.invoiceDetail{display:grid;gap:.8rem;min-inline-size:0}
+.invoiceBalance{display:grid;justify-items:center;text-align:center;gap:.45rem;background:var(--card);border-radius:18px;padding:1.1rem}
+.invoiceBalance strong{font-size:clamp(1.75rem,5vw,2.35rem);font-variant-numeric:tabular-nums}
+.invoiceBalance small{color:var(--muted);font-size:.875rem}
+.statePill{font-size:.8rem;font-weight:600;padding:.25rem .65rem;border-radius:999px;background:var(--inset);color:var(--ink)}
+.statePill[data-state=paid]{color:var(--primary)}
+.invoiceActions{display:grid;gap:.5rem}
+.invoiceActions>a{gap:.45rem}
+.feeLines{list-style:none;padding:0 .85rem;margin:0;background:var(--card);border-radius:14px;min-inline-size:0}
+.feeLines>li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.7rem;padding-block:.65rem;min-inline-size:0}
+.feeLines>li+li{border-block-start:1px solid var(--rule)}
+.feeLines>li>bdi:first-child{min-inline-size:0;font-size:.9rem;overflow-wrap:anywhere}
+.feeLines>li>bdi:last-child{font-weight:600;font-size:.95rem;font-variant-numeric:tabular-nums}
+.transferRows{display:grid;gap:0;min-inline-size:0}
+.transferRows>h2,.transferRows>p{margin-block:.45rem}
+.transferRows :global(.copy-value){gap:.25rem .5rem;padding-block:.6rem;min-inline-size:0;border-block-end:1px solid var(--rule)}
+.transferRows :global(.copy-value)>span:first-child{font-size:.8rem;color:var(--muted)}
+.transferRows :global(.copy-value)>bdi{font-size:.95rem;font-weight:600}
+.transferRows :global(.copy-value)>button{inline-size:44px;min-inline-size:44px;min-block-size:44px;padding:0;background:transparent;color:var(--primary)}
+.transferRows :global(.copy-value)>:global(.status):empty{position:absolute;inline-size:1px;block-size:1px;overflow:hidden}
+.switchRow,.panel .switchRow{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-block-size:44px}
+.switchRow>span{min-inline-size:0}
+.panel .switchRow>input[role=switch]{appearance:none;-webkit-appearance:none;position:relative;flex:none;inline-size:50px;width:50px;max-inline-size:50px;block-size:30px;min-block-size:30px;margin:0;padding:0;border:0;border-radius:999px;background:var(--rule);cursor:pointer}
+.panel .switchRow>input[role=switch]:checked{background:var(--primary)}
+.panel .switchRow>input[role=switch]::after{content:"";position:absolute;inset-block-start:3px;inset-inline-start:3px;inline-size:24px;block-size:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0004}
+.panel .switchRow>input[role=switch]:checked::after{inset-inline-start:23px}
+.panel .switchRow>input[role=switch]:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.feeTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.25rem}
+.feeTabs>button{font-size:.9rem;padding:.35rem;overflow-wrap:anywhere}
+@media(max-width:430px){
+  .workspace{gap:.7rem}
+  .panel{padding:.8rem}
+  .workspace :global(.header-actions)>label{flex-basis:100%}
+  .valueRows{padding-inline:.65rem}
+  .valueRows dd{max-inline-size:9rem}
+  .invoiceBalance{padding:.9rem}
+}

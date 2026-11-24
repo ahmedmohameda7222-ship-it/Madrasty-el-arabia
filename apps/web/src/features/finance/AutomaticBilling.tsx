@@ -21,9 +21,9 @@ function BillingForm({locale,data,refresh}:{locale:Locale;data:Settings;refresh:
   async function save(e:FormEvent){e.preventDefault();if(!input.success||busy)return;setBusy(true);setError("");try{await command("/finance/automatic-billing","PUT",input.data,automaticBillingSettings);refresh();}catch(e){setError(timetableError(locale,e));}finally{setBusy(false);}}
   return <form className="auth-form" onSubmit={save}>
     <p className={css.secondary}>{ar?"فاتورة شهرية للطلاب النشطين فقط.":"Monatsrechnung nur für aktive Schüler."}</p>
-    <label className={css.checkRow}><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>{ar?"إصدار تلقائي":"Automatisch ausstellen"}</label>
+    <label className={css.switchRow}><span>{ar?"إصدار تلقائي":"Automatisch ausstellen"}</span><input type="checkbox" role="switch" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/></label>
     <FinanceDateField locale={locale} label={ar?"شهر البداية":"Startmonat"} type="month" min={data.schoolMonth} value={month} onChange={e=>setMonth(e.target.value)} required/>
-    {data.missingPayers>0&&<p className="notice">{data.missingPayers} {ar?"طالب يحتاج تحديد مسؤول السداد هذا الشهر.":"Schüler benötigen diesen Monat eine zahlungspflichtige Person."}</p>}
+    {data.missingPayers>0&&<p className="notice">{ar?`طلاب بدون مسؤول سداد: ${data.missingPayers}`:data.missingPayers===1?"Für 1 Schüler fehlt der Zahler.":`Für ${data.missingPayers} Schüler fehlt der Zahler.`}</p>}
     {error&&<p role="alert">{error}</p>}
     <button className="primary-button" disabled={busy||!input.success||month<data.schoolMonth||(enabled===data.enabled&&month===data.startMonth)}>{ar?"حفظ":"Speichern"}</button>
   </form>;

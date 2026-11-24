@@ -106,7 +106,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         <p>{text[row.outcome]}</p>
         {row.payerName&&<p>{text.payer} · <bdi>{row.payerName}</bdi></p>}
         {row.dueDate&&<p>{text.due} · <bdi>{row.dueDate}</bdi></p>}
-        {row.currency&&row.lines.length>0&&<><p>{text.total} · <bdi>{financeAmount(row.totalMinor,row.currency)}</bdi></p>
+        {row.currency&&row.lines.length>0&&<><p>{text.total} · <bdi>{financeAmount(row.totalMinor,row.currency,locale)}</bdi></p>
           <FeeLines locale={locale} lines={row.lines} currency={row.currency}/></>}
         {row.outcome==="payer_missing"&&<Link className="plain-button" href={`${root}/fee-settings?student=${row.studentId}`}>{text.payer}</Link>}
         {row.outcome==="tariff_missing"&&<Link className="plain-button" href={`${root}/fee-settings`}>{text.tariffs}</Link>}

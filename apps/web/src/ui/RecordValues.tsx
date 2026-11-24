@@ -19,8 +19,8 @@ export function ConfirmedAt({ locale, value }: { locale: Locale; value: string }
   return <small className="status">{dictionary(locale).confirmedAt} <time dateTime={value}><bdi>{formatted}</bdi></time></small>;
 }
 
-export function CopyValue({ locale, label, value, display }: {
-  locale: Locale; label: string; value: string; display?: string;
+export function CopyValue({ locale, label, value, display, compact=false }: {
+  locale: Locale; label: string; value: string; display?: string; compact?: boolean;
 }) {
   const text = dictionary(locale);
   const [feedback, setFeedback] = useState("");
@@ -36,7 +36,7 @@ export function CopyValue({ locale, label, value, display }: {
     <div className="copy-value">
       <span>{label}</span>
       <bdi dir="ltr">{feedback === text.copyFailed ? value : display ?? value}</bdi>
-      <button type="button" className="plain-button" onClick={copy} aria-label={`${text.copy} ${label}`}>{text.copy}</button>
+      <button type="button" className="plain-button" onClick={copy} aria-label={`${text.copy} ${label}`}>{compact?<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>:text.copy}</button>
       <span role="status" className="status">{feedback}</span>
     </div>
   );
