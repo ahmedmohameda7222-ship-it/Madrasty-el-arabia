@@ -81,3 +81,8 @@
 .search button{padding-inline:.65rem;min-inline-size:44px}
 @media(max-width:350px){.fieldPair{grid-template-columns:1fr}.search{grid-template-columns:minmax(0,1fr) auto}}
 @media(min-width:760px){.workspace{gap:1rem;margin-block:.75rem}.narrowForm{max-inline-size:42rem}.workspace>:global(.primary-button),.workspace>:global(.plain-button){justify-self:start}.workspace .search{max-inline-size:42rem}.workspace .formAction{max-inline-size:42rem}}
+
+.amountLabel{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+.amountLabel bdi{color:var(--muted);font-size:.875rem}
+.secondaryLinks{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem}
+.secondaryLinks>a{display:inline-flex;align-items:center;min-block-size:44px;font-size:.9rem;font-weight:600}

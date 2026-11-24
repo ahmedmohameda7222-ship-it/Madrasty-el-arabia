@@ -66,7 +66,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
       <div className={css.formAction}><button type="button" className="primary-button" disabled={busy} onClick={()=>void confirm()}>{text.confirm}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button></div>
     </div>:<>
       <form className="auth-form" onSubmit={prepare}>
-        <label className={css.amountInput}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
+        <label className={css.amountInput}><span className={css.amountLabel}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi></span><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
         <div className={css.fieldPair}>
         {options.cashEnabled&&<label>{ar?"طريقة الدفع":"Zahlungsart"}<select value={method} onChange={event=>setMethod(event.target.value==="cash"?"cash":"bank")}><option value="cash">{text.cash}</option><option value="bank">{text.bank}</option></select></label>}
         {!options.cashEnabled&&<p>{text.bank}</p>}

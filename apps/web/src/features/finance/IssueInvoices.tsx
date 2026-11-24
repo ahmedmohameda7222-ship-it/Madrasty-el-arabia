@@ -86,11 +86,11 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
   }
 
   return <>
-    <div className="header-actions">
-      <Link className="plain-button" href={`${root}/fee-settings`}>{text.settings}</Link>
-      <Link className="plain-button" href={`${root}/invoices`}>{text.invoices}</Link>
+    <div className={css.secondaryLinks}>
+      <Link href={`${root}/fee-settings`}>{locale==="ar"?"إعدادات الرسوم":"Einstellungen"}</Link>
+      <Link href={`${root}/invoices`}>{text.invoices}</Link>
     </div>
-    {!initial.bankReady&&<p>{locale==="ar"?"السداد النقدي متاح. حساب التحويل اختياري.":"Barzahlung möglich. Bankkonto optional."} {mayConfigureBank&&<Link href={`${root}/bank`}>{text.bank}</Link>}</p>}
+    {!initial.bankReady&&<p className={css.secondary}>{locale==="ar"?"السداد النقدي متاح. حساب التحويل اختياري.":"Barzahlung möglich. Bankkonto optional."} {mayConfigureBank&&<Link href={`${root}/bank`}>{text.bank}</Link>}</p>}
     {error&&<p role="alert">{error}</p>}
     {receipt&&<div className="notice auth-form" role="status">
       <p>{text.issued} · {receipt.issuedIds.length} · {text.existing} {receipt.existingIds.length} · {text.skipped} {receipt.skipped.length}</p>
@@ -118,13 +118,13 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         <button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button>
       </div>
     </div>:<form className="auth-form" onSubmit={(event)=>void showPreview(event)}>
-      <label>{text.period}<input dir="ltr" type="month" value={period} required onChange={(event)=>changePeriod(event.target.value)}/></label>
+      <div className={css.fieldPair}><label>{text.period}<input dir="ltr" type="month" value={period} required onChange={(event)=>changePeriod(event.target.value)}/></label>
       <label>{locale==="ar"?"نوع الفاتورة":"Rechnungsart"}<select value={kind} onChange={(event)=>{
         const selected=event.target.value==="manual"?"manual":"monthly";
         setKind(selected);if(selected==="manual")setExplicit(true);setPicked([]);setInitialId(preferred);setManualKey(undefined);
       }}>
         <option value="monthly">{text.monthly}</option><option value="manual">{text.manual}</option>
-      </select></label>
+      </select></label></div>
       {current&&current.classes.length>0&&<label>{text.classes}<select value={classId} onChange={(event)=>{setClass(event.target.value);setPicked([]);setInitialId(undefined);}}>
         <option value="">{text.allClasses}</option>
         {current.classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
