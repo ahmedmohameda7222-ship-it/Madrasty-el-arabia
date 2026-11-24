@@ -36,7 +36,7 @@ export default async function SchoolPage({ params, searchParams }: {
   const invites = teacherInvites || placement;
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
-  const welcome=tab==="home"?await schoolProfile(session):null;
+  const welcome=tab==="home"?await schoolProfile(session).catch(()=>null):null;
   return (
     <>
       <h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
