@@ -12,7 +12,7 @@ const scenarios = [
 for (const scenario of scenarios) {
   test.describe("finance locale "+scenario.actor+" "+scenario.locale,()=>{
   test.use({locale:scenario.locale==="ar"?"ar-EG":"de-DE"});
-  test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({page, context}) => {
+  test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({context}) => {
     test.setTimeout(360_000);
     const school = schoolFixtures();
     try {
@@ -25,6 +25,8 @@ for (const scenario of scenarios) {
         : ["finance-reports","invoices"];
       for (const route of routes) {
         for (const [width,theme] of [[390,"light"],[320,"dark"],[430,"light"],[1280,"light"]] as const) {
+          const page=await context.newPage();
+          try {
           await page.setViewportSize({width,height:844});
           await page.emulateMedia({colorScheme:theme,reducedMotion:"reduce"});
           const response=await page.goto("/"+scenario.locale+"/school/more/"+route);
@@ -92,6 +94,7 @@ for (const scenario of scenarios) {
             expect(visible).toBe(true);
             await page.screenshot({path:"qa-artifacts/ui-after/finance-action-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled"});
           }
+          } finally { await page.close(); }
         }
       }
     } finally { await school.close(); }

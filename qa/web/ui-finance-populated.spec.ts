@@ -92,7 +92,7 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
       const context=await browser.newContext({...(browser.browserType().name()==="webkit"?devices["iPhone 13"]:{}),baseURL:localOrigin,locale:s.locale==="ar"?"ar-EG":"de-DE"});
       try{
         await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
-        const page=await context.newPage();
+        let page=await context.newPage();
         const record=records.find(x=>x.label===s.record)!;
         const actorOptions={token,persona:s.persona,locale:s.locale};
         const visibleInvoice=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+record.invoice.id,actorOptions)).payload.data);
@@ -134,7 +134,17 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           await page.setViewportSize({width,height:844});
           await page.emulateMedia({colorScheme:theme,reducedMotion:"reduce"});
           const prefix="finance-populated-"+s.actor+"-"+s.locale+"-"+width+"-"+theme+"-";
-          async function go(route:string){const response=await page.goto(root+route);expect(response?.status()).toBe(200);}
+          async function go(route:string){
+            // Full-document navigation is intentionally isolated from the previous dev page.
+            // Actual in-app receipt link clicks below remain exercised.
+            await page.close();
+            page=await context.newPage();
+            await page.setViewportSize({width,height:844});
+            await page.emulateMedia({colorScheme:theme,reducedMotion:"reduce"});
+            const response=await page.goto(root+route);
+            expect(response?.status()).toBe(200);
+            await expect(page).toHaveURL(localOrigin+root+route);
+          }
           await go("finance-reports");
           await expect(page.getByText(s.persona==="admin"?(s.locale==="ar"?"رصيد الخزنة الحالي":"Aktueller Kassenbestand"):(s.locale==="ar"?"المبلغ المتبقي":"Offener Betrag"),{exact:true}).first()).toBeVisible();
           await capture(page,prefix+"overview");

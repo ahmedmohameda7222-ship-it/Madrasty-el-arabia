@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch]$Serve, [switch]$PreviousRelease, [switch]$ProductionBuild)
+param([switch]$Serve, [switch]$PreviousRelease)
 
 $ErrorActionPreference = 'Stop'
 $qaProject = 'madrasty_final_qa'
@@ -52,15 +52,7 @@ if ($Serve) {
     $port = 4310
   }
   Push-Location $webRoot
-  try {
-    if ($ProductionBuild) {
-      pnpm --filter @madrasty/web build
-      if ($LASTEXITCODE -ne 0) { throw 'Building the isolated QA production application failed.' }
-      pnpm --filter @madrasty/web exec next start --hostname 127.0.0.1 --port $port
-    } else {
-      pnpm --filter @madrasty/web exec next dev --webpack --hostname 127.0.0.1 --port $port
-    }
-  }
+  try { pnpm --filter @madrasty/web exec next dev --webpack --hostname 127.0.0.1 --port $port }
   finally { Pop-Location }
   exit $LASTEXITCODE
 }

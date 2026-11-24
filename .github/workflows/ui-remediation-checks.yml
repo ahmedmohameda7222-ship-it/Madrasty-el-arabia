@@ -146,18 +146,12 @@ jobs:
           export LOCALAPPDATA="$RUNNER_TEMP"
           pwsh -NoProfile -File qa/start-stack.ps1
           mkdir -p qa-artifacts/server
-          # Next dev HMR can reload the old page during WebKit navigation.
-          # Test the actual compiled application instead, with the same isolated bindings.
-          pwsh -NoProfile -File qa/local.ps1 -Serve -ProductionBuild > qa-artifacts/server/webkit.log 2>&1 &
+          # Keep the established restricted local HTTP fixture environment.
+          # Each independent screenshot route opens in a fresh page to isolate dev HMR.
+          pwsh -NoProfile -File qa/local.ps1 -Serve > qa-artifacts/server/webkit.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          ready=false
-          for attempt in $(seq 1 180); do
-            if curl -fsS --max-time 5 http://127.0.0.1:4300/api/v1/health 2>/dev/null; then ready=true; break; fi
-            if ! kill -0 "$server_pid" 2>/dev/null; then echo "QA server exited before readiness"; exit 1; fi
-            sleep 2
-          done
-          test "$ready" = true
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
           pnpm exec playwright test --config qa/ui-finance-ios.config.ts
       - name: Preserve WebKit finance evidence
         if: always()
