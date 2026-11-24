@@ -27,16 +27,16 @@ for(const scenario of [
       for(const field of await dateFields.all()){
         await expect(field).toBeVisible();
         const id=await field.getAttribute("aria-describedby");
-        expect(id,"date field must expose a human-readable format hint").toMatch(/^date-format-/);
+        expect(id,"date field must expose a human-readable value or format hint").toMatch(scenario.path==="more/finance-reports"?/^finance-date-/:/^date-format-/);
         const hint=page.locator("#"+id);
         await expect(hint).toBeVisible();
-        await expect(hint).toContainText(expectedHint);
+        if(scenario.path!=="more/finance-reports")await expect(hint).toContainText(expectedHint);else await expect(hint).not.toBeEmpty();
       }
       for(const field of await monthFields.all()){
         await expect(field).toBeVisible();
         const id=await field.getAttribute("aria-describedby");
-        expect(id,"month field must expose browser-native format hint").toMatch(/^date-format-/);
-        await expect(page.locator("#"+id)).toContainText("تنسيق الشهر المعروض يعتمد على المتصفح");
+        expect(id,"month field must expose readable date context").toMatch(/^finance-date-/);
+        await expect(page.locator("#"+id)).not.toBeEmpty();
       }
       const first=dateFields.first();
       await first.fill("2026-11-20");

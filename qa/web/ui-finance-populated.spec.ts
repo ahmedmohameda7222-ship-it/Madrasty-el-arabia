@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { devices, expect, test, type Page } from "@playwright/test";
 import { schoolFixtures, type FixtureSchool } from "../fixtures/school";
 import { setUpCalendar } from "../fixtures/calendar";
 import { schoolClock as clock } from "../fixtures/clock";
@@ -89,7 +89,7 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
     ] as const;
     for(const s of scenarios){
       const token=await school.bearer(s.actor,s.persona);
-      const context=await browser.newContext({baseURL:localOrigin,locale:s.locale==="ar"?"ar-EG":"de-DE"});
+      const context=await browser.newContext({...(browser.browserType().name()==="webkit"?devices["iPhone 13"]:{}),baseURL:localOrigin,locale:s.locale==="ar"?"ar-EG":"de-DE"});
       try{
         await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
         const page=await context.newPage();
@@ -138,6 +138,19 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           await go("finance-reports");
           await expect(page.getByText(s.persona==="admin"?(s.locale==="ar"?"رصيد الخزنة الحالي":"Aktueller Kassenbestand"):(s.locale==="ar"?"المبلغ المتبقي":"Offener Betrag"),{exact:true}).first()).toBeVisible();
           await capture(page,prefix+"overview");
+          if(s.persona==="admin"&&width===320){
+            const advanced=page.getByText(s.locale==="ar"?"تفاصيل الحساب":"Weitere Kennzahlen",{exact:true}).first();
+            await advanced.click();
+            const rows=advanced.locator("..").locator("dl > div");
+            expect(await rows.count()).toBeGreaterThan(3);
+            for(const row of await rows.all()){
+              const dt=row.locator("dt"),dd=row.locator("dd");
+              const a=await dt.boundingBox(),b=await dd.boundingBox();
+              expect(Math.abs(a!.y-b!.y)).toBeLessThan(Math.max(a!.height,b!.height));
+              if(s.locale==="de")expect(b!.x).toBeGreaterThanOrEqual(a!.x+a!.width-1);
+            }
+            await capture(page,prefix+"overview-advanced");
+          }
           if(s.persona==="guardian"&&(width===320||width===390)){
             await page.getByText(s.locale==="ar"?"الفواتير والإيصالات":"Rechnungen und Belege",{exact:true}).click();
             await capture(page,prefix+"overview-expanded");
@@ -162,6 +175,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           const invoicePdfLink=page.locator('a[download][href*="/finance/invoices/"]');
           await expect(invoicePdfLink).toBeVisible();
           await expect(invoicePdfLink).toHaveAttribute("href","/api/v1/finance/invoices/"+record.invoice.id+"/pdf?locale="+s.locale);
+          if(s.locale==="de"){
+            const amount=(visibleInvoice.balanceMinor/100).toFixed(2).replace(".",",");
+            await expect(page.getByText(new RegExp(amount+"\\s*€")).first()).toBeVisible();
+          }
           await capture(page,prefix+"invoice-detail");
           // Follow the invoice's persona-scoped receipt link, not the staff ledger ID.
           const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
