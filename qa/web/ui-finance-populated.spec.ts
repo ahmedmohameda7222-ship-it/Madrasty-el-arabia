@@ -113,7 +113,14 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           await go("invoices?invoice="+record.invoice.id);
           await expect(page.locator('a[download][href*="/finance/invoices/"]')).toBeVisible();
           await capture(page,prefix+"invoice-detail");
-          await go("receipts?receipt="+record.receiptId);
+          // Follow the invoice's persona-scoped receipt link, not the staff ledger ID.
+          const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
+          await expect(receiptLink).toHaveCount(1);
+          const receiptHref=await receiptLink.getAttribute("href");
+          expect(receiptHref).toBeTruthy();
+          if(s.persona==="admin")expect(receiptHref).toContain("receipt="+record.receiptId);
+          else expect(receiptHref).not.toContain("receipt="+record.receiptId);
+          await receiptLink.click();
           await expect(page.locator('a[download][href*="/finance/receipts/"]')).toBeVisible();
           await capture(page,prefix+"receipt-detail");
           if(s.persona==="admin"){
