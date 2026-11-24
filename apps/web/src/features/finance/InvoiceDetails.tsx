@@ -9,6 +9,7 @@ import {TimetableRead,useTimetableRead} from "@/features/school/timetable/shared
 import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,FeeLines,financeAmount} from "./invoice-ui";
 import {TransferDetails} from "./TransferDetails";
+import {FinancePdfButton} from "./FinancePdfButton";
 import {receiptCopy} from "./receipt-ui";
 
 const rows=invoiceSummary.array();
@@ -23,6 +24,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost}:{locale:L
     {invoice?<><Link className="plain-button" href={root}>{text.back}</Link>
       <TimetableRead locale={locale} result={details}>{(item)=><div className="auth-form">
         <h2><bdi>{item.invoiceNumber}</bdi> · <bdi>{item.studentName}</bdi></h2>
+        <FinancePdfButton locale={locale} id={item.id} kind="invoices" number={item.invoiceNumber}/>
         <p><bdi>{item.studentNumber}</bdi> · <bdi>{item.period}</bdi> · {text[item.kind]}</p>
         <p>{text.payer} · <bdi>{item.payerName}</bdi></p>
         <p>{text.due} · <bdi>{item.dueDate}</bdi> · {text[item.state]}</p>
@@ -51,6 +53,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost}:{locale:L
         {invoices.map((item)=><li key={item.id} className="timetable-day">
           <Link className="group-row" href={`${root}?invoice=${item.id}`}><bdi>{item.invoiceNumber}</bdi><bdi>{item.studentName}</bdi></Link>
           <p><bdi>{item.period}</bdi> · {text[item.state]} · <bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></p>
+          <FinancePdfButton locale={locale} id={item.id} kind="invoices" number={item.invoiceNumber}/>
         </li>)}
       </ul>}</AcademicPageItems>
     </>}

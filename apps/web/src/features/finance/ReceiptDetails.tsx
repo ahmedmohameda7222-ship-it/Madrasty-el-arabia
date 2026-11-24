@@ -8,6 +8,7 @@ import {useSchoolCommand} from "@/api/commands";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
 import {ConfirmedAt} from "@/ui/RecordValues";
+import {FinancePdfButton} from "./FinancePdfButton";
 import {financeAmount,inputAmountMinor} from "./invoice-ui";
 import {InvoicePicker,receiptCopy,type InvoiceCandidate} from "./receipt-ui";
 
@@ -23,6 +24,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
       const money=(value:number)=><bdi dir="ltr">{financeAmount(value,item.currency)}</bdi>;
       return <div className="auth-form">
         <h2><bdi>{item.receiptNumber}</bdi></h2>
+        <FinancePdfButton locale={locale} id={item.id} kind="receipts" number={item.receiptNumber}/>
         <p>{text[item.method]} · <bdi>{item.receivedDate}</bdi></p>
         <ConfirmedAt locale={locale} value={item.recordedAt}/>
         <p>{text.total} · {money(item.amountMinor)}</p>

@@ -24,14 +24,15 @@ export function RecordPayment({locale,invoice}:{locale:Locale;invoice?:string}){
 
 function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;initial?:InvoiceCandidate}){
   const text=receiptCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
-  const [method,setMethod]=useState<"bank"|"cash">("bank"),[date,setDate]=useState(options.schoolDate);
-  const [reference,setReference]=useState(""),[amount,setAmount]=useState(""),[verified,setVerified]=useState(false);
+  const [method,setMethod]=useState<"bank"|"cash">(options.cashEnabled?"cash":"bank"),[date,setDate]=useState(options.schoolDate);
+  const [cashReference,setCashReference]=useState(()=>`CASH-${crypto.randomUUID()}`);
+  const [reference,setReference]=useState(""),[amount,setAmount]=useState(initial?financeAmount(initial.balanceMinor,options.currency).split(" ")[0]:""),[verified,setVerified]=useState(false);
   const [invoice,setInvoice]=useState(initial),[picker,setPicker]=useState(false);
   const [preview,setPreview]=useState<ReturnType<typeof recordReceiptInput.parse>>();
   const [receipt,setReceipt]=useState<ReturnType<typeof receiptMutation.parse>>();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   const {currency}=options;
-  const input=recordReceiptInput.safeParse({externalReceiptRef:reference,method,receivedDate:date,currency,
+  const input=recordReceiptInput.safeParse({externalReceiptRef:method==="cash"?cashReference:reference,method,receivedDate:date,currency,
     amountMinor:inputAmountMinor(amount,currency,100000000000000),invoiceId:invoice?.id,verified});
   function prepare(event:FormEvent){
     event.preventDefault();
@@ -42,7 +43,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
     setBusy(true);setError("");
     try{
       setReceipt(await command("/finance/receipts","POST",preview,receiptMutation));
-      setPreview(undefined);setReference("");setAmount("");setVerified(false);setInvoice(undefined);
+      setPreview(undefined);setCashReference(`CASH-${crypto.randomUUID()}`);setReference("");setAmount("");setVerified(false);setInvoice(undefined);
     }catch(problem){setError(timetableError(locale,problem));}
     finally{setBusy(false);}
   }
@@ -61,11 +62,11 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
       </div>
     </div>:<>
       <form className="auth-form" onSubmit={prepare}>
-        {options.cashEnabled&&<label>{billingCopy[locale].status}<select value={method} onChange={(event)=>setMethod(event.target.value==="cash"?"cash":"bank")}>
-          <option value="bank">{text.bank}</option><option value="cash">{text.cash}</option>
+        {options.cashEnabled&&<label>{locale==="ar"?"طريقة الدفع":"Zahlungsart"}<select value={method} onChange={(event)=>setMethod(event.target.value==="cash"?"cash":"bank")}>
+          <option value="cash">{text.cash}</option><option value="bank">{text.bank}</option>
         </select></label>}
         {!options.cashEnabled&&<p>{text.bank}</p>}
-        <label>{text.reference}<input value={reference} maxLength={160} onChange={(event)=>setReference(event.target.value)} required/></label>
+        {method==="bank"&&<label>{text.reference}<input value={reference} maxLength={160} onChange={(event)=>setReference(event.target.value)} required/></label>}
         <label>{text.received}<input type="date" dir="ltr" value={date} max={options.schoolDate} onChange={(event)=>setDate(event.target.value)} required/></label>
         <label>{billingCopy[locale].amount} <bdi>{currency}</bdi><input value={amount} dir="ltr" inputMode="decimal" maxLength={22}
           onChange={(event)=>setAmount(event.target.value)} required/></label>
@@ -77,7 +78,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
         <label><input type="checkbox" checked={verified} onChange={(event)=>setVerified(event.target.checked)}/>{text.verification}</label>
         <button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button>
       </form>
-      {picker&&<InvoicePicker locale={locale} currency={currency} onPick={(item)=>{setInvoice(item);setPicker(false);}}/>}
+      {picker&&<InvoicePicker locale={locale} currency={currency} onPick={(item)=>{setInvoice(item);setAmount(financeAmount(item.balanceMinor,currency).split(" ")[0]);setPicker(false);}}/>}
     </>}
   </>;
 }

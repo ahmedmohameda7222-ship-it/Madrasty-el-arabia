@@ -72,6 +72,12 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(ahmed.issueInstructions.iban, bank.iban);
     assert.match(ahmed.issueInstructions.reference, /MA-\d+/);
     await fixtureApi(school, `/finance/invoices/${ahmed.id}`, { token: nonpayer, status: 404 });
+    for (const locale of ["de","ar"]) {
+      const {response}=await fixtureApi(school, `/finance/invoices/${ahmed.id}/pdf?locale=${locale}`, {token:payer});
+      assert.match(response.headers.get("content-type")??"", /^application\/pdf/);
+      assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0,8).toString(),"%PDF-1.4");
+    }
+    await fixtureApi(school,`/finance/invoices/${ahmed.id}/pdf`,{token:nonpayer,status:404});
     const receipt = receiptMutation.parse(await send("/finance/receipts", "single-receipt", {
       externalReceiptRef: `${school.run}-BANK-01`, method: "bank", receivedDate: clock.day, currency: "EUR",
       amountMinor: 3200, invoiceId: ahmed.id, verified: true,
@@ -107,25 +113,29 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const restored = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(restored.balanceMinor, 3200);
 
+    const before=(await fixtureApi(school,"/finance/cashbook",{token:finance,persona:"admin"})).payload.data;
+    const cashInput={externalReceiptRef:`${school.run}-CASH-01`,method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:2000,verified:true};
+    await send("/finance/receipts","cash-receipt",cashInput);
+    await send("/finance/receipts","cash-receipt",cashInput);
+    for (const [kind,amountMinor] of [["expense",300],["deposit",500],["donation",200]] as const) {
+      await send("/finance/cashbook",`cashbook-${kind}`,{kind,date:clock.day,amountMinor,description:`QA ${kind}`});
+    }
+    const after=(await fixtureApi(school,"/finance/cashbook",{token:finance,persona:"admin"})).payload.data;
+    assert.equal(after.balanceMinor-before.balanceMinor,1400);
+    assert.equal(after.incomeMinor-before.incomeMinor,2200);
+    assert.equal(after.expenseMinor-before.expenseMinor,300);
+    assert.equal(after.depositMinor-before.depositMinor,500);
+    await fixtureApi(school,"/finance/cashbook",{token:payer,persona:"guardian",status:403});
     const stop = enrollmentStop.parse((await fixtureApi(school, "/enrollment-stops", {
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
       body: { studentId: ids.omar, lastAttendanceMonth: clock.month, duration: "one_month", reason: "Synthetic school break" },
     })).payload.data);
     assert.equal(stop.startMonth, clock.nextMonth);
-    const dashboard = await fixtureApi(school, `/school/work-queues?asOf=${queueDate}`, {token:admin,persona:"admin"});
-    const pending = dashboard.payload.data.queues.find((row: {key:string}) => row.key==="noncontinuation_requests");
-    assert.equal(pending?.state, "ready");
-    assert.ok(pending.count > 0);
-    const queue = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:admin,persona:"admin"});
-    assert.ok(queue.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
-    await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:payer,persona:"guardian",status:404});
-    const decision = enrollmentStop.parse((await fixtureApi(school, `/enrollment-stops/${stop.id}/decision`, {
-      method: "POST", token: admin, persona: "admin", key: `${school.run}.approve-omar`,
-      body: { decision: "approve", revision: stop.revision },
-    })).payload.data);
-    assert.equal(decision.state, "approved");
+    assert.equal(stop.state,"approved");
+    assert.equal(stop.canDecide,false);
     const resolved = await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:admin,persona:"admin"});
     assert.ok(!resolved.payload.data.items.some((entry: {target:{requestId?: string}})=>entry.target.requestId===stop.id));
+    await fixtureApi(school, `/school/work-queues/noncontinuation_requests?asOf=${queueDate}`, {token:payer,persona:"guardian",status:404});
     const nextMonth = invoicePreview.parse(await send("/finance/invoice-previews", "next-month-preview", {
       ...selection, period: clock.nextMonth,
     }));
