@@ -3,6 +3,23 @@ package de.madrasty.app.school
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Icon
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Currency
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -72,6 +89,10 @@ fun SchoolHomeScreen(
     workDate: String,
     changeWorkDate: (String) -> Unit,
     openQueue: (WorkQueueSelection) -> Unit,
+    openTasks: () -> Unit,
+    openFinance: () -> Unit,
+    openAttendanceReview: (String) -> Unit,
+    openOwnProfile: () -> Unit,
     openDirectory: () -> Unit,
     openSetup: () -> Unit,
     openMore: () -> Unit,
@@ -92,7 +113,7 @@ fun SchoolHomeScreen(
     ProfileGreeting(model,refresh)
     when (persona) {
         Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,openSetup,
-            openMore,addGuardian,openEvents,openNews,openIssue,openAnnouncement,language,refresh)
+            openMore,addGuardian,openEvents,openNews,openIssue,openAnnouncement,language,refresh,openTasks,openFinance,openAttendanceReview,openOwnProfile,{openSchedule(null)})
         Persona.Teacher -> TeacherHome(model,openAttendance,openSchedule,language,refresh)
         Persona.Guardian -> GuardianHome(model,child,pickChild,openProfile,openSchedule,language,refresh)
     }
@@ -103,11 +124,10 @@ private fun AdminHome(
     model: IdentityViewModel, workDate:String, changeWorkDate:(String)->Unit,
     openQueue:(WorkQueueSelection)->Unit, directory:()->Unit, setup:()->Unit,
     more:()->Unit, addGuardian:()->Unit, events:()->Unit, news:()->Unit, issue:()->Unit, announce:()->Unit,
-    language:String, refresh:Int,
+    language:String, refresh:Int, tasks:()->Unit, finance:()->Unit, attendance:(String)->Unit,
+    profile:()->Unit, schedule:()->Unit,
 ) {
-    var dateText by remember(workDate) { mutableStateOf(workDate) }
-    val query = if (workDate.isNotEmpty()) "?asOf=$workDate" else ""
-    val work = scheduleRead("/school/work-queues$query",refresh,model::timetableObject)
+    val work = scheduleRead("/school/work-queues",refresh,model::timetableObject)
     AsyncSurface(work) { summary ->
         if (summary.optBoolean("setupRequired")) {
             val mayConfigure=summary.optBoolean("mayConfigure")
@@ -117,41 +137,166 @@ private fun AdminHome(
             }
             return@AsyncSurface
         }
-        val asOf = summary.getString("asOf")
-        val queues = summary.getJSONArray("queues").tableRows().filter { it.getString("key") in queueLabels }
-        val first = queues.firstOrNull { it.getString("state") == "ready" && it.optInt("count") > 0 }
-        val detail = when {
-            first != null -> queueLabels.getValue(first.getString("key"))
-            queues.any { it.getString("state") == "unavailable" } -> R.string.queue_unavailable
-            else -> R.string.queue_empty
+        val today=summary.getString("today")
+        val queues=summary.getJSONArray("queues").tableRows().filter { it.getString("key") in queueLabels && it.getString("key")!="noncontinuation_requests" }
+        val total=queues.filter{it.optString("state")=="ready"}.sumOf{it.optInt("count")}
+        val unavailable=queues.any{it.optString("state")=="unavailable"}
+        val numbers=NumberFormat.getIntegerInstance(Locale.forLanguageTag(language))
+        val dateFormatter=DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(Locale.forLanguageTag(language))
+        fun date(value:String)=runCatching{LocalDate.parse(value).format(dateFormatter)}.getOrDefault(value)
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+            Text(date(today),style=MaterialTheme.typography.bodySmall)
+            TextButton(onClick=profile){Text(stringResource(R.string.profile_title))}
         }
-        RoleHero(Persona.Admin,stringResource(R.string.queue_title),stringResource(detail),
-            stringResource(if (first == null) R.string.nav_more else R.string.queue_open)) {
-            if (first == null) more() else openQueue(WorkQueueSelection(first.getString("key"),asOf))
+        val detail=when{
+            total>0->stringResource(R.string.admin_start_task_count,numbers.format(total))
+            unavailable->stringResource(R.string.queue_unavailable)
+            else->stringResource(R.string.admin_start_done)
         }
-        val numbers = NumberFormat.getIntegerInstance(Locale.forLanguageTag(language))
-        val overview = summary.optJSONObject("overview")
-        if (overview != null) {
-            listOf("students" to R.string.nav_students,"classes" to R.string.enrollments,"teachers" to R.string.staff_profiles)
-                .filter { (key,_) -> !overview.isNull(key) }.forEach { (key,label) ->
-                    Text("${stringResource(label)} · ${numbers.format(overview.getInt(key))}")
+        RoleHero(Persona.Admin,stringResource(R.string.queue_title),detail,stringResource(R.string.queue_open),tasks)
+        if(unavailable&&total>0)Text(stringResource(R.string.queue_unavailable),style=MaterialTheme.typography.bodySmall)
+        val overview=summary.optJSONObject("overview")
+        if(overview!=null){
+            val metrics=listOf(Triple("students",R.string.nav_students,R.drawable.ic_people),
+                Triple("classes",R.string.admin_start_classes,R.drawable.ic_home),
+                Triple("teachers",R.string.admin_start_teachers,R.drawable.ic_people)).filter{!overview.isNull(it.first)}
+            if(metrics.isNotEmpty()){
+                Text(stringResource(R.string.admin_start_overview),style=MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                    metrics.forEach{(key,label,icon)->
+                        Card(Modifier.weight(1f),shape=RoundedCornerShape(16.dp)){
+                            Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+                                Icon(painterResource(icon),null,tint=MaterialTheme.colorScheme.primary,modifier=Modifier.size(22.dp))
+                                Text(numbers.format(overview.getInt(key)),style=MaterialTheme.typography.headlineSmall)
+                                Text(stringResource(label),style=MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
                 }
-            if (!overview.isNull("students")) TextButton(onClick=addGuardian) { Text(stringResource(R.string.add_guardian)) }
-            if (overview.optBoolean("mayIssue")) TextButton(onClick=issue) { Text(stringResource(R.string.fee_issue)) }
-            if (overview.optBoolean("mayPublish")) TextButton(onClick=announce) { Text(stringResource(R.string.broadcast_title)) }
+            }
+            overview.optJSONObject("attendance")?.let{stats->
+                val day=stats.getString("date")
+                Text(stringResource(if(day==today)R.string.admin_start_today else R.string.admin_start_last),style=MaterialTheme.typography.titleMedium)
+                DashboardPanel{
+                    Text(date(day),style=MaterialTheme.typography.bodySmall)
+                    val present=stats.getInt("present");val late=stats.getInt("late");val absent=stats.getInt("absent")
+                    val marked=present+late+absent
+                    if(marked>0){
+                        val fraction=(present+late).toFloat()/marked
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(18.dp)){
+                            androidx.compose.foundation.layout.Box(contentAlignment=Alignment.Center,modifier=Modifier.size(80.dp)){
+                                CircularProgressIndicator(progress={fraction},modifier=Modifier.size(80.dp),strokeWidth=8.dp)
+                                Text(numbers.format(kotlin.math.round(fraction*100).toInt())+"%",style=MaterialTheme.typography.titleMedium)
+                            }
+                            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(6.dp)){
+                                DashboardValue(R.string.admin_start_present,numbers.format(present))
+                                DashboardValue(R.string.admin_start_late,numbers.format(late))
+                                DashboardValue(R.string.admin_start_absent,numbers.format(absent))
+                            }
+                        }
+                    }else Text(stringResource(R.string.admin_start_no_attendance))
+                    Text(stringResource(R.string.admin_start_coverage,numbers.format(stats.getInt("approvedClasses")),numbers.format(stats.getInt("expectedClasses"))),style=MaterialTheme.typography.bodySmall)
+                    TextButton(onClick={attendance(day)}){Text(stringResource(R.string.admin_start_open_attendance))}
+                }
+            }
+            overview.optJSONObject("finance")?.let{stats->
+                Text(stringResource(R.string.admin_start_finance),style=MaterialTheme.typography.titleMedium)
+                val money=NumberFormat.getCurrencyInstance(Locale.forLanguageTag(language)).apply{currency=Currency.getInstance(stats.getString("currency"))}
+                val cash=stats.getLong("cash");val bank=stats.getLong("bank")
+                DashboardPanel{
+                    Text(stats.getString("month")+" · "+stringResource(R.string.admin_start_income),style=MaterialTheme.typography.bodySmall)
+                    Text(money.format((cash+bank)/100.0),style=MaterialTheme.typography.headlineSmall)
+                    DashboardValue(R.string.admin_start_cash,money.format(cash/100.0))
+                    DashboardValue(R.string.admin_start_bank,money.format(bank/100.0))
+                    TextButton(onClick=finance){Text(stringResource(R.string.admin_start_open_finance))}
+                }
+            }
+            val quick=buildList<Triple<Int,Int,()->Unit>>{
+                if(!overview.isNull("students"))add(Triple(R.string.admin_start_family,R.drawable.ic_people,addGuardian))
+                if(overview.optBoolean("mayPublish")){
+                    add(Triple(R.string.admin_start_event,R.drawable.ic_attendance,events))
+                    add(Triple(R.string.admin_start_announce,R.drawable.ic_messages,announce))
+                }
+                if(overview.optBoolean("mayIssue"))add(Triple(R.string.admin_start_invoice,R.drawable.ic_more,issue))
+            }
+            if(quick.isNotEmpty()){
+                Text(stringResource(R.string.admin_start_quick),style=MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                    quick.forEach{(label,icon,action)->
+                        Card(Modifier.weight(1f).clickable(onClick=action),shape=RoundedCornerShape(16.dp)){
+                            Column(Modifier.fillMaxWidth().padding(vertical=12.dp,horizontal=4.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(6.dp)){
+                                Icon(painterResource(icon),null,tint=MaterialTheme.colorScheme.primary,modifier=Modifier.size(24.dp))
+                                Text(stringResource(label),style=MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
+            overview.optJSONObject("schoolDays")?.let{days->
+                Text(stringResource(R.string.admin_start_next),style=MaterialTheme.typography.titleMedium)
+                DashboardPanel{
+                    Text(if(days.isNull("next"))stringResource(R.string.admin_start_no_next)else date(days.getString("next")),style=MaterialTheme.typography.titleMedium)
+                    if(overview.optBoolean("maySchedule"))TextButton(onClick=schedule){Text(stringResource(R.string.timetable_title))}
+                }
+            }
         }
-        TextButton(onClick=news) { Text(stringResource(R.string.school_news)) }
-        TextButton(onClick=events) { Text(stringResource(R.string.school_events)) }
-        Text(isolate(asOf))
-        Field(R.string.queue_date,dateText) { dateText = it.take(10) }
-        TextButton(enabled = timetableDate(dateText),onClick = { changeWorkDate(dateText) }) { Text(stringResource(R.string.queue_filter)) }
-        TextButton(enabled = workDate.isNotEmpty(),onClick = { changeWorkDate("") }) { Text(stringResource(R.string.timetable_current)) }
-        queues.forEach { record ->
-            val key = record.getString("key")
-            val label = stringResource(queueLabels.getValue(key))
-            if (record.getString("state") == "ready") TextButton(onClick = { openQueue(WorkQueueSelection(key,asOf)) }) {
-                Text("$label · ${numbers.format(record.getInt("count"))}")
-            } else Text("$label · ${stringResource(R.string.queue_unavailable)}")
+        Text(stringResource(R.string.admin_start_news),style=MaterialTheme.typography.titleMedium)
+        DashboardPanel{
+            TextButton(onClick=news){Text(stringResource(R.string.school_news))}
+            HorizontalDivider()
+            TextButton(onClick=events){Text(stringResource(R.string.school_events))}
+        }
+    }
+}
+
+@Composable
+private fun DashboardPanel(content:@Composable androidx.compose.foundation.layout.ColumnScope.()->Unit){
+    Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(18.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)){
+        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp),content=content)
+    }
+}
+@Composable
+private fun DashboardValue(label:Int,value:String){
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+        Text(stringResource(label),style=MaterialTheme.typography.bodyMedium)
+        Text(value,style=MaterialTheme.typography.titleSmall)
+    }
+}
+
+@Composable
+fun AdminTasksScreen(model:IdentityViewModel,open:(WorkQueueSelection)->Unit,close:()->Unit){
+    val refresh=foregroundVersion()
+    var selected by remember{mutableStateOf("")}
+    var draft by remember{mutableStateOf("")}
+    var showZero by remember{mutableStateOf(false)}
+    val work=scheduleRead("/school/work-queues"+if(selected.isEmpty())"" else "?asOf=$selected",refresh,model::timetableObject)
+    BackHandler(onBack=close)
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        TextButton(onClick=close){Text(stringResource(R.string.back))}
+        Text(stringResource(R.string.queue_title),style=MaterialTheme.typography.headlineMedium)
+        AsyncSurface(work){summary->
+            if(summary.optBoolean("setupRequired")){Text(stringResource(R.string.school_setup_required));return@AsyncSurface}
+            val asOf=summary.getString("asOf")
+            Text(isolate(asOf))
+            Field(R.string.queue_date,draft){draft=it.take(10)}
+            Row{
+                TextButton(enabled=timetableDate(draft),onClick={selected=draft}){Text(stringResource(R.string.queue_filter))}
+                TextButton(enabled=selected.isNotEmpty(),onClick={selected="";draft=""}){Text(stringResource(R.string.timetable_current))}
+            }
+            val queues=summary.getJSONArray("queues").tableRows().filter{it.getString("key") in queueLabels && it.getString("key")!="noncontinuation_requests"}
+            if(queues.none{it.optString("state")=="unavailable"||it.optInt("count")>0})Text(stringResource(R.string.admin_start_done))
+            DashboardPanel{
+                queues.filter{showZero||it.optString("state")=="unavailable"||it.optInt("count")>0}.forEach{row->
+                    val key=row.getString("key")
+                    if(row.optString("state")=="ready")TextButton(onClick={open(WorkQueueSelection(key,asOf))}){
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                            Text(stringResource(queueLabels.getValue(key)),Modifier.weight(1f));Text(row.getInt("count").toString())
+                        }
+                    }else Text(stringResource(queueLabels.getValue(key))+" · "+stringResource(R.string.queue_unavailable))
+                    HorizontalDivider()
+                }
+                TextButton(onClick={showZero=!showZero}){Text(stringResource(if(showZero)R.string.admin_start_active_tasks else R.string.admin_start_all_tasks))}
+            }
         }
     }
 }

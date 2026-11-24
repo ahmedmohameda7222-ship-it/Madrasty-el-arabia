@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="admin_start_task_count">%1$s مهام مفتوحة</string>
+    <string name="admin_start_done">كل المهام خلصت</string>
+    <string name="admin_start_overview">نظرة على المدرسة</string>
+    <string name="admin_start_classes">الفصول</string>
+    <string name="admin_start_teachers">المدرسون</string>
+    <string name="admin_start_today">اليوم الدراسي</string>
+    <string name="admin_start_last">آخر يوم دراسي</string>
+    <string name="admin_start_next">اليوم الدراسي القادم</string>
+    <string name="admin_start_present">حاضر</string>
+    <string name="admin_start_late">متأخر</string>
+    <string name="admin_start_absent">غائب</string>
+    <string name="admin_start_no_attendance">لا يوجد حضور معتمد حتى الآن.</string>
+    <string name="admin_start_coverage">فصول تم اعتمادها: %1$s / %2$s</string>
+    <string name="admin_start_open_attendance">عرض الحضور</string>
+    <string name="admin_start_finance">الحسابات</string>
+    <string name="admin_start_income">المتحصلات بعد الاسترداد</string>
+    <string name="admin_start_cash">نقدي</string>
+    <string name="admin_start_bank">تحويل بنكي</string>
+    <string name="admin_start_open_finance">فتح الحسابات</string>
+    <string name="admin_start_family">أسرة</string>
+    <string name="admin_start_event">حدث</string>
+    <string name="admin_start_announce">إعلان</string>
+    <string name="admin_start_invoice">فاتورة</string>
+    <string name="admin_start_quick">الوصول السريع</string>
+    <string name="admin_start_no_next">لا يوجد يوم دراسي قادم محدد.</string>
+    <string name="admin_start_news">أخبار المدرسة</string>
+    <string name="admin_start_active_tasks">المهام المفتوحة فقط</string>
+    <string name="admin_start_all_tasks">كل المهام</string>
+</resources>

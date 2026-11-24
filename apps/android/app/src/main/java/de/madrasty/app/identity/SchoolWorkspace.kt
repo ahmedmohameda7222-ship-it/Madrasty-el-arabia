@@ -76,6 +76,7 @@ import de.madrasty.app.school.EnrollmentScreen
 import de.madrasty.app.school.FamiliesScreen
 import de.madrasty.app.school.ImportScreen
 import de.madrasty.app.school.SchoolHomeScreen
+import de.madrasty.app.school.AdminTasksScreen
 import de.madrasty.app.school.SchoolWorkQueueScreen
 import de.madrasty.app.school.SchoolWorkTarget
 import de.madrasty.app.school.StaffAssignmentsScreen
@@ -129,6 +130,7 @@ internal sealed interface WorkspacePage {
     data class Import(val job: String? = null) : WorkspacePage
     data class Assignments(val classTarget: SchoolWorkTarget.ClassAssignment? = null) : WorkspacePage
     data class Family(val student: String? = null,val guardian: String? = null,val link: String? = null,val addGuardian:Boolean = false) : WorkspacePage
+    data object AdminTasks : WorkspacePage
     data class Queue(val selection: WorkQueueSelection) : WorkspacePage
 }
 
@@ -238,7 +240,7 @@ private data class SchoolRights(val persona: Persona,val keys: Set<String>,val m
         is WorkspacePage.Assignments -> school || academic
         is WorkspacePage.Import,is WorkspacePage.Family -> students
         is WorkspacePage.Invitations -> students || teacherInvites
-        is WorkspacePage.Queue -> persona == Persona.Admin
+        WorkspacePage.AdminTasks, is WorkspacePage.Queue -> persona == Persona.Admin
         is WorkspacePage.Gradebook -> persona==Persona.Teacher||academic
         is WorkspacePage.Homework -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
         is WorkspacePage.Exams -> if(page.child!=null)persona==Persona.Guardian else persona!=Persona.Admin||academic
@@ -389,6 +391,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.teacherInvites,page.batch,page.id,state::back)
         is WorkspacePage.Import -> ImportScreen(model,{state.open(WorkspacePage.Invitations(it))},page.job,state::back)
         is WorkspacePage.Family -> FamilyWorkspace(model,page,state::back) { state.open(WorkspacePage.Enrollment(it)) }
+        WorkspacePage.AdminTasks -> AdminTasksScreen(model,{state.open(WorkspacePage.Queue(it))},state::back)
         is WorkspacePage.Queue -> SchoolWorkQueueScreen(model,page.selection,state::openWork,state::back)
     }
 }
@@ -403,6 +406,10 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
             SchoolTab.Home -> SchoolHomeScreen(
                 model,session.actor.persona,state.workDate,{state.workDate=it},
                 openQueue={state.open(WorkspacePage.Queue(it))},
+                openTasks={state.open(WorkspacePage.AdminTasks)},
+                openFinance={state.open(WorkspacePage.FinanceReport())},
+                openAttendanceReview={state.open(WorkspacePage.AttendanceReview(date=it))},
+                openOwnProfile={state.open(WorkspacePage.Profile)},
                 openDirectory={state.open(WorkspacePage.Directory)},openSetup={state.open(WorkspacePage.Calendar)},
                 openMore={state.choose(SchoolTab.More)},
                 addGuardian={state.open(WorkspacePage.Family(addGuardian=true))},

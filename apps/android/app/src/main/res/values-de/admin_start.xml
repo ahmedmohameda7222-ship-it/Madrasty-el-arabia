@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="admin_start_task_count">%1$s offene Aufgaben</string>
+    <string name="admin_start_done">Alles erledigt</string>
+    <string name="admin_start_overview">Schulübersicht</string>
+    <string name="admin_start_classes">Klassen</string>
+    <string name="admin_start_teachers">Lehrkräfte</string>
+    <string name="admin_start_today">Heutiger Schultag</string>
+    <string name="admin_start_last">Letzter Schultag</string>
+    <string name="admin_start_next">Nächster Schultag</string>
+    <string name="admin_start_present">Anwesend</string>
+    <string name="admin_start_late">Verspätet</string>
+    <string name="admin_start_absent">Abwesend</string>
+    <string name="admin_start_no_attendance">Noch keine bestätigte Anwesenheit.</string>
+    <string name="admin_start_coverage">Bestätigte Klassen: %1$s / %2$s</string>
+    <string name="admin_start_open_attendance">Anwesenheit ansehen</string>
+    <string name="admin_start_finance">Finanzen</string>
+    <string name="admin_start_income">Einnahmen nach Erstattungen</string>
+    <string name="admin_start_cash">Barzahlung</string>
+    <string name="admin_start_bank">Überweisung</string>
+    <string name="admin_start_open_finance">Finanzen öffnen</string>
+    <string name="admin_start_family">Familie</string>
+    <string name="admin_start_event">Termin</string>
+    <string name="admin_start_announce">Mitteilung</string>
+    <string name="admin_start_invoice">Rechnung</string>
+    <string name="admin_start_quick">Schnellzugriff</string>
+    <string name="admin_start_no_next">Kein weiterer Schultag geplant.</string>
+    <string name="admin_start_news">Aktuelles</string>
+    <string name="admin_start_active_tasks">Nur offene Aufgaben</string>
+    <string name="admin_start_all_tasks">Alle Aufgaben</string>
+</resources>
