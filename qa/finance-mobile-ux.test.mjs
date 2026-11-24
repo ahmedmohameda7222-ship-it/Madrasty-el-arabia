@@ -47,3 +47,9 @@ test("invoice kind has a specific label and checkboxes use aligned controls", ()
 test("finance primary form actions remain easy to reach", () => {
   for(const file of ["RecordPayment.tsx","IssueInvoices.tsx"]) assert.match(source(file), /css\.formAction/);
 });
+
+test("native family finance uses the payer summary rather than administrative report fields",()=>{
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FinanceReports.kt",import.meta.url),"utf8");
+  assert.match(native,/data\.getString\("scope"\) == "payer"/);
+  assert.match(native,/FinancePayerSummary\(/);
+});

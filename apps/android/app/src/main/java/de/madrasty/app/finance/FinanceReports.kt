@@ -54,15 +54,33 @@ private data class ReportFilters(
 @Composable
 internal fun FinanceReports(
     model: IdentityViewModel, initialStudent: String?, staff: Boolean,
-    openInvoice: (String) -> Unit, openReceipt: (String) -> Unit, openMatching: () -> Unit, close: () -> Unit,
+    openInvoice: (String) -> Unit, openReceipt: (String) -> Unit, openMatching: () -> Unit, close: () -> Unit, openInvoices: (String?, String?) -> Unit,
 ) {
     var draft by remember(initialStudent) { mutableStateOf(ReportFilters(student = initialStudent)) }
     var filters by remember(initialStudent) { mutableStateOf(ReportFilters(student = initialStudent)) }
     var version by remember { mutableIntStateOf(0) }
     var showFilters by remember { mutableStateOf(false) }
     val read = academicRead("/finance/reports/summary?${filters.query()}", version) { model.financeObject(it) }
-    FinancePage(R.string.finance_report_title, close) {
+    FinancePage(if (staff) R.string.finance_report_title else R.string.finance_my_payments, close) {
         AsyncSurface(read) { data ->
+            if (data.getString("scope") == "payer") {
+                FinancePayerSummary(data.financeRows("totals")) { openInvoices(filters.student, filters.period.ifBlank { null }) }
+                var showHistory by remember { mutableStateOf(false) }
+                TextButton(onClick = { showHistory = !showHistory }) { Text(stringResource(R.string.finance_invoice_history)) }
+                if (showHistory) {
+                    val query = filters.copy(asOf = data.getString("asOf")).query(data.getString("cutoff"))
+                    academicPages(model, "/finance/reports/statement?limit=25&$query", version) { rows ->
+                        for (row in rows) ReportLine(row, openInvoice, openReceipt, null)
+                    }
+                }
+                TextButton(onClick = { showFilters = !showFilters }) { Text(stringResource(R.string.finance_choose_month)) }
+                if (showFilters) {
+                    Field(R.string.fee_month, draft.period) { draft = draft.copy(period = financeDigits(it).take(7)) }
+                    Button(onClick = { filters = draft; version++; showFilters = false }, enabled = draft.valid(data.getString("schoolDate"))) { Text(stringResource(R.string.finance_report_apply)) }
+                }
+                if (filters.student != null) TextButton(onClick = { filters = filters.copy(student = null); draft = filters; version++ }) { Text(stringResource(R.string.finance_my_children)) }
+                return@AsyncSurface
+            }
             TextButton(onClick = { showFilters = !showFilters }) { Text(stringResource(R.string.finance_filters)) }
             if (showFilters) {
                 ReportForm(draft, { draft = it }, data, staff)

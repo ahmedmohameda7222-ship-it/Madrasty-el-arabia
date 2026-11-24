@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -14,6 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import de.madrasty.app.R
+import org.json.JSONObject
 
 @Composable
 internal fun FinanceBalanceCard(label: String, amount: String) {
@@ -38,4 +42,19 @@ internal fun FinanceRecordRow(title: String, subtitle: String, amount: String, s
             }
         },
     )
+}
+
+@Composable
+internal fun FinancePayerSummary(totals: List<JSONObject>, onInvoices: () -> Unit) {
+    if (totals.isEmpty()) {
+        Text(stringResource(R.string.finance_no_invoices), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.finance_no_invoices_hint), style = MaterialTheme.typography.bodyMedium)
+    }
+    for (total in totals) {
+        val currency = total.getString("currency")
+        FinanceBalanceCard(stringResource(R.string.fee_balance), financeMoney(total.getLong("outstandingMinor"), currency))
+        Text(stringResource(R.string.finance_fees_total) + " · " + financeMoney(total.getLong("collectibleMinor"), currency))
+        Text(stringResource(R.string.fee_paid) + " · " + financeMoney(total.getLong("appliedMinor"), currency))
+    }
+    Button(onClick = onInvoices, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.finance_my_invoices)) }
 }

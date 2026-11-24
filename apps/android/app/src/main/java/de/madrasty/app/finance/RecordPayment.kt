@@ -74,6 +74,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         }
         return
     }
+    Field(R.string.receipt_total,amount){amount=it.take(24)}
     if(setup.getBoolean("cashEnabled")){
         FlowRow {
             FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
@@ -87,13 +88,12 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         Field(R.string.receipt_allocation_amount,row.second){value->rows=rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r}}
         TextButton(onClick={rows=rows.filterIndexed{i,_->i!=index}}){Text(stringResource(R.string.fee_remove_line))}
     }
-    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_choose_invoice))}
+    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_optional_invoice))}
     if(choose)ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet()){ invoice->
         rows=rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency))
         amount=financePlainAmount(rows.sumOf{financeMinor(it.second,currency,it.first.getLong("balanceMinor"))?:0L},currency)
         choose=false
     }
-    Field(R.string.receipt_total,amount){amount=it.take(24)}
     FilterChip(verified,{verified=!verified},label={Text(stringResource(R.string.receipt_confirmed_external))})
     val allocations=rows.map{(invoice,value)->financeMinor(value,currency,invoice.getLong("balanceMinor"))}
     val minor=financeMinor(amount,currency,100_000_000_000_000)

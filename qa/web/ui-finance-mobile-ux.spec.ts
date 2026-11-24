@@ -10,6 +10,8 @@ const scenarios = [
   { actor: "guardian-ar", persona: "guardian", locale: "ar" },
 ] as const;
 for (const scenario of scenarios) {
+  test.describe("finance locale "+scenario.actor+" "+scenario.locale,()=>{
+  test.use({locale:scenario.locale==="ar"?"ar-EG":"de-DE"});
   test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({page, context}) => {
     test.setTimeout(360_000);
     const school = schoolFixtures();
@@ -49,5 +51,6 @@ for (const scenario of scenarios) {
         }
       }
     } finally { await school.close(); }
+  });
   });
 }
