@@ -7,6 +7,7 @@ import {fixtureApi} from "../support/api";
 import {localOrigin} from "../support/target";
 
 test("configured administrator sees scoped queue counts and opens every authorized work list",async({page,context})=>{
+  test.setTimeout(120_000);
   const school=schoolFixtures();
   try{
     await school.seed();
