@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import { capabilitySchema } from "../../packages/contracts/src/capabilities";
 import { workQueueKeySchema } from "../../packages/contracts/src/school/work-queues";
 
 test("retired audit and delivery-status routes are absent", () => {
@@ -25,4 +26,9 @@ test("ordinary notification transport and security audit writes are retained", (
   assert.ok(existsSync("apps/web/src/server/db/outbox.ts"));
   assert.match(readFileSync("apps/web/src/server/db/outbox.ts", "utf8"), /appendAudit/);
   assert.ok(existsSync("apps/web/src/server/comms/notifications.ts"));
+});
+
+test("retired audit permission cannot be granted through the live contract", () => {
+  assert.equal(capabilitySchema.safeParse("audit.read").success, false);
+  assert.equal(capabilitySchema.safeParse("finance.read").success, true);
 });
