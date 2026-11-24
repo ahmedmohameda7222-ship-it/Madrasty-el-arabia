@@ -47,7 +47,7 @@ internal fun ProfileGreeting(model: IdentityViewModel, refresh: Int) {
     var name by remember(account) { mutableStateOf("") }
     LaunchedEffect(account,refresh) {
         when(val result=loadAccountSurface({}) { model.readOwnProfile() }) {
-            is AsyncState.Ready -> name = if(result.value.isNull("displayName")) "" else result.value.getString("displayName")
+            is AsyncState.Ready -> name = if(result.content.isNull("displayName")) "" else result.content.getString("displayName")
             else -> name = ""
         }
     }
@@ -100,7 +100,7 @@ internal fun ProfileScreen(model: IdentityViewModel, close: () -> Unit) {
 }
 
 private fun JSONObject.profileString(key:String)=if(isNull(key))"" else getString(key)
-private fun nullable(value:String):Any=value.trim().ifEmpty{return JSONObject.NULL}
+private fun nullable(value:String):Any=value.trim().takeIf{it.isNotEmpty()} ?: JSONObject.NULL
 
 @Composable
 private fun ProfileDate(value:String, change:(String)->Unit){

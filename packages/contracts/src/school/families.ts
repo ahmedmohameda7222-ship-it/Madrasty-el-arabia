@@ -7,7 +7,7 @@ const source = z.object({ namespace: z.string().trim().min(1).max(80), key: z.st
 const studentState = z.enum(["active", "inactive"]);
 export const studentSchema = z.object({
   id: z.uuid(), studentNumber: z.string().regex(/^MA-\d{6,}$/), displayName: name,
-  state: studentState, revision: revisionSchema,
+  state: studentState, revision: revisionSchema, birthDate: z.iso.date().nullable().optional(),
 });
 export const createStudentInput = z.object({ displayName: name, source: source.optional() });
 export const updateStudentInput = z.object({ displayName: name, state: studentState, revision: revisionSchema });
@@ -20,6 +20,7 @@ const contact = z.object({
 });
 export const guardianSchema = contact.extend({
   id: z.uuid(), linkedAccount: z.boolean(), revision: revisionSchema,
+  birthDate: z.iso.date().nullable().optional(), emergencyAddress: z.string().nullable().optional(),
 });
 export const createGuardianInput = contact.extend({ source: source.optional() });
 export const updateGuardianInput = contact.extend({ revision: revisionSchema });

@@ -68,7 +68,9 @@ export function listStudents(ctx: ActorContext, query: Query) {
 export function readStudent(ctx: ActorContext, id: string) {
   return withActor(ctx, async (tx) => {
     await office(ctx)(tx);
-    return student(tx, id);
+    const record=await student(tx,id);
+    const [profile]=await tx<{birthDate:string|null}[]>`select birth_date::text as "birthDate" from app.student where id=${id}`;
+    return studentSchema.parse({...record,...profile});
   });
 }
 
@@ -127,7 +129,8 @@ export function readGuardian(ctx: ActorContext, id: string) {
       from app.child_link l join app.student s on s.id = l.student_id
       where l.guardian_id = ${id} order by l.created_at desc, l.id
     `;
-    return guardianDetailSchema.parse({ ...adult, links: rows });
+    const [profile]=await tx<{birthDate:string|null;emergencyAddress:string|null}[]>`select birth_date::text as "birthDate",emergency_address as "emergencyAddress" from app.guardian_profile where id=${id}`;
+    return guardianDetailSchema.parse({ ...adult, ...profile, links: rows });
   });
 }
 

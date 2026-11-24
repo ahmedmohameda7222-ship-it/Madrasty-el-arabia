@@ -161,6 +161,8 @@ private fun ProfileForm(record: JSONObject, student: Boolean, new: Boolean, comm
     var phone by remember { mutableStateOf(record.stringOrEmpty("contactPhone")) }
     var locale by remember { mutableStateOf(record.optString("correspondenceLocale", uiLocale)) }
 
+    if (!new && !record.isNull("birthDate")) Text(stringResource(R.string.profile_birth)+": "+isolate(record.getString("birthDate")))
+    if (!student && !new && !record.isNull("emergencyAddress")) Text(stringResource(R.string.profile_address)+": "+isolate(record.getString("emergencyAddress")))
     if (student && !new) Text("${stringResource(R.string.student_number)} · \u2066${record.getString("studentNumber")}\u2069")
     Field(R.string.family_name, name) { name = it }
     if (student && !new) {
