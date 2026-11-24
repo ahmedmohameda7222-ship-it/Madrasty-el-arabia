@@ -2,6 +2,7 @@ import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
 import type {Locale} from "@madrasty/contracts";
 import Link from "next/link";
+import {MonthlyBillingSettings} from "@/features/finance/MonthlyBillingSettings";
 import {BankSettings} from "@/features/finance/BankSettings";
 import {FeeSettings} from "@/features/finance/FeeSettings";
 import {mayUse} from "@/server/access/capabilities";
@@ -19,5 +20,5 @@ export default async function FeeSettingsPage({params,searchParams}:{
   return <><h1>{locale==="ar"?"إعدادات الحسابات":"Einstellungen"}</h1><div className="header-actions">
     {fees&&<Link className="plain-button" href={root}>{locale==="ar"?"الرسوم":"Gebühren"}</Link>}
     {bank&&<Link className="plain-button" href={`${root}?view=bank`}>{locale==="ar"?"حساب التحصيل":"Zahlungskonto"}</Link>}
-  </div>{showBank?<BankSettings locale={locale}/>:<FeeSettings locale={locale} student={z.uuid().safeParse(query.student).data}/>}</>;
+  </div>{showBank?<BankSettings locale={locale}/>:<><FeeSettings locale={locale} student={z.uuid().safeParse(query.student).data}/><MonthlyBillingSettings locale={locale}/></>}</>;
 }
