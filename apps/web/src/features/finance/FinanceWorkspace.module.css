@@ -61,3 +61,23 @@
 .tabs button[aria-pressed=true]{background:color-mix(in srgb,var(--primary) 12%,var(--card));border-color:var(--primary)}
 @media(max-width:350px){.recordRow{padding:.7rem;gap:.45rem}.metrics>div{padding:.65rem}.search{grid-template-columns:1fr}.balanceRows{grid-template-columns:1fr auto}}
 @media(min-width:760px){.workspace{gap:1.25rem}.metrics{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}}
+
+/* Second visual QA pass: compact forms and primary actions. */
+.workspace{gap:.8rem;margin-block:.5rem;inline-size:100%;max-inline-size:64rem;margin-inline:auto}
+.workspace :global(.auth-form){gap:.65rem}
+.workspace :global(.primary-button){margin-block-start:0}
+.workspace :global(.header-actions){justify-content:flex-start}
+.workspace label{min-inline-size:0}
+.workspace .checkRow,.panel .checkRow{display:flex;gap:.6rem;align-items:center;min-block-size:44px}
+.workspace .checkRow input{inline-size:20px;block-size:20px;min-block-size:20px;padding:0;flex:none}
+.narrowForm{max-inline-size:42rem}
+.fieldPair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+.formAction{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding-block:.5rem;background:var(--canvas)}
+.formAction>:global(.primary-button){flex:1 1 10rem}
+.formAction>:global(.plain-button){flex:1 1 6rem}
+.sectionHeading{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.search{grid-template-columns:minmax(0,1fr) auto}
+.searchLabel{font-size:.875rem}
+.search button{padding-inline:.65rem;min-inline-size:44px}
+@media(max-width:350px){.fieldPair{grid-template-columns:1fr}.search{grid-template-columns:minmax(0,1fr) auto}}
+@media(min-width:760px){.workspace{gap:1rem;margin-block:.75rem}.narrowForm{max-inline-size:42rem}.workspace>:global(.primary-button),.workspace>:global(.plain-button){justify-self:start}.workspace .search{max-inline-size:42rem}.workspace .formAction{max-inline-size:42rem}}

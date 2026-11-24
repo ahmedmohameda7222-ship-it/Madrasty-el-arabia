@@ -23,7 +23,7 @@ type Options=ReturnType<typeof billingOptions.parse>;
 
 export function IssueInvoices({locale,initialStudent,mayConfigureBank}:{locale:Locale;initialStudent?:string;mayConfigureBank:boolean}){
   const setup=useTimetableRead("/finance/billing-options",billingOptions),text=billingCopy[locale];
-  return <section className={`${css.workspace} auth-form`}>
+  return <section className={`${css.workspace} ${css.narrowForm} auth-form`}>
     <h1>{text.issue}</h1>
     <TimetableRead locale={locale} result={setup}>{(options)=><InvoiceIssuer locale={locale} initial={options} preferred={initialStudent}
       mayConfigureBank={mayConfigureBank}/>}</TimetableRead>
@@ -111,7 +111,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         {row.outcome==="tariff_missing"&&<Link className="plain-button" href={`${root}/fee-settings`}>{text.tariffs}</Link>}
         {row.existingId&&<Link className="plain-button" href={`${root}/invoices?invoice=${row.existingId}`}>{text.open}</Link>}
       </li>)}</ul>
-      <div className="header-actions">
+      <div className={css.formAction}>
         <button type="button" className="primary-button" disabled={busy||!preview.rows.some((row)=>row.outcome==="ready")} onClick={()=>void issue()}>
           {busy?text.busy:text.confirm}
         </button>
@@ -119,7 +119,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
       </div>
     </div>:<form className="auth-form" onSubmit={(event)=>void showPreview(event)}>
       <label>{text.period}<input dir="ltr" type="month" value={period} required onChange={(event)=>changePeriod(event.target.value)}/></label>
-      <label>{text.status}<select value={kind} onChange={(event)=>{
+      <label>{locale==="ar"?"نوع الفاتورة":"Rechnungsart"}<select value={kind} onChange={(event)=>{
         const selected=event.target.value==="manual"?"manual":"monthly";
         setKind(selected);if(selected==="manual")setExplicit(true);setPicked([]);setInitialId(preferred);setManualKey(undefined);
       }}>
@@ -130,10 +130,10 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         {current.classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
       </select></label>}
       <label>{text.due}<input dir="ltr" type="date" value={dueDate} onChange={(event)=>setDueDate(event.target.value)}/></label>
-      {kind==="monthly"&&<label><input type="checkbox" checked={explicit} onChange={(event)=>setExplicit(event.target.checked)}/>{text.pupils}</label>}
-      {!explicit&&<p>{text.allPupils}</p>}
+      {kind==="monthly"&&<label className={css.checkRow}><input type="checkbox" checked={explicit} onChange={(event)=>setExplicit(event.target.checked)}/>{text.pupils}</label>}
+      {!explicit&&<p className={css.secondary}>{locale==="ar"?"كل الطلبة المؤهلين":"Alle berechtigten Schüler"}</p>}
       {explicit&&<div className="auth-form">
-        {kind==="monthly"&&<label><input type="checkbox" checked={missing} onChange={(event)=>setMissing(event.target.checked)}/>{text.missing}</label>}
+        {kind==="monthly"&&<label className={css.checkRow}><input type="checkbox" checked={missing} onChange={(event)=>setMissing(event.target.checked)}/>{text.missing}</label>}
         <label>{text.search}<input type="search" value={term} maxLength={100} onChange={(event)=>setTerm(event.target.value)}/></label>
         <button className="plain-button" type="button" onClick={()=>setQuery(term.trim())}>{text.find}</button>
         <p>{text.selected} · {studentIds.length}</p>
@@ -145,8 +145,8 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         </li>)}</ul>}</AcademicPageItems>
       </div>}
       {kind==="manual"&&<FeeLinesEditor locale={locale} lines={lines} update={setLines} currency={current?.currency??null} busy={busy}/>}
-      <button className="primary-button" type="submit" disabled={busy||!month.success||explicit&&!studentIds.length||
-        kind==="manual"&&(studentIds.length!==1||!formatFeeLines(lines,current?.currency??null))}>{busy?text.busy:text.preview}</button>
+      <div className={css.formAction}><button className="primary-button" type="submit" disabled={busy||!month.success||explicit&&!studentIds.length||
+        kind==="manual"&&(studentIds.length!==1||!formatFeeLines(lines,current?.currency??null))}>{busy?text.busy:text.preview}</button></div>
     </form>}
   </>;
 }

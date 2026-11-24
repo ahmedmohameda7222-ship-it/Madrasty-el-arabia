@@ -11,7 +11,7 @@ const scenarios = [
 ] as const;
 for (const scenario of scenarios) {
   test("Finance mobile screenshot matrix " + scenario.actor + " " + scenario.locale, async ({page, context}) => {
-    test.setTimeout(240_000);
+    test.setTimeout(360_000);
     const school = schoolFixtures();
     try {
       await school.seed();
@@ -30,8 +30,22 @@ for (const scenario of scenarios) {
           await expect(page.locator(".school-content h1").first()).toBeVisible();
           await expect(page.locator('.school-content [data-async-state="loading"]')).toHaveCount(0);
           expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
+          if(route==="fee-settings"){
+            await expect(page.locator(".school-content h1")).toHaveCount(1);
+            await expect(page.getByRole("heading",{name:scenario.locale==="ar"?"الفواتير الشهرية التلقائية":"Automatische Monatsrechnungen",exact:true})).toHaveCount(1);
+          }
+          if(route==="invoices"&&scenario.persona==="guardian")await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
+          if(route==="issue-invoices")await expect(page.getByLabel(scenario.locale==="ar"?"نوع الفاتورة":"Rechnungsart",{exact:true})).toBeVisible();
           const file=route.replace(/[^a-z0-9-]/g,"-");
           await page.screenshot({path:"qa-artifacts/ui-after/finance-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled",fullPage:true});
+          if(route==="issue-invoices"||route==="record-payment"){
+            const action=page.locator(".school-content button[type=submit].primary-button").last();
+            await action.scrollIntoViewIfNeeded();
+            await expect(action).toBeInViewport();
+            const visible=await action.evaluate(el=>{const a=el.getBoundingClientRect(),c=document.querySelector(".school-content")!.getBoundingClientRect();return a.top>=c.top-1&&a.bottom<=c.bottom+1;});
+            expect(visible).toBe(true);
+            await page.screenshot({path:"qa-artifacts/ui-after/finance-action-"+scenario.actor+"-"+scenario.locale+"-"+file+"-"+width+"-"+theme+".png",animations:"disabled"});
+          }
         }
       }
     } finally { await school.close(); }

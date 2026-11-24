@@ -73,9 +73,9 @@ export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Loca
   }
   const classChoices=summary.value?.data?.classes??[];
   return <section className={`${css.workspace} auth-form`}>
-    <h1>{text.title}</h1>
+    <h1>{staff?text.title:locale==="ar"?"مدفوعاتي":"Meine Zahlungen"}</h1>
     {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh} canPost={canPost}/>}
-    <details className={css.disclosure}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
+    {staff&&<details className={css.disclosure}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">
         <label>{text.period}<input type="month" dir="ltr" aria-describedby="date-format-finance-month" value={draft.period??""} onChange={(event)=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>
@@ -104,9 +104,10 @@ export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Loca
       <small className="date-format-hint" id="date-format-finance-month">{locale==="ar"
         ?"تنسيق الشهر المعروض يعتمد على المتصفح. مثال: ١٢/٢٠٢٦؛ اختر الشهر والسنة."
         :"Das angezeigte Monatsformat hängt vom Browser ab. Beispiel: 12.2026; Monat und Jahr auswählen."}</small>
-    </form></details>
+    </form></details>}
     <TimetableRead locale={locale} result={summary}>{(data)=><ReportBody locale={locale} data={data} filters={filters}
       refresh={refresh} focus={focus}/>}</TimetableRead>
+    {!staff&&<details className={css.disclosure}><summary>{locale==="ar"?"اختيار الشهر":"Monat auswählen"}</summary><form className="auth-form" onSubmit={apply}><label>{billingCopy[locale].period}<input type="month" dir="ltr" value={draft.period??""} onChange={event=>patch("period",billingMonth.safeParse(event.target.value).data)}/></label>{filters.studentId&&<button type="button" className="plain-button" onClick={()=>focus({studentId:undefined})}>{locale==="ar"?"كل أطفالي":"Alle meine Kinder"}</button>}<button className="primary-button" type="submit">{text.apply}</button></form></details>}
   </section>;
 }
 
@@ -131,6 +132,16 @@ function ReportBody({locale,data,filters,refresh,focus}:{
     }catch{setFailed(true);}
     finally{setBusy(false);}
   }
+  if(data.scope==="payer")return <>
+    {data.totals.length===0&&<div className={css.panel}><h2>{locale==="ar"?"لا توجد فواتير بعد":"Noch keine Rechnungen"}</h2><p className={css.secondary}>{locale==="ar"?"هنا هتلاقي رسوم أطفالك ومدفوعاتك بعد إصدار الفواتير.":"Hier sehen Sie die Gebühren und Zahlungen Ihrer Kinder, sobald Rechnungen ausgestellt wurden."}</p></div>}
+    {data.totals.map(value=><div key={value.currency} className={css.summaryGroup}>
+      <div className={css.balance}><small>{locale==="ar"?"المبلغ المتبقي":"Offener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(value.outstandingMinor,value.currency)}</bdi></strong></div>
+      <div className={css.metrics}>{([[locale==="ar"?"المطلوب":"Gebühren",value.collectibleMinor],[locale==="ar"?"المدفوع":"Bezahlt",value.appliedMinor]] as const).map(([label,amount])=><div key={label}><small>{label}</small><strong><bdi dir="ltr">{financeAmount(amount,value.currency)}</bdi></strong></div>)}</div>
+    </div>)}
+    <Link className="primary-button" href={`${root}/invoices${filters.studentId||filters.period?"?"+new URLSearchParams({...filters.studentId?{student:filters.studentId}:{},...filters.period?{period:filters.period}:{}}).toString():""}`}>{locale==="ar"?"فواتيري":"Meine Rechnungen"}</Link>
+    {data.totals.length>0&&<details className={css.disclosure}><summary>{locale==="ar"?"الفواتير والإيصالات":"Rechnungen und Belege"}</summary><AcademicPageItems locale={locale} page={page} emptyMessage={locale==="ar"?"لا توجد حركات مالية.":"Keine Buchungen."}>{rows=><ul className="group-list">{rows.map(item=><StatementLine key={item.kind+":"+item.id} locale={locale} item={item}/>)}</ul>}</AcademicPageItems></details>}
+    <p className={css.secondary}>{locale==="ar"?"حتى":"Stand"} · <bdi>{data.asOf}</bdi></p>
+  </>;
   return <>
     <p>{text.asOf} · <bdi>{data.asOf}</bdi>{filters.studentId&&" · "+text.filteredPupil}</p>
     <ConfirmedAt locale={locale} value={data.cutoff}/>
@@ -156,7 +167,7 @@ function ReportBody({locale,data,filters,refresh,focus}:{
       </div>;
     })}
     {isSchool&&data.totals.length>0&&<details className={css.disclosure}><summary>{locale==="ar"?"طريقة الحساب":"Berechnung"}</summary><p>{text.matchingScope}</p></details>}
-    <div className="header-actions">
+    <div className={css.sectionHeading}>
       <h2>{text.statement}</h2>
       {data.canExport&&<button type="button" className="plain-button" disabled={busy} onClick={()=>void download()}>{text.export}</button>}
     </div>

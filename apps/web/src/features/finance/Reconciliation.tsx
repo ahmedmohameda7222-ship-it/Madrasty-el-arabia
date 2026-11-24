@@ -16,15 +16,13 @@ export function Reconciliation({locale,enabled,initialState}:{locale:Locale;enab
   const page=useAcademicPage(`/finance/receipts?limit=25${selected.success?"&state="+selected.data:""}`,receipts,0);
   return <section className={`${css.workspace} auth-form`}>
     <h1>{locale==="ar"?"المدفوعات":"Zahlungen"}</h1>
-    <div className="header-actions">
-      {enabled&&<Link className="primary-button" href={`${root}/record-payment`}>{text.record}</Link>}
-      <Link className="plain-button" href={`${root}/stop-reviews`}>{locale==="ar"?"تسويات التوقف":"Gebührenkorrekturen"}</Link>
-    </div>
+    {enabled&&<Link className="primary-button" href={`${root}/record-payment`}>{text.record}</Link>}
+    <details className={css.disclosure}><summary>{locale==="ar"?"المزيد":"Weitere Optionen"}</summary><Link className="plain-button" href={`${root}/stop-reviews`}>{locale==="ar"?"تسويات التوقف":"Gebührenkorrekturen"}</Link></details>
     <label>{locale==="ar"?"الحالة":"Status"}<select value={state} onChange={(event)=>setState(receiptState.safeParse(event.target.value).data??"")}>
       <option value="">{text.all}</option>
       {receiptState.options.map((one)=><option key={one} value={one}>{text[one]}</option>)}
     </select></label>
-    <AcademicPageItems locale={locale} page={page}>{(items)=><ul className={css.recordList}>{items.map((item)=><li key={item.id}>
+    <AcademicPageItems locale={locale} page={page} emptyMessage={locale==="ar"?"لا توجد مدفوعات في الاختيار الحالي.":"Keine Zahlungen für diese Auswahl."}>{(items)=><ul className={css.recordList}>{items.map((item)=><li key={item.id}>
       <Link className={css.recordRow} href={`${root}/receipts?receipt=${item.id}`}><span><strong><bdi>{item.receiptNumber}</bdi></strong><small><bdi>{item.receivedDate}</bdi> · {text[item.method]}</small>{item.remainderMinor>0&&<small>{text.remainder} · <bdi dir="ltr">{financeAmount(item.remainderMinor,item.currency)}</bdi></small>}</span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.amountMinor,item.currency)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
     </li>)}</ul>}</AcademicPageItems>
   </section>;

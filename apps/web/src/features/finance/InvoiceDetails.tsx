@@ -14,7 +14,7 @@ import {TransferDetails} from "./TransferDetails";
 import {receiptCopy} from "./receipt-ui";
 
 const rows=invoiceSummary.array();
-export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=false}:{locale:Locale;invoice?:string;student?:string;period?:string;canPost:boolean;canIssue?:boolean}){
+export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=false,staff=true}:{locale:Locale;staff?:boolean;invoice?:string;student?:string;period?:string;canPost:boolean;canIssue?:boolean}){
   const text=billingCopy[locale],root=`/${locale}/school/more/invoices`;
   const [month,setMonth]=useState(period??""),[state,setState]=useState(""),[query,setQuery]=useState(""),[search,setSearch]=useState("");
   const valid=billingMonth.safeParse(month),filter=invoiceState.safeParse(state);
@@ -45,17 +45,17 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
       </div>}</TimetableRead>
     </>:<>
       {canIssue&&<Link className="primary-button" href={`/${locale}/school/more/issue-invoices`}>{locale==="ar"?"+ إصدار فاتورة":"+ Neue Rechnung"}</Link>}
-      <form className={css.search} onSubmit={e=>{e.preventDefault();setQuery(search.trim());}}>
-        <label>{text.search}<input type="search" value={search} maxLength={100} onChange={e=>setSearch(e.target.value)}/></label>
+      {staff&&<form className={css.search} onSubmit={e=>{e.preventDefault();setQuery(search.trim());}}>
+        <label><span className={css.searchLabel}>{text.search}</span><input type="search" value={search} maxLength={100} onChange={e=>setSearch(e.target.value)}/></label>
         <button className="plain-button" type="submit">{text.find}</button>
-      </form>
+      </form>}
       <details className={css.disclosure}><summary>{locale==="ar"?"تصفية":"Filter"}</summary><div className="header-actions">
         <label>{text.period}<input dir="ltr" type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/></label>
         <label>{text.status}<select value={state} onChange={(event)=>setState(event.target.value)}>
           <option value="">{text.allStates}</option>{invoiceState.options.map((key)=><option value={key} key={key}>{text[key]}</option>)}
         </select></label>
       </div></details>
-      <AcademicPageItems locale={locale} page={list}>{(invoices)=><ul className={css.recordList}>
+      <AcademicPageItems locale={locale} page={list} emptyMessage={locale==="ar"?(staff?"لا توجد فواتير تطابق الاختيار.":"لا توجد فواتير لأطفالك في الفترة المختارة. ستظهر هنا عند إصدارها."):(staff?"Keine Rechnungen für diese Auswahl.":"Hier erscheinen die Rechnungen Ihrer Kinder, sobald sie ausgestellt sind.")}>{(invoices)=><ul className={css.recordList}>
         {invoices.map((item)=><li key={item.id}>
           <Link className={css.recordRow} href={`${root}?invoice=${item.id}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{item.period}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
         </li>)}

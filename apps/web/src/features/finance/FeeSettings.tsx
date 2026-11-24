@@ -2,7 +2,6 @@
 
 import css from "./FinanceWorkspace.module.css";
 
-import {AutomaticBilling} from "./AutomaticBilling";
 import {useState,type FormEvent} from "react";
 import {
   billingOptions,billingPupil,feeTariff,feeTariffInput,payerEdit,payerProfile,type Locale,
@@ -17,8 +16,8 @@ const tariffs=feeTariff.array(),pupils=billingPupil.array();
 type Billing=ReturnType<typeof billingOptions.parse>;
 
 export function FeeSettings({locale,student}:{locale:Locale;student?:string}){
-  const text=billingCopy[locale],options=useTimetableRead("/finance/billing-options",billingOptions);
-  return <div className={css.workspace}><h1>{text.settings}</h1><AutomaticBilling locale={locale}/><section className={`${css.panel} auth-form`}>
+  const options=useTimetableRead("/finance/billing-options",billingOptions);
+  return <div className={css.workspace}><section className={`${css.panel} auth-form`}>
     <TimetableRead locale={locale} result={options}>{(context)=><SettingsForm locale={locale} options={context} student={student}/>}</TimetableRead>
   </section></div>;
 }

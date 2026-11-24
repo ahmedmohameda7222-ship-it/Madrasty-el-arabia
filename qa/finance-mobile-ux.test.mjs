@@ -38,7 +38,7 @@ test("monthly billing has one owner and one page heading", () => {
 });
 test("guardian invoice search is not an administrative search", () => {
   assert.match(source("InvoiceDetails.tsx"), /staff&&<form className=\{css\.search\}/);
-  assert.match(source("FinanceReports.tsx"), /data\.scope==="guardian"/);
+  assert.match(source("FinanceReports.tsx"), /data\.scope==="payer"/);
 });
 test("invoice kind has a specific label and checkboxes use aligned controls", () => {
   assert.match(source("IssueInvoices.tsx"), /Rechnungsart/);

@@ -15,9 +15,9 @@ type Options=ReturnType<typeof receiptOptions.parse>;
 export function RecordPayment({locale,invoice}:{locale:Locale;invoice?:string}){
   const text=receiptCopy[locale],options=useTimetableRead("/finance/receipt-options",receiptOptions);
   const selected=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail);
-  return <section className={`${css.workspace} auth-form`}>
+  return <section className={`${css.workspace} ${css.narrowForm} auth-form`}>
     <h1>{text.record}</h1>
-    <Link className="plain-button" href={`/${locale}/school/more/receipts`}>{text.queue}</Link>
+    <Link className="plain-button" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link>
     <TimetableRead locale={locale} result={options}>{(value)=>invoice?
       <TimetableRead locale={locale} result={selected}>{(target)=><PaymentForm locale={locale} options={value} initial={target}/>}</TimetableRead>:
       <PaymentForm locale={locale} options={value}/>}</TimetableRead>
@@ -60,29 +60,31 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
       <Link className="plain-button" href={`/${locale}/school/more/receipts?receipt=${receipt.id}`}>{text.open}</Link></div>}
     {preview?<div className="auth-form">
       <p>{text[preview.method]} · <bdi>{preview.receivedDate}</bdi></p>
-      <p><bdi dir="ltr">{financeAmount(preview.amountMinor,currency)}</bdi></p>
+      <div className={css.balance}><small>{ar?"المبلغ المستلم":"Erhaltener Betrag"}</small><strong><bdi dir="ltr">{financeAmount(preview.amountMinor,currency)}</bdi></strong></div>
       {rows.map(r=><p key={r.invoice.id}><bdi>{r.invoice.studentName}</bdi> · <bdi>{r.invoice.invoiceNumber}</bdi> · <bdi>{financeAmount(inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)??0,currency)}</bdi></p>)}
       <p>{text.remainder} · <bdi>{financeAmount(preview.amountMinor-assigned,currency)}</bdi></p>
-      <div className="header-actions"><button type="button" className="primary-button" disabled={busy} onClick={()=>void confirm()}>{text.confirm}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button></div>
+      <div className={css.formAction}><button type="button" className="primary-button" disabled={busy} onClick={()=>void confirm()}>{text.confirm}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button></div>
     </div>:<>
       <form className="auth-form" onSubmit={prepare}>
+        <label className={css.amountInput}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
+        <div className={css.fieldPair}>
         {options.cashEnabled&&<label>{ar?"طريقة الدفع":"Zahlungsart"}<select value={method} onChange={event=>setMethod(event.target.value==="cash"?"cash":"bank")}><option value="cash">{text.cash}</option><option value="bank">{text.bank}</option></select></label>}
         {!options.cashEnabled&&<p>{text.bank}</p>}
-        {method==="bank"&&<label>{text.reference}<input value={reference} maxLength={160} onChange={event=>setReference(event.target.value)} required/></label>}
         <label>{text.received}<input type="date" dir="ltr" value={date} max={options.schoolDate} onChange={event=>setDate(event.target.value)} required/></label>
-        <h2>{ar?"الفواتير المختارة":"Ausgewählte Rechnungen"}</h2>
+        </div>
+        {method==="bank"&&<label>{text.reference}<input value={reference} maxLength={160} onChange={event=>setReference(event.target.value)} required/></label>}
+        {rows.length>0&&<h2>{ar?"الفواتير المختارة":"Ausgewählte Rechnungen"}</h2>}
         {rows.map((r,i)=><div key={r.invoice.id} className="timetable-day auth-form">
           <p><bdi>{r.invoice.studentName}</bdi> · <bdi>{r.invoice.period}</bdi> · <bdi>{r.invoice.invoiceNumber}</bdi></p>
           <p>{billingCopy[locale].balance} · <bdi>{financeAmount(r.invoice.balanceMinor,currency)}</bdi></p>
           <label>{text.amount}<input dir="ltr" inputMode="decimal" value={r.amount} onChange={e=>setRows(list=>list.map((x,j)=>i===j?{...x,amount:e.target.value}:x))}/></label>
           <button type="button" className="plain-button" onClick={()=>setRows(list=>list.filter((_,j)=>i!==j))}>{text.remove}</button>
         </div>)}
-        <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة":"+ Rechnung auswählen"}</button>
-        <label className={css.amountInput}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
-        <p>{text.applied} · <bdi>{financeAmount(assigned,currency)}</bdi></p>
-        {received!==null&&received>=assigned&&<p>{text.remainder} · <bdi>{financeAmount(received-assigned,currency)}</bdi></p>}
+        <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)"}</button>
+        {rows.length>0&&<p className={css.secondary}>{text.applied} · <bdi>{financeAmount(assigned,currency)}</bdi></p>}
+        {received!==null&&received>assigned&&<p className={css.secondary}>{text.remainder} · <bdi>{financeAmount(received-assigned,currency)}</bdi></p>}
         <label className={css.checkRow}><input type="checkbox" checked={verified} onChange={event=>setVerified(event.target.checked)}/>{text.verification}</label>
-        <button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button>
+        <div className={css.formAction}><button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button></div>
       </form>
       {picker&&<InvoicePicker locale={locale} currency={currency} exclude={rows.map(r=>r.invoice.id)} onPick={pick}/>}
     </>}
