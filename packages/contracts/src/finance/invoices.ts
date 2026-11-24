@@ -69,3 +69,6 @@ export type FeeLine=z.infer<typeof feeLine>;
 
 export const autoBillingSettings=z.object({enabled:z.boolean(),startMonth:billingMonth,schoolMonth:billingMonth,revision:revisionSchema,missingPayers:z.int().min(0)});
 export const autoBillingUpdate=autoBillingSettings.pick({enabled:true,startMonth:true,revision:true}).strict();
+
+export const automaticBillingInput=z.object({enabled:z.boolean(),startMonth:billingMonth,revision:z.int().positive()}).strict();
+export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative()});

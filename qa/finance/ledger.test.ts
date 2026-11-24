@@ -39,6 +39,12 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
 
     const send = async (path: string, name: string, body: unknown, method: "POST" | "PUT" = "POST", status = 201) =>
       (await fixtureApi(school, path, { method, token: finance, persona: "admin", key: `${school.run}.${name}`, body, status })).payload.data;
+    const automatic=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    assert.equal(typeof automatic.enabled,"boolean");
+    await fixtureApi(school,"/finance/automatic-billing",{token:payer,status:403});
+    const updated=await send("/finance/automatic-billing","automatic-settings",{enabled:false,startMonth:clock.nextMonth,revision:automatic.revision},"PUT",200);
+    assert.equal(updated.enabled,false);
+    assert.equal(updated.revision,automatic.revision+1);
     const tariffs = (await fixtureApi(school, "/finance/tariffs", {token:finance,persona:"admin"})).payload.data;
     const existingTariff = tariffs.find((row: {effectiveFromMonth:string})=>row.effectiveFromMonth===clock.month);
     if (existingTariff) {

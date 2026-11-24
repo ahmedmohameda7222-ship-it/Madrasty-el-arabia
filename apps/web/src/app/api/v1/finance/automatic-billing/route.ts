@@ -1,6 +1,6 @@
-import {autoBillingUpdate} from "@madrasty/contracts";
-import {readAutoBilling,updateAutoBilling} from "@/server/finance/automaticBilling";
+import {automaticBillingInput} from "@madrasty/contracts";
+import {readAutomaticBilling,saveAutomaticBilling} from "@/server/finance/automaticBilling";
 import {api,data,readJson} from "@/server/http";
 import {requireActor} from "@/server/identity/actor";
-export const GET=api(async(request,context)=>data(await readAutoBilling(await requireActor(request,context))));
-export const PUT=api(async(request,context)=>data(await updateAutoBilling(await requireActor(request,context),request.headers.get("idempotency-key"),await readJson(request,autoBillingUpdate,4096))));
+export const GET=api(async(request,context)=>data(await readAutomaticBilling(await requireActor(request,context))));
+export const PUT=api(async(request,context)=>data(await saveAutomaticBilling(await requireActor(request,context),request.headers.get("idempotency-key"),await readJson(request,automaticBillingInput,2048))));
