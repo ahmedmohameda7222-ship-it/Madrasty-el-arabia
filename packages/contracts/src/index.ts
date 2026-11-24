@@ -54,3 +54,5 @@ export * from "./resourceLinks";
 export * from "./clientVersions";
 
 export * from "./finance/cashbook";
+
+export * from "./account-profile";

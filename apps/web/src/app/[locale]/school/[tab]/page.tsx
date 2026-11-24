@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { schoolDateSchema, type Locale } from "@madrasty/contracts";
 import { z } from "zod";
 import { SchoolHome } from "@/features/school/SchoolHome";
+import { schoolProfile } from "@/server/identity/profile";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { schoolMenuAccess, mayUse } from "@/server/access/capabilities";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
@@ -35,9 +36,10 @@ export default async function SchoolPage({ params, searchParams }: {
   const invites = teacherInvites || placement;
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
+  const welcome=tab==="home"?await schoolProfile(session):null;
   return (
     <>
-      <h1>{tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
+      <h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<> <bdi>{welcome.displayName}</bdi></>}</> : tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
       {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
@@ -97,6 +99,7 @@ export default async function SchoolPage({ params, searchParams }: {
         <MoreGroup group="account">
           <summary>{locale === "ar" ? "الحساب والجهاز" : "Konto und Gerät"}</summary>
           <div className="more-rows">
+            <Link className="more-row" href={`/${locale}/account/profile`}>{locale==="ar"?"الملف الشخصي":"Profil"}</Link>
             <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "تفضيلات الحساب والإشعارات" : "Konto und Benachrichtigungen"}</Link>
             <Link className="more-row" href={`/${locale}/account/security`}>{locale === "ar" ? "الأمان والاسترجاع" : "Sicherheit und Wiederherstellung"}</Link>
           </div>

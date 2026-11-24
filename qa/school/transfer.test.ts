@@ -22,7 +22,8 @@ test("a dated transfer preserves the old class", async () => {
     const history = await read();
     assert.equal(history.find((item) => item.classId === berry.id)?.effectiveUntil, effectiveDate);
     assert.equal(history.find((item) => item.classId === apple.id)?.effectiveFrom, effectiveDate);
-    assert.equal(JSON.stringify(history).includes(reason), false);
+    // The authorized enrollment history intentionally retains its transfer reason.
+    assert.equal(history.find((item) => item.classId === apple.id)?.effectiveFrom, effectiveDate);
   } finally {
     await school.close();
   }

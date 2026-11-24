@@ -1545,6 +1545,34 @@ paths:
               schema: {"type":"object","properties":{"data":{"type":"array","items":{"type":"object","properties":{"staffId":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["primary","subject"]},"subjectId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"from":{"type":"string","format":"date"},"untilExclusive":{"type":"string","format":"date"},"capabilities":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true},"id":{"type":"string","format":"uuid"},"classId":{"type":"string","format":"uuid"},"offeringId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"revision":{"type":"integer","minimum":1},"staffName":{"type":"string"},"revoked":{"type":"boolean"},"classCode":{"type":"string"},"classNameAr":{"type":"string"},"classNameDe":{"type":"string"},"subjectNameAr":{"anyOf":[{"type":"string"},{"type":"null"}]},"subjectNameDe":{"anyOf":[{"type":"string"},{"type":"null"}]},"substitute":{"type":"boolean"}},"required":["staffId","kind","subjectId","from","untilExclusive","capabilities","id","classId","offeringId","revision","staffName","revoked","classCode","classNameAr","classNameDe","subjectNameAr","subjectNameDe","substitute"]}}},"required":["data"]}
         default:
           $ref: '#/components/responses/AuthError'
+  /account/profile:
+    get:
+      operationId: readAccountProfile
+      summary: Read own profile and approved linked children
+      responses:
+        '200':
+          description: Own role-scoped profile
+          content:
+            application/json:
+              schema: {type: object, required: [data], properties: {data: {$ref: '#/components/schemas/AccountProfile'}}}
+        '401':
+          $ref: '#/components/responses/AuthError'
+    patch:
+      operationId: updateAccountProfile
+      summary: Update own guardian or linked child profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AccountProfilePatch'}
+      responses:
+        '200':
+          description: Saved revision
+          content:
+            application/json:
+              schema: {type: object, required: [data], properties: {data: {type: object, required: [revision], properties: {revision: {type: integer, minimum: 1}}}}}
+        '401':
+          $ref: '#/components/responses/AuthError'
   /account/preferences:
     get:
       operationId: readAccountPreferences
@@ -4585,6 +4613,50 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    AccountProfile:
+      type: object
+      required: [displayName, guardian, children]
+      properties:
+        displayName: {type: [string, 'null']}
+        guardian:
+          type: [object, 'null']
+          required: [revision, birthDate, phone, emergencyAddress]
+          properties:
+            revision: {type: integer, minimum: 1}
+            birthDate: {type: [string, 'null'], format: date}
+            phone: {type: [string, 'null'], maxLength: 48}
+            emergencyAddress: {type: [string, 'null'], maxLength: 500}
+        children:
+          type: array
+          items:
+            type: object
+            required: [id, displayName, birthDate, age, revision]
+            properties:
+              id: {type: string, format: uuid}
+              displayName: {type: string}
+              birthDate: {type: [string, 'null'], format: date}
+              age: {type: [integer, 'null'], minimum: 0}
+              revision: {type: integer, minimum: 1}
+    AccountProfilePatch:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [kind, revision, birthDate, phone, emergencyAddress]
+          properties:
+            kind: {const: guardian}
+            revision: {type: integer, minimum: 1}
+            birthDate: {type: [string, 'null'], format: date}
+            phone: {type: [string, 'null'], maxLength: 48}
+            emergencyAddress: {type: [string, 'null'], maxLength: 500}
+        - type: object
+          additionalProperties: false
+          required: [kind, id, revision, birthDate, displayName]
+          properties:
+            kind: {const: child}
+            id: {type: string, format: uuid}
+            revision: {type: integer, minimum: 1}
+            birthDate: {type: [string, 'null'], format: date}
+            displayName: {type: string, minLength: 1, maxLength: 200}
     AndroidClientVersions: {"type":"object","required":["minimumVersionCode","suggestedVersionCode","suggestedVersionName","downloadUrl","sha256"],"properties":{"minimumVersionCode":{"type":"integer","minimum":1,"maximum":2100000000},"suggestedVersionCode":{"type":"integer","minimum":1,"maximum":2100000000},"suggestedVersionName":{"type":"string","minLength":1,"maxLength":40},"downloadUrl":{"type":"string","format":"uri"},"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}}
     SchoolResourceKind: {"type":"string","enum":["notice","thread","broadcast","child","attendance","exam","evaluation","activity","homework","application","invoice","receipt","fee_stop"]}
     SchoolResourceLink: {"type":"object","required":["kind","id"],"properties":{"kind":{"$ref":"#/components/schemas/SchoolResourceKind"},"id":{"type":"string","format":"uuid"},"childId":{"type":"string","format":"uuid"},"date":{"type":"string","format":"date"}}}
