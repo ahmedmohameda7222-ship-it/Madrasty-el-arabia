@@ -26,7 +26,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
   const text=receiptCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
   const [method,setMethod]=useState<"bank"|"cash">(options.cashEnabled?"cash":"bank"),[date,setDate]=useState(options.schoolDate);
   const [cashReference,setCashReference]=useState(()=>`CASH-${crypto.randomUUID()}`);
-  const [reference,setReference]=useState(""),[amount,setAmount]=useState(""),[verified,setVerified]=useState(false);
+  const [reference,setReference]=useState(""),[amount,setAmount]=useState(initial?financeAmount(initial.balanceMinor,options.currency).split(" ")[0]:""),[verified,setVerified]=useState(false);
   const [invoice,setInvoice]=useState(initial),[picker,setPicker]=useState(false);
   const [preview,setPreview]=useState<ReturnType<typeof recordReceiptInput.parse>>();
   const [receipt,setReceipt]=useState<ReturnType<typeof receiptMutation.parse>>();
@@ -62,7 +62,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
       </div>
     </div>:<>
       <form className="auth-form" onSubmit={prepare}>
-        {options.cashEnabled&&<label>{billingCopy[locale].status}<select value={method} onChange={(event)=>setMethod(event.target.value==="cash"?"cash":"bank")}>
+        {options.cashEnabled&&<label>{locale==="ar"?"طريقة الدفع":"Zahlungsart"}<select value={method} onChange={(event)=>setMethod(event.target.value==="cash"?"cash":"bank")}>
           <option value="cash">{text.cash}</option><option value="bank">{text.bank}</option>
         </select></label>}
         {!options.cashEnabled&&<p>{text.bank}</p>}
