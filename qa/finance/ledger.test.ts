@@ -130,6 +130,10 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.deepEqual(await send("/finance/cashbook","donation",donation),movement);
     await send("/finance/cashbook","expense",{date:clock.day,kind:"expense",amountMinor:1000,description:"Synthetic stationery"});
     await send("/finance/cashbook","bank-deposit",{date:clock.day,kind:"bank_deposit",amountMinor:1500,description:"Synthetic deposit"});
+    const combined=receiptMutation.parse(await send("/finance/receipts","combined-cash",{externalReceiptRef:`${school.run}-CASH-01`,method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:100,verified:true,allocations:[{invoiceId:omar.id,amountMinor:100,invoiceRevision:restored.revision}]}));
+    assert.equal(combined.state,"allocated");
+    assert.equal(combined.items.length,1);
+    await send(`/finance/receipts/${combined.id}/reversals`,"void-combined-cash",{kind:"void_receipt",revision:combined.revision,reason:"Synthetic cash correction"});
     const cashAfter=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
     assert.equal(cashAfter.balanceMinor-cashBefore.balanceMinor,2500);
     assert.equal(cashAfter.expenseMinor-cashBefore.expenseMinor,1000);
