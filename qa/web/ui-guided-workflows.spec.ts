@@ -102,9 +102,9 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await page.getByRole("button",{name:"Konto erstellen"}).click();
     await expect(page.getByText(teacherName)).toBeVisible();
     await page.goto(`/de/school/more/classes?year=${year.id}&class=${classroom.id}`);
-    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
+    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
     await expect(page.getByText(teacherName)).toBeVisible();
-    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toBeEnabled();
   }finally{await school.close();}
 });
 
@@ -122,7 +122,7 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
       {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
     ]);
     await page.goto(`/de/school/more/classes?year=${year.id}&class=${room.id}`);
-    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
+    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
     await page.getByRole("button",{name:"Lehrkraft zuweisen"}).click();
     await expect(page.getByText("Klassenlehrkraft",{exact:true})).toHaveCount(0);
     await expect(page.getByText("Fachlehrkraft",{exact:true})).toHaveCount(0);
@@ -136,7 +136,14 @@ test("classroom teacher management lives inside Klassen und Einschreibungen",asy
     await page.getByRole("button",{name:"Zuordnung speichern"}).click();
     const posted=await assignmentResponse;
     expect(posted.status(),await posted.text()).toBe(201);
-    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
+    // A classroom now supports multiple teachers; the first assignment must not close the workflow.
+    const addTeacher=page.getByRole("button",{name:"Lehrkraft zuweisen"});
+    await expect(addTeacher).toBeEnabled();
+    await addTeacher.click();
+    const secondChoice=page.getByRole("combobox",{name:"Lehrkraft",exact:true});
+    await expect(secondChoice).toBeVisible();
+    await expect(secondChoice.locator("option")).not.toContainText(["Klassenlehrkraft","Fachlehrkraft"]);
+    await page.getByRole("button",{name:"Abbrechen",exact:true}).click();
     await page.getByRole("link",{name:"Zuordnungen und Vertretungen"}).click();
     await expect(page.getByRole("combobox",{name:"Aufgabe",exact:true})).toHaveCount(0);
   }finally{await school.close();}
@@ -151,8 +158,8 @@ test("legacy primary and subject assignments render the volunteer only once",asy
     const {year,apple}=await setUpCalendar(school,token);
     await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     await page.goto(`/de/school/more/classes?year=${year.id}&class=${apple.id}`);
-    await expect(page.getByRole("heading",{name:"Lehrkraft dieser Klasse"})).toBeVisible();
+    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
     await expect(page.getByText("يوسف عبد الرحمن محمود",{exact:true})).toHaveCount(1);
-    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toBeEnabled();
   }finally{await school.close();}
 });
