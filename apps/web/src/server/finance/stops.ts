@@ -76,9 +76,13 @@ export async function requestEnrollmentStop(actor:ActorContext,key:string|null,i
       if(!row.allowed)throw new ApiError("not_found");
     },
     mutate:async(tx)=>{
-      const [row]=await tx<{id:string}[]>`select app.create_enrollment_stop(${input.studentId},${input.lastAttendanceMonth+"-01"}::date,
-        ${input.duration},${input.reason}) as id`;
-      await postStopChange(tx,actor,row.id,"requested");
+      const [row]=await tx<{id:string;effects:unknown}[]>`select id,effects from app.register_enrollment_pause(${input.studentId},${input.lastAttendanceMonth+"-01"}::date,
+        ${input.duration},${input.reason})`;
+      await postStopChange(tx,actor,row.id,"approved");
+      await appendAudits(tx,effects.parse(row.effects).map((entry)=>({
+        action:entry.effect==="review"?"finance.stop_review_opened":"finance.stop_charge_cancelled",
+        aggregateId:entry.reviewId??entry.invoiceId,metadata:{invoiceId:entry.invoiceId,stopId:row.id},
+      })));
       return {id:row.id};
     },
   });
