@@ -6,7 +6,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.graphics.Bitmap
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +18,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.LayoutDirection
@@ -45,6 +48,7 @@ class FinanceVisualTest {
     @Test fun payerDeDark() = capture("de", true, true)
     @Test fun payerArLight() = capture("ar", false, true)
 
+    @OptIn(ExperimentalTestApi::class)
     private fun capture(language: String, dark: Boolean, payer: Boolean) {
         val ar = language == "ar"
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -99,7 +103,9 @@ class FinanceVisualTest {
         compose.onNodeWithText(if (payer) (if (ar) "مدفوعاتي" else "Meine Zahlungen") else (if (ar) "الفواتير" else "Rechnungen")).assertIsDisplayed()
         compose.waitForIdle()
         instrumentation.waitForIdleSync()
-        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+        // Capture the app window, not unrelated emulator launcher/system dialogs.
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        assertTrue(bitmap.width >= 640 && bitmap.height >= 1000)
         check(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         val name = "finance-native-fixture-${if(payer) "payer" else "admin"}-$language-${if(dark) "dark" else "light"}.png"
         val resolver = target.contentResolver
