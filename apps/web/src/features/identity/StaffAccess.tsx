@@ -60,10 +60,6 @@ const names = {
     "تغيير حساب التحصيل",
     "Zahlungskonto ändern"
   ],
-  "audit.read": [
-    "عرض سجل العمليات",
-    "Aktivitätsprotokoll einsehen"
-  ],
   "student_affairs": [
     "صندوق شؤون الطلبة",
     "Postfach Schulbüro"
@@ -225,7 +221,7 @@ export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount
               <>
                 <fieldset disabled={busy || ownAccount === target}>
                   <legend>{text.grants}</legend>
-                  {capabilityKeys.filter(key=>key!=="audit.read").map((key) => {
+                  {capabilityKeys.map((key) => {
                     const item = edit.capabilities.find((grant) => grant.key === key);
                     return (
                       <div className="access-item" key={key}>

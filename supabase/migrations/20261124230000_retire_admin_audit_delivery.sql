@@ -54,3 +54,42 @@ DROP FUNCTION IF EXISTS app.delivery_overview();
 DROP FUNCTION IF EXISTS app.delivery_can_redrive(app.delivery_job);
 DROP FUNCTION IF EXISTS app.may_operate_delivery_queue();
 -- may_view_delivery_job is still used by broadcast delivery counts.
+
+-- Remove the retired projection's rule table and indexes; the immutable
+-- audit_entry table and its write policy remain available to core workflows.
+DROP TABLE app.audit_action_rule RESTRICT;
+DROP INDEX IF EXISTS app.audit_entry_actor_time;
+DROP INDEX IF EXISTS app.audit_entry_action_time;
+
+-- Existing installations may contain grants for the removed capability.
+-- Delete only those obsolete grants, leaving every other grant intact.
+DELETE FROM app.capability_grant WHERE capability = 'audit.read';
+ALTER TABLE app.capability_grant DROP CONSTRAINT capability_grant_capability_check;
+ALTER TABLE app.capability_grant ADD CONSTRAINT capability_grant_capability_check
+  CHECK (capability = ANY (ARRAY[
+    'school.manage','students.manage','staff.invite','attendance.supervise',
+    'academics.supervise','comms.publish','finance.read','finance.issue',
+    'finance.post','finance.export','bank.configure'
+  ]::text[]));
+
+-- Preserve the current function definitions and their grants, removing only
+-- the retired key. Fail the migration if the expected definition has changed.
+DO $retire_capability$
+DECLARE
+  definition text;
+  updated text;
+  target regprocedure;
+BEGIN
+  FOREACH target IN ARRAY ARRAY[
+    'app.has_capability(text)'::regprocedure,
+    'app.provision_staff_account(uuid,text,text,text,text,text,text[])'::regprocedure
+  ] LOOP
+    definition := pg_get_functiondef(target);
+    updated := regexp_replace(definition, ',[[:space:]]*''audit\.read''', '', 'g');
+    IF definition = updated OR strpos(updated, '''audit.read''') > 0 THEN
+      RAISE EXCEPTION 'Unexpected audit capability definition in %', target;
+    END IF;
+    EXECUTE updated;
+  END LOOP;
+END
+$retire_capability$;

@@ -36,7 +36,6 @@ const grants:Record<string,[string,string]>={
   "finance.post":["المدفوعات","Zahlungen erfassen"],
   "finance.export":["التصدير المالي","Abrechnungen exportieren"],
   "bank.configure":["إعداد البنك","Zahlungskonto konfigurieren"],
-  "audit.read":["سجل العمليات","Aktivitätsprotokoll"],
 };
 const yearList=yearSchema.array(), classList=schoolClassSchema.array();
 type Year=z.infer<typeof yearSchema>;
@@ -118,7 +117,7 @@ export function DirectStaffForm({locale,role,canCreateAdmin,canAssignClasses=tru
       </>}
       {role==="admin"&&canCreateAdmin&&<fieldset className={styles.details}><legend>{t.permissions}</legend>
         <div className={styles.stack}>
-          {capabilityKeys.filter(key=>key!=="access.manage"&&key!=="audit.read").map(key=><label key={key} className={styles.radioCard}>
+          {capabilityKeys.filter(key=>key!=="access.manage").map(key=><label key={key} className={styles.radioCard}>
             <input type="checkbox" checked={granted.includes(key)}
               onChange={e=>setGranted(prev=>e.target.checked?[...prev,key]:prev.filter(item=>item!==key))}/>
             {grants[key]?.[locale==="ar"?0:1]??key}

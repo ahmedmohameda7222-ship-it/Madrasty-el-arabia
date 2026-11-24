@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { personaSchema, revisionSchema } from "./http";
 
-export const capabilityKeys = ["access.manage","school.manage","students.manage","staff.invite","attendance.supervise","academics.supervise","comms.publish","finance.read","finance.issue","finance.post","finance.export","bank.configure","audit.read"] as const;
+export const capabilityKeys = ["access.manage","school.manage","students.manage","staff.invite","attendance.supervise","academics.supervise","comms.publish","finance.read","finance.issue","finance.post","finance.export","bank.configure"] as const;
 export const capabilitySchema = z.enum(capabilityKeys);
 export type Capability = z.infer<typeof capabilitySchema>;
 export const inboxSchema = z.enum(["student_affairs", "accounts"]);
