@@ -117,6 +117,18 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const restored = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(restored.balanceMinor, 3200);
 
+    const cashBefore=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    const donation={date:clock.day,kind:"donation",amountMinor:5000,description:"Synthetic donation"};
+    const movement=await send("/finance/cashbook","donation",donation);
+    assert.deepEqual(await send("/finance/cashbook","donation",donation),movement);
+    await send("/finance/cashbook","expense",{date:clock.day,kind:"expense",amountMinor:1000,description:"Synthetic stationery"});
+    await send("/finance/cashbook","bank-deposit",{date:clock.day,kind:"bank_deposit",amountMinor:1500,description:"Synthetic deposit"});
+    const cashAfter=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    assert.equal(cashAfter.balanceMinor-cashBefore.balanceMinor,2500);
+    assert.equal(cashAfter.expenseMinor-cashBefore.expenseMinor,1000);
+    assert.equal(cashAfter.depositsMinor-cashBefore.depositsMinor,1500);
+    await fixtureApi(school,"/finance/cashbook",{token:payer,status:403});
+
     const stop = enrollmentStop.parse((await fixtureApi(school, "/enrollment-stops", {
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
       body: { studentId: ids.omar, lastAttendanceMonth: clock.month, duration: "one_month", reason: "Synthetic school break" },
