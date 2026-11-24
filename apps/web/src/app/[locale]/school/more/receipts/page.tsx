@@ -2,6 +2,7 @@ import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
 import {receiptState,type Locale} from "@madrasty/contracts";
 import Link from "next/link";
+import {Cashbook} from "@/features/finance/Cashbook";
 import {RecordPayment} from "@/features/finance/RecordPayment";
 import {StopReview} from "@/features/finance/StopReview";
 import {Reconciliation} from "@/features/finance/Reconciliation";
@@ -19,11 +20,12 @@ export default async function ReceiptsPage({params,searchParams}:{
   const [read,post]=await Promise.all([mayUse(session,"finance.read"),mayUse(session,"finance.post")]);
   if(!read&&!post)notFound();
   const root=`/${locale}/school/more/receipts`;
+  if(query.view==="cashbook")return <><Link className="plain-button" href={root}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link><Cashbook locale={locale}/></>;
   if(query.view==="record"){
     if(!post)notFound();
     return <RecordPayment locale={locale} invoice={z.uuid().safeParse(query.invoice).data}/>;
   }
   if(query.view==="reviews")return <><Link className="plain-button" href={root}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link><StopReview locale={locale} id={z.uuid().safeParse(query.review).data}/></>;
   return id?<ReceiptDetails locale={locale} id={id} staff/>:
-    <><Reconciliation locale={locale} enabled={post} initialState={receiptState.safeParse(query.state).data}/><Link className="plain-button" href={`${root}?view=reviews`}>{locale==="ar"?"تسوية رسوم التوقف":"Gebührenkorrekturen bei Pausen"}</Link></>;
+    <><div className="header-actions"><Link className="plain-button" href={`${root}?view=cashbook`}>{locale==="ar"?"دفتر الخزنة":"Kassenbuch"}</Link></div><Reconciliation locale={locale} enabled={post} initialState={receiptState.safeParse(query.state).data}/><Link className="plain-button" href={`${root}?view=reviews`}>{locale==="ar"?"تسوية رسوم التوقف":"Gebührenkorrekturen bei Pausen"}</Link></>;
 }
