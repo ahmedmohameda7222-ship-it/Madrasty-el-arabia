@@ -111,9 +111,9 @@ export function AdminWork({locale,initialDay,tasksOnly=false}:{locale:Locale;ini
         {queues.filter(row=>row.state==="unavailable"||row.count>0).map(row=>row.state==="ready"?
           <Link key={row.key} className="admin-start-row group-row" href={queueRoute(locale,row.route,row.filters.asOf)}><span>{queueLabels[locale][row.key]}</span><output>{number(row.count)}</output><Icon name="chevron"/></Link>:
           <div key={row.key} className="admin-start-row"><span>{queueLabels[locale][row.key]}</span><small>{t.unknown}</small></div>)}
-        <details className="admin-start-zero"><summary>{t.all}</summary>
+        {queues.some(row=>row.state==="ready"&&row.count===0)&&<details className="admin-start-zero"><summary>{t.all}</summary>
           {queues.filter(row=>row.state==="ready"&&row.count===0).map(row=><Link key={row.key} className="admin-start-row group-row" href={queueRoute(locale,row.route,row.filters.asOf)}><span>{queueLabels[locale][row.key]}</span><output>{number(0)}</output><Icon name="chevron"/></Link>)}
-        </details>
+        </details>}
       </section>
     </div>;
     const metrics=(["students","classes","teachers"] as const).filter(key=>overview?.[key]!=null);
@@ -126,7 +126,7 @@ export function AdminWork({locale,initialDay,tasksOnly=false}:{locale:Locale;ini
     return <div className="admin-start">
       <div className="admin-start-date">{dateLabel(summary.today,locale)} <Link href={`/${locale}/account/profile`}>{t.profile}</Link></div>
       <div className="admin-start-hero">
-        <RoleHero persona="admin" title={text.work} detail={detail} action={{href:tasksHref,label:text.open}}/>
+        <RoleHero persona="admin" title={text.work} detail={detail+(active.length?" · "+active.slice(0,2).map(row=>`${number(row.state==="ready"?row.count:0)} ${queueLabels[locale][row.key]}`).join(" · "):"")} action={{href:tasksHref,label:text.open}}/>
         {unavailable&&total>0&&<p className="admin-start-muted">{t.partial}</p>}
       </div>
       {metrics.length>0&&<section className="admin-start-section"><h2>{t.overview}</h2>
@@ -144,7 +144,7 @@ export function AdminWork({locale,initialDay,tasksOnly=false}:{locale:Locale;ini
             <dl><div><dt>{t.present}</dt><dd>{number(attendance.present)}</dd></div><div><dt>{t.late}</dt><dd>{number(attendance.late)}</dd></div><div><dt>{t.absent}</dt><dd>{number(attendance.absent)}</dd></div></dl>
           </div>:<p>{t.noAttendance}</p>}
           <p className="admin-start-muted">{t.approved}: {number(attendance.approvedClasses)} / {number(attendance.expectedClasses)}</p>
-          <Link className="admin-start-inline" href={`${base}/more/attendance?date=${attendance.date}`}>{t.openAttendance}<Icon name="chevron"/></Link>
+          {overview?.mayMonitor&&<Link className="admin-start-inline" href={`${base}/more/attendance?date=${attendance.date}`}>{t.openAttendance}<Icon name="chevron"/></Link>}
         </div>
       </section>}
       {finance&&<section className="admin-start-section"><h2>{t.finance}</h2><div className="admin-start-panel">

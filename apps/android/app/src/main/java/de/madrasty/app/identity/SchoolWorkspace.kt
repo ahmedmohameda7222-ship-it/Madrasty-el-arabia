@@ -110,7 +110,7 @@ internal sealed interface WorkspacePage {
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class ResourceUnavailable(val retry: SchoolResourceLink? = null) : WorkspacePage
-    data class Publication(val section:PublicationSection,val item:String?=null) : WorkspacePage
+    data class Publication(val section:PublicationSection,val item:String?=null,val create:Boolean=false) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data class Enrollment(val student:String?=null) : WorkspacePage
@@ -367,7 +367,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         }
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
-        is WorkspacePage.Publication -> SchoolPublicationScreen(model,page.section,page.item,state::back)
+        is WorkspacePage.Publication -> SchoolPublicationScreen(model,page.section,page.item,state::back,initialCreate=page.create)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         is WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back,page.student)
@@ -410,6 +410,9 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openFinance={state.open(WorkspacePage.FinanceReport())},
                 openAttendanceReview={state.open(WorkspacePage.AttendanceReview(date=it))},
                 openOwnProfile={state.open(WorkspacePage.Profile)},
+                openNewsItem={state.open(WorkspacePage.Publication(PublicationSection.News,it))},
+                openEventItem={state.open(WorkspacePage.Publication(PublicationSection.Events,it))},
+                createEvent={state.open(WorkspacePage.Publication(PublicationSection.Events,create=true))},
                 openDirectory={state.open(WorkspacePage.Directory)},openSetup={state.open(WorkspacePage.Calendar)},
                 openMore={state.choose(SchoolTab.More)},
                 addGuardian={state.open(WorkspacePage.Family(addGuardian=true))},

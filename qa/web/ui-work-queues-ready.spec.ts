@@ -16,7 +16,8 @@ test("configured administrator sees scoped queue counts and opens every authoriz
     const summary=workQueuesSchema.parse(response.payload.data);
     assert.ok(summary.asOf,"the test must use a configured school");
     const names=new Set([...schoolQueueKeySchema.options,...dashboardModuleKeySchema.options]);
-    assert.equal(names.size,8,"the original work queue catalogue must keep all eight keys");
+    assert.equal(names.size,7,"the remaining API queue catalogue keeps seven keys");
+    assert.ok(summary.queues.every(row=>row.key!=="noncontinuation_requests"));
     assert.ok(summary.queues.length>0);
     assert.equal(new Set(summary.queues.map(row=>row.key)).size,summary.queues.length);
     assert.ok(summary.queues.every(row=>names.has(row.key)));
@@ -25,10 +26,16 @@ test("configured administrator sees scoped queue counts and opens every authoriz
     await page.goto("/ar/school/home");
     const main=page.locator(".school-content");
     await expect(main).toBeVisible();
+    await expect(main.locator(".admin-start-hero .role-hero img")).toHaveAttribute("src","/notebook-admin.svg");
+    await expect(main.locator(".admin-start-metrics")).toBeVisible();
+    await expect(main.locator("a.group-row")).toHaveCount(0);
+    await main.locator(".admin-start-hero .hero-action").click();
+    await expect(page).toHaveURL(/\/school\/home\/tasks/);
     for(const row of summary.queues){
       if(row.state!=="ready")continue;
       const url=`/ar${row.route}?asOf=${row.filters.asOf}`;
       const link=main.locator(`a.group-row[href="${url}"]`);
+      if(row.count===0) await main.locator(".admin-start-zero summary").click();
       await expect(link).toBeVisible();
       await expect(link.locator("output")).toHaveText(new Intl.NumberFormat("ar").format(row.count));
       const detail=await fixtureApi(school,`/school/work-queues/${row.key}?asOf=${row.filters.asOf}&limit=25`,{

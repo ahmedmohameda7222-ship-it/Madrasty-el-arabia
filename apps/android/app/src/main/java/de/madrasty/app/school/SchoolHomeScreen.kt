@@ -93,6 +93,9 @@ fun SchoolHomeScreen(
     openFinance: () -> Unit,
     openAttendanceReview: (String) -> Unit,
     openOwnProfile: () -> Unit,
+    openNewsItem: (String) -> Unit,
+    openEventItem: (String) -> Unit,
+    createEvent: () -> Unit,
     openDirectory: () -> Unit,
     openSetup: () -> Unit,
     openMore: () -> Unit,
@@ -113,7 +116,7 @@ fun SchoolHomeScreen(
     ProfileGreeting(model,refresh)
     when (persona) {
         Persona.Admin -> AdminHome(model,workDate,changeWorkDate,openQueue,openDirectory,openSetup,
-            openMore,addGuardian,openEvents,openNews,openIssue,openAnnouncement,language,refresh,openTasks,openFinance,openAttendanceReview,openOwnProfile,{openSchedule(null)})
+            openMore,addGuardian,openEvents,openNews,openIssue,openAnnouncement,language,refresh,openTasks,openFinance,openAttendanceReview,openOwnProfile,{openSchedule(null)},openNewsItem,openEventItem,createEvent)
         Persona.Teacher -> TeacherHome(model,openAttendance,openSchedule,language,refresh)
         Persona.Guardian -> GuardianHome(model,child,pickChild,openProfile,openSchedule,language,refresh)
     }
@@ -125,7 +128,7 @@ private fun AdminHome(
     openQueue:(WorkQueueSelection)->Unit, directory:()->Unit, setup:()->Unit,
     more:()->Unit, addGuardian:()->Unit, events:()->Unit, news:()->Unit, issue:()->Unit, announce:()->Unit,
     language:String, refresh:Int, tasks:()->Unit, finance:()->Unit, attendance:(String)->Unit,
-    profile:()->Unit, schedule:()->Unit,
+    profile:()->Unit, schedule:()->Unit, openNewsItem:(String)->Unit, openEventItem:(String)->Unit, createEvent:()->Unit,
 ) {
     val work = scheduleRead("/school/work-queues",refresh,model::timetableObject)
     AsyncSurface(work) { summary ->
@@ -153,7 +156,11 @@ private fun AdminHome(
             unavailable->stringResource(R.string.queue_unavailable)
             else->stringResource(R.string.admin_start_done)
         }
-        RoleHero(Persona.Admin,stringResource(R.string.queue_title),detail,stringResource(R.string.queue_open),tasks)
+        val snippets=mutableListOf<String>()
+        for(row in queues.filter{it.optString("state")=="ready"&&it.optInt("count")>0}.take(2)){
+            snippets.add(numbers.format(row.getInt("count"))+" "+stringResource(queueLabels.getValue(row.getString("key"))))
+        }
+        RoleHero(Persona.Admin,stringResource(R.string.queue_title),detail+(if(snippets.isNotEmpty())" · "+snippets.joinToString(" · ") else ""),stringResource(R.string.queue_open),tasks)
         if(unavailable&&total>0)Text(stringResource(R.string.queue_unavailable),style=MaterialTheme.typography.bodySmall)
         val overview=summary.optJSONObject("overview")
         if(overview!=null){
@@ -196,7 +203,7 @@ private fun AdminHome(
                         }
                     }else Text(stringResource(R.string.admin_start_no_attendance))
                     Text(stringResource(R.string.admin_start_coverage,numbers.format(stats.getInt("approvedClasses")),numbers.format(stats.getInt("expectedClasses"))),style=MaterialTheme.typography.bodySmall)
-                    TextButton(onClick={attendance(day)}){Text(stringResource(R.string.admin_start_open_attendance))}
+                    if(overview.optBoolean("mayMonitor"))TextButton(onClick={attendance(day)}){Text(stringResource(R.string.admin_start_open_attendance))}
                 }
             }
             overview.optJSONObject("finance")?.let{stats->
@@ -214,7 +221,7 @@ private fun AdminHome(
             val quick=buildList<Triple<Int,Int,()->Unit>>{
                 if(!overview.isNull("students"))add(Triple(R.string.admin_start_family,R.drawable.ic_people,addGuardian))
                 if(overview.optBoolean("mayPublish")){
-                    add(Triple(R.string.admin_start_event,R.drawable.ic_attendance,events))
+                    add(Triple(R.string.admin_start_event,R.drawable.ic_attendance,createEvent))
                     add(Triple(R.string.admin_start_announce,R.drawable.ic_messages,announce))
                 }
                 if(overview.optBoolean("mayIssue"))add(Triple(R.string.admin_start_invoice,R.drawable.ic_more,issue))
@@ -241,10 +248,42 @@ private fun AdminHome(
             }
         }
         Text(stringResource(R.string.admin_start_news),style=MaterialTheme.typography.titleMedium)
+        val recent=scheduleRead("/news?limit=3",refresh,model::records)
+        val upcoming=scheduleRead("/events?month="+today.take(7)+"&limit=60",refresh,model::records)
         DashboardPanel{
-            TextButton(onClick=news){Text(stringResource(R.string.school_news))}
-            HorizontalDivider()
-            TextButton(onClick=events){Text(stringResource(R.string.school_events))}
+            AsyncSurface(recent){rows->
+                rows.take(3).forEach{item->
+                    val copies=item.getJSONObject("copy")
+                    val title=(copies.optJSONObject(language)?:copies.optJSONObject(item.getString("sourceLocale")))?.optString("title").orEmpty()
+                    TextButton(onClick={openNewsItem(item.getString("id"))}){
+                        Column(Modifier.fillMaxWidth()){
+                            Text(isolate(title));Text(stringResource(R.string.school_news),style=MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            AsyncSurface(upcoming){rows->
+                rows.filter{item->
+                    val timing=item.optJSONObject("timing")
+                    val end=timing?.optJSONObject("end")?:timing?.optJSONObject("start")
+                    (end?.optString("date")?:"")>=today
+                }.sortedBy{it.optJSONObject("timing")?.optJSONObject("start")?.optString("date")}.take(2).forEach{item->
+                    val copies=item.getJSONObject("copy")
+                    val title=(copies.optJSONObject(language)?:copies.optJSONObject(item.getString("sourceLocale")))?.optString("title").orEmpty()
+                    val start=item.getJSONObject("timing").getJSONObject("start").getString("date")
+                    TextButton(onClick={openEventItem(item.getString("id"))}){
+                        Column(Modifier.fillMaxWidth()){
+                            Text(isolate(title));Text(date(start),style=MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+                TextButton(onClick=news){Text(stringResource(R.string.school_news))}
+                TextButton(onClick=events){Text(stringResource(R.string.school_events))}
+            }
         }
     }
 }
