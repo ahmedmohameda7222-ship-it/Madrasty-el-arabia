@@ -14,7 +14,7 @@ const copy={
 } as const;
 export function Cashbook({locale}:{locale:Locale}){
   const [month,setMonth]=useState(""),[refresh,update]=useState(0),t=copy[locale];
-  const result=useTimetableRead("/finance/cashbook"+(month?"?month="+month:""),cashbookMonth,refresh);
+  const result=useTimetableRead(`/finance/cashbook${month?"?month="+month:""}`,cashbookMonth,refresh);
   return <section className={css.workspace}>
     <h1>{t.title}</h1>
     <TimetableRead locale={locale} result={result}>{data=><>
