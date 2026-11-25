@@ -326,28 +326,39 @@ private fun ChatReactions(model:IdentityViewModel,thread:String,message:JSONObje
     var busy by remember{mutableStateOf(false)}
     var error by remember{mutableStateOf(false)}
     val reactions=message.getJSONArray("reactions")
+    var optimisticChoice by remember{mutableStateOf<String?>(null)}
     val counts=List(reactions.length(),reactions::getJSONObject).associateBy{it.getString("emoji")}
+    val projected=if(!busy)counts else buildMap<String,JSONObject>{
+        for((emoji,entry) in counts){
+            val amount=entry.getInt("count")-(if(entry.optBoolean("mine"))1 else 0)
+            if(amount>0)put(emoji,JSONObject().put("emoji",emoji).put("count",amount).put("mine",false))
+        }
+        optimisticChoice?.let{choice->
+            put(choice,JSONObject().put("emoji",choice).put("count",(get(choice)?.getInt("count")?:0)+1).put("mine",true))
+        }
+    }
     val scope=rememberCoroutineScope()
     TextButton(onClick={expanded=!expanded}){Text(stringResource(R.string.chat_reactions))}
     if(error)Text(stringResource(R.string.generic_error))
-    if(expanded||counts.isNotEmpty())FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        val options=if(expanded)availableEmojis else availableEmojis.filter{counts.containsKey(it)}
+    if(expanded||projected.isNotEmpty())FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        val options=if(expanded)availableEmojis else availableEmojis.filter{projected.containsKey(it)}
         for(emoji in options){
-            val reaction=counts[emoji]
+            val reaction=projected[emoji]
             val mine=reaction?.optBoolean("mine")==true
             val amount=reaction?.getInt("count")
             FilterChip(selected=mine,enabled=!busy,onClick={
-                busy=true;error=false
+                val choice=if(mine)null else emoji
+                optimisticChoice=choice;busy=true;error=false
                 scope.launch{
                     try{
                         val endpoint="/threads/$thread/messages/${message.getString("id")}/reaction"
-                        val changed=model.schoolRequest(endpoint,JSONObject().put("emoji",if(mine)JSONObject.NULL else emoji),"PUT")
+                        val changed=model.schoolRequest(endpoint,JSONObject().put("emoji",choice?:JSONObject.NULL),"PUT")
                         val rows=decodeData(changed){it as JSONArray}.data
                         received(rows)
                     }catch(failure:CancellationException){throw failure}
                     catch(failure:HttpFailure){if(failure.denied)deny()else error=true}
                     catch(_:Exception){error=true}
-                    finally{busy=false}
+                    finally{busy=false;optimisticChoice=null}
                 }
             },label={Text(if(amount==null)emoji else "$emoji $amount")})
         }
