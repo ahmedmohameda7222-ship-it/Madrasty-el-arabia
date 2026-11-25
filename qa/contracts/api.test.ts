@@ -17,6 +17,7 @@ test("the local contract declares the expected API operations with unique identi
   const ids = Object.values(contract.paths).flatMap((entries) => Object.values(entries as Record<string, { operationId?: string }>))
     .flatMap((operation) => operation.operationId ? [operation.operationId] : []);
   assert.equal(ids.length, 254);
+  for(const path of ["/comms/feed","/comms/calendar","/notifications/read-all"])assert.ok(contract.paths[path],path);
   for(const operation of ['listCommunicationFeed','readCommunicationCalendar','markAllScopedNotificationsRead'])assert.ok(ids.includes(operation));
   assert.equal(new Set(ids).size, ids.length);
 });

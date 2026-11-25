@@ -54,7 +54,8 @@ test("recommended contacts prioritize the assigned teacher, all people includes 
     assert.equal(mine[0]?.role, "teacher", "assigned teachers precede administration");
     assert.ok(mine.some(c => c.displayName === "يوسف عبد الرحمن محمود"));
     assert.ok(mine.filter(c=>c.role==="teacher").every(c=>c.contexts.length>0));
-    // School onboarding may assign an additional support teacher to this class.\n    // Assert against current class context, not a hard-coded unassigned name.
+    // Only the responsible primary teacher is recommended; others stay in All persons.
+    assert.ok(!mine.some(c=>c.displayName==="Johannes Peter Schneider"));
     assert.ok(mine.every(c => c.target.kind === "person"));
     const all: Contact[] = (await request("/directory?view=all&limit=100")).payload.data;
     assert.ok(all.some(c => c.displayName === "Johannes Peter Schneider"));

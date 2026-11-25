@@ -78,7 +78,7 @@ as $$
         select 1 from app.enrollment e
         where e.class_id=c.id and e.voided_at is null and today.day>=e.effective_from and today.day<e.effective_until
           and app.has_child_link(e.student_id)
-          and exists(select 1 from app.teaching_assignment t where t.class_id=c.id and app.teacher_applies(t.id,p.id,today.day))
+          and exists(select 1 from app.teaching_assignment t where t.class_id=c.id and t.kind='primary' and t.staff_id=p.id and app.teacher_applies(t.id,p.id,today.day))
       )) or (app.actor_persona()='teacher' and p.target_persona='guardian'
         and app.teacher_scope(c.id,today.day,'comms.class') and exists(
           select 1 from app.child_link l join app.enrollment e on e.student_id=l.student_id
