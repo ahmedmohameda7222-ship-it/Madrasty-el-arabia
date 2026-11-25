@@ -411,3 +411,28 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 /* Avoid double heading/card margins in the communication hub on narrow screens. */
 .comms-hub>h1{margin:0}.comms-hub .inbox-panel{margin-block:0}.comms-inbox-heading h2{margin:0}.comms-inbox-heading .primary-button{margin-block-start:0}
 @media(max-width:600px){.comms-hub{gap:10px}.comms-hub .inbox-panel{padding:12px}.comms-inbox-heading{gap:8px}}
+
+/* Native-inspired communication controls. Keep hit targets independent from the
+   visual outline; no large rectangular web form buttons in the chat input. */
+.comms-input-bar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:end;gap:6px;min-inline-size:0}
+.comms-input-field{grid-column:2;grid-row:1;min-inline-size:0;margin:0}
+.comms-input-field textarea{display:block;inline-size:100%;min-inline-size:0;min-block-size:44px;max-block-size:140px;resize:none;border-radius:24px;padding:10px 14px;line-height:1.4;background:var(--inset);border:1px solid var(--rule);color:var(--ink)}
+.comms-icon-button{display:inline-grid;place-items:center;inline-size:44px;block-size:44px;min-inline-size:44px;min-block-size:44px;border:0;padding:0;border-radius:50%;background:transparent;color:var(--primary);flex:none}
+.comms-icon-button:disabled{opacity:.42}
+.comms-attach-button{background:var(--inset)}
+.comms-send-button{grid-column:3;grid-row:1;background:var(--primary);color:var(--on-primary)}
+.comms-media[data-idle=true]{grid-column:1;grid-row:1;position:relative}
+.comms-media[data-idle=false]{grid-column:1/-1;grid-row:2;display:grid;gap:8px;min-inline-size:0}
+.comms-attachment-menu{position:absolute;inset-block-end:calc(100% + 8px);inset-inline-start:0;z-index:5;inline-size:max-content;max-inline-size:min(250px,calc(100vw - 64px));border:1px solid var(--rule);border-radius:18px;box-shadow:0 8px 28px #0002;background:var(--card);overflow:hidden}
+.comms-media[data-idle=false] .comms-attachment-menu{position:static;max-inline-size:100%}
+.comms-attachment-menu button{display:flex;align-items:center;gap:12px;text-align:start;min-block-size:44px;width:100%;border:0;border-radius:0;padding:8px 14px;background:transparent;color:var(--ink);font:inherit}
+.comms-attachment-menu button+button{border-block-start:1px solid var(--rule)}
+.comms-attachment-menu button svg{flex:none;inline-size:20px;block-size:20px;color:var(--primary)}
+.comms-attachment-menu button:disabled{opacity:.42}
+.comms-hub .plain-button,.comms-directory .plain-button,.comms-hub .primary-button,.comms-directory .primary-button{border-radius:22px}
+.comms-hub-tabs{border-radius:14px}
+.comms-hub-tabs a{border-radius:10px;background:transparent}
+.comms-hub-tabs a[aria-current=page]{background:var(--card);color:var(--primary);box-shadow:0 1px 3px #0002}
+.comms-hub .inbox-filter-strip .plain-button{border-radius:999px}
+.comms-hub .comms-message-actions .plain-button{border-radius:22px}
+@media(prefers-reduced-motion:no-preference){.comms-icon-button{transition:transform 120ms var(--ease-out),opacity 120ms}.comms-icon-button:not(:disabled):active{transform:scale(.94)}.comms-attachment-menu{animation:comms-send-in 140ms ease-out both}}
