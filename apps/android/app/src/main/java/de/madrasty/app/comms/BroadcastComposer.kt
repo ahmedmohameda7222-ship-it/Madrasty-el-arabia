@@ -83,6 +83,13 @@ private data class BroadcastReview(
 ){
     val total get()=arCount+deCount
 }
+private class BroadcastFormState(language:String){
+    var audience by mutableStateOf<BroadcastAudience?>(null)
+    var selectedClass by mutableStateOf<String?>(null)
+    var activeLanguage by mutableStateOf(language)
+    var ar by mutableStateOf(BroadcastText())
+    var de by mutableStateOf(BroadcastText())
+}
 private enum class BroadcastTab(val label:Int){
     Inbox(R.string.broadcast_inbox),Compose(R.string.broadcast_new),History(R.string.broadcast_history),
 }
@@ -94,6 +101,7 @@ internal fun BroadcastHub(model:IdentityViewModel,persona:Persona,initial:String
     var selected by remember(initial){mutableStateOf(initial)}
     var tab by remember(persona){mutableStateOf(if(persona==Persona.Admin)BroadcastTab.Compose else BroadcastTab.Inbox)}
     var refresh by remember{mutableIntStateOf(0)}
+    val draft=remember(model.session?.actor){BroadcastFormState(language)}
     val version=refresh+model.attendanceNetworkRevision
     val options=if(persona==Persona.Guardian)AsyncState.Ready(BroadcastOptions(false,emptyList())) else
         academicRead("/broadcasts/options",version){path->
@@ -140,7 +148,7 @@ internal fun BroadcastHub(model:IdentityViewModel,persona:Persona,initial:String
             }
             BroadcastTab.Compose->AsyncSurface(options){value->
                 if(value.kinds.isEmpty())Text(stringResource(R.string.broadcast_no_recipients))
-                else BroadcastComposer(model,value,locale){refresh++}
+                else BroadcastComposer(model,value,locale,draft){refresh++}
             }
             BroadcastTab.History->if(allowed)BroadcastHistory(model,locale,version)
         }
@@ -148,32 +156,34 @@ internal fun BroadcastHub(model:IdentityViewModel,persona:Persona,initial:String
 }
 
 @Composable
-private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,locale:Locale,published:()->Unit){
+private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,locale:Locale,draft:BroadcastFormState,published:()->Unit){
     val labels=NumberFormat.getIntegerInstance(locale)
     val scope=rememberCoroutineScope()
-    var audience by remember{mutableStateOf<BroadcastAudience?>(null)}
-    val kind=audience?.takeIf{it in options.kinds}?:options.kinds.first()
-    var selectedClass by remember{mutableStateOf<String?>(null)}
-    val targetClass=options.classes.firstOrNull{it.id==selectedClass}?:options.classes.firstOrNull()
-    var ar by remember{mutableStateOf(BroadcastText())}
-    var de by remember{mutableStateOf(BroadcastText())}
+    var audience by draft::audience
+    val kind=audience?.takeIf{it in options.kinds}
+    var selectedClass by draft::selectedClass
+    val targetClass=options.classes.firstOrNull{it.id==selectedClass}
+    var activeLanguage by draft::activeLanguage
+    var ar by draft::ar
+    var de by draft::de
     var review by remember{mutableStateOf<BroadcastReview?>(null)}
     var receipt by remember{mutableStateOf<Int?>(null)}
     var key by remember{mutableStateOf<String?>(null)}
     var busy by remember{mutableStateOf(false)}
     var error by remember{mutableStateOf<Int?>(null)}
     fun preview(){
-        if(busy||!ar.complete||!de.complete)return
+        if(busy||!ar.complete||!de.complete||kind==null||(kind==BroadcastAudience.ClassGuardians&&targetClass==null))return
+        val chosenKind=kind
         busy=true;receipt=null;error=null
         scope.launch{
             try{
-                val target=JSONObject().put("kind",kind.wire)
+                val target=JSONObject().put("kind",chosenKind.wire)
                 if(kind==BroadcastAudience.ClassGuardians)target.put("classId",checkNotNull(targetClass).id)
                 val body=JSONObject().put("audience",target).put("copy",JSONObject().put("ar",ar.json()).put("de",de.json()))
                 val value=model.broadcastRecord("/broadcasts/preview",body)
                 val counts=value.getJSONObject("counts")
                 val copy=value.getJSONObject("copy")
-                review=BroadcastReview(value.getString("previewId"),kind,
+                review=BroadcastReview(value.getString("previewId"),chosenKind,
                     if(kind==BroadcastAudience.ClassGuardians)targetClass?.label else null,
                     BroadcastText.read(copy.getJSONObject("ar")),BroadcastText.read(copy.getJSONObject("de")),
                     counts.getInt("ar"),counts.getInt("de"),value.getString("expiresAt"))
@@ -191,7 +201,7 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
             try{
                 val result=model.broadcastRecord("/broadcasts",JSONObject().put("previewId",current.id),checkNotNull(key))
                 receipt=result.getInt("recipientCount")
-                review=null;ar=BroadcastText();de=BroadcastText();key=null
+                review=null;ar=BroadcastText();de=BroadcastText();key=null;audience=null;selectedClass=null
                 published()
             }catch(cancelled:CancellationException){throw cancelled}
             catch(problem:HttpFailure){
@@ -222,7 +232,7 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
     }
     Text(stringResource(R.string.broadcast_audience),style=MaterialTheme.typography.titleMedium)
     FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        for(value in options.kinds)FilterChip(selected=kind==value,enabled=!busy,onClick={audience=value},label={Text(stringResource(value.label))})
+        for(value in options.kinds)FilterChip(selected=kind==value,enabled=!busy,onClick={audience=value;selectedClass=null},label={Text(stringResource(value.label))})
     }
     if(kind==BroadcastAudience.ClassGuardians){
         Text(stringResource(R.string.broadcast_class),style=MaterialTheme.typography.titleMedium)
@@ -230,9 +240,13 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
             for(value in options.classes)FilterChip(selected=targetClass?.id==value.id,enabled=!busy,onClick={selectedClass=value.id},label={Text(value.label)})
         }
     }
-    BroadcastFields(R.string.broadcast_arabic,"ar",ar,!busy){ar=it}
-    BroadcastFields(R.string.broadcast_german,"de",de,!busy){de=it}
-    Button(enabled=!busy&&ar.complete&&de.complete,onClick=::preview){
+    FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        FilterChip(selected=activeLanguage=="ar",enabled=!busy,onClick={activeLanguage="ar"},label={Text(stringResource(R.string.broadcast_arabic)+(if(ar.complete)" ✓" else ""))})
+        FilterChip(selected=activeLanguage=="de",enabled=!busy,onClick={activeLanguage="de"},label={Text(stringResource(R.string.broadcast_german)+(if(de.complete)" ✓" else ""))})
+    }
+    if(activeLanguage=="ar")BroadcastFields(R.string.broadcast_arabic,"ar",ar,!busy){ar=it}
+    else BroadcastFields(R.string.broadcast_german,"de",de,!busy){de=it}
+    Button(enabled=!busy&&ar.complete&&de.complete&&kind!=null&&(kind!=BroadcastAudience.ClassGuardians||targetClass!=null),onClick=::preview){
         Text(stringResource(if(busy)R.string.pending else R.string.broadcast_preview))
     }
 }

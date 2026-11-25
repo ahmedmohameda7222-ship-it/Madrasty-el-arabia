@@ -1,0 +1,6 @@
+<resources>
+    <string name="comms_first_message">اكتب رسالة</string>
+    <string name="comms_first_send">إرسال</string>
+    <string name="comms_first_media">إضافة مرفق</string>
+    <string name="chat_copy_text">نسخ النص</string>
+</resources>

@@ -1,7 +1,33 @@
 package de.madrasty.app.comms
 
 import android.net.Uri
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.os.PersistableBundle
+import android.os.Build
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -48,7 +74,7 @@ import org.json.JSONObject
 private data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
 
 @Composable
-internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->Unit){
+internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Modifier=Modifier,changed:()->Unit){
     val id=thread.getString("id")
     val path="/threads/$id"
     var typed by remember(id){mutableStateOf("")}
@@ -76,7 +102,12 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
         AsyncSurface<Unit>(AsyncState.Forbidden()){}
         return
     }
-    HorizontalDivider()
+    val failed=outgoing?.pending==false
+    var optionsOpen by remember(id){mutableStateOf(false)}
+    Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)){
+    TextButton(onClick={optionsOpen=!optionsOpen}){Text(stringResource(R.string.chat_search_thread)+" · ⋯")}
+    if(optionsOpen){
+    Column(Modifier.heightIn(max=150.dp).verticalScroll(rememberScrollState())){
     Submit(true,if(archived)R.string.chat_restore else R.string.chat_archive,success=null){
         try{
             val output=model.chatCommand("$path/state",JSONObject().put("archived",!archived),"PATCH")
@@ -91,32 +122,53 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
     Field(R.string.chat_search_thread,search){search=it.take(120)}
     TextButton(onClick={term=search.trim()}){Text(stringResource(R.string.staff_search))}
     if(term.isNotEmpty())TextButton(onClick={term="";search=""}){Text(stringResource(R.string.clear_filter))}
+    }
+    }
+    val timelineScroll=rememberScrollState()
+    var previousExtent by remember(id,term){mutableStateOf(0)}
+    val followThreshold=with(androidx.compose.ui.platform.LocalDensity.current){80.dp.roundToPx()}
+    LaunchedEffect(id,term,timelineScroll.maxValue){
+        val extent=timelineScroll.maxValue
+        if(extent!=Int.MAX_VALUE){
+            val follow=previousExtent==0||previousExtent-timelineScroll.value<=followThreshold
+            previousExtent=extent
+            if(follow&&term.isEmpty()&&!timelineScroll.isScrollInProgress)timelineScroll.scrollTo(extent)
+        }
+    }
+    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(timelineScroll),verticalArrangement=Arrangement.spacedBy(8.dp)){
     key(id,term){
         MessageTimeline(model,thread,term,acknowledged,::deny,::recognize,{archived=it}){message->
             if(outgoing?.pending!=true){quote=message;outgoing=null}
         }
     }
-    val failed=outgoing?.pending==false
     outgoing?.let{message->
-        if(message.body.isNotEmpty())Text(isolate(message.body))
-        Text(stringResource(if(message.pending)R.string.chat_sending else R.string.chat_failed))
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End){
+            Surface(shape=RoundedCornerShape(18.dp),color=MaterialTheme.colorScheme.primaryContainer){
+                Column(Modifier.padding(12.dp)){
+                    if(message.body.isNotEmpty())Text(isolate(message.body))
+                    Text(stringResource(if(message.pending)R.string.chat_sending else R.string.chat_failed),style=MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
     }
     if(!thread.optBoolean("canReply")){
         Text(stringResource(R.string.chat_read_only))
-        return
+        return@Column
     }
+    Column(Modifier.fillMaxWidth().heightIn(max=200.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(4.dp)){
     val quoted=quote
     if(quoted!=null){
         Text(stringResource(R.string.chat_reply)+" · "+chatAuthor(quoted))
         quoted.string("body")?.let{Text(isolate(it.take(140)))}
         TextButton(enabled=outgoing?.pending!=true,onClick={quote=null;outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
     }
-    if(outgoing?.pending!=true)AcademicLongField(R.string.chat_body,typed,4000){typed=it;outgoing=null}
     MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,onReady={
         if(attachment!=it&&outgoing?.pending!=true)outgoing=null
         attachment=it
-    },onBusy={preparing=it})
-    Button(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,onClick={
+    },onBusy={preparing=it}){
+    ChatInputField(typed,outgoing?.pending!=true){typed=it;outgoing=null}
+    ChatSendAction(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,failed=failed,onClick={
         val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),attachment,true)
         outgoing=sending
         scope.launch{
@@ -137,7 +189,25 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
             }
             catch(_:Exception){if(outgoing?.id==sending.id)outgoing=sending.copy(pending=false)}
         }
-    }){Text(stringResource(if(failed)R.string.chat_retry else R.string.chat_send))}
+    })
+    }
+    }
+    }
+}
+
+@Composable
+internal fun RowScope.ChatInputField(value:String,enabled:Boolean,change:(String)->Unit){
+    OutlinedTextField(value=value,onValueChange={change(it.take(4000))},enabled=enabled,
+        modifier=Modifier.weight(1f),shape=RoundedCornerShape(28.dp),minLines=1,maxLines=4,
+        placeholder={Text(stringResource(R.string.comms_first_message),maxLines=1)})
+}
+
+@Composable
+internal fun ChatSendAction(enabled:Boolean,failed:Boolean,onClick:()->Unit){
+    FilledIconButton(enabled=enabled,onClick=onClick,modifier=Modifier.size(48.dp)){
+        Icon(painterResource(if(failed)R.drawable.ic_comms_retry else R.drawable.ic_comms_send),
+            contentDescription=stringResource(if(failed)R.string.chat_retry else R.string.chat_send))
+    }
 }
 
 @Composable
@@ -249,21 +319,28 @@ private fun MessageTimeline(
 }
 
 @Composable
-private fun ChatMessageItem(
+internal fun ChatMessageItem(
     model:IdentityViewModel,thread:JSONObject,message:JSONObject,focused:Boolean,reply:(JSONObject)->Unit,jump:(JSONObject)->Unit,
     deny:()->Unit,replaceReactions:(JSONArray)->Unit,
 ){
     val location=remember{BringIntoViewRequester()}
     LaunchedEffect(focused){if(focused)location.bringIntoView()}
-    HorizontalDivider(Modifier.bringIntoViewRequester(location))
-    Text(chatAuthor(message)+" · "+isolate(message.getString("createdAt")),style=MaterialTheme.typography.titleMedium)
+    val own=message.optBoolean("own")
+    var actions by remember(message.getString("id")){mutableStateOf(false)}
+    val context=LocalContext.current
+    var copyFailed by remember(message.getString("id")){mutableStateOf(false)}
+    Row(Modifier.fillMaxWidth().bringIntoViewRequester(location),horizontalArrangement=if(own)Arrangement.End else Arrangement.Start){
+    CommunicationBubble(own){
+    if(!own)Text(chatAuthor(message),style=MaterialTheme.typography.labelMedium)
     message.optJSONObject("reply")?.let{quote->
         TextButton(onClick={jump(quote)}){
             Text(stringResource(R.string.chat_quoted)+" · "+chatAuthor(quote)+
                 (quote.string("preview")?.let{" · "+isolate(it)}?:""))
         }
     }
-    message.string("body")?.let{Text(isolate(it))}
+    message.string("body")?.let{body->
+        Text(isolate(body),modifier=Modifier.combinedClickable(onClick={},onLongClick={actions=true}))
+    }
     val media=message.getJSONArray("attachments")
     val threadId=thread.getString("id")
     for(index in 0 until media.length()){
@@ -273,44 +350,83 @@ private fun ChatMessageItem(
     }
     val hasContent=message.string("body")!=null||media.length()>0
     if(!hasContent&&message.getString("source")=="human")Text(stringResource(R.string.chat_message_redacted))
-    if(message.optBoolean("own"))Text(stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent))
+    val actionLabel=stringResource(R.string.chat_reactions)
+    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        Text(isolate(message.getString("createdAt").replace("T"," ").take(16))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),modifier=Modifier.weight(1f,fill=false),style=MaterialTheme.typography.labelSmall)
+        IconButton(onClick={actions=!actions},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
+    }
+    if(actions){
     if(message.optBoolean("replyable")&&thread.optBoolean("canReply")){
         TextButton(onClick={reply(message)}){Text(stringResource(R.string.chat_reply))}
     }
+    message.string("body")?.let{body->
+        TextButton(onClick={
+            copyFailed=runCatching{
+                val clip=ClipData.newPlainText("",body)
+                if(Build.VERSION.SDK_INT>=33)clip.description.extras=PersistableBundle().apply{putBoolean("android.content.extra.IS_SENSITIVE",true)}
+                val clipboard=requireNotNull(context.getSystemService(ClipboardManager::class.java))
+                clipboard.setPrimaryClip(clip)
+            }.isFailure
+            if(!copyFailed)actions=false
+        }){Text(stringResource(R.string.chat_copy_text))}
+        if(copyFailed)Text(stringResource(R.string.generic_error))
+    }
     if(hasContent)ReportChatMessage(model,threadId,message.getString("id"))
-    if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions)
+    }
+    if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions,showPicker=actions)
+    }
+    }
+}
+
+@Composable
+internal fun CommunicationBubble(own:Boolean,content:@Composable ()->Unit){
+    Surface(modifier=Modifier.widthIn(max=320.dp),shape=RoundedCornerShape(18.dp),
+        color=if(own)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant){
+        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){content()}
+    }
 }
 
 private val availableEmojis=listOf("👍","❤️","😂","😮","😢","🙏")
 
 @Composable
-private fun ChatReactions(model:IdentityViewModel,thread:String,message:JSONObject,deny:()->Unit,received:(JSONArray)->Unit){
-    var expanded by remember{mutableStateOf(false)}
+private fun ChatReactions(model:IdentityViewModel,thread:String,message:JSONObject,deny:()->Unit,received:(JSONArray)->Unit,showPicker:Boolean){
+    var expanded by remember(showPicker){mutableStateOf(false)}
     var busy by remember{mutableStateOf(false)}
     var error by remember{mutableStateOf(false)}
     val reactions=message.getJSONArray("reactions")
+    var optimisticChoice by remember{mutableStateOf<String?>(null)}
     val counts=List(reactions.length(),reactions::getJSONObject).associateBy{it.getString("emoji")}
+    val projected=if(!busy)counts else buildMap<String,JSONObject>{
+        for((emoji,entry) in counts){
+            val amount=entry.getInt("count")-(if(entry.optBoolean("mine"))1 else 0)
+            if(amount>0)put(emoji,JSONObject().put("emoji",emoji).put("count",amount).put("mine",false))
+        }
+        optimisticChoice?.let{choice->
+            put(choice,JSONObject().put("emoji",choice).put("count",(get(choice)?.getInt("count")?:0)+1).put("mine",true))
+        }
+    }
     val scope=rememberCoroutineScope()
-    TextButton(onClick={expanded=!expanded}){Text(stringResource(R.string.chat_reactions))}
+    if(showPicker)TextButton(onClick={expanded=!expanded}){Text(stringResource(R.string.chat_reactions))}
     if(error)Text(stringResource(R.string.generic_error))
-    if(expanded||counts.isNotEmpty())FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        val options=if(expanded)availableEmojis else availableEmojis.filter{counts.containsKey(it)}
+    if(expanded||projected.isNotEmpty())FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        val options=if(expanded)availableEmojis else availableEmojis.filter{projected.containsKey(it)}
         for(emoji in options){
-            val reaction=counts[emoji]
+            val reaction=projected[emoji]
             val mine=reaction?.optBoolean("mine")==true
             val amount=reaction?.getInt("count")
             FilterChip(selected=mine,enabled=!busy,onClick={
-                busy=true;error=false
+                val choice=if(mine)null else emoji
+                optimisticChoice=choice;busy=true;error=false
                 scope.launch{
                     try{
                         val endpoint="/threads/$thread/messages/${message.getString("id")}/reaction"
-                        val changed=model.schoolRequest(endpoint,JSONObject().put("emoji",if(mine)JSONObject.NULL else emoji),"PUT")
+                        val changed=model.schoolRequest(endpoint,JSONObject().put("emoji",choice?:JSONObject.NULL),"PUT")
                         val rows=decodeData(changed){it as JSONArray}.data
                         received(rows)
                     }catch(failure:CancellationException){throw failure}
                     catch(failure:HttpFailure){if(failure.denied)deny()else error=true}
                     catch(_:Exception){error=true}
-                    finally{busy=false}
+                    finally{busy=false;optimisticChoice=null}
                 }
             },label={Text(if(amount==null)emoji else "$emoji $amount")})
         }

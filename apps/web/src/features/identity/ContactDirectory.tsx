@@ -1,53 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { directoryEntrySchema, directoryRoleSchema, type DirectoryEntry, type Locale } from "@madrasty/contracts";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { directoryEntrySchema, threadReceipt, type DirectoryEntry, type Locale } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
+import { useSchoolCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { StartConversation } from "@/features/comms/StartConversation";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface, type AsyncState } from "@/ui/AsyncSurface";
+import { Icon } from "@/ui/Icon";
 
 const words = {
-  ar: {
-    title:"دليل التواصل", query:"الاسم أو الوظيفة", search:"بحث", reset:"مسح البحث", role:"الوظيفة", all:"الكل",
-    teacher:"مدرس",admin:"إدارة",principal:"مدير",deputy:"وكيل",office:"مكتب المدرسة",guardian:"ولي أمر", more:"عرض المزيد",
-    empty:"ما فيش جهات اتصال مطابقة.", back:"رجوع للدليل", unavailable:"جهة الاتصال دي غير متاحة.",
-    mail:"إرسال بريد لجهة العمل", call:"اتصال بهاتف العمل",
-  },
-  de: {
-    title:"Kontaktverzeichnis", query:"Name oder Funktion", search:"Suchen", reset:"Suche zurücksetzen", role:"Funktion", all:"Alle",
-    teacher:"Lehrkraft",admin:"Administration",principal:"Schulleitung",deputy:"Stellvertretung",office:"Schulbüro",guardian:"Sorgeberechtigte", more:"Weitere anzeigen",
-    empty:"Keine passenden Kontakte.", back:"Zurück zum Verzeichnis", unavailable:"Dieser Kontakt ist nicht verfügbar.",
-    mail:"Dienstliche E-Mail senden", call:"Diensttelefon anrufen",
-  },
+  ar: { title:"رسالة جديدة", query:"ابحث عن شخص", mine:"جهات اتصالي", all:"كل الأشخاص", teacher:"المدرسون",
+    ownTeachers:"مدرسو أبنائي", admin:"إدارة المدرسة", guardian:"أولياء الأمور", more:"عرض المزيد",
+    empty:"لا توجد جهات اتصال مطابقة.", back:"رجوع للأشخاص", unavailable:"جهة الاتصال غير متاحة.",
+    mail:"بريد العمل", call:"هاتف العمل", start:"اكتب رسالة", send:"إرسال", media:"إضافة مرفق" },
+  de: { title:"Neue Nachricht", query:"Person suchen", mine:"Meine Kontakte", all:"Alle Personen", teacher:"Lehrkräfte",
+    ownTeachers:"Lehrkräfte meiner Kinder", admin:"Schulverwaltung", guardian:"Eltern", more:"Weitere anzeigen",
+    empty:"Keine passenden Kontakte.", back:"Zurück zu Personen", unavailable:"Dieser Kontakt ist nicht verfügbar.",
+    mail:"Dienstliche E-Mail", call:"Diensttelefon", start:"Nachricht schreiben", send:"Senden", media:"Anhang hinzufügen" },
 } as const;
-const directoryList = directoryEntrySchema.array();
-type Role = "" | DirectoryEntry["role"];
+type Mode = "mine" | "all";
 type Page = { data: DirectoryEntry[]; meta?: { nextCursor?: string } };
+const directoryList = directoryEntrySchema.array();
 const label = (entry: DirectoryEntry, locale: Locale) => locale === "ar" ? entry.titleAr : entry.titleDe;
+const group = (entry: DirectoryEntry) => entry.role === "teacher" ? "teacher" : entry.role === "guardian" ? "guardian" : "admin";
+const groups = ["teacher","admin","guardian"] as const;
 
 function message(locale: Locale, error: unknown) {
   return error instanceof ApiResponseError ? localizedError(locale,error.messageKey) : dictionary(locale)["error.unavailable"];
 }
+function filter(term:string,mode:Mode) {
+  const query=new URLSearchParams({limit:"30",view:mode});
+  if(term)query.set("query",term);
+  return query;
+}
+function initials(entry:DirectoryEntry,locale:Locale) {
+  return (entry.displayName??label(entry,locale)).trim().split(/\s+/u).slice(0,2).map(part=>Array.from(part)[0]??"").join("");
+}
 
 export function ContactDirectory({ locale, contact }: { locale: Locale; contact?: string }) {
-  const text=words[locale], actor=useAccountScope();
-  const [query, setQuery] = useState("");
-  const [term,setTerm] = useState("");
-  const [role,setRole] = useState<Role>("");
-  const [selected,setSelected] = useState(contact);
-  const [revision,setRevision] = useState(0);
-  const [view,setView] = useState<AsyncState>({kind:"initialLoading"});
-  const [entry,setEntry] = useState<DirectoryEntry>();
-  const [rows,setRows] = useState<Page>();
-  const [gettingMore, setGettingMore] = useState(false);
-  const [moreError,setMoreError] = useState("");
-
+  const text=words[locale], actor=useAccountScope(), router=useRouter(), command=useSchoolCommand(actor.persona);
+  const [query,setQuery]=useState(""), [term,setTerm]=useState("");
+  const [mode,setMode]=useState<Mode>("mine"),[selected,setSelected]=useState(contact);
+  const [revision,setRevision]=useState(0),[view,setView]=useState<AsyncState>({kind:"initialLoading"});
+  const [entry,setEntry]=useState<DirectoryEntry>(),[rows,setRows]=useState<Page>();
+  const [gettingMore,setGettingMore]=useState(false),[moreError,setMoreError]=useState("");
+  const [opening,setOpening]=useState<string>(),[openError,setOpenError]=useState("");
+  const openingRef=useRef(false);
+  const [draft,setDraft]=useState<DirectoryEntry>(),[body,setBody]=useState(""),[firstId,setFirstId]=useState("");
   useEffect(()=>{
-    const refresh=()=>{
-      if (document.visibilityState === "visible") setRevision((count)=>count+1);
-    };
+    const timer=window.setTimeout(()=>setTerm(query.trim()),250);
+    return ()=>window.clearTimeout(timer);
+  },[query]);
+  useEffect(()=>{
+    const refresh=()=>{if(document.visibilityState==="visible")setRevision(count=>count+1);};
     window.addEventListener("focus",refresh);
     window.addEventListener("pageshow",refresh);
     document.addEventListener("visibilitychange",refresh);
@@ -57,109 +65,120 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
       document.removeEventListener("visibilitychange",refresh);
     };
   },[]);
-
   useEffect(()=>{
     const abort=new AbortController();
-    const options = { signal:abort.signal, headers:{"X-School-Persona":actor.persona} };
-    const retry=()=>setRevision((count)=>count+1);
-    const failed=(error:unknown)=>{
-      if(abort.signal.aborted)return;
-      if(error instanceof ApiResponseError && [401,403,404].includes(error.status)){
-        setView({kind:"forbidden",action:<p>{text.unavailable}</p>});
-      } else setView({kind:"error",message:message(locale,error),retry});
-    };
-    async function refresh() {
-      setView({kind:"initialLoading"});
-      setEntry(undefined);
-      setRows(undefined);
-      setMoreError("");
-      try {
-        if(selected) setEntry((await requestApi(`/directory/${selected}`,directoryEntrySchema,options)).data);
-        else {
-          const params=filter(term,role);
-          setRows(await requestApi(`/directory?${params}`,directoryList,options));
+    const options={signal:abort.signal,headers:{"X-School-Persona":actor.persona}};
+    const retry=()=>setRevision(count=>count+1);
+    setView({kind:"initialLoading"});setEntry(undefined);setRows(undefined);setMoreError("");
+    async function refresh(){
+      try{
+        if(selected){
+          const result=await requestApi(`/directory/${selected}`,directoryEntrySchema,options);
+          if(!abort.signal.aborted)setEntry(result.data);
+        }else{
+          const result=await requestApi(`/directory?${filter(term,mode)}`,directoryList,options);
+          if(!abort.signal.aborted)setRows(result);
         }
         if(!abort.signal.aborted)setView({kind:"ready",content:null});
-      } catch(error) { failed(error); }
+      }catch(error){
+        if(abort.signal.aborted)return;
+        if(error instanceof ApiResponseError&&[401,403,404].includes(error.status))setView({kind:"forbidden",action:<p>{text.unavailable}</p>});
+        else setView({kind:"error",message:message(locale,error),retry});
+      }
     }
     void refresh();
     return ()=>abort.abort();
-  },[selected,revision,term,role,locale,actor.persona,text.unavailable]);
+  },[selected,revision,term,mode,locale,actor.persona,text.unavailable]);
 
-  function select(id?: string) {
-    const url = new URL(window.location.href);
-    if(id)url.searchParams.set("contact",id);
-    else url.searchParams.delete("contact");
-    window.history.replaceState(null,"",url);
-    setView({kind:"initialLoading"});
-    setSelected(id);
+  function back(){
+    const url=new URL(window.location.href);url.searchParams.delete("contact");
+    window.history.replaceState(null,"",url);setSelected(undefined);
   }
-
-  async function more() {
+  async function openPerson(row:DirectoryEntry){
+    if(openingRef.current||row.target.kind!=="person")return;
+    openingRef.current=true;setOpening(row.id);setOpenError("");
+    try{
+      const detail=(await requestApi(`/directory/${row.id}`,directoryEntrySchema,{headers:{"X-School-Persona":actor.persona}})).data;
+      if(detail.directThreadId)router.push(`/${locale}/school/messages?thread=${detail.directThreadId}`);
+      else {setDraft(detail);setBody("");setFirstId(crypto.randomUUID());}
+    }catch(error){setOpenError(message(locale,error));}
+    finally{openingRef.current=false;setOpening(undefined);}
+  }
+  async function sendFirst(media=false){
+    if(!draft||openingRef.current||(!media&&!body.trim()))return;
+    openingRef.current=true;setOpening(draft.id);setOpenError("");
+    try{
+      const value=await command("/threads","POST",{target:draft.target,
+        ...(media?{}:{firstMessage:{clientMessageId:firstId,body:body.trim()}})},threadReceipt);
+      router.push(`/${locale}/school/messages?thread=${value.threadId}`);
+    }catch(error){setOpenError(message(locale,error));}
+    finally{openingRef.current=false;setOpening(undefined);}
+  }
+  async function more(){
     const cursor=rows?.meta?.nextCursor;
-    if(!cursor || gettingMore)return;
-    const from=rows;
-    setGettingMore(true);
-    setMoreError("");
-    try {
-      const params=filter(term,role);
-      params.set("cursor",cursor);
+    if(!cursor||gettingMore)return;
+    const from=rows;setGettingMore(true);setMoreError("");
+    try{
+      const params=filter(term,mode);params.set("cursor",cursor);
       const page=await requestApi(`/directory?${params}`,directoryList,{headers:{"X-School-Persona":actor.persona}});
-      setRows((current)=>current===from?{data:[...current.data,...page.data],meta:page.meta}:current);
-    } catch(error) { setMoreError(message(locale,error)); }
-    finally {setGettingMore(false);}
+      setRows(current=>current===from?{data:[...current.data,...page.data.filter(item=>!current.data.some(old=>old.id===item.id))],meta:page.meta}:current);
+    }catch(error){setMoreError(message(locale,error));}
+    finally{setGettingMore(false);}
   }
-
-  const content=selected && entry ? <DirectoryCard entry={entry} locale={locale}/> : rows && <section className="auth-card">
-    {rows.data.length===0 && <p>{text.empty}</p>}
-    <ul className="group-list">{rows.data.map((row)=><li key={row.id}>
-      <button type="button" className="group-row" onClick={()=>select(row.id)}>
-        <bdi>{row.displayName ?? label(row,locale)}</bdi>
-        {row.displayName && <small>{label(row,locale)}</small>}
-      </button>
-    </li>)}</ul>
-    {rows.meta?.nextCursor && <button className="plain-button" onClick={()=>void more()} disabled={gettingMore}>{text.more}</button>}
-    {moreError && <p role="alert">{moreError}</p>}
+  const content=selected&&entry?<DirectoryCard entry={entry} locale={locale}/>:rows&&<section className="comms-people">
+    {rows.data.length===0&&<p>{text.empty}</p>}
+    {groups.map(key=>{
+      const people=rows.data.filter(row=>group(row)===key&&row.target.kind==="person");
+      if(!people.length)return null;
+      return <div key={key} className="comms-people-group">
+        <h2>{key==="teacher"&&mode==="mine"&&actor.persona==="guardian"?text.ownTeachers:text[key]}</h2>
+        <ul className="group-list">{people.map(row=><li key={row.id}>
+          <button className="comms-person-row" type="button" disabled={!!opening} onClick={()=>void openPerson(row)}>
+            <span className="comms-avatar" aria-hidden="true">{initials(row,locale)}</span>
+            <span className="comms-person-label"><bdi>{row.displayName??label(row,locale)}</bdi><small>{label(row,locale)}</small>
+              {row.contexts.length>0&&<small>{row.contexts.map(c=>locale==="ar"?c.nameAr:c.nameDe).join(" · ")}</small>}
+            </span>
+            <Icon name="messages"/>
+          </button>
+        </li>)}</ul>
+      </div>;
+    })}
+    {rows.meta?.nextCursor&&<button className="plain-button" type="button" onClick={()=>void more()} disabled={gettingMore}>{text.more}</button>}
+    {moreError&&<p role="alert">{moreError}</p>}
+    {openError&&<p role="alert">{openError}</p>}
   </section>;
-
-  return <>
+  if(draft)return <section className="comms-directory">
+    <button className="plain-button" type="button" disabled={!!opening} onClick={()=>{setDraft(undefined);setOpenError("");}}>{text.back}</button>
+    <div className="comms-first-contact"><span className="comms-avatar" aria-hidden="true">{initials(draft,locale)}</span><div><h1><bdi>{draft.displayName??label(draft,locale)}</bdi></h1><p>{label(draft,locale)}</p></div></div>
+    <form className="comms-composer auth-form" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
+      <div className="comms-input-bar">
+        <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening||!!body.trim()} onClick={()=>void sendFirst(true)}><Icon name="plus"/></button>
+        <label className="comms-input-field"><textarea aria-label={text.start} placeholder={text.start} dir="auto" rows={2} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());setOpenError("");}}/></label>
+        <button className="comms-icon-button comms-send-button" type="submit" aria-label={text.send} disabled={!!opening||!body.trim()}><Icon name={openError?"retry":"sendUp"}/></button>
+      </div>
+    </form>{openError&&<p role="alert">{openError}</p>}
+  </section>;
+  return <section className="comms-directory">
     <h1>{text.title}</h1>
-    {selected ? <button type="button" className="plain-button" onClick={()=>select()}>{text.back}</button> :
-      <form className="auth-form auth-card" onSubmit={(event)=>{event.preventDefault();setTerm(query.trim());}}>
-        <label>{text.query}<input type="search" maxLength={120} value={query} onChange={(event)=>setQuery(event.target.value)}/></label>
-        <label>{text.role}<select value={role} onChange={(event)=>setRole(event.target.value as Role)}>
-          <option value="">{text.all}</option>
-          {directoryRoleSchema.options.map((key)=><option key={key} value={key}>{text[key]}</option>)}
-        </select></label>
-        <div className="header-actions">
-          <button type="submit" className="primary-button">{text.search}</button>
-          {(query || role) && <button type="button" className="plain-button" onClick={()=>{setQuery("");setTerm("");setRole("");}}>{text.reset}</button>}
-        </div>
-      </form>}
-    <AsyncSurface locale={locale} state={view.kind==="ready" ? {...view,content} : view}/>
-  </>;
+    {selected?<button type="button" className="plain-button" onClick={back}>{text.back}</button>:<>
+      <input className="comms-search" type="search" aria-label={text.query} placeholder={text.query} maxLength={120} value={query} onChange={event=>setQuery(event.target.value)}/>
+      <div className="comms-segments" role="group" aria-label={text.title}>
+        {(["mine","all"] as const).map(key=><button key={key} type="button" aria-pressed={mode===key} onClick={()=>setMode(key)}>{text[key]}</button>)}
+      </div>
+    </>}
+    <AsyncSurface locale={locale} state={view.kind==="ready"?{...view,content}:view}/>
+  </section>;
 }
-
-function filter(term:string,role:Role) {
-  const query=new URLSearchParams({limit:"30"});
-  if(term)query.set("query",term);
-  if(role)query.set("role",role);
-  return query;
-}
-
 export function DirectoryCard({entry,locale}:{entry:DirectoryEntry;locale:Locale}) {
-  const text=words[locale];
-  const phone=entry.workPhone?.replace(/[^\d+]/g,"");
+  const text=words[locale],phone=entry.workPhone?.replace(/[^\d+]/g,"");
   return <section className="auth-card">
-    <h2><bdi>{entry.displayName ?? label(entry,locale)}</bdi></h2>
-    {entry.displayName && <p>{label(entry,locale)}</p>}
-    {entry.contexts.length>0 && <ul className="group-list">{entry.contexts.map((item)=><li key={item.id}>
-      <bdi>{locale==="ar" ? item.nameAr : item.nameDe}</bdi>
-    </li>)}</ul>}
+    <h2><bdi>{entry.displayName??label(entry,locale)}</bdi></h2>
+    {entry.displayName&&<p>{label(entry,locale)}</p>}
+    {entry.contexts.length>0&&<ul className="group-list">{entry.contexts.map(item=><li key={item.id}><bdi>{locale==="ar"?item.nameAr:item.nameDe}</bdi></li>)}</ul>}
     <div className="header-actions">
-      <StartConversation locale={locale} target={entry.target}/>
-      {entry.workEmail && <a className="plain-button" href={`mailto:${encodeURIComponent(entry.workEmail).replace("%40","@")}`}>{text.mail}</a>}
-      {phone && /\d/.test(phone) && <a className="plain-button" href={`tel:${phone}`}>{text.call}</a>}
+      <StartConversation locale={locale} target={entry.target} label={text.start}/>
+      {entry.workEmail&&<a className="plain-button" href={`mailto:${encodeURIComponent(entry.workEmail).replace("%40","@")}`}>{text.mail}</a>}
+      {phone&&/\d/.test(phone)&&<a className="plain-button" href={`tel:${phone}`}>{text.call}</a>}
     </div>
   </section>;
 }

@@ -7,6 +7,7 @@ import {
 import {ApiResponseError,requestApi} from "@/api/client";
 import {webHeaders} from "@/features/identity/SessionControls";
 import {convertPhoto,voiceCapture} from "./capture";
+import {Icon} from "@/ui/Icon";
 
 const copy={
   ar:{gallery:"اختيار صورة",camera:"تصوير",record:"سجّل صوت",stop:"إنهاء التسجيل",cancel:"إلغاء التسجيل",audio:"معاينة التسجيل",
@@ -57,6 +58,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
   const [draft,setDraft]=useState<Draft>(),[percent,setPercent]=useState(0),[working,setWorking]=useState(false);
   const [mic,setMic]=useState<"idle"|"starting"|"recording"|"finishing">("idle"),[elapsed,setElapsed]=useState(0);
   const [error,setError]=useState<ErrorKey>();
+  const [expanded,setExpanded]=useState(false);
   const current=useRef<Draft>(undefined),capture=useRef<ReturnType<typeof voiceCapture>>(undefined);
   const token=useRef<Token>(undefined),upload=useRef<AbortController>(undefined),generation=useRef(0);
   const finishing=useRef(false),alive=useRef(false),captureStarts=useRef(0),photoInput=useRef<HTMLInputElement>(null),cameraInput=useRef<HTMLInputElement>(null);
@@ -71,7 +73,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
       if(current.current)URL.revokeObjectURL(current.current.preview);
       current.current=undefined;token.current=undefined;
     };
-    function pageHidden(){release();setDraft(undefined);setWorking(false);setMic("idle");onBusy(false);onReady();}
+    function pageHidden(){release();setDraft(undefined);setWorking(false);setMic("idle");setExpanded(false);onBusy(false);onReady();}
     window.addEventListener("pagehide",pageHidden);
     return ()=>{alive.current=false;window.removeEventListener("pagehide",pageHidden);release();};
   },[onBusy,onReady]);
@@ -224,14 +226,19 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     }
   }
 
-  return <div className="auth-form">
-    {!draft&&mic==="idle"&&<div className="header-actions">
+  const idle=!draft&&mic==="idle"&&!working&&!error;
+  return <div className="comms-media" data-idle={idle} data-expanded={expanded}>
+    {!draft&&mic==="idle"&&<>
+      <button type="button" className="comms-icon-button comms-attach-button" aria-label={locale==="ar"?"إضافة مرفق":"Anhang hinzufügen"} aria-expanded={expanded}
+        disabled={locked||working} onClick={()=>setExpanded(value=>!value)}><Icon name={expanded?"close":"plus"}/></button>
       <input ref={photoInput} type="file" hidden accept="image/*" onChange={(event)=>{void pick(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
       <input ref={cameraInput} type="file" hidden accept="image/*" capture="environment" onChange={(event)=>{void pick(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
-      <button type="button" className="plain-button" disabled={locked||working} onClick={()=>photoInput.current?.click()}>{labels.gallery}</button>
-      <button type="button" className="plain-button" disabled={locked||working} onClick={()=>cameraInput.current?.click()}>{labels.camera}</button>
-      <button type="button" className="plain-button" disabled={locked||working} onClick={()=>void record()}>{labels.record}</button>
-    </div>}
+      {expanded&&<div className="comms-attachment-menu" role="group" aria-label={locale==="ar"?"المرفقات":"Anhänge"}>
+        <button type="button" disabled={locked||working} onClick={()=>{setExpanded(false);photoInput.current?.click();}}><Icon name="photo"/>{labels.gallery}</button>
+        <button type="button" disabled={locked||working} onClick={()=>{setExpanded(false);cameraInput.current?.click();}}><Icon name="camera"/>{labels.camera}</button>
+        <button type="button" disabled={locked||working} onClick={()=>{setExpanded(false);void record();}}><Icon name="mic"/>{labels.record}</button>
+      </div>}
+    </>}
     {mic!=="idle"&&<div className="header-actions" role="group">
       <span dir="ltr" aria-label={labels.recording}>{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,"0")}</span>
       <button className="plain-button" type="button" disabled={mic!=="recording"} onClick={()=>void stopRecording()}>{labels.stop}</button>

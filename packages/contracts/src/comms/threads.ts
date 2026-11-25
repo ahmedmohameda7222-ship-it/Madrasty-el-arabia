@@ -8,9 +8,13 @@ const id=z.uuid();
 export const threadKind=z.enum(["direct","office"]);
 export const caseStatus=z.enum(["open","in_progress","closed"]);
 export const threadReference=z.object({kind:z.enum(["homework","invoice","attendance"]),id});
-export const startThreadInput=z.object({target:directoryTargetSchema,context:threadReference.optional()});
+export const startThreadInput=z.object({target:directoryTargetSchema,context:threadReference.optional(),
+  firstMessage:z.object({clientMessageId:id,body:z.string().trim().min(1).max(4000)}).optional(),
+}).refine(value=>!value.firstMessage||(value.target.kind==="person"&&!value.context),{path:["firstMessage"],message:"error.validation"});
 export const threadReceipt=z.object({threadId:id,kind:threadKind,canReply:z.boolean(),caseId:id.optional()});
 export const threadQuery=pageQuerySchema.extend({kind:threadKind.optional(),inbox:inboxSchema.optional(),
+  unread:z.enum(["true","false"]).transform((value)=>value==="true").optional(),
+  includeEmpty:z.enum(["true","false"]).transform((value)=>value==="true").optional(),
   archived:z.enum(["true","false"]).transform((value)=>value==="true").optional(),q:z.string().trim().max(120).optional(),
 });
 export const threadSummary=z.object({

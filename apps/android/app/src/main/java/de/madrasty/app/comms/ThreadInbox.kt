@@ -4,9 +4,26 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Badge
+import androidx.compose.material3.ListItem
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -39,6 +56,9 @@ import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
 import de.madrasty.app.school.timetableObject
 import de.madrasty.app.ui.AsyncSurface
+import de.madrasty.app.ui.AsyncState
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import de.madrasty.app.ui.isolate
 import org.json.JSONObject
 
@@ -48,37 +68,30 @@ private val caseLabels=mapOf(
     "in_progress" to R.string.conversation_case_in_progress,
     "closed" to R.string.conversation_case_closed,
 )
-private val inboxFilters=listOf(
-    "" to R.string.directory_all,"kind=direct" to R.string.conversation_direct,"kind=office" to R.string.conversation_office,
-    "inbox=student_affairs" to R.string.conversation_student_affairs,"inbox=accounts" to R.string.conversation_accounts,
-)
-
 @Composable
 internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String)->Unit){
-    val version=threadRefreshVersion()
-    var filter by remember{mutableStateOf("")}
+    val version=threadRefreshVersion(poll=true)
+    var filter by remember{mutableStateOf("all")}
     var search by remember{mutableStateOf("")}
     var queryTerm by remember{mutableStateOf("")}
-    var archived by remember{mutableStateOf(false)}
-    TextButton(onClick=directory){Text(stringResource(R.string.directory_title))}
-    FilterChip(archived,onClick={archived=!archived},label={Text(stringResource(R.string.chat_archive_filter))})
+    LaunchedEffect(search){delay(250);queryTerm=search.trim()}
+    Button(onClick=directory,modifier=Modifier.fillMaxWidth()){Text(stringResource(R.string.comms_new_message))}
     Field(R.string.chat_search_inbox,search){search=it.take(120)}
-    TextButton(onClick={queryTerm=search.trim()}){Text(stringResource(R.string.staff_search))}
-    for((key,label) in inboxFilters){
-        FilterChip(filter==key,onClick={filter=key},label={Text(stringResource(label))})
+    FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        FilterChip(filter=="all",onClick={filter="all"},label={Text(stringResource(R.string.directory_all))})
+        FilterChip(filter=="unread",onClick={filter="unread"},label={Text(stringResource(R.string.comms_unread))})
+        FilterChip(filter=="archive",onClick={filter="archive"},label={Text(stringResource(R.string.chat_archive_filter))})
     }
-    val query=filter.takeIf(String::isNotEmpty)?.let{"&$it"}.orEmpty()
     val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
-    academicPages(model,"/threads?limit=30$query&archived=$archived$term",version+model.attendanceNetworkRevision){threads->
+    academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${filter=="archive"}&unread=${filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
         for(thread in threads){
-            TextButton(onClick={open(thread.getString("id"))}){
-                Column {
-                    Text(threadTitle(thread))
-                    thread.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
-                    thread.string("latestPreview")?.let{Text(isolate(it))}
-                    if(thread.getInt("unread")>0)Text(stringResource(R.string.chat_unread)+" · "+thread.getInt("unread"))
-                }
-            }
+            ListItem(modifier=Modifier.fillMaxWidth().clickable{open(thread.getString("id"))},
+                headlineContent={Text(threadTitle(thread),maxLines=2,overflow=TextOverflow.Ellipsis)},
+                supportingContent={thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2,overflow=TextOverflow.Ellipsis)}},
+                leadingContent={ThreadAvatar(thread)},
+                trailingContent={if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}})
+
+            HorizontalDivider()
         }
     }
 }
@@ -86,23 +99,34 @@ internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String
 @Composable
 internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(ReportTarget)->Unit,close:()->Unit){
     var changed by remember{mutableStateOf(0)}
+    var showDetails by remember(id){mutableStateOf(false)}
     val revision=threadRefreshVersion()+changed
     val thread=academicRead("/threads/$id",revision){model.timetableObject(it)}
     BackHandler(onBack=close)
-    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
-        TextButton(onClick=close){Text(stringResource(R.string.back))}
+        if(thread is AsyncState.InitialLoading||thread is AsyncState.Error||thread is AsyncState.Offline||thread is AsyncState.Forbidden)TextButton(onClick=close){Text(stringResource(R.string.back))}
         AsyncSurface(thread){value->
-            Text(threadTitle(value),style=MaterialTheme.typography.headlineMedium)
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                TextButton(onClick=close){Text(stringResource(R.string.back))}
+                ThreadAvatar(value)
+                Text(threadTitle(value),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+            }
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))
             }
-            value.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
-            ReferencedRecords(value,openReference)
             val officeCase=value.string("caseId")
-            if(value.optBoolean("canManageCase")&&officeCase!=null)OfficeCaseEditor(model,officeCase,revision){changed++}
-            Conversation(model,value){changed++}
-            TextButton(onClick={changed++}){Text(stringResource(R.string.curriculum_refresh))}
+            if(value.getJSONArray("references").length()>0||officeCase!=null){
+                TextButton(onClick={showDetails=!showDetails}){Text(stringResource(R.string.conversation_references))}
+                if(showDetails){
+                    Column(Modifier.heightIn(max=180.dp).verticalScroll(rememberScrollState())){
+                    value.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
+                    ReferencedRecords(value,openReference)
+                    if(value.optBoolean("canManageCase")&&officeCase!=null)OfficeCaseEditor(model,officeCase,revision){changed++}
+                    }
+                }
+            }
+            Conversation(model,value,Modifier.weight(1f)){changed++}
         }
     }
 }
@@ -173,9 +197,18 @@ private fun threadTitle(thread:JSONObject):String{
 }
 
 @Composable
-private fun threadRefreshVersion():Int{
+private fun ThreadAvatar(thread:JSONObject){
+    val name=thread.string("contactName")?.trim().orEmpty()
+    Surface(Modifier.size(44.dp),shape=CircleShape,color=MaterialTheme.colorScheme.secondaryContainer){
+        Box(contentAlignment=Alignment.Center){Text(name.firstOrNull()?.uppercase()?: "•",style=MaterialTheme.typography.titleMedium)}
+    }
+}
+
+@Composable
+private fun threadRefreshVersion(poll:Boolean=false):Int{
     var version by remember{mutableStateOf(0)}
     val lifecycle=LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle,poll){if(poll)while(true){delay(15000);if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))version++}}
     DisposableEffect(lifecycle){
         val observer=LifecycleEventObserver{_,event->if(event==Lifecycle.Event.ON_RESUME)version++}
         lifecycle.addObserver(observer)

@@ -70,7 +70,8 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
     ? {year,id:classId} : undefined;
   const destinations: Destination[] = ["home", "messages", "more"];
   if (actor.persona !== "admin" || mayManageStudents) destinations.splice(1,0,roleTab[actor.persona]);
-  const active = destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
+  const commSection=pathname===`/${locale}/directory`?"chat":pathname===`${root}/more/events`?"calendar":[`${root}/more/news`,`${root}/more/broadcasts`].includes(pathname)?"feed":undefined;
+  const active = commSection?"messages":destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
 
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -81,7 +82,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
     const area = main.current;
     if (!area) return;
     const route = search ? pathname + "?" + search : pathname;
-    tabs.current.set(active, route);
+    if(!commSection)tabs.current.set(active, route);
     const previous = positions.current.get(route);
     area.scrollTop = previous?.top ?? 0;
     if (previous?.focus) {
@@ -109,12 +110,12 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           {destinations.map((tab) => (
             <SchoolLink key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
               aria-current={active === tab ? "page" : undefined}
-              aria-label={locale === "de" && (tab === "attendance" || tab === "messages") ? text[tab] : undefined}>
+              aria-label={tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):locale==="de"&&tab==="attendance"?text[tab]:undefined}>
               <Icon name={tab} />
               {locale === "de" && (tab === "attendance" || tab === "messages") ? <>
-                <span className="nav-label-mobile" aria-hidden="true">{tab === "attendance" ? "Anwes." : "Nachr."}</span>
-                <span className="nav-label-desktop" aria-hidden="true">{text[tab]}</span>
-              </> : <span>{text[tab]}</span>}
+                <span className="nav-label-mobile" aria-hidden="true">{tab === "attendance" ? "Anwes." : "Kontakt"}</span>
+                <span className="nav-label-desktop" aria-hidden="true">{tab==="messages"?"Kontakt":text[tab]}</span>
+              </> : <span>{tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):text[tab]}</span>}
             </SchoolLink>
           ))}
           {secondary && (
@@ -124,7 +125,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           )}
         </nav>
         <main id="school-content" ref={main} className="school-content" tabIndex={-1}>
-          {(showMoreBack || returnChild && pathname.startsWith(`${root}/children/`)) && <MoreBackLink locale={locale} child={returnChild} schoolClass={returnClass} />}
+          {(showMoreBack || returnChild && pathname.startsWith(`${root}/children/`)) && <MoreBackLink locale={locale} child={returnChild} schoolClass={returnClass} communication={commSection} />}
           {selectedScope && <p className="scope-label"><bdi>{selectedScope.label}</bdi>{selectedScope.detail && <> · <bdi>{selectedScope.detail}</bdi></>}</p>}
           {children}
         </main>

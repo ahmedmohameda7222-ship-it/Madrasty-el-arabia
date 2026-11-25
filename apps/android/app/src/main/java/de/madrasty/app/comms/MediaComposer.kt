@@ -13,6 +13,16 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -68,6 +78,7 @@ internal fun expireChatCameraFiles(context:Context){
 @Composable
 internal fun MediaComposer(
     model:IdentityViewModel,thread:String,locked:Boolean,consumed:String?,onReady:(String?)->Unit,onBusy:(Boolean)->Unit,
+    rowContent:@Composable RowScope.()->Unit={},
 ){
     val context=LocalContext.current
     val lifecycle=LocalLifecycleOwner.current.lifecycle
@@ -82,6 +93,8 @@ internal fun MediaComposer(
     var error by remember(thread){mutableStateOf<Int?>(null)}
     var elapsed by remember(thread){mutableIntStateOf(0)}
     var progress by remember(thread){mutableIntStateOf(0)}
+    var menuOpen by remember(thread){mutableStateOf(false)}
+    LaunchedEffect(locked,capturing,recording,draft){if(locked||capturing||recording||draft!=null)menuOpen=false}
 
     LaunchedEffect(capturing,recording,uploading,draft,ready){
         onBusy(capturing||recording||uploading||(draft!=null&&ready==null))
@@ -139,27 +152,38 @@ internal fun MediaComposer(
         else file?.delete()
     }
 
-    if(draft==null&&!recording)FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        TextButton(enabled=!locked&&!capturing,onClick={
-            try{gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))}
-            catch(_:Exception){error=R.string.chat_media_unsupported}
-        }){Text(stringResource(R.string.chat_media_gallery))}
-        TextButton(enabled=!locked&&!capturing,onClick={
-            try{
-                val path=File(context.cacheDir,"chat-camera")
-                check(path.isDirectory||path.mkdirs())
-                val file=File.createTempFile("capture-",".jpg",path)
-                resources.camera?.delete()
-                resources.camera=file
-                camera.launch(cameraUri(context,file))
-            }catch(_:Exception){
-                resources.camera?.delete();resources.camera=null;error=R.string.chat_media_unsupported
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp),verticalAlignment=Alignment.CenterVertically){
+        if(draft==null&&!recording)Box{
+            IconButton(enabled=!locked&&!capturing,onClick={menuOpen=true},modifier=Modifier.size(48.dp)){
+                Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_first_media))
             }
-        }){Text(stringResource(R.string.chat_media_camera))}
-        TextButton(enabled=!locked&&!capturing,onClick={
-            if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)startVoice()
-            else permission.launch(Manifest.permission.RECORD_AUDIO)
-        }){Text(stringResource(R.string.chat_media_record))}
+            DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}){
+                DropdownMenuItem(text={Text(stringResource(R.string.chat_media_gallery))},enabled=!locked&&!capturing,onClick={
+                    menuOpen=false
+                    try{gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))}
+                    catch(_:Exception){error=R.string.chat_media_unsupported}
+                })
+                DropdownMenuItem(text={Text(stringResource(R.string.chat_media_camera))},enabled=!locked&&!capturing,onClick={
+                    menuOpen=false
+                    try{
+                        val path=File(context.cacheDir,"chat-camera")
+                        check(path.isDirectory||path.mkdirs())
+                        val file=File.createTempFile("capture-",".jpg",path)
+                        resources.camera?.delete()
+                        resources.camera=file
+                        camera.launch(cameraUri(context,file))
+                    }catch(_:Exception){
+                        resources.camera?.delete();resources.camera=null;error=R.string.chat_media_unsupported
+                    }
+                })
+                DropdownMenuItem(text={Text(stringResource(R.string.chat_media_record))},enabled=!locked&&!capturing,onClick={
+                    menuOpen=false
+                    if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)startVoice()
+                    else permission.launch(Manifest.permission.RECORD_AUDIO)
+                })
+            }
+        }
+        rowContent()
     }
     if(recording){
         Text(stringResource(R.string.chat_media_recording)+" · "+isolate("%d:%02d".format(elapsed/60,elapsed%60)))

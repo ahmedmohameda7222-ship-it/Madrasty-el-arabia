@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -74,15 +76,15 @@ private data class PublishingClass(val id:String,val name:String,val canWrite:Bo
 private data class PublishingCalendar(val date:LocalDate,val timezone:String,val schoolWide:Boolean,val classes:List<PublishingClass>){
     val canCompose get()=schoolWide||classes.any{it.canWrite}
 }
-private class PublicationFeedState(today:LocalDate){
+private class PublicationFeedState(today:LocalDate,initialManaged:Boolean=false){
     var month by mutableStateOf(YearMonth.from(today))
     var day by mutableStateOf<LocalDate?>(null)
-    var managed by mutableStateOf(false)
+    var managed by mutableStateOf(initialManaged)
     var classId by mutableStateOf("")
 }
 
 @Composable
-internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false){
+internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false,embedded:Boolean=false,initialManaged:Boolean=false){
     val language=LocalContext.current.resources.configuration.locales[0].language.let{if(it=="de")"de" else "ar"}
     val locale=Locale.forLanguageTag(language)
     var selected by remember(initial){mutableStateOf(initial)}
@@ -106,12 +108,13 @@ internal fun SchoolPublicationScreen(model:IdentityViewModel,section:Publication
         else close()
     }
     BackHandler(onBack=::back)
-    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
+    val frame=if(embedded)Modifier.fillMaxWidth() else Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp)
+    Column(frame,
         verticalArrangement=Arrangement.spacedBy(8.dp)){
-        TextButton(onClick=::back){Text(stringResource(R.string.back))}
-        Text(stringResource(section.heading),style=MaterialTheme.typography.headlineMedium)
+        if(!embedded||selected!=null||creating||editing)TextButton(onClick=::back){Text(stringResource(R.string.back))}
+        if(!embedded)Text(stringResource(section.heading),style=MaterialTheme.typography.headlineMedium)
         AsyncSurface(calendar){options->
-            val filter=remember(section){PublicationFeedState(options.date)}
+            val filter=remember(section,initialManaged){PublicationFeedState(options.date,initialManaged&&options.canCompose)}
             val id=selected
             when{
                 id!=null->{
@@ -150,22 +153,31 @@ private fun PublicationFeed(
         for(option in options.classes)FilterChip(classId==option.id,onClick={classId=option.id},label={Text(option.name)})
     }
     if(section==PublicationSection.Events){
-        Text(month.format(DateTimeFormatter.ofPattern("LLLL yyyy",locale)),style=MaterialTheme.typography.titleLarge)
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            val previous=stringResource(R.string.publish_previous_month)
+            val next=stringResource(R.string.publish_next_month)
+            IconButton(modifier=Modifier.size(48.dp).semantics{contentDescription=previous},enabled=month.year>1||month.monthValue>1,onClick={month=month.minusMonths(1);day=null}){
+                Text(if(locale.language=="ar")"›" else "‹",style=MaterialTheme.typography.headlineMedium)
+            }
+            Text(month.format(DateTimeFormatter.ofPattern("LLLL yyyy",locale)),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton(modifier=Modifier.size(48.dp).semantics{contentDescription=next},enabled=month.year<9999||month.monthValue<12,onClick={month=month.plusMonths(1);day=null}){
+                Text(if(locale.language=="ar")"‹" else "›",style=MaterialTheme.typography.headlineMedium)
+            }
+        }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-            TextButton(enabled=month.year>1||month.monthValue>1,onClick={month=month.minusMonths(1);day=null}){
-                Text(stringResource(R.string.publish_previous_month))
-            }
-            TextButton(enabled=month.year<9999||month.monthValue<12,onClick={month=month.plusMonths(1);day=null}){
-                Text(stringResource(R.string.publish_next_month))
-            }
             TextButton(onClick={month=YearMonth.from(options.date);day=options.date}){Text(stringResource(R.string.publish_today))}
             if(day!=null)TextButton(onClick={day=null}){Text(stringResource(R.string.publish_this_month))}
         }
     }
     val page="${section.endpoint}?limit=60&view="+(if(managed)"managed" else "feed")+
-        (if(classId.isEmpty())"" else "&classId=${Uri.encode(classId)}")+(if(section==PublicationSection.Events)"&month=$month" else "")
+        (if(classId.isEmpty())"" else "&classId=${Uri.encode(classId)}")+(if(section==PublicationSection.Events)"&month=$month"+(day?.let{"&day=$it"}?:"") else "")
+    if(section==PublicationSection.Events){
+        val summary=academicRead("/comms/calendar?month=$month&view="+(if(managed)"managed" else "feed")+(if(classId.isEmpty())"" else "&classId=${Uri.encode(classId)}"),version){path->
+            decodeData(model.schoolRequest(path)){it as org.json.JSONArray}.data
+        }
+        AsyncSurface(summary){days->MonthGrid(locale,month,day,days){day=it}}
+    }
     academicPages(model,page,version){items->
-        if(section==PublicationSection.Events)MonthGrid(locale,month,day,items){day=it}
         val selected=day
         val visible=if(selected==null)items else items.filter{eventOn(it,selected)}
         if(selected!=null&&items.isNotEmpty()&&visible.isEmpty())Text(stringResource(R.string.publish_empty_day))
@@ -178,7 +190,7 @@ private fun PublicationFeed(
 }
 
 @Composable
-private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,events:List<JSONObject>,pick:(LocalDate)->Unit){
+private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,days:org.json.JSONArray,pick:(LocalDate)->Unit){
     val calendar=DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
     val numbers=NumberFormat.getIntegerInstance(locale)
     val offset=month.atDay(1).dayOfWeek.value-1
@@ -195,14 +207,16 @@ private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,events:List<J
                 if(index !in 1..month.lengthOfMonth())Spacer(Modifier.weight(1f))
                 else {
                     val date=month.atDay(index)
-                    val amount=events.count{eventOn(it,date)}
-                    val description=date.format(calendar)+(if(amount>0)" · "+numbers.format(amount) else "")
+                    val info=(0 until days.length()).map{days.getJSONObject(it)}.firstOrNull{it.getString("date")==date.toString()}
+                    val amount=info?.optInt("events")?:0
+                    val teaching=info?.let{if(it.isNull("teaching"))null else it.getBoolean("teaching")}
+                    val description=date.format(calendar)+(if(teaching==null)"" else " · "+stringResource(if(teaching)R.string.comms_teaching_day else R.string.comms_free_day))+(if(amount>0)" · "+numbers.format(amount) else "")
                     TextButton(modifier=Modifier.weight(1f).semantics{
                         contentDescription=description
                         selected=day==date
                     },onClick={pick(date)},contentPadding=PaddingValues(0.dp)){
                         Column(horizontalAlignment=Alignment.CenterHorizontally){
-                            Text(numbers.format(index))
+                            Text(numbers.format(index),color=if(teaching==true)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                             if(amount>0)Text("●",style=MaterialTheme.typography.labelSmall)
                         }
                     }
@@ -240,7 +254,7 @@ private fun EventTimingLine(timing:JSONObject,timezone:String,language:String){
     val format=DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.forLanguageTag(language))
     fun label(moment:JSONObject)=LocalDate.parse(moment.getString("date")).format(format)+(moment.string("time")?.let{" · $it"}?:"")
     val first=label(timing.getJSONObject("start"))
-    val end=timing.optJSONObject("end")?.let(::label)
+    val end=timing.optJSONObject("end")?.let{if(timing.getBoolean("allDay"))LocalDate.parse(it.getString("date")).minusDays(1).format(format) else label(it)}
     Text(isolate(first)+(end?.let{" – "+isolate(it)}?:"")+
         " · "+(if(timing.getBoolean("allDay"))stringResource(R.string.publish_all_day)else isolate(timezone)))
 }
@@ -274,11 +288,12 @@ private fun PublicationEditor(
     val scope=rememberCoroutineScope()
     val options=calendar.classes.filter{it.canWrite}
     val existingClass=record?.optJSONObject("audience")?.string("classId")
-    val initial=existingClass?:if(calendar.schoolWide)"school" else options.firstOrNull()?.id
+    val initial=existingClass?:if(record?.optJSONObject("audience")?.optString("kind")=="school")"school" else null
     val initialTime=record?.optJSONObject("timing")
     val arValue=record?.optJSONObject("copy")?.optJSONObject("ar")
     val deValue=record?.optJSONObject("copy")?.optJSONObject("de")
     var original by remember{mutableStateOf(record?.optString("sourceLocale")?:language)}
+    var editingLanguage by remember{mutableStateOf(language)}
     var classKey by remember{mutableStateOf(initial)}
     var ar by remember{mutableStateOf(ContentFields.read(arValue))}
     var de by remember{mutableStateOf(ContentFields.read(deValue))}
@@ -286,7 +301,7 @@ private fun PublicationEditor(
     var hasEnd by remember{mutableStateOf(initialTime?.optJSONObject("end")!=null)}
     var startDate by remember{mutableStateOf(initialTime?.optJSONObject("start")?.optString("date")?:calendar.date.toString())}
     var startTime by remember{mutableStateOf(initialTime?.optJSONObject("start")?.string("time")?:"09:00")}
-    var endDate by remember{mutableStateOf(initialTime?.optJSONObject("end")?.optString("date")?:nextDate(startDate))}
+    var endDate by remember{mutableStateOf(initialTime?.optJSONObject("end")?.optString("date")?.let{if(allDay)localDate(it)?.minusDays(1)?.toString()?:it else it}?:startDate)}
     var endTime by remember{mutableStateOf(initialTime?.optJSONObject("end")?.string("time")?:"10:00")}
     var preview by remember{mutableStateOf<JSONObject?>(null)}
     var saved by remember{mutableStateOf(record)}
@@ -299,7 +314,7 @@ private fun PublicationEditor(
     val timingAllowed=section==PublicationSection.News||
         localDate(startDate)!=null&&(allDay||localTime(startTime)!=null)&&(!hasEnd||
             localDate(endDate)!=null&&(allDay||localTime(endTime)!=null)&&
-            (endDate+"T"+if(allDay)"00:00" else endTime)>(startDate+"T"+if(allDay)"00:00" else startTime))
+            (if(allDay)endDate>=startDate else (endDate+"T"+endTime)>(startDate+"T"+startTime)))
     val textAllowed=(if(original=="ar")ar.complete else de.complete)&&(ar.empty||ar.complete)&&(de.empty||de.complete)
 
     fun compose(){
@@ -311,7 +326,7 @@ private fun PublicationEditor(
         val content=JSONObject().put("audience",audience).put("copy",text).put("sourceLocale",original)
         if(section==PublicationSection.Events){
             val timing=JSONObject().put("start",moment(startDate,startTime,allDay)).put("allDay",allDay)
-                .put("end",if(hasEnd)moment(endDate,endTime,allDay)else JSONObject.NULL)
+                .put("end",if(hasEnd)moment(if(allDay)nextDate(endDate) else endDate,endTime,allDay)else JSONObject.NULL)
             content.put("timing",timing)
         }
         preview=content;reviewedSaved=false;status=null;alert=null
@@ -381,8 +396,12 @@ private fun PublicationEditor(
             FilterChip(original=="ar",onClick={original="ar"},label={Text(stringResource(R.string.broadcast_arabic))})
             FilterChip(original=="de",onClick={original="de"},label={Text(stringResource(R.string.broadcast_german))})
         }
-        LocalizedFields("ar",ar){ar=it}
-        LocalizedFields("de",de){de=it}
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            FilterChip(editingLanguage=="ar",onClick={editingLanguage="ar"},label={Text(stringResource(R.string.broadcast_arabic)+(if(ar.complete)" ✓" else ""))})
+            FilterChip(editingLanguage=="de",onClick={editingLanguage="de"},label={Text(stringResource(R.string.broadcast_german)+(if(de.complete)" ✓" else ""))})
+        }
+        if(editingLanguage=="ar")LocalizedFields("ar",ar){ar=it}
+        else LocalizedFields("de",de){de=it}
         if(section==PublicationSection.Events){
             Text(isolate(calendar.timezone))
             FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
@@ -391,7 +410,7 @@ private fun PublicationEditor(
             }
             PickDate(R.string.publish_start,startDate,calendar.date){startDate=it}
             if(!allDay)PickTime(R.string.publish_start,startTime){startTime=it}
-            if(hasEnd)PickDate(if(allDay)R.string.publish_end_exclusive else R.string.publish_end,endDate,calendar.date){endDate=it}
+            if(hasEnd)PickDate(R.string.publish_end,endDate,calendar.date){endDate=it}
             if(hasEnd&&!allDay)PickTime(R.string.publish_end,endTime){endTime=it}
         }
         Button(enabled=classKey!=null&&textAllowed&&timingAllowed&&!busy,onClick=::compose){Text(stringResource(R.string.publish_preview))}

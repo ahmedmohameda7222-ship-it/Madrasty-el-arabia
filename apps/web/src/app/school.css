@@ -354,3 +354,133 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .admin-start-metrics .admin-start-panel dd { grid-row:2; }
 .admin-start-metrics .admin-start-panel dt { grid-row:3; }
 @media(max-width:22rem){ .admin-start-hero .role-hero img { display:block; max-inline-size:25%; } .admin-start-hero .role-hero { padding:12px; gap:8px; } .admin-start-actions a span { width:44px;height:44px; } }
+
+/* Communication person picker. Reuse application tokens and motion preferences. */
+.comms-directory { display:grid; gap:12px; min-inline-size:0; max-inline-size:680px; margin-inline:auto; }
+.comms-directory h1 { margin-block: 8px 4px; }
+.comms-search { min-block-size:44px; inline-size:100%; min-inline-size:0; border:1px solid var(--rule); border-radius:14px; padding:10px 14px; color:var(--ink); background:var(--inset); font:inherit; }
+.comms-segments { display:flex; gap:4px; padding:4px; background:var(--inset); border-radius:14px; }
+.comms-segments button { flex:1; min-inline-size:0; min-block-size:44px; border:0; border-radius:11px; color:var(--ink); background:transparent; font:inherit; font-weight:600; overflow-wrap:anywhere; }
+.comms-segments button[aria-pressed=true] { background:var(--card); box-shadow:0 1px 3px #0002; color:var(--primary); }
+.comms-segments button:focus-visible,.comms-person-row:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.comms-people { display:grid; gap:18px; min-inline-size:0; }
+.comms-people-group h2 { font-size:.85rem; font-weight:650; margin:0 0 4px; }
+.comms-person-row { display:flex; gap:12px; align-items:center; text-align:start; inline-size:100%; min-block-size:64px; background:transparent; border:0; color:var(--ink); padding:10px 8px; font:inherit; }
+.comms-avatar { display:grid; place-items:center; flex:0 0 44px; block-size:44px; border-radius:50%; background:var(--inset); color:var(--primary); font-weight:650; }
+.comms-person-label { flex:1; min-inline-size:0; display:grid; gap:3px; overflow-wrap:anywhere; }
+.comms-person-label bdi { font-weight:650; }
+.comms-person-label small { font-size:.8rem; color:var(--muted); }
+.comms-person-row>svg { flex:0 0 24px; color:var(--primary); }
+@media(prefers-reduced-motion:no-preference){.comms-person-row,.comms-segments button{transition:background-color 140ms,transform 120ms}.comms-person-row:not(:disabled):active{transform:scale(.985);background:var(--inset)}}
+
+.comms-inbox-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.comms-thread-row{text-decoration:none;color:var(--ink);min-width:0}.comms-thread-copy{min-width:0;flex:1;display:grid;gap:4px}.comms-thread-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.comms-thread-meta{display:grid;gap:6px;justify-items:end;flex-shrink:0}.comms-thread-meta .notice-count{position:static}.comms-legacy-details{border:1px solid var(--border);border-radius:12px;padding:10px}.comms-legacy-details summary{cursor:pointer}
+
+.comms-hub{display:grid;gap:12px;min-width:0}.comms-hub-tabs{display:flex;gap:4px;overflow:auto}.comms-hub-tabs a{flex:1;text-align:center;white-space:nowrap;min-height:44px;display:flex;align-items:center;justify-content:center}.comms-hub-tabs a[aria-current="page"]{background:var(--primary);color:var(--on-primary)}.comms-feed-card{padding:14px;display:grid;gap:8px;overflow-wrap:anywhere}.comms-feed-card p{white-space:pre-wrap}.comms-feed-card h3{margin:0}
+
+/* Communication conversation: logical sides mirror in Arabic; composer stays in the scroll container. */
+.comms-conversation{min-inline-size:0;display:flex;flex-direction:column;gap:10px}
+.comms-chat-options,.comms-message-actions{min-inline-size:0}
+.comms-chat-options>summary,.comms-message-actions>summary{cursor:pointer;min-block-size:44px;display:flex;align-items:center;color:var(--muted)}
+.comms-message-area{display:grid;gap:10px;min-inline-size:0}
+.comms-timeline{list-style:none;display:flex;flex-direction:column;gap:12px;padding:0;margin:0;min-inline-size:0}
+.comms-message{align-self:flex-start;max-inline-size:min(88%,35rem);min-inline-size:0;background:var(--inset);border:1px solid var(--rule);padding:10px 12px;border-radius:16px 16px 16px 4px;overflow-wrap:anywhere;display:grid;gap:6px}
+.comms-message[data-own=true]{align-self:flex-end;background:var(--primary);color:var(--on-primary);border-color:transparent;border-radius:16px 16px 4px 16px}
+[dir=rtl] .comms-message{border-radius:16px 16px 4px 16px}
+[dir=rtl] .comms-message[data-own=true]{border-radius:16px 16px 16px 4px}
+.comms-message[data-highlight=true]{outline:2px solid var(--primary);outline-offset:3px}
+.comms-message p{margin:0}
+.comms-message img,.comms-message audio{max-inline-size:100%}
+.comms-message-author,.comms-message-time{font-size:.75rem}
+.comms-message-time{text-align:end;opacity:.85}
+.comms-message-actions>summary{color:inherit;justify-content:flex-end;font-size:1.25rem;min-block-size:44px}
+.comms-message-actions .header-actions{flex-wrap:wrap;gap:4px}
+.comms-message-actions .plain-button{background:var(--card);color:var(--ink);max-inline-size:100%;overflow-wrap:anywhere}
+.comms-pending{justify-self:end}
+.comms-composer{position:sticky;bottom:0;z-index:2;background:var(--card);border-block-start:1px solid var(--rule);padding:10px 0;gap:8px}
+.comms-composer textarea{resize:vertical;min-block-size:44px;max-block-size:140px;border-radius:18px;width:100%;font-size:16px}
+.comms-composer .header-actions{gap:6px;flex-wrap:wrap}
+.comms-conversation .comms-composer>.primary-button{align-self:end;min-inline-size:90px}
+@media(prefers-reduced-motion:no-preference){.comms-pending{animation:comms-send-in 160ms ease-out both}@keyframes comms-send-in{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
+
+.calendar-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem}.calendar-legend span{display:flex;align-items:center;gap:5px}.calendar-legend i{width:12px;height:12px;border-radius:4px}.school-month-grid [data-teaching="yes"],.calendar-legend [data-teaching="yes"]{box-shadow:inset 0 -3px var(--primary)}.school-month-grid [data-teaching="no"],.calendar-legend [data-teaching="no"]{box-shadow:inset 0 -3px var(--muted)}
+
+.comms-month-heading{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}.comms-month-heading h2{text-align:center;font-size:1rem;margin:0}.comms-month-heading button{font-size:1.5rem;min-block-size:44px;padding:0}
+
+.comms-message-area{max-block-size:clamp(180px,50dvh,640px);min-block-size:140px;overflow:auto;overscroll-behavior:contain;align-content:start;scrollbar-width:thin;padding:4px}.comms-conversation:focus-within .comms-composer{scroll-margin-block-end:8px}.comms-legacy-details{border-color:var(--rule)}
+
+/* Avoid double heading/card margins in the communication hub on narrow screens. */
+.comms-hub>h1{margin:0}.comms-hub .inbox-panel{margin-block:0}.comms-inbox-heading h2{margin:0}.comms-inbox-heading .primary-button{margin-block-start:0}
+@media(max-width:600px){.comms-hub{gap:10px}.comms-hub .inbox-panel{padding:12px}.comms-inbox-heading{gap:8px}}
+
+/* Native-inspired communication controls. Keep hit targets independent from the
+   visual outline; no large rectangular web form buttons in the chat input. */
+.comms-input-bar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:end;gap:6px;min-inline-size:0}
+.comms-input-field{grid-column:2;grid-row:1;min-inline-size:0;margin:0}
+.comms-input-field textarea{display:block;inline-size:100%;min-inline-size:0;min-block-size:44px;max-block-size:140px;resize:none;border-radius:24px;padding:10px 14px;line-height:1.4;background:var(--inset);border:1px solid var(--rule);color:var(--ink)}
+.comms-icon-button{display:inline-grid;place-items:center;inline-size:44px;block-size:44px;min-inline-size:44px;min-block-size:44px;border:0;padding:0;border-radius:50%;background:transparent;color:var(--primary);flex:none}
+.comms-icon-button:disabled{opacity:.42}
+.comms-attach-button{background:var(--inset)}
+.comms-send-button{grid-column:3;grid-row:1;background:var(--primary);color:var(--on-primary)}
+.comms-media[data-idle=true]{grid-column:1;grid-row:1;position:relative}
+.comms-media[data-idle=false]{grid-column:1/-1;grid-row:2;display:grid;gap:8px;min-inline-size:0}
+.comms-attachment-menu{position:absolute;inset-block-end:calc(100% + 8px);inset-inline-start:0;z-index:5;inline-size:max-content;max-inline-size:min(250px,calc(100vw - 64px));border:1px solid var(--rule);border-radius:18px;box-shadow:0 8px 28px #0002;background:var(--card);overflow:hidden}
+.comms-media[data-idle=false] .comms-attachment-menu{position:static;max-inline-size:100%}
+.comms-attachment-menu button{display:flex;align-items:center;gap:12px;text-align:start;min-block-size:44px;width:100%;border:0;border-radius:0;padding:8px 14px;background:transparent;color:var(--ink);font:inherit}
+.comms-attachment-menu button+button{border-block-start:1px solid var(--rule)}
+.comms-attachment-menu button svg{flex:none;inline-size:20px;block-size:20px;color:var(--primary)}
+.comms-attachment-menu button:disabled{opacity:.42}
+.comms-hub .plain-button,.comms-directory .plain-button,.comms-hub .primary-button,.comms-directory .primary-button{border-radius:22px}
+.comms-hub-tabs{border-radius:14px}
+.comms-hub-tabs a{border-radius:10px;background:transparent}
+.comms-hub-tabs a[aria-current=page]{background:var(--card);color:var(--primary);box-shadow:0 1px 3px #0002}
+.comms-hub .inbox-filter-strip .plain-button{border-radius:999px}
+.comms-hub .comms-message-actions .plain-button{border-radius:22px}
+@media(prefers-reduced-motion:no-preference){.comms-icon-button{transition:transform 120ms var(--ease-out),opacity 120ms}.comms-icon-button:not(:disabled):active{transform:scale(.94)}.comms-attachment-menu{animation:comms-send-in 140ms ease-out both}}
+
+/* Existing reactions remain visible when message actions are collapsed. */
+.comms-reaction-strip{display:flex;flex-wrap:wrap;gap:4px;min-inline-size:0}
+.comms-reaction-chip{font:inherit;font-size:.8125rem;display:inline-flex;align-items:center;justify-content:center;min-inline-size:44px;min-block-size:44px;padding:0 10px;border:1px solid var(--rule);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}
+.comms-reaction-chip[aria-pressed=true]{border-color:var(--primary);font-weight:650;box-shadow:inset 0 0 0 1px var(--primary)}
+.comms-reaction-chip:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.comms-reaction-chip:disabled{cursor:wait;opacity:.7}
+
+/* Communication: compact navigation and publication surfaces, scoped to this feature. */
+.comms-thread-screen{padding:12px;min-inline-size:0}
+.comms-thread-toolbar{display:grid;grid-template-columns:44px 40px minmax(0,1fr) 44px;gap:8px;align-items:center;min-inline-size:0}
+.comms-thread-toolbar .comms-avatar{width:40px;height:40px;font-size:1rem}
+.comms-thread-toolbar h2{margin:0;font-size:1rem;line-height:1.3;overflow-wrap:anywhere}
+.comms-thread-toolbar a{text-decoration:none}
+.comms-feed-toolbar{display:flex;align-items:center;gap:6px;min-inline-size:0}
+.comms-feed-toolbar h2{flex:1;min-inline-size:0;font-size:1.1rem;margin:0}
+.comms-publish-menu{position:relative;flex:none}
+.comms-publish-menu summary{cursor:pointer;list-style:none}
+.comms-publish-menu summary::-webkit-details-marker{display:none}
+.comms-publish-menu-items{position:absolute;z-index:6;inset-inline-end:0;inset-block-start:calc(100% + 4px);inline-size:min(250px,calc(100vw - 48px));background:var(--card);border:1px solid var(--rule);border-radius:16px;box-shadow:0 8px 28px #0002;overflow:hidden}
+.comms-publish-menu-items a{display:flex;align-items:center;min-block-size:44px;padding:8px 14px;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.comms-publish-menu-items a+a{border-block-start:1px solid var(--rule)}
+.comms-publications{min-inline-size:0}
+.comms-publications .comms-segments{min-inline-size:0}
+.comms-publications .comms-segments button{font-size:.875rem}
+.comms-publication-card h2{margin-block:0;font-size:1rem;overflow-wrap:anywhere}
+.comms-publication-card p{overflow-wrap:anywhere}
+.comms-publication-state{display:inline-block;border:1px solid var(--rule);border-radius:999px;padding:2px 8px;font-size:.8rem}
+.comms-input-field textarea{overflow-y:auto;box-sizing:border-box}
+.comms-thread-screen .comms-message-area{max-block-size:clamp(180px,55dvh,720px)}
+@media(max-width:600px){.comms-thread-screen{padding:10px}.comms-thread-toolbar{grid-template-columns:44px 36px minmax(0,1fr) 44px;gap:6px}.comms-thread-toolbar .comms-avatar{width:36px;height:36px}}
+@media(prefers-reduced-motion:no-preference){.comms-publish-menu-items{animation:comms-send-in 140ms ease-out both}}
+
+.comms-first-contact{display:flex;gap:12px;align-items:center;min-inline-size:0}.comms-first-contact>div{min-inline-size:0}.comms-first-contact h1{font-size:1.25rem;overflow-wrap:anywhere;margin:0}.comms-first-contact p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}.comms-directory .comms-input-bar>.comms-attach-button{grid-column:1;grid-row:1}
+
+/* Visual QA: compact message metadata and all three filters visible at 320px. */
+.comms-message-footer{display:flex;align-items:center;justify-content:space-between;gap:4px;min-inline-size:0;flex-wrap:wrap}
+.comms-message-footer>.comms-message-time{flex:1;min-inline-size:0;text-align:start;overflow-wrap:anywhere}
+.comms-message-footer>.comms-message-actions{flex:0 0 44px;min-inline-size:44px}
+.comms-message-footer>.comms-message-actions[open]{flex:1 0 100%}
+.comms-message-footer>.comms-message-actions>summary{inline-size:44px;min-inline-size:44px;justify-content:center;margin-inline-start:auto}
+.comms-message-footer>.comms-message-actions[open]>summary{margin-inline-start:auto}
+.comms-hub .inbox-search{align-items:center;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.comms-hub .inbox-search input{min-inline-size:0;min-block-size:44px;max-inline-size:100%;font-size:16px}
+.comms-hub .inbox-filter-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;overflow:visible;padding-block-end:0}
+.comms-hub .inbox-filter-strip>button{min-inline-size:0;min-block-size:44px;white-space:normal;overflow-wrap:anywhere;padding:6px 3px;font-size:.8rem}
+.comms-hub-tabs a{min-inline-size:0;font-size:.9rem;padding-inline:4px}
+@media(max-width:360px){.comms-hub-tabs a{font-size:.8rem}.comms-hub .inbox-search>button{padding-inline:10px;font-size:.85rem}}

@@ -83,3 +83,10 @@ export async function upsertNotice(tx:Transaction,recipientId:string,input:{
       ${input.template},${tx.json(targets)}) as id`;
   return row.id;
 }
+
+export function markAllNoticesRead(actor:ActorContext){
+  return withActor(actor,async tx=>{
+    const [row]=await tx<{marked:number}[]>`select app.read_all_school_notices() as marked`;
+    return row;
+  });
+}

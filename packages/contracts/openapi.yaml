@@ -1619,7 +1619,8 @@ paths:
       security: [{ webSession: [] }, { nativeBearer: [] }]
       parameters:
         - { name: query, in: query, schema: { type: string, maxLength: 120 } }
-        - { name: role, in: query, schema: { type: string, enum: [teacher, principal, deputy, office, guardian] } }
+        - { name: view, in: query, schema: { type: string, enum: [mine, all] }, description: 'Person-only view; mine prioritizes relevant contacts, all lists all active school members. Omit for legacy directory.' }
+        - { name: role, in: query, schema: { type: string, enum: [teacher, admin, principal, deputy, office, guardian] } }
         - { name: cursor, in: query, schema: { $ref: '#/components/schemas/DirectoryId' } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
       responses:
@@ -3046,12 +3047,47 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AcademicReport"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /comms/calendar:
+    get:
+      operationId: readCommunicationCalendar
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"month","in":"query","required":true,"schema":{"type":"string","pattern":"^\\d{4}-(0[1-9]|1[0-2])$"}}
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"view","in":"query","schema":{"type":"string","enum":["feed","managed"]}}
+      responses:
+        '200':
+          description: Scoped academic calendar and event counts
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"type":"object","required":["date","teaching","events"],"properties":{"date":{"type":"string","format":"date"},"teaching":{"type":["boolean","null"]},"events":{"type":"integer","minimum":0}}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /comms/feed:
+    get:
+      operationId: listCommunicationFeed
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"locale","in":"query","schema":{"type":"string","enum":["ar","de"]}}
+        - {"name":"filter","in":"query","schema":{"type":"string","enum":["all","announcement","news"]}}
+        - {"$ref":"#/components/parameters/Limit"}
+        - {"$ref":"#/components/parameters/Cursor"}
+      responses:
+        '200':
+          description: Published news and addressed announcements visible to the active actor
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"type":"object","required":["id","kind","title","body","publishedAt","canManage"],"properties":{"id":{"type":"string","format":"uuid"},"kind":{"type":"string","enum":["announcement","news"]},"title":{"type":"string"},"body":{"type":"string"},"publishedAt":{"type":"string","format":"date-time"},"canManage":{"type":"boolean"}}}},"meta":{"type":"object","properties":{"nextCursor":{"type":"string"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
   /threads:
     get:
       operationId: listScopedThreads
       security: [{ webSession: [] }, { nativeBearer: [] }]
       parameters:
         - {"name":"archived","in":"query","schema":{"type":"boolean","default":false}}
+        - {"name":"unread","in":"query","schema":{"type":"boolean","default":false}}
+        - {"name":"includeEmpty","in":"query","schema":{"type":"boolean","default":true}}
         - {"name":"q","in":"query","schema":{"type":"string","maxLength":120}}
         - {"name":"kind","in":"query","schema":{"type":"string","enum":["direct","office"]}}
         - {"name":"inbox","in":"query","schema":{"type":"string","enum":["student_affairs","accounts"]}}
@@ -3074,7 +3110,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: {"type":"object","required":["target"],"properties":{"target":{"oneOf":[{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"person"},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"office"},"id":{"type":"string","enum":["student_affairs","accounts"]}}}]},"context":{"type":"object","required":["kind","id"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"}}}}}
+            schema: {"type":"object","required":["target"],"properties":{"target":{"oneOf":[{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"person"},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"office"},"id":{"type":"string","enum":["student_affairs","accounts"]}}}]},"context":{"type":"object","required":["kind","id"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"}}},"firstMessage":{"type":"object","required":["clientMessageId","body"],"properties":{"clientMessageId":{"type":"string","format":"uuid"},"body":{"type":"string","minLength":1,"maxLength":4000}},"description":"Optional atomic first text message for an ordinary person-to-person conversation; not allowed with context or office targets."}}}
       responses:
         '200':
           description: Scoped conversation or delegated office case
@@ -3656,6 +3692,18 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"unread":{"type":"integer","minimum":0}},"required":["unread"]}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /notifications/read-all:
+    post:
+      operationId: markAllScopedNotificationsRead
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Number of notices marked as read for the active actor
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["marked"],"properties":{"marked":{"type":"integer","minimum":0}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
   /notifications/{id}:
     get:
       operationId: resolvePersonalNotice
@@ -3858,6 +3906,7 @@ paths:
         - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
         - {"name":"view","in":"query","required":false,"schema":{"type":"string","enum":["feed","managed"],"default":"feed"}}
         - {"name":"month","in":"query","required":true,"schema":{"type":"string","pattern":"^[0-9]{4}-(0[1-9]|1[0-2])$"}}
+        - {"name":"day","in":"query","schema":{"type":"string","format":"date"}}
       responses:
         '200':
           description: Read the authorized school-local month including overlapping events
@@ -4909,7 +4958,8 @@ components:
         displayName: { type: [string, 'null'] }
         titleAr: { type: string }
         titleDe: { type: string }
-        role: { type: string, enum: [teacher, principal, deputy, office, guardian] }
+        role: { type: string, enum: [teacher, admin, principal, deputy, office, guardian] }
+        directThreadId: { type: [string, 'null'], format: uuid }
         workEmail: { type: [string, 'null'], format: email }
         workPhone: { type: [string, 'null'] }
         contexts:

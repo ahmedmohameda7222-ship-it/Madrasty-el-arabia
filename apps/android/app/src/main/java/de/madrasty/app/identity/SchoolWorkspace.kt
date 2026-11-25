@@ -69,6 +69,9 @@ import de.madrasty.app.navigation.resolveSchoolResource
 import de.madrasty.app.comms.ReportQueue
 import de.madrasty.app.comms.mayReviewChatReports
 import de.madrasty.app.comms.ThreadInbox
+import de.madrasty.app.comms.CommunicationFeed
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
 import de.madrasty.app.comms.ThreadScreen
 import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.school.ChildrenScreen
@@ -110,7 +113,7 @@ internal sealed interface WorkspacePage {
     data class Broadcasts(val announcement:String?=null) : WorkspacePage
     data class Notifications(val notice:String?=null) : WorkspacePage
     data class ResourceUnavailable(val retry: SchoolResourceLink? = null) : WorkspacePage
-    data class Publication(val section:PublicationSection,val item:String?=null,val create:Boolean=false) : WorkspacePage
+    data class Publication(val section:PublicationSection,val item:String?=null,val create:Boolean=false,val managed:Boolean=false) : WorkspacePage
     data object Access : WorkspacePage
     data object Calendar : WorkspacePage
     data class Enrollment(val student:String?=null) : WorkspacePage
@@ -136,6 +139,7 @@ internal sealed interface WorkspacePage {
 
 @Stable
 internal class SchoolNavigation {
+    var communicationSection by mutableStateOf("chat")
     var page by mutableStateOf<WorkspacePage>(WorkspacePage.Tabs)
         private set
     private val previous = mutableListOf<WorkspacePage>()
@@ -367,7 +371,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         }
         is WorkspacePage.Notifications -> NotificationCenter(model,page.notice,state::openNoticeTarget,
             {state.open(WorkspacePage.Account)},state::back)
-        is WorkspacePage.Publication -> SchoolPublicationScreen(model,page.section,page.item,state::back,initialCreate=page.create)
+        is WorkspacePage.Publication -> SchoolPublicationScreen(model,page.section,page.item,state::back,initialCreate=page.create,initialManaged=page.managed)
         WorkspacePage.Access -> StaffAccessScreen(model,session,state::back)
         WorkspacePage.Calendar -> CalendarScreen(model,state::back)
         is WorkspacePage.Enrollment -> EnrollmentScreen(model,rights.school,rights.students,state::back,page.student)
@@ -445,8 +449,16 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
             }
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
             SchoolTab.Messages -> {
-                OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
-                ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
+                FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+                    for((section,label) in listOf("chat" to R.string.comms_chats,"feed" to R.string.comms_feed,"calendar" to R.string.comms_calendar)){
+                        FilterChip(state.communicationSection==section,onClick={state.communicationSection=section},label={Text(stringResource(label))})
+                    }
+                }
+                when(state.communicationSection){
+                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News,managed=true))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))},{state.communicationSection="calendar"})
+                    "calendar"->SchoolPublicationScreen(model,PublicationSection.Events,null,{state.communicationSection="chat"},embedded=true)
+                    else->ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
+                }
             }
         }
     }
@@ -471,13 +483,6 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
         OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
         AccountActions(model,session)
-    }
-    SettingsGroup(R.string.directory_title) {
-        OpenPage(state,WorkspacePage.Directory,R.string.directory_title)
-        OpenPage(state,WorkspacePage.Broadcasts(),R.string.broadcast_title)
-        OpenPage(state,WorkspacePage.Publication(PublicationSection.News),R.string.school_news)
-        OpenPage(state,WorkspacePage.Publication(PublicationSection.Events),R.string.school_events)
-        OpenPage(state,WorkspacePage.Notifications(),R.string.notices_title)
     }
     if(rights.persona!=Persona.Admin||rights.school||rights.students||rights.academic||rights.teacherInvites||rights.attendance){
         SettingsGroup(R.string.settings_group_school) {

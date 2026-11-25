@@ -24,6 +24,7 @@ export const noticeQuery=pageQuerySchema.extend({unread:z.enum(["1","0","true","
 export const noticeRead=z.object({read:z.literal(true)});
 export const noticeReadReceipt=z.object({id,readAt:z.iso.datetime()});
 export const noticeCount=z.object({unread:z.int().nonnegative()});
+export const noticeReadAllReceipt=z.object({marked:z.int().nonnegative()});
 export type NoticeTarget=z.infer<typeof noticeTarget>;
 export type NotificationTemplate=z.infer<typeof notificationTemplate>;
 

@@ -17,4 +17,19 @@
     <string name="change_persona">Rolle wechseln</string>
     <string name="switch_notice">Entwürfe für die aktuelle Rolle können verloren gehen.</string>
     <string name="confirm">Fortfahren</string>
+    <string name="comms_new_message">Neue Nachricht</string>
+    <string name="comms_my_contacts">Meine Kontakte</string>
+    <string name="comms_all_people">Alle Personen</string>
+    <string name="comms_teachers">Lehrkräfte</string>
+    <string name="comms_administration">Schulverwaltung</string>
+    <string name="comms_parents">Eltern</string>
+    <string name="comms_open_failed">Unterhaltung konnte nicht geöffnet werden. Bitte erneut versuchen.</string>
+    <string name="comms_chats">Chats</string>
+    <string name="comms_feed">Aktuelles</string>
+    <string name="comms_calendar">Kalender</string>
+    <string name="comms_unread">Ungelesen</string>
+    <string name="comms_manage">Veröffentlichen und verwalten</string>
+    <string name="comms_teaching_day">Unterricht</string>
+    <string name="comms_free_day">Unterrichtsfrei</string>
+    <string name="comms_mark_all">Alle als gelesen markieren</string>
 </resources>

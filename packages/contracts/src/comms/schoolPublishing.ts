@@ -40,7 +40,9 @@ export const schoolEventEntry=metadata.extend({kind:z.literal("event"),timing:ev
 export const schoolPublishingEntry=z.discriminatedUnion("kind",[schoolNewsEntry,schoolEventEntry]);
 export const schoolPublishingReceipt=z.object({id,revision:revisionSchema});
 export const newsQuery=pageQuerySchema.extend({classId:id.optional(),view:z.enum(["feed","managed"]).default("feed")});
-export const eventsQuery=newsQuery.extend({month:schoolMonth});
+export const eventsQuery=newsQuery.extend({month:schoolMonth,day:schoolDateSchema.optional()}).refine(value=>!value.day||value.day.slice(0,7)===value.month,{path:["day"]});
+export const communicationCalendarQuery=z.object({month:schoolMonth,classId:id.optional(),view:z.enum(["feed","managed"]).default("feed")});
+export const communicationCalendarDay=z.object({date:schoolDateSchema,teaching:z.boolean().nullable(),events:z.int().nonnegative()});
 export const publishingOptions=z.object({
   schoolDate:schoolDateSchema,timezone:z.string().min(1),schoolWide:z.boolean(),
   classes:z.object({id,code:z.string(),nameAr:z.string(),nameDe:z.string(),canWrite:z.boolean()}).array(),

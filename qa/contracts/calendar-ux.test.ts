@@ -55,3 +55,8 @@ test("deleting a day requires an existing revision and a valid optional class sc
   assert.equal(dayDeleteInput.safeParse({ revision: -1 }).success, false);
   assert.equal(dayDeleteInput.safeParse({ revision: 1, classId: "any" }).success, false);
 });
+
+test("a one-day all-day event retains inclusive user dates and exclusive wire dates",()=>{
+  assert.equal(asExclusiveEnd("2026-11-28"),"2026-11-29");
+  assert.equal(asInclusiveEnd(asExclusiveEnd("2028-02-29")),"2028-02-29");
+});

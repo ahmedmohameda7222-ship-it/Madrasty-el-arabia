@@ -135,7 +135,10 @@ internal fun NotificationCenter(
         FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
             FilterChip(!onlyUnread,onClick={onlyUnread=false},label={Text(stringResource(R.string.notices_all))})
             FilterChip(onlyUnread,onClick={onlyUnread=true},label={Text(stringResource(R.string.notices_unread))})
-            TextButton(onClick={refresh++}){Text(stringResource(R.string.broadcast_refresh))}
+            Submit(true,R.string.comms_mark_all,success=null){
+                model.noticeObject("/notifications/read-all",method="POST")
+                refresh++
+            }
         }
         academicPages(model,"/notifications?limit=25&locale=$language&unread=$onlyUnread",refresh+model.attendanceNetworkRevision){rows->
             val visible=rows.filter{!onlyUnread||it.getString("id") !in read}
@@ -157,7 +160,7 @@ internal fun NotificationCenter(
                 }
             }
         }
-        DeviceNotificationSettings(model,language,preferences)
+        TextButton(onClick=preferences){Text(stringResource(R.string.account_preferences))}
     }
 }
 
@@ -178,6 +181,9 @@ private fun NoticeDetail(model:IdentityViewModel,id:String,open:(JSONObject)->Bo
         val targets=item.optJSONArray("targets")
         if(item.getString("state")!="open"||targets==null||targets.length()==0||unavailable){
             Text(stringResource(R.string.notices_unavailable))
+        }else if(targets.length()==1){
+            val target=targets.getJSONObject(0)
+            LaunchedEffect(id){if(!open(target))unavailable=true}
         }else for(index in 0 until targets.length()){
             val target=targets.getJSONObject(index)
             val label=targetLabel(target.getString("kind"))
@@ -205,7 +211,7 @@ private fun targetLabel(kind:String):Int?=when(kind){
 }
 
 @Composable
-private fun DeviceNotificationSettings(model:IdentityViewModel,locale:String,preferences:()->Unit){
+internal fun DeviceNotificationSettings(model:IdentityViewModel,locale:String,preferences:(()->Unit)?=null){
     val context=LocalContext.current.applicationContext
     val actor=model.session?.actor?:return
     val scope=rememberCoroutineScope()
@@ -240,7 +246,7 @@ private fun DeviceNotificationSettings(model:IdentityViewModel,locale:String,pre
     val language=(correspondence as? AsyncState.Ready)?.content?.correspondenceLocale
     if(language!=null)Text(stringResource(R.string.notices_correspondence)+" · "+
         stringResource(if(language=="de")R.string.broadcast_german else R.string.broadcast_arabic))
-    TextButton(onClick=preferences){Text(stringResource(R.string.account_preferences))}
+    if(preferences!=null)TextButton(onClick=preferences){Text(stringResource(R.string.account_preferences))}
     if(denied)Text(stringResource(R.string.notices_permission))
     if(error)Text(stringResource(R.string.generic_error))
     if(enabled)Text(stringResource(R.string.notices_device_enabled))

@@ -71,16 +71,16 @@ const names = {
 } as const;
 
 const copy = {
-  ar: { title: "صلاحيات الموظفين", person: "اختر موظفًا", roles: "الأدوار", grants: "الصلاحيات", inboxes: "الصناديق الرسمية",
+  ar: { title: "إدارة الصلاحيات", person: "اختر شخصًا", roles: "الأدوار", grants: "الصلاحيات", inboxes: "الصناديق الرسمية",
     save: "حفظ الصلاحيات", enabled: "التحقق بخطوتين مفعّل", disabled: "التحقق بخطوتين غير مفعّل", next: "المزيد",
-    refresh: "حدّث رمز التحقق", since: "بداية الصلاحية", until: "انتهاء الصلاحية", staff: "تعطيل صلاحيات الموظف",
+    refresh: "حدّث رمز التحقق", since: "بداية الصلاحية", until: "انتهاء الصلاحية", staff: "تعطيل صلاحيات الإدارة أو التدريس",
     account: "تعطيل الحساب بالكامل", reason: "سبب التعطيل", confirm: "تأكيد التعطيل", success: "تم حفظ التغييرات",
-    scope: "تعطيل صلاحيات الموظف يُبقي صلاحية ولي الأمر لو موجودة." },
-  de: { title: "Zugriff für Mitarbeitende", person: "Person auswählen", roles: "Rollen", grants: "Berechtigungen", inboxes: "Offizielle Postfächer",
+    scope: "تعطيل صلاحيات الإدارة أو التدريس يُبقي صلاحية ولي الأمر لو موجودة." },
+  de: { title: "Berechtigungen verwalten", person: "Person auswählen", roles: "Rollen", grants: "Berechtigungen", inboxes: "Offizielle Postfächer",
     save: "Berechtigungen speichern", enabled: "Zweiter Faktor eingerichtet", disabled: "Zweiter Faktor fehlt", next: "Weitere",
-    refresh: "Zweiten Faktor erneut bestätigen", since: "Gültig ab", until: "Gültig bis", staff: "Mitarbeitendenzugriff deaktivieren",
+    refresh: "Zweiten Faktor erneut bestätigen", since: "Gültig ab", until: "Gültig bis", staff: "Admin- oder Lehrkraftzugriff deaktivieren",
     account: "Gesamtes Konto deaktivieren", reason: "Grund", confirm: "Deaktivierung bestätigen", success: "Änderungen gespeichert",
-    scope: "Beim Entzug des Mitarbeitendenzugriffs bleibt eine bestehende Elternrolle erhalten." },
+    scope: "Beim Entzug des Admin- oder Lehrkraftzugriffs bleibt eine bestehende Elternrolle erhalten." },
 } as const;
 
 type DateFields = { validFrom: string; validUntil: string | null };
