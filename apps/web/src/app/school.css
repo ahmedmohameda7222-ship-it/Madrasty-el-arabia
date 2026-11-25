@@ -564,3 +564,10 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-broadcast-screen .comms-segments,.comms-publications .comms-segments{max-inline-size:100%;min-inline-size:0}
 .comms-publications .comms-segments button{white-space:normal;overflow-wrap:normal;word-break:normal}
 @media(max-width:360px){.comms-broadcast-screen,.comms-publications:not(.comms-calendar),.comms-notifications{padding:12px}}
+
+/* Publication review must retain the primary action's foreground AND background. */
+.comms-publications .notice .primary-button,.comms-broadcast-screen .notice .primary-button,.comms-conversation .notice .primary-button{background:var(--primary);color:var(--on-primary)}
+.comms-publications .notice .plain-button,.comms-broadcast-screen .notice .plain-button{background:var(--card);color:var(--ink)}
+.comms-publications .notice p,.comms-broadcast-screen .notice p{display:block}
+.comms-publications .notice article h3,.comms-broadcast-screen .notice article h3{font-size:1rem;line-height:1.4;hyphens:auto;overflow-wrap:break-word;word-break:normal}
+@media(max-width:360px){.comms-publications .notice,.comms-broadcast-screen .notice{padding:12px}}

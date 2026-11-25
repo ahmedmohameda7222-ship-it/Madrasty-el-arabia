@@ -84,6 +84,14 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
       }
     }
     for(const e of main.querySelectorAll(".comms-message-area,.comms-message,.comms-composer,.comms-calendar,.comms-directory,.comms-broadcast-screen,.comms-notifications,.comms-publications"))if(isRendered(e)&&e.scrollWidth>e.clientWidth+3)problems.push("internal horizontal overflow: "+e.className);
+    // A visible control can still be unreadable if a generic container overrides its background.
+    const rgb=(value:string)=>{const parts=value.match(/[\d.]+/g)?.map(Number);return parts&&parts.length>=3?parts:undefined;};
+    const luminance=(c:number[])=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
+    for(const e of main.querySelectorAll(".comms-publications .notice button,.comms-broadcast-screen .notice button,.comms-conversation .notice button")){
+      if(!isRendered(e)||e.matches(":disabled")||!e.textContent?.trim())continue;
+      const style=getComputedStyle(e),fg=rgb(style.color),bg=rgb(style.backgroundColor);
+      if(fg&&bg&&(bg[3]??1)===1&&(fg[3]??1)===1){const a=luminance(fg),b=luminance(bg);if((Math.max(a,b)+.05)/(Math.min(a,b)+.05)<4.5)problems.push("unreadable action contrast: "+e.textContent);}
+    }
     const days=main.querySelectorAll(".school-month-grid>button");
     for(const day of days){const r=day.getBoundingClientRect();if(r.height<43||r.width<28)problems.push("calendar day target too small");}
     return [...new Set(problems)];
