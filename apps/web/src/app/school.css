@@ -407,3 +407,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-month-heading{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}.comms-month-heading h2{text-align:center;font-size:1rem;margin:0}.comms-month-heading button{font-size:1.5rem;min-block-size:44px;padding:0}
 
 .comms-message-area{max-block-size:clamp(180px,50dvh,640px);min-block-size:140px;overflow:auto;overscroll-behavior:contain;align-content:start;scrollbar-width:thin;padding:4px}.comms-conversation:focus-within .comms-composer{scroll-margin-block-end:8px}.comms-legacy-details{border-color:var(--rule)}
+
+/* Avoid double heading/card margins in the communication hub on narrow screens. */
+.comms-hub>h1{margin:0}.comms-hub .inbox-panel{margin-block:0}.comms-inbox-heading h2{margin:0}.comms-inbox-heading .primary-button{margin-block-start:0}
+@media(max-width:600px){.comms-hub{gap:10px}.comms-hub .inbox-panel{padding:12px}.comms-inbox-heading{gap:8px}}
