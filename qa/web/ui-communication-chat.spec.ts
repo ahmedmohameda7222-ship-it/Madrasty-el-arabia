@@ -102,3 +102,40 @@ test("calendar detail returns to the same month, day and class filter",async({pa
   }finally{await school.close();}
 });
 function assertContext(params:URLSearchParams,key:string,value:string){expect(params.get(key)).toBe(value);}
+
+
+test("a touch long press exposes message actions and copies the actual message text",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const contacts=(await fixtureApi(school,"/directory",{token:guardian,persona:"guardian"})).payload.data;
+    const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
+    const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
+    const body="Diese Nachricht soll kopiert werden.";
+    const id=randomUUID();
+    await fixtureApi(school,`/threads/${thread}/messages`,{token:guardian,persona:"guardian",method:"POST",key:id,status:201,body:{clientMessageId:id,body}});
+    // The OS clipboard is outside browser automation's control. Observe the
+    // real writeText invocation at that browser boundary, not a UI-only toast.
+    await page.addInitScript(()=>{
+      Object.defineProperty(navigator,"clipboard",{configurable:true,value:{
+        writeText:async(value:string)=>{document.documentElement.dataset.qaCopied=value;},
+      }});
+    });
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto("/de/school/messages?thread="+thread);
+    const bubble=page.locator(".comms-message[data-own=true]").filter({hasText:body});
+    await expect(bubble).toBeVisible();
+    const actions=bubble.locator(".comms-message-actions");
+    await expect(actions).not.toHaveAttribute("open","");
+    const message=bubble.getByText(body,{exact:true});
+    await message.dispatchEvent("pointerdown",{pointerType:"touch",pointerId:1,isPrimary:true,button:0,clientX:200,clientY:200});
+    await expect(actions).toHaveAttribute("open","");
+    await message.dispatchEvent("pointerup",{pointerType:"touch",pointerId:1,isPrimary:true,button:0});
+    await bubble.getByRole("button",{name:"Text kopieren"}).click();
+    await expect(page.locator("html")).toHaveAttribute("data-qa-copied",body);
+  }finally{await school.close();}
+});
