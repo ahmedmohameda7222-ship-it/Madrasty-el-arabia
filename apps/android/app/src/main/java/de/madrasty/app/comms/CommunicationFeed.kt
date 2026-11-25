@@ -47,8 +47,8 @@ internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcast
         val data=(options as? AsyncState.Ready)?.content
         val classes=data?.optJSONArray("classes")
         val canWrite=data?.optBoolean("schoolWide")==true||(classes!=null&&(0 until classes.length()).any{classes.getJSONObject(it).optBoolean("canWrite")})
-        if(canWrite)Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically){
-            Box{
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically){
+            if(canWrite)Box{
                 IconButton(onClick={manage=true},modifier=Modifier.size(48.dp)){
                     Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_manage))
                 }

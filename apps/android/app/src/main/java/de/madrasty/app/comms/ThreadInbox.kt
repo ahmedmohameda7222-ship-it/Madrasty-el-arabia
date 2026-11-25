@@ -56,6 +56,9 @@ import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
 import de.madrasty.app.school.timetableObject
 import de.madrasty.app.ui.AsyncSurface
+import de.madrasty.app.ui.AsyncState
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import de.madrasty.app.ui.isolate
 import org.json.JSONObject
 
@@ -86,7 +89,7 @@ internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String
                 headlineContent={Text(threadTitle(thread),maxLines=2,overflow=TextOverflow.Ellipsis)},
                 supportingContent={thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2,overflow=TextOverflow.Ellipsis)}},
                 leadingContent={ThreadAvatar(thread)},
-                trailingContent={if(thread.optInt("unread")>0)Badge{Text(thread.optInt("unread").toString())}})
+                trailingContent={if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}})
 
             HorizontalDivider()
         }
@@ -102,6 +105,7 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
+        if(thread is AsyncState.InitialLoading||thread is AsyncState.Error||thread is AsyncState.Offline||thread is AsyncState.Forbidden)TextButton(onClick=close){Text(stringResource(R.string.back))}
         AsyncSurface(thread){value->
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
                 TextButton(onClick=close){Text(stringResource(R.string.back))}

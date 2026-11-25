@@ -180,3 +180,86 @@ test("mobile chat composer keeps media actions collapsed until requested",async(
     }
   }finally{await school.close();}
 });
+
+
+test("saved news drafts reopen in management, publish and withdraw without leaking drafts to guardians",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    await context.addCookies([{name:"madrasty-session",value:admin,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto("/de/school/messages?section=feed");
+    await page.getByLabel("Veröffentlichen & verwalten").click();
+    await page.getByRole("link",{name:"Neue Neuigkeit"}).click();
+    const title="QA draft "+randomUUID().slice(0,8);
+    await page.getByLabel("Zielgruppe").selectOption("school");
+    await page.getByLabel("Titel",{exact:true}).fill(title);
+    await page.getByLabel("Text",{exact:true}).fill("Nur synthetische Testdaten.");
+    await page.getByRole("button",{name:"Vorschau",exact:true}).click();
+    await page.getByRole("button",{name:"Speichern",exact:true}).click();
+    await expect(page.getByRole("status").filter({hasText:"Änderung gespeichert."})).toBeVisible();
+    const feed=async()=> (await fixtureApi(school,"/comms/feed?limit=25&locale=de&filter=news",{token:guardian,persona:"guardian"})).payload.data;
+    expect((await feed()).some((item:{title:string})=>item.title===title)).toBe(false);
+    await page.getByRole("button",{name:"Zurück",exact:true}).click();
+    await expect(page.getByRole("button",{name:"Beiträge verwalten"})).toHaveAttribute("aria-pressed","true");
+    const row=page.locator(".group-list > li").filter({hasText:title});
+    await expect(row).toBeVisible();
+    await row.getByRole("link",{name:"Details öffnen"}).click();
+    await page.getByRole("button",{name:"Bearbeiten",exact:true}).click();
+    await expect(page.getByLabel("Titel",{exact:true})).toHaveValue(title);
+    await page.getByRole("button",{name:"Vorschau",exact:true}).click();
+    await page.getByRole("button",{name:"Speichern",exact:true}).click();
+    await page.getByRole("button",{name:"Veröffentlichen",exact:true}).click();
+    await expect(page.getByRole("status").filter({hasText:"Veröffentlicht."})).toBeVisible();
+    expect((await feed()).some((item:{title:string})=>item.title===title)).toBe(true);
+    page.once("dialog",dialog=>dialog.accept());
+    await page.getByRole("button",{name:"Zurückziehen",exact:true}).click();
+    await expect(page.getByRole("status").filter({hasText:"Zurückgezogen."})).toBeVisible();
+    expect((await feed()).some((item:{title:string})=>item.title===title)).toBe(false);
+  }finally{await school.close();}
+});
+
+test("message retry preserves the client identifier and a remote reply arrives without reloading",async({page,context})=>{
+  test.setTimeout(90000);
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const teacher=await school.bearer("teacher","teacher");
+    const contacts=(await fixtureApi(school,"/directory",{token:guardian,persona:"guardian"})).payload.data;
+    const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
+    const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto("/de/school/messages?thread="+thread);
+    const body="Retry QA "+randomUUID().slice(0,8);
+    const ids:string[]=[];
+    await page.route("**/api/v1/threads/"+thread+"/messages",async route=>{
+      if(route.request().method()!=="POST"){await route.continue();return;}
+      const request=route.request().postDataJSON() as {clientMessageId:string};
+      ids.push(request.clientMessageId);
+      if(ids.length===1){await route.abort("failed");return;}
+      await route.continue();
+    });
+    const composer=page.locator(".comms-composer");
+    const input=composer.locator("textarea");
+    await input.fill(body);
+    await composer.getByRole("button",{name:"Senden",exact:true}).click();
+    await expect(composer.getByRole("button",{name:"Erneut senden"})).toBeVisible();
+    await expect(input).toHaveValue(body);
+    await composer.getByRole("button",{name:"Erneut senden"}).click();
+    await expect(page.locator(".comms-timeline .comms-message").filter({hasText:body})).toHaveCount(1);
+    expect(ids).toHaveLength(2);
+    expect(ids[1]).toBe(ids[0]);
+    const actual=(await fixtureApi(school,"/threads/"+thread+"/messages",{token:teacher,persona:"teacher"})).payload.data;
+    expect(actual.filter((item:{body:string})=>item.body===body)).toHaveLength(1);
+    const reply="QA reply "+randomUUID().slice(0,8),id=randomUUID();
+    await fixtureApi(school,"/threads/"+thread+"/messages",{token:teacher,persona:"teacher",method:"POST",key:id,status:201,body:{clientMessageId:id,body:reply}});
+    await expect(page.locator(".comms-timeline .comms-message[data-own=false]").filter({hasText:reply})).toBeVisible({timeout:20000});
+  }finally{await school.close();}
+});

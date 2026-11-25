@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -74,15 +76,15 @@ private data class PublishingClass(val id:String,val name:String,val canWrite:Bo
 private data class PublishingCalendar(val date:LocalDate,val timezone:String,val schoolWide:Boolean,val classes:List<PublishingClass>){
     val canCompose get()=schoolWide||classes.any{it.canWrite}
 }
-private class PublicationFeedState(today:LocalDate){
+private class PublicationFeedState(today:LocalDate,initialManaged:Boolean=false){
     var month by mutableStateOf(YearMonth.from(today))
     var day by mutableStateOf<LocalDate?>(null)
-    var managed by mutableStateOf(false)
+    var managed by mutableStateOf(initialManaged)
     var classId by mutableStateOf("")
 }
 
 @Composable
-internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false,embedded:Boolean=false){
+internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false,embedded:Boolean=false,initialManaged:Boolean=false){
     val language=LocalContext.current.resources.configuration.locales[0].language.let{if(it=="de")"de" else "ar"}
     val locale=Locale.forLanguageTag(language)
     var selected by remember(initial){mutableStateOf(initial)}
@@ -112,7 +114,7 @@ internal fun SchoolPublicationScreen(model:IdentityViewModel,section:Publication
         if(!embedded||selected!=null||creating||editing)TextButton(onClick=::back){Text(stringResource(R.string.back))}
         if(!embedded)Text(stringResource(section.heading),style=MaterialTheme.typography.headlineMedium)
         AsyncSurface(calendar){options->
-            val filter=remember(section){PublicationFeedState(options.date)}
+            val filter=remember(section,initialManaged){PublicationFeedState(options.date,initialManaged&&options.canCompose)}
             val id=selected
             when{
                 id!=null->{
@@ -151,14 +153,18 @@ private fun PublicationFeed(
         for(option in options.classes)FilterChip(classId==option.id,onClick={classId=option.id},label={Text(option.name)})
     }
     if(section==PublicationSection.Events){
-        Text(month.format(DateTimeFormatter.ofPattern("LLLL yyyy",locale)),style=MaterialTheme.typography.titleLarge)
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            val previous=stringResource(R.string.publish_previous_month)
+            val next=stringResource(R.string.publish_next_month)
+            IconButton(modifier=Modifier.size(48.dp).semantics{contentDescription=previous},enabled=month.year>1||month.monthValue>1,onClick={month=month.minusMonths(1);day=null}){
+                Text(if(locale.language=="ar")"›" else "‹",style=MaterialTheme.typography.headlineMedium)
+            }
+            Text(month.format(DateTimeFormatter.ofPattern("LLLL yyyy",locale)),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton(modifier=Modifier.size(48.dp).semantics{contentDescription=next},enabled=month.year<9999||month.monthValue<12,onClick={month=month.plusMonths(1);day=null}){
+                Text(if(locale.language=="ar")"‹" else "›",style=MaterialTheme.typography.headlineMedium)
+            }
+        }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-            TextButton(enabled=month.year>1||month.monthValue>1,onClick={month=month.minusMonths(1);day=null}){
-                Text(stringResource(R.string.publish_previous_month))
-            }
-            TextButton(enabled=month.year<9999||month.monthValue<12,onClick={month=month.plusMonths(1);day=null}){
-                Text(stringResource(R.string.publish_next_month))
-            }
             TextButton(onClick={month=YearMonth.from(options.date);day=options.date}){Text(stringResource(R.string.publish_today))}
             if(day!=null)TextButton(onClick={day=null}){Text(stringResource(R.string.publish_this_month))}
         }

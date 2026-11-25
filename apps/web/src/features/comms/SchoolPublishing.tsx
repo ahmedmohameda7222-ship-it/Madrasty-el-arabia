@@ -94,14 +94,15 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   if(view==="managed")context.set("view",view);
   const fromHub=embedded||params.get("from")==="hub";
   const returnParams=new URLSearchParams(context);
-  if(fromHub)returnParams.set("section",kind==="event"?"calendar":"feed");
-  const returnBase=fromHub?`/${locale}/school/messages`:base;
+  if(fromHub&&kind==="event")returnParams.set("section","calendar");
+  else if(fromHub)returnParams.set("from","hub");
+  const returnBase=fromHub&&kind==="event"?`/${locale}/school/messages`:base;
   const returnHref=returnParams.size?`${returnBase}?${returnParams}`:returnBase;
   function detailHref(id:string){const next=new URLSearchParams(context);next.set("item",id);if(fromHub)next.set("from","hub");return `${base}?${next}`;}
   return <section className="auth-card auth-form comms-publications">
     {!embedded&&<h1>{text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
-      dismiss={()=>{setEditor(undefined);setView("managed");setRefresh((value)=>value+1);}}/>}
+      dismiss={()=>{setEditor(undefined);patch({view:"managed",create:undefined});setRefresh((value)=>value+1);}}/>}
     {selected&&<><Link className="plain-button" href={returnHref}>{text.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(record)=>editor==="edit"?
         <PublishingEditor locale={locale} kind={kind} options={options} record={record} dismiss={()=>{setEditor(undefined);setRefresh((value)=>value+1);}}/>:

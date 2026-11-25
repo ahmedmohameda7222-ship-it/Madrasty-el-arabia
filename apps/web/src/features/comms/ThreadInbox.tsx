@@ -68,6 +68,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     window.history.replaceState(null,"",url);
   };
   if(thread)return <>
+    {!detail.value?.data&&<Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>}
     <TimetableRead locale={locale} result={detail}>{(value)=><section className="auth-card auth-form comms-thread-screen">
       <header className="comms-thread-toolbar">
         <Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>
