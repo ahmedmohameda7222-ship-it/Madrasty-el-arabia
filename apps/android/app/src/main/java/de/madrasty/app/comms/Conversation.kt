@@ -2,6 +2,12 @@ package de.madrasty.app.comms
 
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -255,8 +261,12 @@ private fun ChatMessageItem(
 ){
     val location=remember{BringIntoViewRequester()}
     LaunchedEffect(focused){if(focused)location.bringIntoView()}
-    HorizontalDivider(Modifier.bringIntoViewRequester(location))
-    Text(chatAuthor(message)+" · "+isolate(message.getString("createdAt")),style=MaterialTheme.typography.titleMedium)
+    val own=message.optBoolean("own")
+    var actions by remember{mutableStateOf(false)}
+    Row(Modifier.fillMaxWidth().bringIntoViewRequester(location),horizontalArrangement=if(own)Arrangement.End else Arrangement.Start){
+    Surface(modifier=Modifier.widthIn(max=320.dp),shape=RoundedCornerShape(18.dp),color=if(own)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant){
+    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+    if(!own)Text(chatAuthor(message),style=MaterialTheme.typography.labelMedium)
     message.optJSONObject("reply")?.let{quote->
         TextButton(onClick={jump(quote)}){
             Text(stringResource(R.string.chat_quoted)+" · "+chatAuthor(quote)+
@@ -273,12 +283,18 @@ private fun ChatMessageItem(
     }
     val hasContent=message.string("body")!=null||media.length()>0
     if(!hasContent&&message.getString("source")=="human")Text(stringResource(R.string.chat_message_redacted))
-    if(message.optBoolean("own"))Text(stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent))
+    Text(isolate(message.getString("createdAt").replace("T"," ").take(16))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),style=MaterialTheme.typography.labelSmall)
+    TextButton(onClick={actions=!actions}){Text(stringResource(R.string.chat_reactions)+" · ⋯")}
+    if(actions){
     if(message.optBoolean("replyable")&&thread.optBoolean("canReply")){
         TextButton(onClick={reply(message)}){Text(stringResource(R.string.chat_reply))}
     }
     if(hasContent)ReportChatMessage(model,threadId,message.getString("id"))
     if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions)
+    }
+    }
+    }
+    }
 }
 
 private val availableEmojis=listOf("👍","❤️","😂","😮","😢","🙏")

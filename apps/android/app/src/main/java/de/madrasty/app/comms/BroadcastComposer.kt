@@ -152,9 +152,10 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
     val labels=NumberFormat.getIntegerInstance(locale)
     val scope=rememberCoroutineScope()
     var audience by remember{mutableStateOf<BroadcastAudience?>(null)}
-    val kind=audience?.takeIf{it in options.kinds}?:options.kinds.first()
+    val kind=audience?.takeIf{it in options.kinds}
     var selectedClass by remember{mutableStateOf<String?>(null)}
-    val targetClass=options.classes.firstOrNull{it.id==selectedClass}?:options.classes.firstOrNull()
+    val targetClass=options.classes.firstOrNull{it.id==selectedClass}
+    var activeLanguage by remember{mutableStateOf(if(locale.language=="de")"de" else "ar")}
     var ar by remember{mutableStateOf(BroadcastText())}
     var de by remember{mutableStateOf(BroadcastText())}
     var review by remember{mutableStateOf<BroadcastReview?>(null)}
@@ -163,17 +164,18 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
     var busy by remember{mutableStateOf(false)}
     var error by remember{mutableStateOf<Int?>(null)}
     fun preview(){
-        if(busy||!ar.complete||!de.complete)return
+        if(busy||!ar.complete||!de.complete||kind==null||(kind==BroadcastAudience.ClassGuardians&&targetClass==null))return
+        val chosenKind=kind
         busy=true;receipt=null;error=null
         scope.launch{
             try{
-                val target=JSONObject().put("kind",kind.wire)
+                val target=JSONObject().put("kind",chosenKind.wire)
                 if(kind==BroadcastAudience.ClassGuardians)target.put("classId",checkNotNull(targetClass).id)
                 val body=JSONObject().put("audience",target).put("copy",JSONObject().put("ar",ar.json()).put("de",de.json()))
                 val value=model.broadcastRecord("/broadcasts/preview",body)
                 val counts=value.getJSONObject("counts")
                 val copy=value.getJSONObject("copy")
-                review=BroadcastReview(value.getString("previewId"),kind,
+                review=BroadcastReview(value.getString("previewId"),chosenKind,
                     if(kind==BroadcastAudience.ClassGuardians)targetClass?.label else null,
                     BroadcastText.read(copy.getJSONObject("ar")),BroadcastText.read(copy.getJSONObject("de")),
                     counts.getInt("ar"),counts.getInt("de"),value.getString("expiresAt"))
@@ -191,7 +193,7 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
             try{
                 val result=model.broadcastRecord("/broadcasts",JSONObject().put("previewId",current.id),checkNotNull(key))
                 receipt=result.getInt("recipientCount")
-                review=null;ar=BroadcastText();de=BroadcastText();key=null
+                review=null;ar=BroadcastText();de=BroadcastText();key=null;audience=null;selectedClass=null
                 published()
             }catch(cancelled:CancellationException){throw cancelled}
             catch(problem:HttpFailure){
@@ -222,7 +224,7 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
     }
     Text(stringResource(R.string.broadcast_audience),style=MaterialTheme.typography.titleMedium)
     FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        for(value in options.kinds)FilterChip(selected=kind==value,enabled=!busy,onClick={audience=value},label={Text(stringResource(value.label))})
+        for(value in options.kinds)FilterChip(selected=kind==value,enabled=!busy,onClick={audience=value;selectedClass=null},label={Text(stringResource(value.label))})
     }
     if(kind==BroadcastAudience.ClassGuardians){
         Text(stringResource(R.string.broadcast_class),style=MaterialTheme.typography.titleMedium)
@@ -230,9 +232,13 @@ private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,l
             for(value in options.classes)FilterChip(selected=targetClass?.id==value.id,enabled=!busy,onClick={selectedClass=value.id},label={Text(value.label)})
         }
     }
-    BroadcastFields(R.string.broadcast_arabic,"ar",ar,!busy){ar=it}
-    BroadcastFields(R.string.broadcast_german,"de",de,!busy){de=it}
-    Button(enabled=!busy&&ar.complete&&de.complete,onClick=::preview){
+    FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        FilterChip(selected=activeLanguage=="ar",enabled=!busy,onClick={activeLanguage="ar"},label={Text(stringResource(R.string.broadcast_arabic)+(if(ar.complete)" ✓" else ""))})
+        FilterChip(selected=activeLanguage=="de",enabled=!busy,onClick={activeLanguage="de"},label={Text(stringResource(R.string.broadcast_german)+(if(de.complete)" ✓" else ""))})
+    }
+    if(activeLanguage=="ar")BroadcastFields(R.string.broadcast_arabic,"ar",ar,!busy){ar=it}
+    else BroadcastFields(R.string.broadcast_german,"de",de,!busy){de=it}
+    Button(enabled=!busy&&ar.complete&&de.complete&&kind!=null&&(kind!=BroadcastAudience.ClassGuardians||targetClass!=null),onClick=::preview){
         Text(stringResource(if(busy)R.string.pending else R.string.broadcast_preview))
     }
 }

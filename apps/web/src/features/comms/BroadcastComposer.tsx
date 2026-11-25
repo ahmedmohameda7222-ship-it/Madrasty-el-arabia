@@ -104,14 +104,15 @@ type Options=ReturnType<typeof broadcastOptions.parse>;
 function BroadcastComposer({locale,options,published}:{locale:Locale;options:Options;published:()=>void}){
   const labels=copy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
   const [kind,setKind]=useState<BroadcastKind>(),[classId,setClassId]=useState("");
+  const [language,setLanguage]=useState<Locale>(locale);
   const [content,setContent]=useState(emptyCopy),[review,setReview]=useState<BroadcastPreview>(),[receipt,setReceipt]=useState<BroadcastReceipt>();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   const available:BroadcastKind[]=[
     ...(options.schoolWide?["all_guardians","all_teachers"] as const:[]),
     ...(options.classes.length?["class_guardians"] as const:[]),
   ];
-  const chosen=kind&&available.includes(kind)?kind:available[0];
-  const classRef=options.classes.find((item)=>item.id===classId)?.id??options.classes[0]?.id;
+  const chosen=kind&&available.includes(kind)?kind:undefined;
+  const classRef=options.classes.find((item)=>item.id===classId)?.id;
   const draft=broadcastDraft.safeParse({
     audience:chosen==="class_guardians"?{kind:chosen,classId:classRef}:{kind:chosen},copy:content,
   });
@@ -135,7 +136,7 @@ function BroadcastComposer({locale,options,published}:{locale:Locale;options:Opt
     setBusy(true);setError("");
     try{
       setReceipt(await command("/broadcasts","POST",{previewId:review.previewId},broadcastReceipt));
-      setContent(emptyCopy());setReview(undefined);published();
+      setContent(emptyCopy());setKind(undefined);setClassId("");setReview(undefined);published();
     }catch(problem){
       if(problem instanceof ApiResponseError&&[404,409].includes(problem.status)){
         setReview(undefined);setError(labels.stale);
@@ -159,13 +160,16 @@ function BroadcastComposer({locale,options,published}:{locale:Locale;options:Opt
         <button type="button" className="plain-button" disabled={busy} onClick={()=>{setReview(undefined);setError("");}}>{labels.edit}</button>
       </div>
     </section>:<form className="auth-form" onSubmit={(event)=>void preview(event)}>
-      <label>{labels.audience}<select value={chosen} disabled={busy} onChange={(event)=>setKind(event.target.value as BroadcastKind)}>
+      <label>{labels.audience}<select value={chosen??""} disabled={busy} onChange={(event)=>{setKind(event.target.value?event.target.value as BroadcastKind:undefined);setClassId("");}}>
+        <option value="">{locale==="ar"?"اختر المستلمين":"Empfänger auswählen"}</option>
         {available.map((id)=><option key={id} value={id}>{labels[id]}</option>)}
       </select></label>
-      {chosen==="class_guardians"&&<label>{labels.class}<select value={classRef} disabled={busy} onChange={(event)=>setClassId(event.target.value)}>
+      {chosen==="class_guardians"&&<label>{labels.class}<select value={classRef??""} disabled={busy} onChange={(event)=>setClassId(event.target.value)}>
+        <option value="">{locale==="ar"?"اختر الفصل":"Klasse auswählen"}</option>
         {options.classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
       </select></label>}
-      {locales.map((language)=><fieldset className="auth-form" key={language} disabled={busy}>
+      <div className="comms-segments" role="group" aria-label={locale==="ar"?"لغة الإعلان":"Sprache der Mitteilung"}>{locales.map(l=><button type="button" key={l} aria-pressed={language===l} disabled={busy} onClick={()=>setLanguage(l)}>{labels[l]}{content[l].title.trim()&&content[l].body.trim()?" ✓":""}</button>)}</div>
+      {[language].map((language)=><fieldset className="auth-form" key={language} disabled={busy}>
         <legend>{labels[language]}</legend>
         <label>{labels.subject}<input dir={language==="ar"?"rtl":"ltr"} value={content[language].title} required maxLength={180}
           onChange={(event)=>change(language,"title",event.target.value)}/></label>
