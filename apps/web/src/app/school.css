@@ -376,3 +376,28 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-inbox-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.comms-thread-row{text-decoration:none;color:var(--ink);min-width:0}.comms-thread-copy{min-width:0;flex:1;display:grid;gap:4px}.comms-thread-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.comms-thread-meta{display:grid;gap:6px;justify-items:end;flex-shrink:0}.comms-thread-meta .notice-count{position:static}.comms-legacy-details{border:1px solid var(--border);border-radius:12px;padding:10px}.comms-legacy-details summary{cursor:pointer}
 
 .comms-hub{display:grid;gap:12px;min-width:0}.comms-hub-tabs{display:flex;gap:4px;overflow:auto}.comms-hub-tabs a{flex:1;text-align:center;white-space:nowrap;min-height:44px;display:flex;align-items:center;justify-content:center}.comms-hub-tabs a[aria-current="page"]{background:var(--primary);color:var(--on-primary)}.comms-feed-card{padding:14px;display:grid;gap:8px;overflow-wrap:anywhere}.comms-feed-card p{white-space:pre-wrap}.comms-feed-card h3{margin:0}
+
+/* Communication conversation: logical sides mirror in Arabic; composer stays in the scroll container. */
+.comms-conversation{min-inline-size:0;display:flex;flex-direction:column;gap:10px}
+.comms-chat-options,.comms-message-actions{min-inline-size:0}
+.comms-chat-options>summary,.comms-message-actions>summary{cursor:pointer;min-block-size:44px;display:flex;align-items:center;color:var(--muted)}
+.comms-message-area{display:grid;gap:10px;min-inline-size:0}
+.comms-timeline{list-style:none;display:flex;flex-direction:column;gap:12px;padding:0;margin:0;min-inline-size:0}
+.comms-message{align-self:flex-start;max-inline-size:min(88%,35rem);min-inline-size:0;background:var(--inset);border:1px solid var(--rule);padding:10px 12px;border-radius:16px 16px 16px 4px;overflow-wrap:anywhere;display:grid;gap:6px}
+.comms-message[data-own=true]{align-self:flex-end;background:var(--primary);color:var(--on-primary);border-color:transparent;border-radius:16px 16px 4px 16px}
+[dir=rtl] .comms-message{border-radius:16px 16px 4px 16px}
+[dir=rtl] .comms-message[data-own=true]{border-radius:16px 16px 16px 4px}
+.comms-message[data-highlight=true]{outline:2px solid var(--primary);outline-offset:3px}
+.comms-message p{margin:0}
+.comms-message img,.comms-message audio{max-inline-size:100%}
+.comms-message-author,.comms-message-time{font-size:.75rem}
+.comms-message-time{text-align:end;opacity:.85}
+.comms-message-actions>summary{color:inherit;justify-content:flex-end;font-size:1.25rem;min-block-size:44px}
+.comms-message-actions .header-actions{flex-wrap:wrap;gap:4px}
+.comms-message-actions .plain-button{background:var(--card);color:var(--ink);max-inline-size:100%;overflow-wrap:anywhere}
+.comms-pending{justify-self:end}
+.comms-composer{position:sticky;bottom:0;z-index:2;background:var(--card);border-block-start:1px solid var(--rule);padding:10px 0;gap:8px}
+.comms-composer textarea{resize:vertical;min-block-size:44px;max-block-size:140px;border-radius:18px;width:100%;font-size:16px}
+.comms-composer .header-actions{gap:6px;flex-wrap:wrap}
+.comms-conversation .comms-composer>.primary-button{align-self:end;min-inline-size:90px}
+@media(prefers-reduced-motion:no-preference){.comms-pending{animation:comms-send-in 160ms ease-out both}@keyframes comms-send-in{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}

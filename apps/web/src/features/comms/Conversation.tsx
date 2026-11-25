@@ -42,6 +42,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   const [ack,setAck]=useState<ChatMessage>(),[lost,setLost]=useState(false);
   const [attachment,setAttachment]=useState<string>(),[consumed,setConsumed]=useState<string>(),[preparing,setPreparing]=useState(false);
   const [archived,setArchived]=useState(thread.archived),[notice,setNotice]=useState("");
+  const archiveBusy=useRef(false);
   const live=useRef(false),sending=useRef(false),confirmed=useRef<string|undefined>(undefined);
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   useEffect(()=>setArchived(thread.archived),[thread.archived]);
@@ -85,7 +86,9 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     if(message.success)void send(message.data);
   }
   async function archive(){
-    const next=!archived;
+    if(archiveBusy.current)return;
+    archiveBusy.current=true;
+    const next=!archived;setArchived(next);
     try{
       const state=await requestApi(`${root}/state`,threadReaderState,{
         method:"PATCH",headers:webHeaders(persona),body:JSON.stringify({archived:next}),
@@ -93,11 +96,12 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       setArchived(state.data.archived);setNotice("");changed();
     }catch(problem){
       if(unavailable(problem))deny();
-      else setNotice(timetableError(locale,problem));
-    }
+      else {setArchived(!next);setNotice(timetableError(locale,problem));}
+    }finally{archiveBusy.current=false;}
   }
   if(lost)return <AsyncSurface locale={locale} state={{kind:"forbidden"}}/>;
-  return <section className="auth-form" aria-label={text.search}>
+  return <section className="comms-conversation auth-form" aria-label={text.search}>
+    <details className="comms-chat-options"><summary>{locale==="ar"?"خيارات المحادثة":"Chat-Optionen"}</summary>
     <div className="header-actions">
       <button type="button" className="plain-button" onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
       {archived&&<p>{text.archived}</p>}{notice&&<p role="alert">{notice}</p>}
@@ -109,19 +113,22 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
         {term&&<button type="button" className="plain-button" onClick={()=>{setTerm("");setQuery("");}}>{text.clear}</button>}
       </div>
     </form>
+    </details>
+    <div className="comms-message-area">
     <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={setQuote} deny={deny}
       recognize={recognize} updateArchive={setArchived}/>
-    {attempt&&<div className="timetable-day" role={attempt.failed?"alert":"status"}>
+    {attempt&&<div className="comms-message comms-pending" data-own="true" role={attempt.failed?"alert":"status"}>
       <p dir="auto">{attempt.payload.body}</p>
-      <p>{attempt.pending?text.sending:text.failed}</p>
+      <small>{attempt.pending?text.sending:text.failed}</small>
     </div>}
-    {thread.canReply?<form className="auth-form" onSubmit={compose}>
+    </div>
+    {thread.canReply?<form className="comms-composer auth-form" onSubmit={compose}>
       {quote&&<div className="notice">
         <span>{text.reply} · <bdi>{quote.authorName??text.school}</bdi></span>
         {quote.body&&<p dir="auto">{quote.body.slice(0,140)}</p>}
         <button className="plain-button" type="button" disabled={attempt?.pending} onClick={()=>{setQuote(undefined);setAttempt(undefined);}}>{text.cancelReply}</button>
       </div>}
-      <label>{text.body}<textarea dir="auto" value={body} maxLength={4000} rows={3} disabled={attempt?.pending}
+      <label><textarea aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={2} disabled={attempt?.pending}
         onChange={(event)=>{setBody(event.target.value);setAttempt(undefined);}}/></label>
       <MediaComposer locale={locale} persona={persona} thread={thread.id} locked={attempt?.pending===true} consumed={consumed}
         onReady={setAttachment} onBusy={setPreparing}/>
@@ -180,6 +187,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
             method:"PATCH",headers:webHeaders(persona),signal:abort.signal,body:JSON.stringify({readThroughSeq:visible}),
           });
           acknowledged.current=saved.data.readThroughSeq;
+          window.dispatchEvent(new Event("madrasty-notices-changed"));
           liveActions.current.updateArchive(saved.data.archived);
         }
       }catch(problem){
@@ -247,10 +255,8 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
     {cursor&&<button type="button" className="plain-button" onClick={()=>void older()} disabled={paging}>{text.older}</button>}
     {failure&&<p role="alert">{failure}</p>}
     {!rows.length&&<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
-    <ol className="group-list">{rows.map((message)=><li key={message.id} id={`message-${message.id}`} tabIndex={-1}
-      className={highlight===message.id?"notice timetable-day":"timetable-day"}>
-      <strong><bdi>{message.authorName??text.school}</bdi></strong>
-      <small> · <bdi>{new Date(message.createdAt).toLocaleString(locale==="ar"?"ar":"de-DE")}</bdi></small>
+    <ol className="comms-timeline">{rows.map((message)=><li key={message.id} id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
+      {!message.own&&<strong className="comms-message-author"><bdi>{message.authorName??text.school}</bdi></strong>}
       {message.reply&&<button type="button" className="plain-button" aria-label={text.target} onClick={()=>{
         if(message.reply)void jump(message.reply);
       }}><bdi>{message.reply.authorName??text.school}</bdi>{message.reply.preview&&<> · <bdi>{message.reply.preview}</bdi></>}</button>}
@@ -258,7 +264,8 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
       {message.attachments.map((file)=><PrivateChatMedia key={file.id} locale={locale} kind={file.kind}
         path={`/api/v1/threads/${thread.id}/media/${file.id}`}/>)}
       {message.source==="human"&&!message.body&&!message.attachments.length&&<p>{reportCopy[locale].removed}</p>}
-      {message.own&&<small>{message.counterpartRead?text.seen:text.sent}</small>}
+      <small className="comms-message-time"><bdi>{new Date(message.createdAt).toLocaleTimeString(locale==="ar"?"ar":"de-DE",{hour:"2-digit",minute:"2-digit"})}</bdi>{message.own&&<> · {message.counterpartRead?text.seen:text.sent}</>}</small>
+      <details className="comms-message-actions"><summary aria-label={locale==="ar"?"إجراءات الرسالة":"Nachrichtenoptionen"}>⋯</summary>
       <div className="header-actions">
         {thread.canReply&&message.replyable&&<button type="button" className="plain-button" onClick={()=>reply(message)}>{text.reply}</button>}
         {(message.body||message.attachments.length>0)&&<ReportMessage locale={locale} thread={thread.id} message={message.id}/>}
@@ -271,6 +278,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
           aria-label={`${text.reactions} ${emoji}`} aria-pressed={message.reactions.some((entry)=>entry.emoji===emoji&&entry.mine)}
           onClick={()=>void react(message,emoji)}>{emoji}</button>)}</div>
       </details>}
+      </details>
     </li>)}</ol>
   </>;
 }
