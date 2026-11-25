@@ -19,7 +19,8 @@ test("direct chat presents sent and received bubbles and compact actions", async
     const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
     for(const [token,persona,body] of [[guardian,"guardian","Hallo Schule"],[teacher,"teacher","Guten Tag"]] as const){
       const id=randomUUID();
-      await fixtureApi(school,`/threads/${thread}/messages`,{token,persona,method:"POST",key:id,status:201,body:{clientMessageId:id,body}});
+      const sent=await fixtureApi(school,`/threads/${thread}/messages`,{token,persona,method:"POST",key:id,status:201,body:{clientMessageId:id,body}});
+      if(persona==="guardian")await fixtureApi(school,`/threads/${thread}/messages/${sent.payload.data.id}/reaction`,{token:teacher,persona:"teacher",method:"PUT",body:{emoji:"👍"}});
     }
     await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     await page.setViewportSize({width:390,height:844});
@@ -27,6 +28,7 @@ test("direct chat presents sent and received bubbles and compact actions", async
     await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible();
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"👍 1",exact:true})).toBeVisible();
     await expect(page.locator(".comms-composer textarea")).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});

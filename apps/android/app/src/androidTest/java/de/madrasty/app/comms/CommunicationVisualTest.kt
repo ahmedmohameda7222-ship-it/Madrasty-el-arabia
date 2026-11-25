@@ -50,7 +50,7 @@ class CommunicationVisualTest {
         val thread=JSONObject().put("id","qa-thread").put("canReply",true)
         val message=JSONObject().put("id","qa-message").put("own",true).put("body",body)
             .put("source","human").put("createdAt","2026-01-01T10:00:00Z").put("replyable",true)
-            .put("attachments",JSONArray()).put("reactions",JSONArray())
+            .put("attachments",JSONArray()).put("reactions",JSONArray().put(JSONObject().put("emoji","👍").put("count",1).put("mine",false)))
         try{
             compose.setContent{
                 val context=LocalContext.current
@@ -66,6 +66,7 @@ class CommunicationVisualTest {
                     }
                 }
             }
+            compose.onNodeWithText("👍 1").assertIsDisplayed()
             compose.onNodeWithText("Antworten").assertDoesNotExist()
             compose.onNodeWithText(body,substring=true).performTouchInput{longClick()}
             compose.onNodeWithText("Antworten").assertIsDisplayed()
