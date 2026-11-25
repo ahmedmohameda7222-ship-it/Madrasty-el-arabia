@@ -17,7 +17,7 @@ import { readInboxContext, writeInboxContext, withInboxThread, type InboxContext
 const copy={
   ar:{heading:"المحادثات",directory:"رسالة جديدة",all:"الكل",direct:"المحادثات الخاصة",office:"المكاتب",student_affairs:"شؤون الطلبة",accounts:"الحسابات",
     back:"رجوع للمحادثات",open:"مفتوحة",in_progress:"قيد المتابعة",closed:"مغلقة",status:"حالة الطلب",caseTitle:"متابعة الطلب",
-    assignee:"الموظف المسؤول",unassigned:"بدون مسؤول",save:"حفظ",saved:"اتحدث الطلب.",references:"السجلات المرتبطة",
+    assignee:"المسؤول",unassigned:"بدون مسؤول",save:"حفظ",saved:"اتحدث الطلب.",references:"السجلات المرتبطة",
     homework:"واجب",attendance:"الحضور",invoice:"فاتورة",refresh:"تحديث",search:"ابحث في الرسائل",find:"بحث",archived:"المؤرشفة",unread:"رسائل غير مقروءة"},
   de:{heading:"Unterhaltungen",directory:"Neue Nachricht",all:"Alle",direct:"Private Unterhaltungen",office:"Schulbüros",student_affairs:"Schulbüro",accounts:"Buchhaltung",
     back:"Zurück zu den Unterhaltungen",open:"Offen",in_progress:"In Bearbeitung",closed:"Geschlossen",status:"Vorgangsstatus",caseTitle:"Vorgang bearbeiten",
@@ -37,13 +37,24 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   const [version,setVersion]=useState(0);
   const [search,setSearch]=useState(term);
   useEffect(()=>setSearch(term),[term]);
+  useEffect(()=>{
+    if(thread||search.trim()===term)return;
+    const timer=window.setTimeout(()=>{
+      const url=new URL(window.location.href);
+      url.search=writeInboxContext(url.searchParams,{search:search.trim()}).toString();
+      window.history.replaceState(null,"",url);
+    },250);
+    return ()=>window.clearTimeout(timer);
+  },[search,term,thread]);
   const reload=()=>setVersion((n)=>n+1);
   useEffect(()=>{
-    const focus=()=>setVersion((n)=>n+1);
+    const focus=()=>{if(!document.hidden&&navigator.onLine)setVersion((n)=>n+1);};
+    const timer=thread?undefined:window.setInterval(focus,15000);
+    document.addEventListener("visibilitychange",focus);
     window.addEventListener("focus",focus);
     window.addEventListener("online",focus);
-    return ()=>{window.removeEventListener("focus",focus);window.removeEventListener("online",focus);};
-  },[]);
+    return ()=>{if(timer!==undefined)window.clearInterval(timer);document.removeEventListener("visibilitychange",focus);window.removeEventListener("focus",focus);window.removeEventListener("online",focus);};
+  },[thread]);
   const query=selected==="unread"?"&unread=true":"";
   const list=useAcademicPage(thread?null:`/threads?limit=30&includeEmpty=false${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version);
   const detail=useTimetableRead(thread?`/threads/${thread}`:null,threadDetail,version);

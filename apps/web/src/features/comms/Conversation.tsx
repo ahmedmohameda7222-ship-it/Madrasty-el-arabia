@@ -155,9 +155,9 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
   },[ack,term]);
   useEffect(()=>{
     const abort=new AbortController();
-    let working=false;
+    let working=false,failures=0,nextPoll=0;
     async function poll(){
-      if(working||abort.signal.aborted||document.hidden)return;
+      if(working||abort.signal.aborted||document.hidden||!navigator.onLine)return;
       working=true;
       try{
         const result=await requestApi(path,messageList,{signal:abort.signal,headers:{"X-School-Persona":persona}});
@@ -181,7 +181,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
         setRows((old)=>merge(old??[],result.data));
         liveActions.current.recognize(result.data);
         if(!expanded.current)setCursor(result.meta?.nextCursor);
-        setFailure("");
+        failures=0;nextPoll=0;setFailure("");
         if(!term&&visible&&newer(visible,acknowledged.current)){
           const saved=await requestApi(`/threads/${thread.id}/state`,threadReaderState,{
             method:"PATCH",headers:webHeaders(persona),signal:abort.signal,body:JSON.stringify({readThroughSeq:visible}),
@@ -193,11 +193,11 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
       }catch(problem){
         if(!abort.signal.aborted){
           if(unavailable(problem)){setRows(undefined);liveActions.current.deny();}
-          else setFailure(timetableError(locale,problem));
+          else {failures++;nextPoll=Date.now()+Math.min(60000,5000*2**Math.min(failures,4));setFailure(timetableError(locale,problem));}
         }
       }finally{working=false;}
     }
-    const timer=window.setInterval(()=>void poll(),5000);
+    const timer=window.setInterval(()=>{if(Date.now()>=nextPoll)void poll();},5000);
     window.addEventListener("online",poll);
     window.addEventListener("focus",poll);
     document.addEventListener("visibilitychange",poll);

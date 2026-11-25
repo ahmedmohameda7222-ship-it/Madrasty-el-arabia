@@ -46,8 +46,9 @@ export function NotificationLink({locale}:{locale:Locale}){
   useEffect(()=>{
     const abort=new AbortController();
     let pending=false;
+    setCount(0);
     const sync=async()=>{
-      if(pending||document.hidden)return;
+      if(pending||document.hidden||!navigator.onLine)return;
       pending=true;
       try{
         const {data}=await requestApi("/notifications/count",noticeCount,{headers:{"X-School-Persona":actor.persona},signal:abort.signal});
