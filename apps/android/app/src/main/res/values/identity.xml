@@ -17,4 +17,11 @@
     <string name="change_persona">تغيير الدور</string>
     <string name="switch_notice">قد تُحذف المسودات المرتبطة بالدور الحالي.</string>
     <string name="confirm">متابعة</string>
+    <string name="comms_new_message">رسالة جديدة</string>
+    <string name="comms_my_contacts">جهات اتصالي</string>
+    <string name="comms_all_people">كل الأشخاص</string>
+    <string name="comms_teachers">المدرسون</string>
+    <string name="comms_administration">إدارة المدرسة</string>
+    <string name="comms_parents">أولياء الأمور</string>
+    <string name="comms_open_failed">لم يتم فتح المحادثة. حاول مرة أخرى.</string>
 </resources>

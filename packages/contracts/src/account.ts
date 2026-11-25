@@ -15,6 +15,7 @@ export const directoryRoleSchema = z.enum(["teacher","admin","principal","deputy
 export const directoryIdSchema = z.union([z.uuid(), inboxSchema]);
 export const directoryQuerySchema = pageQuerySchema.extend({
   query: z.string().trim().max(120).optional(),
+  view: z.enum(["mine","all"]).optional(),
   role: directoryRoleSchema.optional(),
   cursor: directoryIdSchema.optional(),
 });

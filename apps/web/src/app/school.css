@@ -354,3 +354,21 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .admin-start-metrics .admin-start-panel dd { grid-row:2; }
 .admin-start-metrics .admin-start-panel dt { grid-row:3; }
 @media(max-width:22rem){ .admin-start-hero .role-hero img { display:block; max-inline-size:25%; } .admin-start-hero .role-hero { padding:12px; gap:8px; } .admin-start-actions a span { width:44px;height:44px; } }
+
+/* Communication person picker. Reuse application tokens and motion preferences. */
+.comms-directory { display:grid; gap:12px; min-inline-size:0; max-inline-size:680px; margin-inline:auto; }
+.comms-directory h1 { margin-block: 8px 4px; }
+.comms-search { min-block-size:44px; inline-size:100%; min-inline-size:0; border:1px solid var(--rule); border-radius:14px; padding:10px 14px; color:var(--ink); background:var(--inset); font:inherit; }
+.comms-segments { display:flex; gap:4px; padding:4px; background:var(--inset); border-radius:14px; }
+.comms-segments button { flex:1; min-inline-size:0; min-block-size:44px; border:0; border-radius:11px; color:var(--ink); background:transparent; font:inherit; font-weight:600; overflow-wrap:anywhere; }
+.comms-segments button[aria-pressed=true] { background:var(--card); box-shadow:0 1px 3px #0002; color:var(--primary); }
+.comms-segments button:focus-visible,.comms-person-row:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.comms-people { display:grid; gap:18px; min-inline-size:0; }
+.comms-people-group h2 { font-size:.85rem; font-weight:650; margin:0 0 4px; }
+.comms-person-row { display:flex; gap:12px; align-items:center; text-align:start; inline-size:100%; min-block-size:64px; background:transparent; border:0; color:var(--ink); padding:10px 8px; font:inherit; }
+.comms-avatar { display:grid; place-items:center; flex:0 0 44px; block-size:44px; border-radius:50%; background:var(--inset); color:var(--primary); font-weight:650; }
+.comms-person-label { flex:1; min-inline-size:0; display:grid; gap:3px; overflow-wrap:anywhere; }
+.comms-person-label bdi { font-weight:650; }
+.comms-person-label small { font-size:.8rem; color:var(--muted); }
+.comms-person-row>svg { flex:0 0 24px; color:var(--primary); }
+@media(prefers-reduced-motion:no-preference){.comms-person-row,.comms-segments button{transition:background-color 140ms,transform 120ms}.comms-person-row:not(:disabled):active{transform:scale(.985);background:var(--inset)}}
