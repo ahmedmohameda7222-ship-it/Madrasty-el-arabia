@@ -56,3 +56,22 @@ test("guardian contact picker exposes responsible teacher first, then the full s
     await page.screenshot({path:"qa-artifacts/ui-after/communication-directory-de-320.png",animations:"disabled"});
   }finally{await school.close();}
 });
+
+
+test("announcement draft survives changing tabs without selecting recipients automatically",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    await context.addCookies([{name:"madrasty-session",value:admin,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});
+    await page.goto("/de/school/more/broadcasts");
+    await expect(page.getByLabel("Zielgruppe")).toHaveValue("");
+    await page.getByLabel("Titel",{exact:true}).fill("Unpublished QA draft");
+    await page.getByRole("button",{name:"Empfangene Mitteilungen"}).click();
+    await page.getByRole("button",{name:"Neue Mitteilung"}).click();
+    await expect(page.getByLabel("Titel",{exact:true})).toHaveValue("Unpublished QA draft");
+    await expect(page.getByRole("button",{name:"Vorschau erstellen"})).toBeDisabled();
+  }finally{await school.close();}
+});

@@ -33,11 +33,13 @@ const copy={
 const locales=["ar","de"] as const;
 const emptyCopy=()=>({ar:{title:"",body:""},de:{title:"",body:""}});
 const sentList=broadcastSent.array(),inboxList=broadcastEntry.array();
+type ComposeDraft={kind?:BroadcastKind;classId:string;language:Locale;content:ReturnType<typeof emptyCopy>};
 
 export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string}){
   const labels=copy[locale],{persona}=useAccountScope();
   const [mode,setMode]=useState<"inbox"|"compose"|"history">(()=>persona==="admin"?"compose":"inbox");
   const [refresh,setRefresh]=useState(0);
+  const [draft,setDraft]=useState<ComposeDraft>(()=>({classId:"",language:locale,content:emptyCopy()}));
   const options=useTimetableRead(persona==="guardian"?null:"/broadcasts/options",broadcastOptions,refresh);
   const detail=useTimetableRead(selected?`/broadcasts/inbox/${selected}?locale=${locale}`:null,broadcastEntry,refresh);
   const sent=useAcademicPage(!selected&&mode==="history"&&persona!=="guardian"?"/broadcasts?limit=25":null,sentList,refresh);
@@ -72,7 +74,7 @@ export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string})
       </ul>}</AcademicPageItems>}
       {mode==="compose"&&persona!=="guardian"&&<TimetableRead locale={locale} result={options}>{(choice)=>
         choice.schoolWide||choice.classes.length?
-          <BroadcastComposer locale={locale} options={choice} published={()=>setRefresh((n)=>n+1)}/>:
+          <BroadcastComposer locale={locale} options={choice} savedDraft={draft} saveDraft={setDraft} published={()=>setRefresh((n)=>n+1)}/>:
           <p>{labels.noRecipients}</p>
       }</TimetableRead>}
       {mode==="history"&&allowed&&<AcademicPageItems locale={locale} page={sent}>{(entries)=><ul className="group-list">
@@ -101,11 +103,14 @@ export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string})
 }
 
 type Options=ReturnType<typeof broadcastOptions.parse>;
-function BroadcastComposer({locale,options,published}:{locale:Locale;options:Options;published:()=>void}){
+function BroadcastComposer({locale,options,published,savedDraft,saveDraft}:{locale:Locale;options:Options;published:()=>void;savedDraft:ComposeDraft;saveDraft:(update:(old:ComposeDraft)=>ComposeDraft)=>void}){
   const labels=copy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
-  const [kind,setKind]=useState<BroadcastKind>(),[classId,setClassId]=useState("");
-  const [language,setLanguage]=useState<Locale>(locale);
-  const [content,setContent]=useState(emptyCopy),[review,setReview]=useState<BroadcastPreview>(),[receipt,setReceipt]=useState<BroadcastReceipt>();
+  const {kind,classId,language,content}=savedDraft;
+  const setKind=(kind?:BroadcastKind)=>saveDraft(old=>({...old,kind}));
+  const setClassId=(classId:string)=>saveDraft(old=>({...old,classId}));
+  const setLanguage=(language:Locale)=>saveDraft(old=>({...old,language}));
+  const setContent=(update:(old:ComposeDraft["content"])=>ComposeDraft["content"])=>saveDraft(old=>({...old,content:update(old.content)}));
+  const [review,setReview]=useState<BroadcastPreview>(),[receipt,setReceipt]=useState<BroadcastReceipt>();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   const available:BroadcastKind[]=[
     ...(options.schoolWide?["all_guardians","all_teachers"] as const:[]),
@@ -136,7 +141,7 @@ function BroadcastComposer({locale,options,published}:{locale:Locale;options:Opt
     setBusy(true);setError("");
     try{
       setReceipt(await command("/broadcasts","POST",{previewId:review.previewId},broadcastReceipt));
-      setContent(emptyCopy());setKind(undefined);setClassId("");setReview(undefined);published();
+      saveDraft(old=>({...old,content:emptyCopy(),kind:undefined,classId:""}));setReview(undefined);published();
     }catch(problem){
       if(problem instanceof ApiResponseError&&[404,409].includes(problem.status)){
         setReview(undefined);setError(labels.stale);

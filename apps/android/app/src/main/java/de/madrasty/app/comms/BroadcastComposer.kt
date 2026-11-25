@@ -83,6 +83,13 @@ private data class BroadcastReview(
 ){
     val total get()=arCount+deCount
 }
+private class BroadcastFormState(language:String){
+    var audience by mutableStateOf<BroadcastAudience?>(null)
+    var selectedClass by mutableStateOf<String?>(null)
+    var activeLanguage by mutableStateOf(language)
+    var ar by mutableStateOf(BroadcastText())
+    var de by mutableStateOf(BroadcastText())
+}
 private enum class BroadcastTab(val label:Int){
     Inbox(R.string.broadcast_inbox),Compose(R.string.broadcast_new),History(R.string.broadcast_history),
 }
@@ -94,6 +101,7 @@ internal fun BroadcastHub(model:IdentityViewModel,persona:Persona,initial:String
     var selected by remember(initial){mutableStateOf(initial)}
     var tab by remember(persona){mutableStateOf(if(persona==Persona.Admin)BroadcastTab.Compose else BroadcastTab.Inbox)}
     var refresh by remember{mutableIntStateOf(0)}
+    val draft=remember(model.session?.actor){BroadcastFormState(language)}
     val version=refresh+model.attendanceNetworkRevision
     val options=if(persona==Persona.Guardian)AsyncState.Ready(BroadcastOptions(false,emptyList())) else
         academicRead("/broadcasts/options",version){path->
@@ -140,7 +148,7 @@ internal fun BroadcastHub(model:IdentityViewModel,persona:Persona,initial:String
             }
             BroadcastTab.Compose->AsyncSurface(options){value->
                 if(value.kinds.isEmpty())Text(stringResource(R.string.broadcast_no_recipients))
-                else BroadcastComposer(model,value,locale){refresh++}
+                else BroadcastComposer(model,value,locale,draft){refresh++}
             }
             BroadcastTab.History->if(allowed)BroadcastHistory(model,locale,version)
         }
@@ -148,16 +156,16 @@ internal fun BroadcastHub(model:IdentityViewModel,persona:Persona,initial:String
 }
 
 @Composable
-private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,locale:Locale,published:()->Unit){
+private fun BroadcastComposer(model:IdentityViewModel,options:BroadcastOptions,locale:Locale,draft:BroadcastFormState,published:()->Unit){
     val labels=NumberFormat.getIntegerInstance(locale)
     val scope=rememberCoroutineScope()
-    var audience by remember{mutableStateOf<BroadcastAudience?>(null)}
+    var audience by draft::audience
     val kind=audience?.takeIf{it in options.kinds}
-    var selectedClass by remember{mutableStateOf<String?>(null)}
+    var selectedClass by draft::selectedClass
     val targetClass=options.classes.firstOrNull{it.id==selectedClass}
-    var activeLanguage by remember{mutableStateOf(if(locale.language=="de")"de" else "ar")}
-    var ar by remember{mutableStateOf(BroadcastText())}
-    var de by remember{mutableStateOf(BroadcastText())}
+    var activeLanguage by draft::activeLanguage
+    var ar by draft::ar
+    var de by draft::de
     var review by remember{mutableStateOf<BroadcastReview?>(null)}
     var receipt by remember{mutableStateOf<Int?>(null)}
     var key by remember{mutableStateOf<String?>(null)}
