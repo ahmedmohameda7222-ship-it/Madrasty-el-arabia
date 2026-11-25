@@ -55,12 +55,12 @@ function activeOn(entry:PublishingEntry,day:string){
   return day<end.date||day===end.date&&!allDay&&end.time!=="00:00";
 }
 
-export function SchoolPublishing({locale,kind,selected,create}:{locale:Locale;kind:Kind;selected?:string;create?:boolean}){
+export function SchoolPublishing({locale,kind,selected,create,embedded}:{locale:Locale;kind:Kind;selected?:string;create?:boolean;embedded?:boolean}){
   const options=useTimetableRead("/school/publishing-options",publishingOptions);
   return <TimetableRead locale={locale} result={options}>{(value)=><PublishingPanel key={`${kind}:${selected}:${create}`}
-    locale={locale} kind={kind} selected={selected} create={create} options={value}/>}</TimetableRead>;
+    locale={locale} kind={kind} selected={selected} create={create} options={value} embedded={embedded}/>}</TimetableRead>;
 }
-function PublishingPanel({locale,kind,selected,create,options}:{locale:Locale;kind:Kind;selected?:string;create?:boolean;options:PublishingOptions}){
+function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:Locale;kind:Kind;selected?:string;create?:boolean;options:PublishingOptions;embedded?:boolean}){
   const text=words[locale],url=endpoint(kind);
   const canWrite=options.schoolWide||options.classes.some((item)=>item.canWrite);
   const [view,setView]=useState<"feed"|"managed">("feed"),[refresh,setRefresh]=useState(0);
@@ -72,7 +72,7 @@ function PublishingPanel({locale,kind,selected,create,options}:{locale:Locale;ki
   function goMonth(next:string){setMonth(next);setDay(undefined);}
   const base=href(locale,kind);
   return <section className="auth-card auth-form">
-    <h1>{text[kind]}</h1>
+    {!embedded&&<h1>{text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
       dismiss={()=>{setEditor(undefined);setView("managed");setRefresh((value)=>value+1);}}/>}
     {selected&&<><Link className="plain-button" href={base}>{text.back}</Link>
@@ -98,7 +98,7 @@ function PublishingPanel({locale,kind,selected,create,options}:{locale:Locale;ki
         today={options.schoolDate} entries={page.visible?.items??[]}/>}
       <AcademicPageItems locale={locale} page={page}>{(entries)=>{
         const visible=kind==="event"&&day?entries.filter((entry)=>activeOn(entry,day)):entries;
-        if(!visible.length)return <p>{text.emptyDay}</p>;
+        if(!visible.length)return <p>{kind==="event"?text.emptyDay:locale==="ar"?"مفيش أخبار منشورة.":"Keine Neuigkeiten."}</p>;
         return <ul className="group-list">
           {visible.map((record)=><li key={record.id}>
             <ContentCard locale={locale} record={record}/>

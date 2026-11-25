@@ -10,7 +10,7 @@ import { DailyAttendance } from "@/features/attendance/DailySheet";
 import { Children, Families } from "@/features/school/Families";
 import { InviteWorkspace } from "@/features/identity/Invitations";
 import { dictionary } from "@/i18n";
-import { ThreadInbox } from "@/features/comms/ThreadInbox";
+import { CommunicationHub } from "@/features/comms/CommunicationHub";
 import { SessionControls } from "@/features/identity/SessionControls";
 import { MoreGroup } from "@/ui/MoreGroup";
 
@@ -19,7 +19,7 @@ type Tab = typeof tabs[number];
 
 export default async function SchoolPage({ params, searchParams }: {
   params: Promise<{ locale: Locale; tab: string }>;
-  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; batchId?:string; invite?:string }>;
+  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; section?:string; batchId?:string; invite?:string }>;
 }) {
   const [{ locale, tab }, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
@@ -39,8 +39,8 @@ export default async function SchoolPage({ params, searchParams }: {
   const welcome=tab==="home"?await schoolProfile(session).catch(()=>null):null;
   return (
     <>
-      <h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>
-      {tab==="messages"&&<ThreadInbox locale={locale} thread={z.uuid().safeParse(search.thread).data}/>}
+      {tab!=="messages"&&<h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>}
+      {tab==="messages"&&<CommunicationHub locale={locale} thread={z.uuid().safeParse(search.thread).data} section={search.section}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
         {(search.batchId || search.invite) && <InviteWorkspace locale={locale} guardians={true}
@@ -86,16 +86,10 @@ export default async function SchoolPage({ params, searchParams }: {
         {(access || moderation) && <MoreGroup group="permissions">
           <summary>{locale === "ar" ? "الصلاحيات" : "Berechtigungen"}</summary>
           <div className="more-rows">
-            {access && <Link className="more-row" href={`/${locale}/staff/access`}>{locale === "ar" ? "صلاحيات الموظفين" : "Zugriff für Mitarbeitende"}</Link>}
+            {access && <Link className="more-row" href={`/${locale}/staff/access`}>{locale === "ar" ? "إدارة الصلاحيات" : "Berechtigungen verwalten"}</Link>}
             {moderation&&<Link className="more-row" href={`/${locale}/school/more/message-reports`}>{locale==="ar"?"بلاغات الرسائل":"Gemeldete Nachrichten"}</Link>}
           </div>
         </MoreGroup>}
-        <MoreGroup group="communication"><summary>{locale==="ar"?"التواصل والنشر":"Kommunikation"}</summary><div className="more-rows">
-            <Link className="more-row" href={`/${locale}/directory`}>{locale === "ar" ? "دليل التواصل" : "Kontaktverzeichnis"}</Link>
-            <Link className="more-row" href={`/${locale}/school/more/broadcasts`}>{locale==="ar"?"إعلانات المدرسة":"Schulmitteilungen"}</Link>
-            <Link className="more-row" href={`/${locale}/school/more/news`}>{locale==="ar"?"أخبار المدرسة":"Schulnachrichten"}</Link>
-            <Link className="more-row" href={`/${locale}/school/more/events`}>{locale==="ar"?"تقويم الأحداث":"Veranstaltungskalender"}</Link>
-        </div></MoreGroup>
         <MoreGroup group="account">
           <summary>{locale === "ar" ? "الحساب والجهاز" : "Konto und Gerät"}</summary>
           <div className="more-rows">
