@@ -13,7 +13,7 @@ import { dictionary, localizedError } from "@/i18n";
 
 const copy = {
   ar: {
-    title:"استيراد الأسر", upload:"رفع الملف", template:"تنزيل قالب", instructions:"استبدل صفوف الأمثلة، واحفظ مفاتيح الطلبة وأولياء الأمور كنص.",
+    title:"استيراد الأسر", upload:"رفع الملف", template:"تنزيل قالب", instructions:"استبدل صفوف الأمثلة، واحفظ مفاتيح الأسر والطلاب وأولياء الأمور كنص. كل صف يربط طفلًا بولي أمر واحد.",
     file:"ملف CSV أو XLSX", worksheet:"ورقة العمل", delimiter:"فاصل CSV", noColumn:"غير مستخدم", mapping:"مطابقة الأعمدة",
     map:"معاينة البيانات", review:"مراجعة الصفوف", row:"صف", column:"عمود", decision:"القرار", save:"حفظ القرار",
     approve:"استخدم السجل الحالي", skip:"تخطّ الصف", restore:"اعتمد إعادة الربط", match_guardian:"اختر ولي أمر موجودًا",
@@ -33,7 +33,7 @@ const copy = {
   },
   de: {
     title:"Familien importieren", upload:"Datei hochladen", template:"Vorlage herunterladen",
-    instructions:"Ersetzen Sie die Beispielzeilen. Speichern Sie Schüler- und Sorgeberechtigten-Schlüssel als Text.",
+    instructions:"Ersetzen Sie die Beispielzeilen. Speichern Sie Familien-, Schüler- und Sorgeberechtigten-Schlüssel als Text. Jede Zeile verknüpft ein Kind mit einer sorgeberechtigten Person.",
     file:"CSV- oder XLSX-Datei", worksheet:"Arbeitsblatt", delimiter:"CSV-Trennzeichen", noColumn:"Nicht verwendet", mapping:"Spalten zuordnen",
     map:"Vorschau anzeigen", review:"Zeilen prüfen", row:"Zeile", column:"Spalte", decision:"Entscheidung", save:"Entscheidung speichern",
     approve:"Bestehenden Eintrag übernehmen", skip:"Zeile überspringen", restore:"Verknüpfung erneut bestätigen", match_guardian:"Vorhandene Sorgeberechtigte auswählen",
@@ -182,13 +182,13 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
     void run(async () => {
       const next = await command(`${base}/${preview.id}/decisions`, "PATCH",
         { revision: preview.revision, rows: [edit] }, importPreviewSchema);
-      setPreview(next);
+      setPreview(next);setConfirmed(false);
       setInspection({ ...inspection, revision: next.revision });
     });
   };
 
   const rows=preview?.rows.filter(row=>filter==="all"||row.disposition===filter)??[];
-  return <div className="family-workspace">
+  return <div className="family-workspace family-import">
     <Link className="plain-button" href={`/${locale}/school/students`}>{tr("Zurück","رجوع")}</Link>
     <h1>{text.title}</h1>
     <p role="status">{tr("Schritt","الخطوة")} {stage}/4 · {[tr("Datei auswählen","اختيار الملف"),text.mapping,text.review,text.receipt][stage-1]}</p>
@@ -196,8 +196,8 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
       {history.length>0&&<details><summary>{tr("Frühere Importe","الاستيرادات السابقة")}</summary>{history.map(item=><button type="button" className="plain-button" key={item.id} disabled={pending} onClick={()=>void run(async()=>{rememberJob(item.id);await resume(item.id);})}>{item.fileName} · {item.state==="committed"?text.receipt:tr("Fortsetzen","استكمال")}</button>)}</details>}
       <p>{text.instructions}</p>
       <div className="header-actions">
-        <a className="plain-button" href="/templates/family-import-groups.csv" download>{text.template} CSV</a>
-        <a className="plain-button" href="/templates/family-import.xlsx" download>{text.template} XLSX</a>
+        <a className="plain-button" href="/templates/family-import-groups.csv" download>CSV · {locale==="ar"?"قالب":"Vorlage"}</a>
+        <a className="plain-button" href="/templates/family-import.xlsx" download>XLSX · {locale==="ar"?"قالب":"Vorlage"}</a>
       </div>
       <form className="auth-form" onSubmit={upload}>
         <p>{text.file} · 2.5 MB max.</p><input ref={fileInput} type="file" hidden accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={event=>setFile(event.target.files?.[0])}/>

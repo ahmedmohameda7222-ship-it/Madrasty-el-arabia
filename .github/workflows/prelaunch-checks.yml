@@ -395,13 +395,8 @@ jobs:
             adb shell wm density 320
             chmod +x apps/android/gradlew
             mkdir -p qa-artifacts/native-family
-            set +e
             ./apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=de.madrasty.app.school.FamilyVisualTest --no-daemon --stacktrace
-            result=$?
             adb pull /sdcard/Download/madrasty-family-qa/. qa-artifacts/native-family/
-            adb logcat -d > qa-artifacts/native-family/logcat.txt
-            set -e
-            test "$result" -eq 0
             test "$(find qa-artifacts/native-family -name '*.png' | wc -l)" -eq 8
       - uses: actions/upload-artifact@v4
         if: always()

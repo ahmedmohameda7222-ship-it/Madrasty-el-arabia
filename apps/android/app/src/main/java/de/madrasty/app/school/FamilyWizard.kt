@@ -111,7 +111,7 @@ internal fun FamilyWizard(model:IdentityViewModel,canBill:Boolean,requests:Mutab
         4->{
             Text(name,style=MaterialTheme.typography.titleMedium)
             children.forEach{c->Text(c.name,style=MaterialTheme.typography.titleMedium);adults.forEachIndexed{j,a->Text(a.name+" · "+familyLinkLabel(c.links[j]?.first?:"none"))};c.payer?.let{Text(fm("Zahlung: ","السداد: ")+adults[it].name)}}
-            Row{Checkbox(checked=confirmed,onCheckedChange={confirmed=it});Text(fm("Ich habe die Angaben und Berechtigungen geprüft.","راجعت البيانات والصلاحيات."))}
+            Row(Modifier.fillMaxWidth()){Checkbox(checked=confirmed,onCheckedChange={confirmed=it});Text(fm("Ich habe die Angaben und Berechtigungen geprüft.","راجعت البيانات والصلاحيات."),modifier=Modifier.weight(1f).padding(top=12.dp))}
             Text(fm("Einladungen werden nicht automatisch gesendet.","لا تُرسل الدعوات تلقائيًا."))
             Submit(confirmed,label=R.string.school_save,success=null){
                 val body=JSONObject().put("displayName",name.trim()).put("situation",situation)
@@ -123,8 +123,8 @@ internal fun FamilyWizard(model:IdentityViewModel,canBill:Boolean,requests:Mutab
         }
     }
     val valid=when(step){0->name.trim().length in 1..200;1->adults.all{it.name.trim().length in 1..200&&it.phone.length<=48&&it.address.length<=500&&validFamilyBirth(it.birth)&&(it.email.isBlank()||android.util.Patterns.EMAIL_ADDRESS.matcher(it.email.trim()).matches())}&&adults.map{it.email.trim().lowercase()}.filter{it.isNotBlank()}.let{it.distinct().size==it.size};2->children.all{it.name.trim().length in 1..200&&validFamilyBirth(it.birth)};3->children.all{c->c.links.values.any{it.first=="approved"}&&c.links.values.all{it.first=="none"||it.second!="unspecified"}};else->false}
-    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
-        if(step>0)OutlinedButton(onClick={step--;confirmed=false}){Text(fm("Zurück","رجوع"))}
-        if(step<4)Button(enabled=valid,onClick={step++;confirmed=false}){Text(fm("Weiter","التالي"))}
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        if(step>0)OutlinedButton(onClick={step--;confirmed=false},modifier=Modifier.weight(1f).heightIn(min=48.dp)){Text(fm("Zurück","رجوع"))}
+        if(step<4)Button(enabled=valid,onClick={step++;confirmed=false},modifier=Modifier.weight(1.5f).heightIn(min=48.dp)){Text(fm("Weiter","التالي"))}
     }
 }

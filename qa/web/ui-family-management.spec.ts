@@ -7,17 +7,28 @@ for(const locale of ["de","ar"] as const)for(const width of [320,390,430])for(co
  test(`family mobile ${locale} ${width} ${colorScheme}`,async({page,context})=>{
   const school=schoolFixtures();try{
    await school.seed();const token=await school.bearer("admin","admin");
-   const name="QA Family "+locale+" "+width+" "+colorScheme;
+   const name="QA Family "+locale+" "+width+" "+colorScheme+" "+crypto.randomUUID().slice(0,6);
    const {payload}=await fixtureApi(school,"/school/families",{token,persona:"admin",method:"POST",status:201,key:crypto.randomUUID(),body:{displayName:name,situation:"separated",guardians:[{displayName:"QA Parent",contactEmail:null,contactPhone:null,correspondenceLocale:locale}],children:[{displayName:"QA Child",guardianLinks:[{guardianIndex:0,relationship:"mother",approved:true}]}]}});
    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);await page.setViewportSize({width,height:844});await page.emulateMedia({colorScheme});
    await page.goto(`/${locale}/school/students?view=guardians`);
+   await page.getByRole("searchbox").fill(name);
    await expect(page.getByText(name,{exact:true})).toBeVisible();
    mkdirSync("qa-artifacts/family",{recursive:true});const prefix=`qa-artifacts/family/${locale}-${width}-${colorScheme}`;
    const noOverflow=async()=>expect(await page.locator(".family-workspace").evaluate(el=>el.scrollWidth<=el.clientWidth+2)).toBeTruthy();
    await noOverflow();await page.screenshot({path:prefix+"-list.png",animations:"disabled"});
    await page.getByText(name,{exact:true}).click();await expect(page).toHaveURL(new RegExp("family="+payload.data.familyId));
-   await expect(page.getByText("QA Child",{exact:true}).first()).toBeVisible();await noOverflow();await page.screenshot({path:prefix+"-profile.png",animations:"disabled"});
+   await expect(page.getByText("QA Child",{exact:true}).first()).toBeVisible();await noOverflow();await expect(page.locator(".family-profile-header h1")).toBeVisible();
+   expect(await page.locator(".family-profile-header h1").evaluate(el=>el.getBoundingClientRect().width)).toBeGreaterThan(width-130);
+   await page.screenshot({path:prefix+"-profile.png",animations:"disabled"});
+   await page.locator(".school-content").evaluate(el=>el.scrollTop=el.scrollHeight);await page.screenshot({path:prefix+"-profile-bottom.png",animations:"disabled"});
    await page.goto(`/${locale}/school/students?add=family`);await expect(page.locator(".family-wizard")).toBeVisible();await noOverflow();await page.screenshot({path:prefix+"-wizard.png",animations:"disabled"});
+   const next=page.getByRole("button",{name:locale==="ar"?"التالي":"Weiter",exact:true});
+   await page.getByRole("textbox",{name:locale==="ar"?"اسم الأسرة":"Familienname",exact:true}).fill(name+" New");await next.click();
+   await page.locator('input[name="guardian1Name"]').fill("QA Adult");await noOverflow();await page.screenshot({path:prefix+"-guardian.png",animations:"disabled"});await next.click();
+   await page.getByRole("textbox",{name:locale==="ar"?"الاسم":"Name",exact:true}).last().fill("QA Student");await noOverflow();await page.screenshot({path:prefix+"-child.png",animations:"disabled"});await next.click();
+   await page.getByRole("combobox",{name:locale==="ar"?"الوصول إلى بيانات الطفل":"Zugang zum Kind",exact:true}).selectOption("approved");
+   await page.getByRole("combobox",{name:locale==="ar"?"العلاقة بالطفل":"Beziehung zum Kind",exact:true}).selectOption("father");await noOverflow();await page.screenshot({path:prefix+"-links.png",animations:"disabled"});await next.click();await noOverflow();await page.screenshot({path:prefix+"-review.png",animations:"disabled"});
+   await page.goto(`/${locale}/school/students/import`);await expect(page.locator(".family-import")).toBeVisible();await noOverflow();await page.screenshot({path:prefix+"-import.png",animations:"disabled"});
   }finally{await school.close();}
  });
 }

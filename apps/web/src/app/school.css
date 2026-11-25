@@ -641,3 +641,18 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .family-review-line{display:flex;align-items:start;justify-content:space-between;gap:8px;flex-wrap:wrap;border-block-start:1px solid var(--rule);padding-block-start:6px}
 .family-wizard-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;align-items:stretch;margin-block-start:8px}.family-wizard-actions button{margin:0!important;min-inline-size:0;min-block-size:48px;font-size:.9rem;overflow-wrap:normal}
 @media(max-width:360px){.family-workspace{gap:8px}.family-detail-card,.family-wizard{padding:10px}.family-metrics button{padding:10px}.family-list-row{padding:8px;gap:8px}.family-avatar{flex-basis:36px;inline-size:36px;block-size:36px}.family-step-track li small{display:none}.family-filter-panel{grid-template-columns:minmax(0,1fr)}}
+
+/* Audit 2026-11-25: keep full profile title width on narrow iPhones. */
+.family-profile-header{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center}
+.family-profile-header>.plain-button{grid-column:2;justify-self:start;max-inline-size:100%;white-space:normal}
+.family-profile-header h1{overflow-wrap:break-word}
+.family-wizard select,.family-detail-card select,.family-filter-panel select,.family-import select{appearance:none;-webkit-appearance:none;padding-inline-end:32px;background:var(--canvas);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%237e8996' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;color:var(--ink)}
+[dir=rtl] :is(.family-wizard,.family-detail-card,.family-filter-panel,.family-import) select{background-position:left 10px center}
+.family-import .auth-card{margin:0;min-inline-size:0;padding:14px;max-inline-size:100%}
+.family-import .header-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-inline-size:0}
+.family-import .header-actions a{margin:0;display:flex;align-items:center;justify-content:center;min-block-size:44px;font-size:.875rem;white-space:normal;text-align:center}
+.family-import .auth-form,.family-import label,.family-import select{min-inline-size:0;max-inline-size:100%}
+.family-import select{inline-size:100%;min-block-size:44px;border:1px solid var(--rule);border-radius:12px}
+.family-import .group-list{min-inline-size:0;overflow-wrap:anywhere}
+.family-import .primary-button,.family-import .plain-button{white-space:normal;overflow-wrap:break-word}
+@media(max-width:360px){.family-profile-header{grid-template-columns:36px minmax(0,1fr)}.family-import .header-actions{grid-template-columns:1fr}}
