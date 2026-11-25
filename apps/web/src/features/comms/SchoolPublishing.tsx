@@ -98,7 +98,7 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   const returnBase=fromHub?`/${locale}/school/messages`:base;
   const returnHref=returnParams.size?`${returnBase}?${returnParams}`:returnBase;
   function detailHref(id:string){const next=new URLSearchParams(context);next.set("item",id);if(fromHub)next.set("from","hub");return `${base}?${next}`;}
-  return <section className="auth-card auth-form">
+  return <section className="auth-card auth-form comms-publications">
     {!embedded&&<h1>{text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
       dismiss={()=>{setEditor(undefined);setView("managed");setRefresh((value)=>value+1);}}/>}
@@ -112,11 +112,10 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
       </TimetableRead>
     </>}
     {!selected&&!editor&&<>
-      {canWrite&&<div className="header-actions">
-        <button className="plain-button" type="button" aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{text.feed}</button>
-        <button className="plain-button" type="button" aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{text.managed}</button>
-        <button className="primary-button" type="button" onClick={()=>setEditor("new")}>{kind==="event"?text.writeEvent:text.write}</button>
-      </div>}
+      {canWrite&&<><div className="comms-segments" role="group" aria-label={text.managed}>
+        <button type="button" aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{text.feed}</button>
+        <button type="button" aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{text.managed}</button>
+      </div><button className="primary-button" type="button" onClick={()=>setEditor("new")}>{kind==="event"?text.writeEvent:text.write}</button></>}
       {options.classes.length>0&&<label>{text.class}<select value={classId} onChange={(event)=>setClass(event.target.value)}>
         <option value="">{text.allClasses}</option>
         {options.classes.map((choice)=><option key={choice.id} value={choice.id}>{choice.code} · {locale==="ar"?choice.nameAr:choice.nameDe}</option>)}
@@ -175,10 +174,10 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
 
 function ContentCard({locale,record,detail=false}:{locale:Locale;record:PublishingEntry;detail?:boolean}){
   const text=words[locale],body=localized(record,locale);
-  return <article className="timetable-day">
+  return <article className="timetable-day comms-publication-card">
     <h2 dir="auto">{body.title}</h2>
     <p>{record.audience.kind==="school"?text.school:<bdi>{locale==="ar"?record.classAr:record.classDe}</bdi>}
-      {record.state!=="published"&&<> · {text[record.state]}</>}</p>
+      {record.state!=="published"&&<> · <span className="comms-publication-state" data-state={record.state}>{text[record.state]}</span></>}</p>
     {record.kind==="event"&&<EventDate locale={locale} timing={record.timing} zone={record.timezone}/>}
     {record.kind==="news"&&record.publishedAt&&<small><bdi>{new Date(record.publishedAt).toLocaleDateString(intl(locale))}</bdi></small>}
     {detail&&<p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{body.body}</p>}

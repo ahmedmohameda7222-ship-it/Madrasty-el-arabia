@@ -53,6 +53,8 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     return ()=>{area.removeEventListener("scroll",track);observer.disconnect();mutations.disconnect();};
   },[]);
   const [body,setBody]=useState(""),[quote,setQuote]=useState<ChatMessage>();
+  const inputRef=useRef<HTMLTextAreaElement>(null);
+  useEffect(()=>{const field=inputRef.current;if(!field)return;field.style.height="auto";field.style.height=`${Math.min(140,Math.max(44,field.scrollHeight))}px`;},[body]);
   const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}>();
   const [ack,setAck]=useState<ChatMessage>(),[lost,setLost]=useState(false);
   const [attachment,setAttachment]=useState<string>(),[consumed,setConsumed]=useState<string>(),[preparing,setPreparing]=useState(false);
@@ -76,6 +78,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   async function send(payload:Proposed){
     if(sending.current||lost||!thread.canReply)return;
     sending.current=true;
+    followTail.current=true;
     setAttempt({payload,pending:true,failed:false});
     try{
       const result=await requestApi(`${root}/messages`,chatMessage,{
@@ -130,7 +133,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     </form>
     </details>
     <div className="comms-message-area" ref={messageArea}>
-    <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={setQuote} deny={deny}
+    <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={(message)=>{if(!sending.current){setQuote(message);setAttempt(undefined);inputRef.current?.focus();}}} deny={deny}
       recognize={recognize} updateArchive={setArchived}/>
     {attempt&&<div className="comms-message comms-pending" data-own="true" role={attempt.failed?"alert":"status"}>
       <p dir="auto">{attempt.payload.body}</p>
@@ -146,7 +149,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       <div className="comms-input-bar">
         <MediaComposer locale={locale} persona={persona} thread={thread.id} locked={attempt?.pending===true} consumed={consumed}
           onReady={setAttachment} onBusy={setPreparing}/>
-        <label className="comms-input-field"><textarea aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={1} disabled={attempt?.pending}
+        <label className="comms-input-field"><textarea ref={inputRef} aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={1} disabled={attempt?.pending}
           onChange={(event)=>{setBody(event.target.value);setAttempt(undefined);}}/></label>
         <button className="comms-icon-button comms-send-button" type="submit" aria-label={attempt?.failed?text.retry:text.send} disabled={(!body.trim()&&!attachment)||preparing||attempt?.pending}>
           <Icon name={attempt?.failed?"retry":"sendUp"}/>

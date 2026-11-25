@@ -12,6 +12,7 @@ import { dictionary } from "@/i18n";
 import { AcademicPageItems,useAcademicPage } from "@/features/academics/shared";
 import { TimetableRead,timetableError,useTimetableRead } from "@/features/school/timetable/shared";
 import { Conversation } from "./Conversation";
+import { Icon } from "@/ui/Icon";
 import { readInboxContext, writeInboxContext, withInboxThread, type InboxContext } from "./inbox-context";
 
 const copy={
@@ -67,9 +68,13 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     window.history.replaceState(null,"",url);
   };
   if(thread)return <>
-    <Link className="plain-button" href={backHref}>{text.back}</Link>
-    <TimetableRead locale={locale} result={detail}>{(value)=><section className="auth-card auth-form">
-      <h2><bdi>{title(locale,value)}</bdi></h2>
+    <TimetableRead locale={locale} result={detail}>{(value)=><section className="auth-card auth-form comms-thread-screen">
+      <header className="comms-thread-toolbar">
+        <Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>
+        <span className="comms-avatar" aria-hidden="true">{title(locale,value).trim().slice(0,1).toUpperCase()}</span>
+        <h2><bdi>{title(locale,value)}</bdi></h2>
+        <button type="button" className="comms-icon-button" aria-label={text.refresh} onClick={reload}><Icon name="retry"/></button>
+      </header>
       {value.inbox&&value.contactName&&<p>{text[value.inbox]}</p>}
       {(value.caseStatus||value.references.length>0||value.canManageCase)&&<details className="comms-legacy-details"><summary>{text.references}</summary>
       {value.caseStatus&&<p>{text.status} · {text[value.caseStatus]}</p>}
@@ -79,7 +84,6 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       {value.canManageCase&&value.caseId&&<CaseEditor key={value.caseId} locale={locale} id={value.caseId} version={version} changed={reload}/>}
       </details>}
       <Conversation key={value.id} locale={locale} thread={value} changed={reload}/>
-      <button type="button" className="plain-button" onClick={reload}>{text.refresh}</button>
     </section>}</TimetableRead>
   </>;
   return <section className="auth-card auth-form inbox-panel">

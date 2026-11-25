@@ -4,6 +4,16 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Badge
+import androidx.compose.material3.ListItem
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
@@ -57,7 +67,7 @@ private val caseLabels=mapOf(
 )
 @Composable
 internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String)->Unit){
-    val version=threadRefreshVersion()
+    val version=threadRefreshVersion(poll=true)
     var filter by remember{mutableStateOf("all")}
     var search by remember{mutableStateOf("")}
     var queryTerm by remember{mutableStateOf("")}
@@ -72,13 +82,12 @@ internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String
     val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
     academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${filter=="archive"}&unread=${filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
         for(thread in threads){
-            TextButton(onClick={open(thread.getString("id"))},modifier=Modifier.fillMaxWidth()){
-                Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)){
-                    Text(threadTitle(thread),style=MaterialTheme.typography.titleMedium)
-                    thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2)}
-                    if(thread.getInt("unread")>0)Text(stringResource(R.string.chat_unread)+" · "+thread.getInt("unread"),color=MaterialTheme.colorScheme.primary)
-                }
-            }
+            ListItem(modifier=Modifier.fillMaxWidth().clickable{open(thread.getString("id"))},
+                headlineContent={Text(threadTitle(thread),maxLines=2,overflow=TextOverflow.Ellipsis)},
+                supportingContent={thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2,overflow=TextOverflow.Ellipsis)}},
+                leadingContent={ThreadAvatar(thread)},
+                trailingContent={if(thread.optInt("unread")>0)Badge{Text(thread.optInt("unread").toString())}})
+
             HorizontalDivider()
         }
     }
@@ -93,9 +102,12 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
-        TextButton(onClick=close){Text(stringResource(R.string.back))}
         AsyncSurface(thread){value->
-            Text(threadTitle(value),style=MaterialTheme.typography.titleLarge,maxLines=2)
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                TextButton(onClick=close){Text(stringResource(R.string.back))}
+                ThreadAvatar(value)
+                Text(threadTitle(value),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+            }
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))
             }
@@ -181,9 +193,18 @@ private fun threadTitle(thread:JSONObject):String{
 }
 
 @Composable
-private fun threadRefreshVersion():Int{
+private fun ThreadAvatar(thread:JSONObject){
+    val name=thread.string("contactName")?.trim().orEmpty()
+    Surface(Modifier.size(44.dp),shape=CircleShape,color=MaterialTheme.colorScheme.secondaryContainer){
+        Box(contentAlignment=Alignment.Center){Text(name.firstOrNull()?.uppercase()?: "•",style=MaterialTheme.typography.titleMedium)}
+    }
+}
+
+@Composable
+private fun threadRefreshVersion(poll:Boolean=false):Int{
     var version by remember{mutableStateOf(0)}
     val lifecycle=LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle,poll){if(poll)while(true){delay(15000);if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))version++}}
     DisposableEffect(lifecycle){
         val observer=LifecycleEventObserver{_,event->if(event==Lifecycle.Event.ON_RESUME)version++}
         lifecycle.addObserver(observer)

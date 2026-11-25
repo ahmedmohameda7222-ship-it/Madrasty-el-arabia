@@ -455,7 +455,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                     }
                 }
                 when(state.communicationSection){
-                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News))})
+                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))},{state.communicationSection="calendar"})
                     "calendar"->SchoolPublicationScreen(model,PublicationSection.Events,null,{state.communicationSection="chat"},embedded=true)
                     else->ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
                 }

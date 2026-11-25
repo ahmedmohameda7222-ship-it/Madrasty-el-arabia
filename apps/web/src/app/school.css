@@ -443,3 +443,28 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-reaction-chip[aria-pressed=true]{border-color:var(--primary);font-weight:650;box-shadow:inset 0 0 0 1px var(--primary)}
 .comms-reaction-chip:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .comms-reaction-chip:disabled{cursor:wait;opacity:.7}
+
+/* Communication: compact navigation and publication surfaces, scoped to this feature. */
+.comms-thread-screen{padding:12px;min-inline-size:0}
+.comms-thread-toolbar{display:grid;grid-template-columns:44px 40px minmax(0,1fr) 44px;gap:8px;align-items:center;min-inline-size:0}
+.comms-thread-toolbar .comms-avatar{width:40px;height:40px;font-size:1rem}
+.comms-thread-toolbar h2{margin:0;font-size:1rem;line-height:1.3;overflow-wrap:anywhere}
+.comms-thread-toolbar a{text-decoration:none}
+.comms-feed-toolbar{display:flex;align-items:center;gap:6px;min-inline-size:0}
+.comms-feed-toolbar h2{flex:1;min-inline-size:0;font-size:1.1rem;margin:0}
+.comms-publish-menu{position:relative;flex:none}
+.comms-publish-menu summary{cursor:pointer;list-style:none}
+.comms-publish-menu summary::-webkit-details-marker{display:none}
+.comms-publish-menu-items{position:absolute;z-index:6;inset-inline-end:0;inset-block-start:calc(100% + 4px);inline-size:min(250px,calc(100vw - 48px));background:var(--card);border:1px solid var(--rule);border-radius:16px;box-shadow:0 8px 28px #0002;overflow:hidden}
+.comms-publish-menu-items a{display:flex;align-items:center;min-block-size:44px;padding:8px 14px;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.comms-publish-menu-items a+a{border-block-start:1px solid var(--rule)}
+.comms-publications{min-inline-size:0}
+.comms-publications .comms-segments{min-inline-size:0}
+.comms-publications .comms-segments button{font-size:.875rem}
+.comms-publication-card h2{margin-block:0;font-size:1rem;overflow-wrap:anywhere}
+.comms-publication-card p{overflow-wrap:anywhere}
+.comms-publication-state{display:inline-block;border:1px solid var(--rule);border-radius:999px;padding:2px 8px;font-size:.8rem}
+.comms-input-field textarea{overflow-y:auto;box-sizing:border-box}
+.comms-thread-screen .comms-message-area{max-block-size:clamp(180px,55dvh,720px)}
+@media(max-width:600px){.comms-thread-screen{padding:10px}.comms-thread-toolbar{grid-template-columns:44px 36px minmax(0,1fr) 44px;gap:6px}.comms-thread-toolbar .comms-avatar{width:36px;height:36px}}
+@media(prefers-reduced-motion:no-preference){.comms-publish-menu-items{animation:comms-send-in 140ms ease-out both}}

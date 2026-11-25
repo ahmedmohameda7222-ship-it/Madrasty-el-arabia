@@ -2,6 +2,17 @@ package de.madrasty.app.comms
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +37,7 @@ import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.isolate
 
 @Composable
-internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcasts:()->Unit,news:()->Unit){
+internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcasts:()->Unit,news:()->Unit,newNews:()->Unit,events:()->Unit){
     val language=if(LocalContext.current.resources.configuration.locales[0].language=="de")"de" else "ar"
     var filter by remember{mutableStateOf("all")}
     var refresh by remember{mutableStateOf(0)}
@@ -36,11 +47,20 @@ internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcast
         val data=(options as? AsyncState.Ready)?.content
         val classes=data?.optJSONArray("classes")
         val canWrite=data?.optBoolean("schoolWide")==true||(classes!=null&&(0 until classes.length()).any{classes.getJSONObject(it).optBoolean("canWrite")})
-        if(canWrite){
-            TextButton(onClick={manage=!manage}){Text(stringResource(R.string.comms_manage))}
-            if(manage){
-                TextButton(onClick=broadcasts){Text(stringResource(R.string.broadcast_title))}
-                TextButton(onClick=news){Text(stringResource(R.string.school_news))}
+        if(canWrite)Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically){
+            Box{
+                IconButton(onClick={manage=true},modifier=Modifier.size(48.dp)){
+                    Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_manage))
+                }
+                DropdownMenu(expanded=manage,onDismissRequest={manage=false}){
+                    DropdownMenuItem(text={Text(stringResource(R.string.publish_new_news))},onClick={manage=false;newNews()})
+                    DropdownMenuItem(text={Text(stringResource(R.string.broadcast_title))},onClick={manage=false;broadcasts()})
+                    DropdownMenuItem(text={Text(stringResource(R.string.publish_managed))},onClick={manage=false;news()})
+                    DropdownMenuItem(text={Text(stringResource(R.string.school_events))},onClick={manage=false;events()})
+                }
+            }
+            IconButton(onClick={refresh++},modifier=Modifier.size(48.dp)){
+                Icon(painterResource(R.drawable.ic_comms_retry),contentDescription=stringResource(R.string.broadcast_refresh))
             }
         }
     }
@@ -49,7 +69,7 @@ internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcast
             FilterChip(filter==key,onClick={filter=key},label={Text(stringResource(label))})
         }
     }
-    TextButton(onClick={refresh++}){Text(stringResource(R.string.broadcast_refresh))}
+    if(persona==Persona.Guardian)TextButton(onClick={refresh++}){Text(stringResource(R.string.broadcast_refresh))}
     academicPages(model,"/comms/feed?limit=25&locale=$language&filter=$filter",refresh+model.attendanceNetworkRevision){items->
         for(item in items){
             HorizontalDivider()
