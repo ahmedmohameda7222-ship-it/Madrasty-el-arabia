@@ -60,6 +60,8 @@ export function threads(actor:ActorContext,input:z.infer<typeof threadQuery>){
       cross join lateral app.chat_recent_activity(t.id,case when strpos(lower(coalesce(t.contact_name,'')),lower(${input.q??""}))>0
         then null else ${input.q||null}::text end) a
       where (${input.kind??null}::text is null or t.kind=${input.kind??null}) and a.archived=${input.archived??false}
+        and (${input.includeEmpty??true} or t.kind<>'direct' or a.last_sequence>0)
+        and (not ${input.unread??false} or a.unread>0)
         and (${cursor?.id??null}::uuid is null or (a.activity_at,t.id)<(${cursor?.activityAt??null}::timestamptz,${cursor?.id??null}::uuid))
       order by a.activity_at desc,t.id desc limit ${input.limit+1}`);
     const items=rows.slice(0,input.limit),last=items.at(-1);

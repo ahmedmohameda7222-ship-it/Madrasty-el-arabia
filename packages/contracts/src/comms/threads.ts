@@ -11,6 +11,8 @@ export const threadReference=z.object({kind:z.enum(["homework","invoice","attend
 export const startThreadInput=z.object({target:directoryTargetSchema,context:threadReference.optional()});
 export const threadReceipt=z.object({threadId:id,kind:threadKind,canReply:z.boolean(),caseId:id.optional()});
 export const threadQuery=pageQuerySchema.extend({kind:threadKind.optional(),inbox:inboxSchema.optional(),
+  unread:z.enum(["true","false"]).transform((value)=>value==="true").optional(),
+  includeEmpty:z.enum(["true","false"]).transform((value)=>value==="true").optional(),
   archived:z.enum(["true","false"]).transform((value)=>value==="true").optional(),q:z.string().trim().max(120).optional(),
 });
 export const threadSummary=z.object({

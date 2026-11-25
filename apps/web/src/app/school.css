@@ -372,3 +372,5 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-person-label small { font-size:.8rem; color:var(--muted); }
 .comms-person-row>svg { flex:0 0 24px; color:var(--primary); }
 @media(prefers-reduced-motion:no-preference){.comms-person-row,.comms-segments button{transition:background-color 140ms,transform 120ms}.comms-person-row:not(:disabled):active{transform:scale(.985);background:var(--inset)}}
+
+.comms-inbox-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.comms-thread-row{text-decoration:none;color:var(--ink);min-width:0}.comms-thread-copy{min-width:0;flex:1;display:grid;gap:4px}.comms-thread-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.comms-thread-meta{display:grid;gap:6px;justify-items:end;flex-shrink:0}.comms-thread-meta .notice-count{position:static}.comms-legacy-details{border:1px solid var(--border);border-radius:12px;padding:10px}.comms-legacy-details summary{cursor:pointer}

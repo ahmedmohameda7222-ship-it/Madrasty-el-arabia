@@ -3053,6 +3053,8 @@ paths:
       security: [{ webSession: [] }, { nativeBearer: [] }]
       parameters:
         - {"name":"archived","in":"query","schema":{"type":"boolean","default":false}}
+        - {"name":"unread","in":"query","schema":{"type":"boolean","default":false}}
+        - {"name":"includeEmpty","in":"query","schema":{"type":"boolean","default":true}}
         - {"name":"q","in":"query","schema":{"type":"string","maxLength":120}}
         - {"name":"kind","in":"query","schema":{"type":"string","enum":["direct","office"]}}
         - {"name":"inbox","in":"query","schema":{"type":"string","enum":["student_affairs","accounts"]}}
