@@ -1,6 +1,12 @@
 package de.madrasty.app.comms
 
 import android.net.Uri
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.os.PersistableBundle
+import android.os.Build
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
@@ -294,7 +300,9 @@ internal fun ChatMessageItem(
     val location=remember{BringIntoViewRequester()}
     LaunchedEffect(focused){if(focused)location.bringIntoView()}
     val own=message.optBoolean("own")
-    var actions by remember{mutableStateOf(false)}
+    var actions by remember(message.getString("id")){mutableStateOf(false)}
+    val context=LocalContext.current
+    var copyFailed by remember(message.getString("id")){mutableStateOf(false)}
     Row(Modifier.fillMaxWidth().bringIntoViewRequester(location),horizontalArrangement=if(own)Arrangement.End else Arrangement.Start){
     CommunicationBubble(own){
     if(!own)Text(chatAuthor(message),style=MaterialTheme.typography.labelMedium)
@@ -304,7 +312,9 @@ internal fun ChatMessageItem(
                 (quote.string("preview")?.let{" · "+isolate(it)}?:""))
         }
     }
-    message.string("body")?.let{Text(isolate(it))}
+    message.string("body")?.let{body->
+        Text(isolate(body),modifier=Modifier.combinedClickable(onClick={},onLongClick={actions=true}))
+    }
     val media=message.getJSONArray("attachments")
     val threadId=thread.getString("id")
     for(index in 0 until media.length()){
@@ -319,6 +329,18 @@ internal fun ChatMessageItem(
     if(actions){
     if(message.optBoolean("replyable")&&thread.optBoolean("canReply")){
         TextButton(onClick={reply(message)}){Text(stringResource(R.string.chat_reply))}
+    }
+    message.string("body")?.let{body->
+        TextButton(onClick={
+            copyFailed=runCatching{
+                val clip=ClipData.newPlainText("",body)
+                if(Build.VERSION.SDK_INT>=33)clip.description.extras=PersistableBundle().apply{putBoolean("android.content.extra.IS_SENSITIVE",true)}
+                val clipboard=requireNotNull(context.getSystemService(ClipboardManager::class.java))
+                clipboard.setPrimaryClip(clip)
+            }.isFailure
+            if(!copyFailed)actions=false
+        }){Text(stringResource(R.string.chat_copy_text))}
+        if(copyFailed)Text(stringResource(R.string.generic_error))
     }
     if(hasContent)ReportChatMessage(model,threadId,message.getString("id"))
     if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions)
