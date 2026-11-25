@@ -266,20 +266,27 @@ async function addFamilyStudent(tx: Transaction, actor: ActorContext, child: z.i
   const [created] = await tx<{ id: string }[]>`
     insert into app.student(display_name,birth_date) values (${child.displayName},${child.birthDate??null}::date) returning id
   `;
-  const selected=links??guardianIds.map((_,guardianIndex)=>({guardianIndex,relationship:"unspecified" as const,approved:true}));
-  for (const entry of selected) {
-    const guardianId=guardianIds[entry.guardianIndex];
-    if(!guardianId)throw new ApiError("validation");
-    const state=entry.approved?"approved":"pending";
-    const [relation] = await tx<{ id: string }[]>`
-      insert into app.child_link(guardian_id,student_id,state,effective_from,changed_by,reason,relationship)
-      values (${guardianId},${created.id},${state},case when ${entry.approved} then now() else null end,${actor.accountId},'School registration',${entry.relationship}) returning id
-    `;
-    await publishLinkEvent(tx,actor,relation.id);
-  }
+  await assignFamilyLinks(tx,actor,created.id,guardianIds,links);
   await placeFamilyChild(tx, created.id, child.classId);
   await appendAudit(tx, { action: "school.student_created", aggregateId: created.id });
   return student(tx, created.id);
+}
+async function assignFamilyLinks(tx:Transaction,actor:ActorContext,studentId:string,guardianIds:string[],links?:z.infer<typeof createFamilyInput>["children"][number]["guardianLinks"]){
+  const selected=links??guardianIds.map((_,guardianIndex)=>({guardianIndex,relationship:"unspecified" as const,approved:true}));
+  for(const entry of selected){
+    const guardianId=guardianIds[entry.guardianIndex];
+    if(!guardianId)throw new ApiError("validation");
+    const state=entry.approved?"approved":"pending";
+    const [current]=await tx<{state:string}[]>`select state from app.child_link where guardian_id=${guardianId} and student_id=${studentId} and state<>'revoked' for update`;
+    // Existing access must be changed only in the existing explicit approve/revoke workflow.
+    if(current){if(current.state!==state)throw new ApiError("conflict");continue;}
+    const [revoked]=await tx`select id from app.child_link where guardian_id=${guardianId} and student_id=${studentId} and state='revoked' limit 1`;
+    if(revoked)throw new ApiError("conflict");
+    const [relation]=await tx<{id:string}[]>`
+      insert into app.child_link(guardian_id,student_id,state,effective_from,changed_by,reason,relationship)
+      values (${guardianId},${studentId},${state},case when ${entry.approved} then now() else null end,${actor.accountId},'School registration',${entry.relationship}) returning id`;
+    await publishLinkEvent(tx,actor,relation.id);
+  }
 }
 
 export function createFamily(ctx: ActorContext, key: string | null, input: z.infer<typeof createFamilyInput>) {
@@ -288,6 +295,7 @@ export function createFamily(ctx: ActorContext, key: string | null, input: z.inf
     mutate: async (tx) => {
       // Duplicate contacts should be selected from existing family records, not cloned.
       for (const adult of input.guardians) {
+        if(adult.existingId){await guardian(tx,adult.existingId,true);continue;}
         if (adult.contactEmail) {
           const existing = await tx`select id from app.guardian_profile where contact_email = ${adult.contactEmail}`;
           if (existing.length) throw new ApiError("conflict");
@@ -296,6 +304,7 @@ export function createFamily(ctx: ActorContext, key: string | null, input: z.inf
       const [family]=await tx<{id:string}[]>`insert into app.family_group(display_name,situation) values (${input.displayName??input.guardians[0].displayName},${input.situation??"unknown"}) returning id`;
       const guardianIds: string[] = [];
       for (const adult of input.guardians) {
+        if(adult.existingId){guardianIds.push(adult.existingId);await tx`insert into app.family_group_guardian(family_id,guardian_id) values (${family.id},${adult.existingId})`;continue;}
         const [saved] = await tx<{ id: string }[]>`
           insert into app.guardian_profile(display_name,contact_email,contact_phone,correspondence_locale,birth_date,emergency_address)
           values (${adult.displayName},${adult.contactEmail},${adult.contactPhone},${adult.correspondenceLocale},${adult.birthDate??null}::date,${adult.emergencyAddress??null})
@@ -307,7 +316,8 @@ export function createFamily(ctx: ActorContext, key: string | null, input: z.inf
       }
       const children = [];
       for (const child of input.children) {
-        const row=await addFamilyStudent(tx,ctx,child,guardianIds,child.guardianLinks);
+        const row=child.existingId?await student(tx,child.existingId,true):await addFamilyStudent(tx,ctx,child,guardianIds,child.guardianLinks);
+        if(child.existingId){if(row.state!=="active")throw new ApiError("validation");await assignFamilyLinks(tx,ctx,row.id,guardianIds,child.guardianLinks);}
         children.push(row);
         await tx`insert into app.family_group_student(family_id,student_id) values (${family.id},${row.id})`;
       }

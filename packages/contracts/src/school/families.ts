@@ -27,16 +27,17 @@ export const updateGuardianInput = contact.extend({ revision: revisionSchema });
 /** Family-first registration: guardian(s) and at least one child are saved atomically. */
 export const familySituation = z.enum(["unknown","together","separated","divorced","single","other"]);
 export const familyRelationship = z.enum(["unspecified","father","mother","legal","other"]);
-const birthday = z.iso.date().nullable().optional();
+const birthday = z.iso.date().refine(value=>value>="1900-01-01"&&value<=new Date().toISOString().slice(0,10)).nullable().optional();
 export const createFamilyChildInput = z.object({
   displayName: name,
   classId: z.uuid().nullable().optional(),
   birthDate: birthday,
 });
 const familyGuardianInput = createGuardianInput.extend({
-  birthDate: birthday, emergencyAddress: z.string().trim().min(1).max(500).nullable().optional(),
+  existingId:z.uuid().optional(), birthDate: birthday, emergencyAddress: z.string().trim().min(1).max(500).nullable().optional(),
 });
 const familyChildInput = createFamilyChildInput.extend({
+  existingId:z.uuid().optional(),
   guardianLinks: z.array(z.object({guardianIndex:z.int().min(0).max(7),relationship:familyRelationship,approved:z.boolean()})).min(1).max(8).optional(),
 });
 export const createFamilyInput = z.object({
@@ -48,7 +49,7 @@ export const createFamilyInput = z.object({
       return new Set(emails).size === emails.length;
     }, { message: "guardian e-mails must be distinct" }),
   children: z.array(familyChildInput).min(1).max(25),
-}).refine(input => input.children.every(child => !child.guardianLinks || (new Set(child.guardianLinks.map(link=>link.guardianIndex)).size===child.guardianLinks.length && child.guardianLinks.every(link=>link.guardianIndex<input.guardians.length) && child.guardianLinks.some(link=>link.approved))),{message:"Each child needs an explicit, valid approved guardian"});
+}).refine(input => input.children.every(child => (!child.existingId||(!child.classId&&!child.birthDate)) && (child.guardianLinks ? new Set(child.guardianLinks.map(link=>link.guardianIndex)).size===child.guardianLinks.length && child.guardianLinks.every(link=>link.guardianIndex<input.guardians.length) && child.guardianLinks.some(link=>link.approved) : !input.situation && !input.guardians.some(g=>g.existingId) && !child.existingId)),{message:"Each child needs an explicit, valid approved guardian"}).refine(input=>new Set(input.guardians.flatMap(g=>g.existingId?[g.existingId]:[])).size===input.guardians.filter(g=>g.existingId).length&&new Set(input.children.flatMap(c=>c.existingId?[c.existingId]:[])).size===input.children.filter(c=>c.existingId).length,{message:"Do not select a person twice"});
 export const createdFamilySchema = z.object({
   familyId: z.uuid().optional(),
   guardianIds: z.array(z.uuid()).min(1),
