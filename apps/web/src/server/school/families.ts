@@ -1,7 +1,7 @@
 import "server-only";
 import {
   childLinkSchema, childSummarySchema, guardianDetailSchema, guardianSchema, studentSchema, studentDetailSchema,
-  createFamilyInput, createFamilyChildInput, createdFamilySchema, familyGroupSummary, familyGroupDetail, type familyGroupQuery, type familyGroupEdit, type familyGroupAttach, type familyGroupChildInput,
+  createFamilyInput, createFamilyChildInput, createdFamilySchema, familyGroupSummary, familyGroupDetail, type familyGroupQuery, type familyGroupEdit, type familyGroupAttach, type familyGroupChildInput, type familyGroupGuardianInput, familyOverviewSchema,
   type createGuardianInput, type createLinkInput, type createStudentInput, type changeLinkInput,
   type updateGuardianInput, type updateStudentInput, type familyQuerySchema,
 } from "@madrasty/contracts";
@@ -305,7 +305,7 @@ async function assignFamilyLinks(tx:Transaction,actor:ActorContext,studentId:str
 
 export function createFamily(ctx: ActorContext, key: string | null, input: z.infer<typeof createFamilyInput>) {
   return commitCommand(ctx, "school.family.create", key, hashCommand(input), {
-    authorize: office(ctx),
+    authorize: async tx=>{await office(ctx)(tx);if(input.children.some(c=>c.payerGuardianIndex!==undefined))await requireCapability(tx,ctx,"finance.issue");},
     mutate: async (tx) => {
       // Duplicate contacts should be selected from existing family records, not cloned.
       for (const adult of input.guardians) {
@@ -332,6 +332,11 @@ export function createFamily(ctx: ActorContext, key: string | null, input: z.inf
       for (const child of input.children) {
         const row=child.existingId?await student(tx,child.existingId,true):await addFamilyStudent(tx,ctx,child,guardianIds,child.guardianLinks);
         if(child.existingId){if(row.state!=="active")throw new ApiError("validation");await assignFamilyLinks(tx,ctx,row.id,guardianIds,child.guardianLinks);}
+        if(child.payerGuardianIndex!==undefined){
+          const [payer]=await tx<{revision:number|null}[]>`select app.set_billing_payer(${row.id},${guardianIds[child.payerGuardianIndex]},app.billing_school_month(),0) as revision`;
+          if(payer.revision===null)throw new ApiError("stale_revision");
+          await appendAudit(tx,{action:"finance.payer_designated",aggregateId:row.id,metadata:{revision:payer.revision}});
+        }
         children.push(row);
         await tx`insert into app.family_group_student(family_id,student_id) values (${family.id},${row.id})`;
       }
@@ -411,5 +416,20 @@ export function createGroupChild(ctx:ActorContext,id:string,key:string|null,inpu
  await tx`insert into app.family_group_student(family_id,student_id) values (${id},${child.id})`;
  await tx`update app.family_group set revision=revision+1 where id=${id}`;
  await appendAudit(tx,{action:"school.family_member_attached",aggregateId:id,metadata:{kind:"student",personId:child.id}});return child;
+ }});
+}
+
+export function readFamilyOverview(ctx:ActorContext){
+ return withActor(ctx,async tx=>{await office(ctx)(tx);const [row]=await tx`select (select count(*)::int from app.student where state='active') as "activeStudents",(select count(*)::int from app.family_group) as families,(select count(*)::int from app.guardian_profile g where not exists(select 1 from app.family_group_guardian m where m.guardian_id=g.id)) as "ungroupedGuardians"`;return familyOverviewSchema.parse(row);});
+}
+export function createGroupGuardian(ctx:ActorContext,id:string,key:string|null,input:z.infer<typeof familyGroupGuardianInput>){
+ return commitCommand(ctx,"school.family.group_guardian",key,hashCommand({id,...input}),{authorize:async tx=>{await office(ctx)(tx);await groupRecord(tx,id);},mutate:async tx=>{
+ const family=await groupRecord(tx,id,true);requireRevision(family.revision,input.revision);
+ if(input.contactEmail){const existing=await tx`select id from app.guardian_profile where contact_email=${input.contactEmail}`;if(existing.length)throw new ApiError("conflict");}
+ const [g]=await tx<{id:string}[]>`insert into app.guardian_profile(display_name,contact_email,contact_phone,correspondence_locale,birth_date,emergency_address)
+ values(${input.displayName},${input.contactEmail},${input.contactPhone},${input.correspondenceLocale},${input.birthDate??null}::date,${input.emergencyAddress??null}) returning id`;
+ await tx`insert into app.family_group_guardian(family_id,guardian_id) values(${id},${g.id})`;
+ await tx`update app.family_group set revision=revision+1 where id=${id}`;
+ await appendAudit(tx,{action:"school.guardian_created",aggregateId:g.id});return guardian(tx,g.id);
  }});
 }
