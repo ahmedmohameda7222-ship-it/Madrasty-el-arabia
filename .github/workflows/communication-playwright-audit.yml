@@ -12,7 +12,12 @@ jobs:
   visual-audit:
     if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25'
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        persona: [admin, teacher, guardian]
+        locale: [ar, de]
     steps:
       - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
@@ -36,11 +41,11 @@ jobs:
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
-          pnpm qa:web --project=webkit ui-communication-visual-audit.spec.ts
+          pnpm qa:web --project=webkit ui-communication-visual-audit.spec.ts --grep "communication populated visual audit ${{ matrix.persona }} ${{ matrix.locale }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: communication-visual-audit
+          name: communication-visual-audit-${{ matrix.persona }}-${{ matrix.locale }}
           path: qa-artifacts/comms-visual-audit/
           if-no-files-found: error
           retention-days: 14
