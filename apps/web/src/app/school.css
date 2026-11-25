@@ -545,3 +545,13 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-notice-controls>button:last-child{overflow-wrap:normal}
 .comms-publications fieldset,.comms-broadcast-screen fieldset{min-inline-size:0}
 .comms-publications .notice article,.comms-broadcast-screen .notice article{overflow-wrap:anywhere;min-inline-size:0}
+
+/* Keep message actions and report fields readable, including in a narrow dark thread. */
+.comms-message:has(.comms-message-actions[open]){inline-size:min(100%,24rem);max-inline-size:100%}
+.comms-message-actions[open]>.header-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;align-items:stretch}
+.comms-message-actions[open]>.header-actions>.plain-button{inline-size:100%;white-space:normal;overflow-wrap:normal;word-break:normal;text-align:center}
+.comms-message-actions[open]>.header-actions>form,.comms-report-form label{min-inline-size:0;max-inline-size:100%}
+.comms-message-actions details>summary{min-block-size:44px;cursor:pointer;display:flex;align-items:center}
+.comms-report-form textarea,.comms-publications textarea,.comms-broadcast-screen textarea{inline-size:100%;min-inline-size:0;max-inline-size:100%;background:var(--canvas);color:var(--ink);border:1px solid var(--rule);border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.comms-message-actions .comms-report-form .header-actions{display:flex;flex-wrap:wrap;gap:6px}
+.comms-message-actions .comms-report-form .header-actions>button{flex:1 1 auto;min-inline-size:0;white-space:normal;overflow-wrap:normal;word-break:normal}

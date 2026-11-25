@@ -7,7 +7,7 @@ permissions:
   contents: read
 concurrency:
   group: communication-visual-audit-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   visual-audit:
     if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25'
@@ -77,6 +77,7 @@ jobs:
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test --test-name-pattern="unconfigured school" qa/contracts/fixtures.test.ts
           pnpm qa:communication
           pnpm qa:web --project=webkit ui-thread-inbox.spec.ts ui-communication-chat.spec.ts
       - uses: actions/upload-artifact@v4

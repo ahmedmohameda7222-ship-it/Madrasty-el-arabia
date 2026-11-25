@@ -28,6 +28,8 @@ async function login(page:Page,school:FixtureSchool,scenario:Scenario){
     await page.getByRole("button",{name:"Bestätigen",exact:true}).click();
   }
   await expect(page).toHaveURL(/\/(ar|de)\/school\/home(?:\?.*)?$/,{timeout:20000});
+  await page.waitForLoadState("domcontentloaded");
+  await expect(page.locator(".school-content")).toBeVisible();
 }
 const title={ar:"لقاء أولياء الأمور والاستعدادات للأنشطة المدرسية",de:"Elternabend und Vorbereitung der Schulveranstaltungen"};
 const body={ar:"يرجى مراجعة الموعد وإحضار المستندات المطلوبة. هذه بيانات اختبار فقط.",de:"Bitte beachten Sie den Termin und bringen Sie die notwendigen Unterlagen mit. Dies sind ausschließlich synthetische Testdaten."};
@@ -50,23 +52,25 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
     const frame=main.getBoundingClientRect();
     if(main.scrollWidth>main.clientWidth+2)problems.push("scrolling content overflows horizontally");
     if(document.documentElement.scrollWidth>innerWidth+2)problems.push("document overflows horizontally");
+    const isRendered=(e:Element)=>{const hidden=e.closest("details:not([open])");if(hidden&&!hidden.querySelector(":scope > summary")?.contains(e))return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=="hidden";};
+    const splitLines=(rects:DOMRect[])=>rects.some(a=>rects.some(b=>Math.abs((a.top+a.bottom-b.top-b.bottom)/2)>Math.min(a.height,b.height)*.65));
     const selectors=".comms-weekday,.comms-feed-filters button,.comms-hub-tabs a,.comms-calendar-actions button,.comms-person-row,.comms-thread-toolbar,.comms-input-bar,.comms-publish-menu-items,.comms-attachment-menu";
     for(const e of main.querySelectorAll(selectors)){
       const r=e.getBoundingClientRect();
-      if(!r.width||!r.height||getComputedStyle(e).visibility==="hidden")continue;
+      if(!isRendered(e))continue;
       if(r.left<frame.left-2||r.right>frame.right+2)problems.push(e.className+" outside content");
       if(e.matches(".comms-weekday,.comms-feed-filters button,.comms-hub-tabs a")){
         const range=document.createRange();range.selectNodeContents(e);
         const rects=Array.from(range.getClientRects()).filter(x=>x.width>0&&x.height>0);
         if(rects.some(x=>x.left<r.left-1||x.right>r.right+1||x.top<r.top-1||x.bottom>r.bottom+1))problems.push("clipped label: "+e.textContent);
-        if(new Set(rects.map(x=>Math.round(x.top))).size>1)problems.push("broken single-line label: "+e.textContent);
+        if(splitLines(rects))problems.push("broken single-line label: "+e.textContent);
       }
       if(e.matches(".comms-person-row")){
         for(const child of e.children){const c=child.getBoundingClientRect();if(c.width&&(c.left<r.left-1||c.right>r.right+1))problems.push("contact row child outside row");}
       }
     }
     for(const e of main.querySelectorAll("button:not(.comms-person-row),a.plain-button,summary,.comms-publications>h1,.comms-broadcast-screen>h1,.comms-notifications>h1")){
-      const bounds=e.getBoundingClientRect();if(!bounds.width||!bounds.height)continue;
+      const bounds=e.getBoundingClientRect();if(!isRendered(e))continue;
       const walker=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);
       while(walker.nextNode()){
         const node=walker.currentNode;const value=node.textContent??"";
@@ -75,16 +79,26 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
           const range=document.createRange();range.setStart(node,word.index!);range.setEnd(node,word.index!+word[0].length);
           const rects=Array.from(range.getClientRects()).filter(r=>r.width&&r.height);
           if(rects.some(r=>r.left<bounds.left-2||r.right>bounds.right+2))problems.push("word outside control: "+word[0]);
-          if(new Set(rects.map(r=>Math.round(r.top))).size>1)problems.push("broken word: "+word[0]);
+          if(splitLines(rects))problems.push("broken word: "+word[0]);
         }
       }
     }
+    for(const e of main.querySelectorAll(".comms-message-area,.comms-message,.comms-composer,.comms-calendar,.comms-directory,.comms-broadcast-screen,.comms-notifications,.comms-publications"))if(isRendered(e)&&e.scrollWidth>e.clientWidth+3)problems.push("internal horizontal overflow: "+e.className);
     const days=main.querySelectorAll(".school-month-grid>button");
     for(const day of days){const r=day.getBoundingClientRect();if(r.height<43||r.width<28)problems.push("calendar day target too small");}
     return [...new Set(problems)];
   });
   issues.push(...found.map(problem=>prefix+" "+state+": "+problem));
   await page.screenshot({...options,path:path+".png"});files.push(path+".png");
+  if(/^(04|06|07)/.test(state)){
+    const inner=main.locator(".comms-message-area");if(await inner.count()){
+      const pos=await inner.evaluate(el=>({start:el.scrollTop,max:el.scrollHeight-el.clientHeight,height:el.clientHeight}));
+      if(pos.max>24){for(const y of [...new Set([0,Math.max(0,Math.min(pos.max,pos.height-40)),pos.max])]){
+        await inner.evaluate((el,value)=>el.scrollTop=value,y);
+        const name=path+"-thread-"+Math.round(y)+".png";await page.screenshot({...options,path:name});files.push(name);
+      }await inner.evaluate((el,value)=>el.scrollTop=value,pos.start);}
+    }
+  }
   const scroll=await main.evaluate(el=>({max:Math.max(0,el.scrollHeight-el.clientHeight),view:el.clientHeight}));
   for(let y=scroll.view-100,i=1;y<scroll.max-20&&i<=5;y+=Math.max(200,scroll.view-100),i++){
     await main.evaluate((el,value)=>el.scrollTop=value,y);
@@ -106,7 +120,7 @@ for(const scenario of cases){
     try{
       await school.seed();
       const admin=await school.bearer("admin","admin");
-      const {apple}=await setUpCalendar(school,admin);
+      const {apple,year}=await setUpCalendar(school,admin);
       const actor=scenario.persona==="admin"?admin:await school.bearer(scenario.principal,scenario.persona);
       const counterpart=scenario.persona==="teacher"?await school.bearer("guardian-de","guardian"):await school.bearer("teacher","teacher");
       const otherRole=scenario.persona==="teacher"?"guardian":"teacher";
@@ -131,6 +145,9 @@ for(const scenario of cases){
       const news=await publish("/news",{});
       if(scenario.persona==="teacher")await fixtureApi(school,"/news",{token:actor,persona:"teacher",method:"POST",key:randomUUID(),status:[200,201],body:{audience:{kind:"class",classId:apple.id},sourceLocale:"de",copy:copies}});
       const event=await publish("/events",{timing:{start:{date:day,time:null},end:null,allDay:true}});
+      const nextMonthDate=new Date(month+"-01T12:00:00Z");nextMonthDate.setUTCMonth(nextMonthDate.getUTCMonth()+1);
+      const nextMonth=nextMonthDate.toISOString().slice(0,7);
+      await fixtureApi(school,"/school/years/"+year.id+"/days/"+nextMonth+"-20",{token:admin,persona:"admin",method:"PUT",key:randomUUID(),body:{classId:apple.id,teaching:false,reason:"QA holiday",revision:0},status:[200,201]});
       const announcementCopy={ar:{title:"تنبيه مهم لأولياء الأمور",body:body.ar},de:{title:"Wichtige Mitteilung der Schulverwaltung",body:body.de}};
       const audience=scenario.persona==="teacher"?{kind:"all_teachers"}:{kind:"class_guardians",classId:apple.id};
       const preview=(await fixtureApi(school,"/broadcasts/preview",{token:admin,persona:"admin",method:"POST",status:201,body:{audience,copy:announcementCopy}})).payload.data;
@@ -153,7 +170,13 @@ for(const scenario of cases){
         const prefix=key+"-"+width+(width===390?"-dark":"-light");
         const shot=(name:string)=>capture(page,prefix,name,issues,files);
         const open=async(path:string,selector:string)=>{
-          await page.goto(path);await expect(page.locator(selector).first()).toBeVisible({timeout:25000});
+          const expected=new URL(path,page.url());
+          for(let attempt=0;;attempt++){
+            try{await page.goto(path,{waitUntil:"domcontentloaded"});break;}
+            catch(error){if(attempt>=3||!/interrupted by another navigation/i.test(String(error)))throw error;await page.waitForLoadState("domcontentloaded").catch(()=>undefined);}
+          }
+          await expect.poll(()=>{const current=new URL(page.url());return current.pathname===expected.pathname&&[...expected.searchParams].every(([k,v])=>current.searchParams.get(k)===v);}).toBe(true);
+          await expect(page.locator(selector).first()).toBeVisible({timeout:25000});
         };
         const section=async(name:string,run:()=>Promise<void>)=>{
           try{await run();}catch(error){issues.push(prefix+" "+name+": "+String(error).slice(0,1600));await shot(name+"-failed").catch(()=>undefined);}
@@ -187,6 +210,7 @@ for(const scenario of cases){
         await page.getByRole("button",{name:ar?"إلغاء الرد":"Antwort verwerfen",exact:true}).click();
         const report=page.getByRole("button",{name:words.report,exact:true}).first();
         await report.click();
+        await expect(page.locator(".comms-report-form textarea")).toBeInViewport();
         await shot("07-report-form");
         await page.getByRole("button",{name:ar?"إلغاء":"Abbrechen",exact:true}).first().click();
         await page.locator(".comms-message[data-own=false] .comms-message-actions>summary").first().click();
@@ -239,10 +263,15 @@ for(const scenario of cases){
         await section("calendar",async()=>{
         await open(hub+"?section=calendar&month="+month,".school-month-grid>button");
         await expect(page.locator(".comms-weekday")).toHaveCount(7);
+        await expect(page.locator(".school-month-grid[data-calendar-ready=true] button[data-teaching=yes]").first()).toBeVisible();
+        await expect(page.locator(".school-month-dot").first()).toBeVisible();
         await shot("19-calendar-month");
         await page.getByRole("button",{name:ar?"الشهر التالي":"Nächster Monat",exact:true}).click();
-        await expect.poll(()=>new URL(page.url()).searchParams.get("month")).not.toBe(month);
+        await expect.poll(()=>new URL(page.url()).searchParams.get("month")).toBe(nextMonth);
+        await expect(page.locator(".school-month-grid[data-month=\""+nextMonth+"\"][data-calendar-ready=true] button[data-teaching=yes]").first()).toBeVisible();
         await shot("19a-calendar-next-month");
+        await open(hub+"?section=calendar&month="+nextMonth+"&classId="+apple.id,".school-month-grid[data-calendar-ready=true] button[data-teaching=no]");
+        await shot("19b-calendar-class-holiday");
         await open(hub+"?section=calendar&month="+month+"&day="+day,".school-month-grid>button[aria-pressed=true]");
         await expect(page.locator(".comms-publication-card").filter({hasText:title[scenario.locale]}).first()).toBeVisible();
         await shot("20-calendar-selected-day");

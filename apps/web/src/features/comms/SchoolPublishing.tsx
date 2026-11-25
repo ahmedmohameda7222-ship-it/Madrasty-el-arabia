@@ -159,7 +159,7 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
       <h2>{new Intl.DateTimeFormat(intl(locale),{month:"long",year:"numeric",timeZone:"UTC",calendar:"gregory"}).format(first)}</h2>
       <button className="plain-button" type="button" aria-label={text.next} onClick={()=>go(shiftMonth(month,1))}><span aria-hidden="true">{locale==="ar"?"‹":"›"}</span></button>
     </div>
-    <div className="school-month-grid" role="group" aria-label={text.event}>
+    <div className="school-month-grid" data-calendar-ready={summary!==undefined} data-month={month} role="group" aria-label={text.event}>
       {compactWeekdays.map((name,index)=><small key={index} className="comms-weekday" aria-label={weekday.format(new Date(Date.UTC(2024,0,index+1,12)))}>{name}</small>)}
       {Array.from({length:offset},(_,index)=><span key={`blank-${index}`}/>)}
       {Array.from({length:days},(_,index)=>{
