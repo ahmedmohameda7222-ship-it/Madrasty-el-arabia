@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useRef,useState,type FormEvent } from "react";
+import { useEffect,useRef,useState,type FormEvent,type PointerEvent } from "react";
 import {
   chatMessage,messageReaction,postMessageInput,reactionEmoji,threadReaderState,
   type ChatMessage,type Locale,type ThreadSummary,
@@ -161,6 +161,31 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
   const [paging,setPaging]=useState(false);
   const [optimistic,setOptimistic]=useState<Record<string,typeof reactionEmoji.options[number]|null>>({});
   const reactionBusy=useRef(new Set<string>());
+  const press=useRef<{pointerId:number;x:number;y:number;timer:number}|null>(null);
+  const [clipboardNotice,setClipboardNotice]=useState<{id:string;ok:boolean}>();
+  function cancelPress(){
+    if(press.current){window.clearTimeout(press.current.timer);press.current=null;}
+  }
+  useEffect(()=>()=>cancelPress(),[]);
+  function beginPress(event:PointerEvent<HTMLParagraphElement>){
+    if(!event.isPrimary||event.button!==0||(event.pointerType!=="touch"&&event.pointerType!=="pen"))return;
+    cancelPress();
+    const actions=event.currentTarget.closest(".comms-message")?.querySelector<HTMLDetailsElement>(".comms-message-actions");
+    if(!actions)return;
+    const timer=window.setTimeout(()=>{if(actions.isConnected)actions.open=true;},500);
+    press.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY,timer};
+  }
+  function movePress(event:PointerEvent<HTMLParagraphElement>){
+    const active=press.current;
+    if(active&&active.pointerId===event.pointerId&&Math.hypot(event.clientX-active.x,event.clientY-active.y)>10)cancelPress();
+  }
+  async function copyBody(message:ChatMessage){
+    if(!message.body)return;
+    try{
+      await navigator.clipboard.writeText(message.body);
+      setClipboardNotice({id:message.id,ok:true});
+    }catch{setClipboardNotice({id:message.id,ok:false});}
+  }
   const expanded=useRef(false),acknowledged=useRef(thread.readThroughSeq),jumpPending=useRef<string|undefined>(undefined);
   const liveActions=useRef({deny,recognize,updateArchive});liveActions.current={deny,recognize,updateArchive};
   const highest=useRef<string|undefined>(undefined);
@@ -284,7 +309,9 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
       {message.reply&&<button type="button" className="plain-button" aria-label={text.target} onClick={()=>{
         if(message.reply)void jump(message.reply);
       }}><bdi>{message.reply.authorName??text.school}</bdi>{message.reply.preview&&<> · <bdi>{message.reply.preview}</bdi></>}</button>}
-      {message.body&&<p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{message.body}</p>}
+      {message.body&&<p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}
+        onPointerDown={beginPress} onPointerMove={movePress} onPointerUp={cancelPress} onPointerCancel={cancelPress} onPointerLeave={cancelPress}
+        onContextMenu={(event)=>{if(press.current)event.preventDefault();}}>{message.body}</p>}
       {message.attachments.map((file)=><PrivateChatMedia key={file.id} locale={locale} kind={file.kind}
         path={`/api/v1/threads/${thread.id}/media/${file.id}`}/>)}
       {message.source==="human"&&!message.body&&!message.attachments.length&&<p>{reportCopy[locale].removed}</p>}
@@ -292,6 +319,8 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
       <details className="comms-message-actions"><summary aria-label={locale==="ar"?"إجراءات الرسالة":"Nachrichtenoptionen"}>⋯</summary>
       <div className="header-actions">
         {thread.canReply&&message.replyable&&<button type="button" className="plain-button" onClick={()=>reply(message)}>{text.reply}</button>}
+        {message.body&&<button type="button" className="plain-button" onClick={()=>void copyBody(message)}>{locale==="ar"?"نسخ النص":"Text kopieren"}</button>}
+        {clipboardNotice?.id===message.id&&<small role="status">{clipboardNotice.ok?(locale==="ar"?"تم النسخ":"Kopiert"):(locale==="ar"?"تعذّر نسخ النص":"Text konnte nicht kopiert werden")}</small>}
         {(message.body||message.attachments.length>0)&&<ReportMessage locale={locale} thread={thread.id} message={message.id}/>}
         {message.reactions.map((entry)=><button className="plain-button" type="button" key={entry.emoji} aria-pressed={entry.mine} disabled={pending}
           onClick={()=>void react(message,entry.emoji)}>{entry.emoji} {entry.count}</button>)}
