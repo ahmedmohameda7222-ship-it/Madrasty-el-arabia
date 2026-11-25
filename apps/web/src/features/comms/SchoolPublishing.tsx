@@ -11,12 +11,13 @@ import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
 import {AsyncSurface} from "@/ui/AsyncSurface";
+import {asExclusiveEnd,asInclusiveEnd} from "@/features/school/calendar-model";
 
 const words={
   ar:{news:"أخبار المدرسة",event:"تقويم الأحداث",write:"منشور جديد",writeEvent:"حدث جديد",managed:"إدارة المنشورات",
     feed:"المنشورات المنشورة",draft:"مسودة",published:"منشور",withdrawn:"مسحوب",school:"المدرسة كلها",class:"الفصل",
     allClasses:"كل الفصول",audience:"الجمهور",original:"لغة النص الأصلي",ar:"العربية",de:"الألمانية",title:"العنوان",body:"النص",
-    start:"البداية",end:"النهاية",allDay:"طوال اليوم",endDate:"تاريخ النهاية (بداية اليوم المحدّد)",endOptional:"إضافة نهاية",
+    start:"البداية",end:"النهاية",allDay:"طوال اليوم",endDate:"آخر يوم",endOptional:"إضافة نهاية",
     preview:"معاينة",edit:"تعديل",save:"حفظ",publish:"نشر",withdraw:"سحب من العرض",back:"رجوع",open:"عرض التفاصيل",
     saved:"اتحفِظ التعديل.",publishedDone:"اتنشر.",withdrawnDone:"اتسحب من العرض.",busy:"جارٍ الحفظ",
     previous:"الشهر السابق",next:"الشهر التالي",month:"كل أحداث الشهر",today:"النهارده",emptyDay:"مفيش أحداث في اليوم ده.",
@@ -24,7 +25,7 @@ const words={
   de:{news:"Schulnachrichten",event:"Veranstaltungskalender",write:"Neuer Beitrag",writeEvent:"Neue Veranstaltung",managed:"Beiträge verwalten",
     feed:"Veröffentlichte Beiträge",draft:"Entwurf",published:"Veröffentlicht",withdrawn:"Zurückgezogen",school:"Ganze Schule",class:"Klasse",
     allClasses:"Alle Klassen",audience:"Zielgruppe",original:"Originalsprache",ar:"Arabisch",de:"Deutsch",title:"Titel",body:"Text",
-    start:"Beginn",end:"Ende",allDay:"Ganztägig",endDate:"Enddatum (ausschließlich)",endOptional:"Ende hinzufügen",
+    start:"Beginn",end:"Ende",allDay:"Ganztägig",endDate:"Letzter Tag",endOptional:"Ende hinzufügen",
     preview:"Vorschau",edit:"Bearbeiten",save:"Speichern",publish:"Veröffentlichen",withdraw:"Zurückziehen",back:"Zurück",open:"Details öffnen",
     saved:"Änderung gespeichert.",publishedDone:"Veröffentlicht.",withdrawnDone:"Zurückgezogen.",busy:"Wird gespeichert",
     previous:"Vorheriger Monat",next:"Nächster Monat",month:"Alle Veranstaltungen des Monats",today:"Heute",emptyDay:"An diesem Tag gibt es keine Veranstaltungen.",
@@ -121,10 +122,10 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
   const weekday=new Intl.DateTimeFormat(intl(locale),{weekday:"short",timeZone:"UTC"});
   const number=new Intl.NumberFormat(locale);
   return <div className="auth-form">
-    <div className="header-actions">
-      <button className="plain-button" type="button" onClick={()=>go(shiftMonth(month,-1))}>{text.previous}</button>
+    <div className="comms-month-heading">
+      <button className="plain-button" type="button" aria-label={text.previous} onClick={()=>go(shiftMonth(month,-1))}><span aria-hidden="true">{locale==="ar"?"›":"‹"}</span></button>
       <h2>{new Intl.DateTimeFormat(intl(locale),{month:"long",year:"numeric",timeZone:"UTC",calendar:"gregory"}).format(first)}</h2>
-      <button className="plain-button" type="button" onClick={()=>go(shiftMonth(month,1))}>{text.next}</button>
+      <button className="plain-button" type="button" aria-label={text.next} onClick={()=>go(shiftMonth(month,1))}><span aria-hidden="true">{locale==="ar"?"‹":"›"}</span></button>
     </div>
     <div className="calendar-legend"><span><i data-teaching="yes"/>{locale==="ar"?"يوم دراسي":"Unterricht"}</span><span><i data-teaching="no"/>{locale==="ar"?"عطلة":"Unterrichtsfrei"}</span><span>● {locale==="ar"?"حدث":"Termin"}</span></div>
     <div className="school-month-grid" role="group" aria-label={text.event}>
@@ -161,7 +162,7 @@ function ContentCard({locale,record,detail=false}:{locale:Locale;record:Publishi
 }
 function EventDate({locale,timing,zone}:{locale:Locale;timing:Extract<PublishingContent,{timing:unknown}>["timing"];zone:string}){
   const moment=(value:typeof timing.start)=>shortDate(locale,value.date)+(value.time?" · "+value.time:"");
-  return <p><bdi>{moment(timing.start)}</bdi>{timing.end&&<> – <bdi>{moment(timing.end)}</bdi></>}
+  return <p><bdi>{moment(timing.start)}</bdi>{timing.end&&<> – <bdi>{moment(timing.allDay?{...timing.end,date:asInclusiveEnd(timing.end.date)}:timing.end)}</bdi></>}
     {" · "}{timing.allDay?words[locale].allDayLabel:<bdi>{zone}</bdi>}</p>;
 }
 
@@ -179,7 +180,7 @@ function PublishingEditor({locale,kind,options,record,dismiss}:{
   const originalTiming=record?.kind==="event"?record.timing:undefined;
   const [startDate,setStartDate]=useState(originalTiming?.start.date??options.schoolDate);
   const [startTime,setStartTime]=useState(originalTiming?.start.time??"09:00");
-  const [endDate,setEndDate]=useState(originalTiming?.end?.date??"");
+  const [endDate,setEndDate]=useState(originalTiming?.end?(originalTiming.allDay?asInclusiveEnd(originalTiming.end.date):originalTiming.end.date):"");
   const [endTime,setEndTime]=useState(originalTiming?.end?.time??"10:00");
   const [allDay,setAllDay]=useState(originalTiming?.allDay??true);
   const [hasEnd,setHasEnd]=useState(!!originalTiming?.end);
@@ -190,7 +191,7 @@ function PublishingEditor({locale,kind,options,record,dismiss}:{
     copy:Object.fromEntries(originalLocales.filter((key)=>copy[key].title.trim()||copy[key].body.trim()).map((key)=>[key,copy[key]])),
   };
   const draft=kind==="news"?newsDraft.safeParse(candidate):eventDraft.safeParse({...candidate,
-    timing:{start:{date:startDate,time:allDay?null:startTime},end:hasEnd?{date:endDate,time:allDay?null:endTime}:null,allDay},
+    timing:{start:{date:startDate,time:allDay?null:startTime},end:hasEnd?{date:allDay&&/^\d{4}-\d{2}-\d{2}$/.test(endDate)?asExclusiveEnd(endDate):endDate,time:allDay?null:endTime}:null,allDay},
   });
   function preview(event:FormEvent){
     event.preventDefault();

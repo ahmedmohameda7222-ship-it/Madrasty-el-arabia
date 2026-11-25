@@ -221,3 +221,39 @@ jobs:
             apps/android/app/build/outputs/androidTest-results/
           if-no-files-found: warn
           retention-days: 7
+
+  communication-webkit:
+    if: github.ref == 'refs/heads/feat/communication-center-2026-11-25'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pnpm exec playwright install --with-deps webkit
+      - name: Mobile communication browser acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm qa:web --project=webkit ui-thread-inbox.spec.ts ui-communication-chat.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: communication-webkit
+          path: |
+            qa-artifacts/ui-after/
+            test-results/
+          if-no-files-found: warn

@@ -248,7 +248,7 @@ private fun EventTimingLine(timing:JSONObject,timezone:String,language:String){
     val format=DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.forLanguageTag(language))
     fun label(moment:JSONObject)=LocalDate.parse(moment.getString("date")).format(format)+(moment.string("time")?.let{" · $it"}?:"")
     val first=label(timing.getJSONObject("start"))
-    val end=timing.optJSONObject("end")?.let(::label)
+    val end=timing.optJSONObject("end")?.let{if(timing.getBoolean("allDay"))LocalDate.parse(it.getString("date")).minusDays(1).format(format) else label(it)}
     Text(isolate(first)+(end?.let{" – "+isolate(it)}?:"")+
         " · "+(if(timing.getBoolean("allDay"))stringResource(R.string.publish_all_day)else isolate(timezone)))
 }
@@ -294,7 +294,7 @@ private fun PublicationEditor(
     var hasEnd by remember{mutableStateOf(initialTime?.optJSONObject("end")!=null)}
     var startDate by remember{mutableStateOf(initialTime?.optJSONObject("start")?.optString("date")?:calendar.date.toString())}
     var startTime by remember{mutableStateOf(initialTime?.optJSONObject("start")?.string("time")?:"09:00")}
-    var endDate by remember{mutableStateOf(initialTime?.optJSONObject("end")?.optString("date")?:nextDate(startDate))}
+    var endDate by remember{mutableStateOf(initialTime?.optJSONObject("end")?.optString("date")?.let{if(allDay)localDate(it)?.minusDays(1)?.toString()?:it else it}?:startDate)}
     var endTime by remember{mutableStateOf(initialTime?.optJSONObject("end")?.string("time")?:"10:00")}
     var preview by remember{mutableStateOf<JSONObject?>(null)}
     var saved by remember{mutableStateOf(record)}
@@ -307,7 +307,7 @@ private fun PublicationEditor(
     val timingAllowed=section==PublicationSection.News||
         localDate(startDate)!=null&&(allDay||localTime(startTime)!=null)&&(!hasEnd||
             localDate(endDate)!=null&&(allDay||localTime(endTime)!=null)&&
-            (endDate+"T"+if(allDay)"00:00" else endTime)>(startDate+"T"+if(allDay)"00:00" else startTime))
+            (if(allDay)endDate>=startDate else (endDate+"T"+endTime)>(startDate+"T"+startTime)))
     val textAllowed=(if(original=="ar")ar.complete else de.complete)&&(ar.empty||ar.complete)&&(de.empty||de.complete)
 
     fun compose(){
@@ -319,7 +319,7 @@ private fun PublicationEditor(
         val content=JSONObject().put("audience",audience).put("copy",text).put("sourceLocale",original)
         if(section==PublicationSection.Events){
             val timing=JSONObject().put("start",moment(startDate,startTime,allDay)).put("allDay",allDay)
-                .put("end",if(hasEnd)moment(endDate,endTime,allDay)else JSONObject.NULL)
+                .put("end",if(hasEnd)moment(if(allDay)nextDate(endDate) else endDate,endTime,allDay)else JSONObject.NULL)
             content.put("timing",timing)
         }
         preview=content;reviewedSaved=false;status=null;alert=null
@@ -399,7 +399,7 @@ private fun PublicationEditor(
             }
             PickDate(R.string.publish_start,startDate,calendar.date){startDate=it}
             if(!allDay)PickTime(R.string.publish_start,startTime){startTime=it}
-            if(hasEnd)PickDate(if(allDay)R.string.publish_end_exclusive else R.string.publish_end,endDate,calendar.date){endDate=it}
+            if(hasEnd)PickDate(R.string.publish_end,endDate,calendar.date){endDate=it}
             if(hasEnd&&!allDay)PickTime(R.string.publish_end,endTime){endTime=it}
         }
         Button(enabled=classKey!=null&&textAllowed&&timingAllowed&&!busy,onClick=::compose){Text(stringResource(R.string.publish_preview))}
