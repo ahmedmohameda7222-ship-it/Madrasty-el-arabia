@@ -122,7 +122,7 @@ internal fun FamilyWizard(model:IdentityViewModel,canBill:Boolean,requests:Mutab
             }
         }
     }
-    val valid=when(step){0->name.trim().length in 1..200;1->adults.all{it.name.trim().length in 1..200&&it.phone.length<=48&&it.address.length<=500&&validFamilyBirth(it.birth)&&(it.email.isBlank()||android.util.Patterns.EMAIL_ADDRESS.matcher(it.email.trim()).matches())}&&adults.map{it.email.trim().lowercase()}.filter{it.isNotBlank()}.let{it.distinct().size==it.size};2->children.all{it.name.trim().length in 1..200&&validFamilyBirth(it.birth)};3->children.all{c->c.links.values.any{it.first=="approved"}};else->false}
+    val valid=when(step){0->name.trim().length in 1..200;1->adults.all{it.name.trim().length in 1..200&&it.phone.length<=48&&it.address.length<=500&&validFamilyBirth(it.birth)&&(it.email.isBlank()||android.util.Patterns.EMAIL_ADDRESS.matcher(it.email.trim()).matches())}&&adults.map{it.email.trim().lowercase()}.filter{it.isNotBlank()}.let{it.distinct().size==it.size};2->children.all{it.name.trim().length in 1..200&&validFamilyBirth(it.birth)};3->children.all{c->c.links.values.any{it.first=="approved"}&&c.links.values.all{it.first=="none"||it.second!="unspecified"}};else->false}
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
         if(step>0)OutlinedButton(onClick={step--;confirmed=false}){Text(fm("Zurück","رجوع"))}
         if(step<4)Button(enabled=valid,onClick={step++;confirmed=false}){Text(fm("Weiter","التالي"))}

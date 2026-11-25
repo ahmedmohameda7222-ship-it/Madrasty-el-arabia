@@ -21,3 +21,9 @@ No implicit grants from marital status or membership. No automatic merge of lega
 - [ ] 8. Test privacy, separation, duplicate prevention, stale revision, failed enrollment rollback, no implicit access, finance scope.
 - [ ] 9. WebKit/Chromium 320/390/430 and Android emulator Arabic/German light/dark screenshots; inspect actual PNGs.
 - [ ] 10. Consolidated CI, exact-head squash merge, migration/deployment verification.
+
+## Implementation ledger
+- Coding batches through beced34 added group schema, explicit relationship APIs, office directory, Web and Android wizards, and staged imports.
+- Added optional external family key/name, new CSV template, native member creation and directory filters. Legacy XLSX/CSV mappings remain valid; groups only originate from explicit keys, never surname/email inference.
+- Ruling: legacy creation callers retain their original explicit registration semantics; modern callers supply child-specific links. Group membership never grants child access.
+- Verification: branch CI enabled only after batched changes; no task marked complete without evidence.

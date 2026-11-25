@@ -444,7 +444,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openNews={state.open(WorkspacePage.Publication(PublicationSection.News))},
                 openEvents={state.open(WorkspacePage.Publication(PublicationSection.Events))})
             SchoolTab.Students -> if(rights.students){
-                FamiliesScreen(model,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null)
+                FamiliesScreen(model,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null,openInvoices=if(rights.invoiceViewer)({state.open(WorkspacePage.Invoices(student=it))})else null,openStops=if(rights.stopManager)({state.open(WorkspacePage.Stops(student=it))})else null)
             }
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
             SchoolTab.Messages -> {
@@ -470,7 +470,7 @@ private fun FamilyWorkspace(model:IdentityViewModel,page:WorkspacePage.Family,cl
         verticalArrangement=Arrangement.spacedBy(8.dp)){
         TextButton(onClick=close){Text(stringResource(R.string.back))}
         FamiliesScreen(model,initialStudent=page.student,initialGuardian=page.guardian,initialLink=page.link,
-            addGuardian=page.addGuardian,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null)
+            addGuardian=page.addGuardian,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null,openInvoices=if(rights.invoiceViewer)({state.open(WorkspacePage.Invoices(student=it))})else null,openStops=if(rights.stopManager)({state.open(WorkspacePage.Stops(student=it))})else null)
     }
 }
 

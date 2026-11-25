@@ -1,7 +1,7 @@
 name: Prelaunch web and contracts
 on:
   push:
-    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24","remove/audit-and-delivery-status-2026-11-24","feat/admin-start-redesign-2026-11-24","feat/communication-center-2026-11-25"]
+    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24","remove/audit-and-delivery-status-2026-11-24","feat/admin-start-redesign-2026-11-24","feat/communication-center-2026-11-25","feat/family-management-2026-11-25"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -104,7 +104,7 @@ jobs:
           path: qa-artifacts/admin-start/
           if-no-files-found: warn
   domain-acceptance:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -149,7 +149,7 @@ jobs:
         shell: bash
         run: grep -E 'API request failed|Finance PDF stage' "$RUNNER_TEMP/madrasty-acceptance-web.log" || true
   android-debug:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -315,3 +315,43 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+
+  family-browser:
+    if: github.ref == 'refs/heads/feat/family-management-2026-11-25'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [webkit, chromium]
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Verify family wizard and mobile UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/family-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm qa:web --project=${{ matrix.browser }} ui-guided-workflows.spec.ts ui-family-management.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: family-${{ matrix.browser }}
+          path: |
+            qa-artifacts/family/
+            test-results/
+          if-no-files-found: warn

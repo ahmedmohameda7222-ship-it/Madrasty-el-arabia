@@ -96,7 +96,7 @@ export function Families({locale,access}:{locale:Locale;access:FamilyAccess}){
  const list=(next:Mode,legacyView=false)=>go({view:next==="students"?"students":legacyView?"legacy":"guardians"});
  const openGroup=(id:string)=>go({view:"guardians",family:id,familyAction:action==="student"?"child":action});
  const openPerson=(kind:Mode,id:string,replace=false)=>go({view:kind,guardian:kind==="guardians"?id:undefined,student:kind==="students"?id:undefined,forStudent:kind==="guardians"?forStudent:undefined,fromFamily:group??fromFamily},replace);
- const back=()=>fromFamily?openGroup(fromFamily):list(mode,legacy);
+ const back=()=>fromFamily?openGroup(fromFamily):list(mode,legacy||Boolean(guardian&&!group));
  const backButton=<button type="button" className="family-back plain-button" onClick={back}><Icon name="back"/>{ar?"رجوع":"Zurück"}</button>;
  if(creating)return <div className="family-workspace">{backButton}<NewFamilyForm locale={locale} financeIssue={access.financeIssue} cancel={()=>list("guardians")} saved={(id,familyId)=>{overview.retry();if(familyId)go({view:"guardians",family:familyId},true);else openPerson("guardians",id,true);}}/></div>;
  if(group&&!target)return <div className="family-workspace">{backButton}<FamilyGroupProfile key={group} locale={locale} id={group} financeIssue={access.financeIssue} initialAction={action} openPerson={(kind,id)=>openPerson(kind,id)}/></div>;
