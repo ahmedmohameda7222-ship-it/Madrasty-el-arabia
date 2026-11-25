@@ -296,8 +296,7 @@ private fun ChatMessageItem(
     val own=message.optBoolean("own")
     var actions by remember{mutableStateOf(false)}
     Row(Modifier.fillMaxWidth().bringIntoViewRequester(location),horizontalArrangement=if(own)Arrangement.End else Arrangement.Start){
-    Surface(modifier=Modifier.widthIn(max=320.dp),shape=RoundedCornerShape(18.dp),color=if(own)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant){
-    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+    CommunicationBubble(own){
     if(!own)Text(chatAuthor(message),style=MaterialTheme.typography.labelMedium)
     message.optJSONObject("reply")?.let{quote->
         TextButton(onClick={jump(quote)}){
@@ -326,6 +325,13 @@ private fun ChatMessageItem(
     }
     }
     }
+}
+
+@Composable
+internal fun CommunicationBubble(own:Boolean,content:@Composable ()->Unit){
+    Surface(modifier=Modifier.widthIn(max=320.dp),shape=RoundedCornerShape(18.dp),
+        color=if(own)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant){
+        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){content()}
     }
 }
 

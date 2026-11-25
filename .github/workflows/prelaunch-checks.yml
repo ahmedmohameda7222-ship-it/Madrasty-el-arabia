@@ -261,3 +261,57 @@ jobs:
             qa-artifacts/ui-after/
             test-results/
           if-no-files-found: warn
+
+  communication-native-visual:
+    if: github.ref == 'refs/heads/feat/communication-center-2026-11-25'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [320, 390]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Install required Android platform and build tools
+        run: |
+          sdkmanager --install "platforms;android-37" "build-tools;37.0.0" || sdkmanager --install "platforms;android-37.0" "build-tools;37.0.0"
+      - name: Enable KVM for disposable emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Capture production Compose communication bubbles
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb shell wm size $((${{ matrix.width }} * 2))x1688
+            adb shell wm density 320
+            chmod +x apps/android/gradlew
+            ./apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=de.madrasty.app.comms.CommunicationVisualTest --no-daemon --stacktrace
+            mkdir -p qa-artifacts/native-comms-${{ matrix.width }}
+            adb pull /sdcard/Download/madrasty-comms-qa/. qa-artifacts/native-comms-${{ matrix.width }}/
+            test "$(find qa-artifacts/native-comms-${{ matrix.width }} -name '*.png' | wc -l)" -eq 2
+      - name: Preserve native communication layout evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrasty-comms-native-${{ matrix.width }}
+          path: |
+            qa-artifacts/native-comms-${{ matrix.width }}/
+            apps/android/app/build/outputs/androidTest-results/
+          if-no-files-found: warn
+          retention-days: 7
+
