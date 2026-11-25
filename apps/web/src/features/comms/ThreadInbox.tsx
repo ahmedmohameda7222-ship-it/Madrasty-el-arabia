@@ -73,7 +73,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       <header className="comms-thread-toolbar">
         <Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>
         <span className="comms-avatar" aria-hidden="true">{title(locale,value).trim().slice(0,1).toUpperCase()}</span>
-        <h2><bdi>{title(locale,value)}</bdi></h2>
+        <h2 title={title(locale,value)}><bdi>{title(locale,value)}</bdi></h2>
         <button type="button" className="comms-icon-button" aria-label={text.refresh} onClick={reload}><Icon name="retry"/></button>
       </header>
       {value.inbox&&value.contactName&&<p>{text[value.inbox]}</p>}

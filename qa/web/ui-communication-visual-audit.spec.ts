@@ -92,6 +92,7 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
       const style=getComputedStyle(e),fg=rgb(style.color),bg=rgb(style.backgroundColor);
       if(fg&&bg&&(bg[3]??1)===1&&(fg[3]??1)===1){const a=luminance(fg),b=luminance(bg);if((Math.max(a,b)+.05)/(Math.min(a,b)+.05)<4.5)problems.push("unreadable action contrast: "+e.textContent);}
     }
+    for(const heading of main.querySelectorAll(".comms-thread-toolbar h2")){const lineHeight=parseFloat(getComputedStyle(heading).lineHeight);if(heading.getBoundingClientRect().height>lineHeight*2+2)problems.push("thread heading exceeds two lines");}
     const days=main.querySelectorAll(".school-month-grid>button");
     for(const day of days){const r=day.getBoundingClientRect();if(r.height<43||r.width<28)problems.push("calendar day target too small");}
     return [...new Set(problems)];
