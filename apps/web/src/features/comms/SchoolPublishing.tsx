@@ -101,7 +101,7 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   const returnHref=returnParams.size?`${returnBase}?${returnParams}`:returnBase;
   function detailHref(id:string){const next=new URLSearchParams(context);next.set("item",id);if(fromHub)next.set("from","hub");return `${base}?${next}`;}
   return <section className={`auth-card auth-form comms-publications${kind==="event"?" comms-calendar":""}`}>
-    {!embedded&&<h1>{text[kind]}</h1>}
+    {!embedded&&<h1>{kind==="event"&&locale==="de"?"Kalender":text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
       dismiss={()=>{setEditor(undefined);patch({view:"managed",create:undefined});setRefresh((value)=>value+1);}}/>}
     {selected&&<><Link className="plain-button" href={returnHref}>{text.back}</Link>
