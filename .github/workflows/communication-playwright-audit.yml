@@ -1,0 +1,83 @@
+name: Communication Playwright visual audit
+on:
+  push:
+    branches: ["fix/communication-playwright-visual-audit-2026-11-25"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: communication-visual-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visual-audit:
+    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pnpm check:types
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pnpm exec playwright install --with-deps webkit
+      - name: Capture all populated communication views
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms-audit.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm qa:web --project=webkit ui-communication-visual-audit.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: communication-visual-audit
+          path: qa-artifacts/comms-visual-audit/
+          if-no-files-found: error
+          retention-days: 14
+  regression:
+    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pnpm check:types
+      - run: pnpm build:web
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pnpm exec playwright install --with-deps webkit
+      - name: Verify communication behavior has not regressed
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms-regression.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm qa:communication
+          pnpm qa:web --project=webkit ui-thread-inbox.spec.ts ui-communication-chat.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: communication-regression-screens
+          path: qa-artifacts/ui-after/
+          if-no-files-found: warn
+          retention-days: 14

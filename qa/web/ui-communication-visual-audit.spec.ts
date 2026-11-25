@@ -1,0 +1,232 @@
+import {randomUUID} from "node:crypto";
+import {mkdirSync,writeFileSync} from "node:fs";
+import {expect,test,type Page} from "@playwright/test";
+import {schoolFixtures,type FixtureSchool} from "../fixtures/school";
+import {setUpCalendar} from "../fixtures/calendar";
+import {fixtureApi} from "../support/api";
+import {fixtureEmail} from "../support/target";
+
+const out="qa-artifacts/comms-visual-audit";
+const cases=[
+  {principal:"admin",persona:"admin",locale:"ar"},
+  {principal:"admin",persona:"admin",locale:"de"},
+  {principal:"teacher",persona:"teacher",locale:"ar"},
+  {principal:"teacher",persona:"teacher",locale:"de"},
+  {principal:"guardian-ar",persona:"guardian",locale:"ar"},
+  {principal:"guardian-de",persona:"guardian",locale:"de"},
+] as const;
+type Scenario=typeof cases[number];
+async function login(page:Page,school:FixtureSchool,scenario:Scenario){
+  await page.goto("/de/account/sign-in");
+  await page.locator('input[name="email"]').fill(fixtureEmail(school.run,scenario.principal));
+  await page.locator('input[name="password"]').fill(school.password);
+  await page.getByRole("button",{name:"Anmelden",exact:true}).click();
+  if(scenario.persona==="admin"){
+    await expect(page).toHaveURL(/\/de\/account\/security$/,{timeout:20000});
+    const enrolled=await school.localMfa("admin");
+    await page.locator('input[name="code"]').fill(enrolled.code());
+    await page.getByRole("button",{name:"Bestätigen",exact:true}).click();
+  }
+  await expect(page).toHaveURL(/\/(ar|de)\/school\/home(?:\?.*)?$/,{timeout:20000});
+}
+const title={ar:"لقاء أولياء الأمور والاستعدادات للأنشطة المدرسية",de:"Elternabend und Vorbereitung der Schulveranstaltungen"};
+const body={ar:"يرجى مراجعة الموعد وإحضار المستندات المطلوبة. هذه بيانات اختبار فقط.",de:"Bitte beachten Sie den Termin und bringen Sie die notwendigen Unterlagen mit. Dies sind ausschließlich synthetische Testdaten."};
+const copies={ar:{title:title.ar,body:body.ar},de:{title:title.de,body:body.de}};
+const longChat="اختبار رسالة عربية وألمانية – Elternabend am Samstag, bitte die Unterlagen für die Schulveranstaltung mitbringen.";
+type Contact={id:string;displayName:string|null;target:{kind:string;id:string};role:string};
+async function capture(page:Page,prefix:string,state:string,issues:string[],files:string[]){
+  await page.evaluate(()=>document.fonts.ready);
+  const main=page.locator(".school-content");
+  await expect(main).toBeVisible();
+  await main.evaluate(el=>el.scrollTop=0);
+  // Inspect actual glyph ranges, rather than only checking document width.
+  const found=await page.evaluate(()=>{
+    const main=document.querySelector(".school-content")!;
+    const problems:string[]=[];
+    const frame=main.getBoundingClientRect();
+    if(main.scrollWidth>main.clientWidth+2)problems.push("scrolling content overflows horizontally");
+    if(document.documentElement.scrollWidth>innerWidth+2)problems.push("document overflows horizontally");
+    const selectors=".comms-weekday,.comms-feed-filters button,.comms-hub-tabs a,.comms-calendar-actions button,.comms-person-row,.comms-thread-toolbar,.comms-input-bar,.comms-publish-menu-items,.comms-attachment-menu";
+    for(const e of main.querySelectorAll(selectors)){
+      const r=e.getBoundingClientRect();
+      if(!r.width||!r.height||getComputedStyle(e).visibility==="hidden")continue;
+      if(r.left<frame.left-2||r.right>frame.right+2)problems.push(e.className+" outside content");
+      if(e.matches(".comms-weekday,.comms-feed-filters button,.comms-hub-tabs a")){
+        const range=document.createRange();range.selectNodeContents(e);
+        const rects=Array.from(range.getClientRects()).filter(x=>x.width>0&&x.height>0);
+        if(rects.some(x=>x.left<r.left-1||x.right>r.right+1||x.top<r.top-1||x.bottom>r.bottom+1))problems.push("clipped label: "+e.textContent);
+        if(new Set(rects.map(x=>Math.round(x.top))).size>1)problems.push("broken single-line label: "+e.textContent);
+      }
+      if(e.matches(".comms-person-row")){
+        for(const child of e.children){const c=child.getBoundingClientRect();if(c.width&&(c.left<r.left-1||c.right>r.right+1))problems.push("contact row child outside row");}
+      }
+    }
+    const days=main.querySelectorAll(".school-month-grid>button");
+    for(const day of days){const r=day.getBoundingClientRect();if(r.height<43||r.width<28)problems.push("calendar day target too small");}
+    return [...new Set(problems)];
+  });
+  issues.push(...found.map(problem=>state+": "+problem));
+  const path=out+"/"+prefix+"-"+state;
+  const options={animations:"disabled",style:"nextjs-portal{display:none!important}"} as const;
+  await page.screenshot({...options,path:path+".png"});files.push(path+".png");
+  const scroll=await main.evaluate(el=>({max:Math.max(0,el.scrollHeight-el.clientHeight),view:el.clientHeight}));
+  for(let y=scroll.view-100,i=1;y<scroll.max-20&&i<=5;y+=Math.max(200,scroll.view-100),i++){
+    await main.evaluate((el,value)=>el.scrollTop=value,y);
+    await page.screenshot({...options,path:path+"-scroll-"+i+".png"});files.push(path+"-scroll-"+i+".png");
+  }
+  if(scroll.max>24){
+    await main.evaluate(el=>el.scrollTop=el.scrollHeight);
+    await page.screenshot({...options,path:path+"-bottom.png"});files.push(path+"-bottom.png");
+  }
+  await main.evaluate(el=>el.scrollTop=0);
+}
+
+for(const scenario of cases){
+  test("communication populated visual audit "+scenario.persona+" "+scenario.locale,async({page})=>{
+    test.setTimeout(240000);
+    const school=schoolFixtures(),issues:string[]=[],files:string[]=[];
+    mkdirSync(out,{recursive:true});
+    const key=scenario.persona+"-"+scenario.locale;
+    try{
+      await school.seed();
+      const admin=await school.bearer("admin","admin");
+      const {apple}=await setUpCalendar(school,admin);
+      const actor=scenario.persona==="admin"?admin:await school.bearer(scenario.principal,scenario.persona);
+      const counterpart=scenario.persona==="teacher"?await school.bearer("guardian-de","guardian"):await school.bearer("teacher","teacher");
+      const otherRole=scenario.persona==="teacher"?"guardian":"teacher";
+      const targetName=scenario.persona==="teacher"?"Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk":"يوسف عبد الرحمن محمود";
+      const people:Contact[]=(await fixtureApi(school,"/directory?view=all&limit=100",{token:actor,persona:scenario.persona})).payload.data;
+      const target=people.find(p=>p.displayName===targetName);
+      expect(target,"counterparty exists in real directory").toBeTruthy();
+      const thread=(await fixtureApi(school,"/threads",{token:actor,persona:scenario.persona,method:"POST",key:randomUUID(),body:{target:target!.target}})).payload.data.threadId;
+      const send=async(token:string,persona:"admin"|"teacher"|"guardian",text:string)=>{
+        const id=randomUUID();return (await fixtureApi(school,"/threads/"+thread+"/messages",{token,persona,method:"POST",key:id,status:201,body:{clientMessageId:id,body:text}})).payload.data;
+      };
+      const own=await send(actor,scenario.persona,longChat);
+      const incoming=await send(counterpart,otherRole,"Guten Tag! أهلاً بحضرتك. Vielen Dank für die Information.");
+      await fixtureApi(school,"/threads/"+thread+"/messages/"+own.id+"/reaction",{token:counterpart,persona:otherRole,method:"PUT",body:{emoji:"👍"}});
+      const options=(await fixtureApi(school,"/school/publishing-options",{token:actor,persona:scenario.persona})).payload.data;
+      const day=options.schoolDate as string,month=day.slice(0,7);
+      const publish=async(path:"/news"|"/events",extra:object)=>{
+        const item=(await fixtureApi(school,path,{token:admin,persona:"admin",method:"POST",key:randomUUID(),status:[200,201],body:{audience:{kind:"school"},sourceLocale:"de",copy:copies,...extra}})).payload.data;
+        await fixtureApi(school,path+"/"+item.id,{token:admin,persona:"admin",method:"PATCH",key:randomUUID(),body:{action:"publish",revision:item.revision}});
+        return item.id as string;
+      };
+      const news=await publish("/news",{});
+      const event=await publish("/events",{timing:{start:{date:day,time:null},end:null,allDay:true}});
+      const announcementCopy={ar:{title:"تنبيه مهم لأولياء الأمور",body:body.ar},de:{title:"Wichtige Mitteilung der Schulverwaltung",body:body.de}};
+      const audience=scenario.persona==="teacher"?{kind:"all_teachers"}:{kind:"class_guardians",classId:apple.id};
+      const preview=(await fixtureApi(school,"/broadcasts/preview",{token:admin,persona:"admin",method:"POST",status:201,body:{audience,copy:announcementCopy}})).payload.data;
+      const broadcast=(await fixtureApi(school,"/broadcasts",{token:admin,persona:"admin",method:"POST",status:201,key:randomUUID(),body:{previewId:preview.previewId}})).payload.data.publicationId;
+      await login(page,school,scenario);
+      const ar=scenario.locale==="ar",base="/"+scenario.locale,hub=base+"/school/messages";
+      const words={all:ar?"كل الأشخاص":"Alle Personen",search:ar?"ابحث عن شخص":"Person suchen",unread:ar?"غير مقروءة":"Ungelesen",archive:ar?"المؤرشفة":"Archiviert",newEvent:ar?"حدث جديد":"Neue Veranstaltung",report:ar?"الإبلاغ عن الرسالة":"Nachricht melden",title:ar?"العنوان":"Titel",body:ar?"النص":"Text"};
+      for(const width of [320,390,430]){
+        await page.setViewportSize({width,height:844});
+        await page.emulateMedia({colorScheme:width===390?"dark":"light",reducedMotion:"reduce"});
+        const prefix=key+"-"+width+(width===390?"-dark":"-light");
+        const shot=(name:string)=>capture(page,prefix,name,issues,files);
+        const open=async(path:string,selector:string)=>{
+          await page.goto(path);await expect(page.locator(selector).first()).toBeVisible({timeout:25000});
+        };
+        await open(hub,".comms-thread-row");
+        await shot("01-inbox-populated");
+        await page.getByRole("button",{name:words.unread,exact:true}).click();
+        await expect(page.locator(".inbox-filter-strip button[aria-pressed=true]")).toHaveText(words.unread);
+        await page.locator(".school-content [data-async-state=empty],.comms-thread-row").first().waitFor({state:"visible"});
+        await shot("02-inbox-unread");
+        await page.getByRole("button",{name:words.archive,exact:true}).click();
+        await expect(page.locator(".inbox-filter-strip button[aria-pressed=true]")).toHaveText(words.archive);
+        await page.locator(".school-content [data-async-state=empty],.comms-thread-row").first().waitFor({state:"visible"});
+        await shot("03-inbox-archive");
+        await open(hub+"?thread="+thread,".comms-message[data-own=false]");
+        await shot("04-chat");
+        await page.locator(".comms-chat-options>summary").click();
+        await shot("05-chat-search-and-archive");
+        await page.locator(".comms-chat-options>summary").click();
+        await page.locator(".comms-message[data-own=false] .comms-message-actions>summary").first().click();
+        await shot("06-message-actions");
+        const report=page.getByRole("button",{name:words.report,exact:true}).first();
+        await report.click();
+        await shot("07-report-form");
+        await page.getByRole("button",{name:ar?"إلغاء":"Abbrechen",exact:true}).first().click();
+        await page.locator(".comms-message[data-own=false] .comms-message-actions>summary").first().click();
+        await page.locator(".comms-composer textarea").fill(longChat);
+        await page.locator(".comms-attach-button").click();
+        await expect(page.locator(".comms-attachment-menu")).toBeVisible();
+        await shot("08-attachment-menu");
+        await page.locator(".comms-attach-button").click();
+        await shot("09-composer-draft");
+        await open(base+"/directory",".comms-person-row");
+        await shot("10-my-contacts");
+        await page.getByRole("button",{name:words.all,exact:true}).click();
+        await expect(page.locator(".comms-person-row").first()).toBeVisible();
+        await shot("11-all-people");
+        await page.getByRole("searchbox",{name:words.search}).fill(targetName);
+        await expect(page.locator(".comms-person-row")).toHaveCount(1);
+        await shot("12-contact-search");
+        await open(base+"/directory?contact="+target!.id,".comms-directory .auth-card");
+        await shot("13-contact-detail");
+        const candidate=people.find(p=>p.id!==target!.id&&p.displayName==="Johannes Peter Schneider")??people.find(p=>p.id!==target!.id&&p.displayName&&p.target.kind==="person");
+        expect(candidate).toBeTruthy();
+        await open(base+"/directory",".comms-person-row");
+        await page.getByRole("button",{name:words.all,exact:true}).click();
+        await page.getByRole("searchbox",{name:words.search}).fill(candidate!.displayName!);
+        await expect(page.locator(".comms-person-row").filter({hasText:candidate!.displayName!})).toBeVisible();
+        await page.locator(".comms-person-row").filter({hasText:candidate!.displayName!}).click();
+        await expect(page.locator(".comms-first-contact")).toBeVisible();
+        await page.locator(".comms-composer textarea").fill(longChat);
+        await shot("14-first-message");
+        await open(hub+"?section=feed",".comms-feed-card");
+        await shot("15-feed-populated");
+        await page.getByRole("button",{name:ar?"الأخبار":"Neuigkeiten",exact:true}).click();
+        await expect(page.locator(".comms-feed-card").filter({hasText:title[scenario.locale]}).first()).toBeVisible();
+        await shot("16-feed-news");
+        await page.getByRole("button",{name:ar?"الإعلانات":"Mitteilungen",exact:true}).click();
+        await expect(page.locator(".comms-feed-card").filter({hasText:announcementCopy[scenario.locale].title}).first()).toBeVisible();
+        await shot("17-feed-announcements");
+        await open(base+"/school/more/news?item="+news+"&from=hub",".comms-publication-card");
+        await shot("18-news-detail");
+        await open(hub+"?section=calendar&month="+month,".school-month-grid>button");
+        await expect(page.locator(".comms-weekday")).toHaveCount(7);
+        await shot("19-calendar-month");
+        await open(hub+"?section=calendar&month="+month+"&day="+day,".school-month-grid>button[aria-pressed=true]");
+        await expect(page.locator(".comms-publication-card").filter({hasText:title[scenario.locale]}).first()).toBeVisible();
+        await shot("20-calendar-selected-day");
+        await open(base+"/school/more/events?item="+event+"&from=hub",".comms-publication-card");
+        await shot("21-event-detail");
+        await open(base+"/school/more/notifications",".comms-notifications");
+        await expect(page.locator(".comms-notifications .group-list,.comms-notifications [data-async-state=empty]").first()).toBeVisible();
+        await shot("22-notifications");
+        await open(base+"/school/more/broadcasts?announcement="+broadcast,".comms-broadcast-screen .timetable-day");
+        await shot("23-broadcast-detail");
+        if(scenario.persona!=="guardian"){
+          await open(hub+"?section=feed",".comms-publish-menu>summary");
+          await page.locator(".comms-publish-menu>summary").click();
+          await shot("24-publish-menu");
+          await open(base+"/school/more/news?view=managed&from=hub",".comms-publications .comms-publication-card");
+          await shot("25-managed-news");
+          await open(base+"/school/more/news?create=1&from=hub",".comms-publications input");
+          await shot("26-news-editor");
+          await open(hub+"?section=calendar&month="+month,".comms-calendar-actions");
+          await page.getByRole("button",{name:words.newEvent,exact:true}).click();
+          await expect(page.locator(".comms-publications input[type=date]")).toBeVisible();
+          await shot("27-event-editor");
+          await open(base+"/school/more/broadcasts",".comms-broadcast-navigation");
+          const create=page.getByRole("button",{name:ar?"إعلان جديد":"Neue Mitteilung",exact:true});
+          await expect(create).toBeVisible();
+          await create.click();
+          await expect(page.getByLabel(ar?"الجمهور":"Zielgruppe")).toBeVisible();
+          await shot("28-broadcast-editor");
+          await page.getByRole("button",{name:ar?"الإعلانات المنشورة":"Veröffentlichte Mitteilungen",exact:true}).click();
+          await expect(page.locator(".comms-broadcast-screen .group-list,.comms-broadcast-screen [data-async-state=empty]").first()).toBeVisible();
+          await shot("29-broadcast-history");
+        }
+      }
+      expect(issues,"all screenshot states must fit without broken single-line text").toEqual([]);
+    }finally{
+      writeFileSync(out+"/"+key+"-manifest.json",JSON.stringify({scenario,files,issues},null,2));
+      await school.close();
+    }
+  });
+}
