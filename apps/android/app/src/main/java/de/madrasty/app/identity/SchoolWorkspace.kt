@@ -394,7 +394,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Assignments -> StaffAssignmentsScreen(model,page.classTarget,state::back)
         is WorkspacePage.Invitations -> StaffInvitationsScreen(model,rights.teacherInvites,page.batch,page.id,state::back)
         is WorkspacePage.Import -> ImportScreen(model,{state.open(WorkspacePage.Invitations(it))},page.job,state::back)
-        is WorkspacePage.Family -> FamilyWorkspace(model,page,state::back) { state.open(WorkspacePage.Enrollment(it)) }
+        is WorkspacePage.Family -> FamilyWorkspace(model,page,state::back,rights,state)
         WorkspacePage.AdminTasks -> AdminTasksScreen(model,{state.open(WorkspacePage.Queue(it))},state::back)
         is WorkspacePage.Queue -> SchoolWorkQueueScreen(model,page.selection,state::openWork,state::back)
     }
@@ -444,8 +444,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openNews={state.open(WorkspacePage.Publication(PublicationSection.News))},
                 openEvents={state.open(WorkspacePage.Publication(PublicationSection.Events))})
             SchoolTab.Students -> if(rights.students){
-                OpenPage(state,WorkspacePage.Import(),R.string.import_families)
-                FamiliesScreen(model,openEnrollment={state.open(WorkspacePage.Enrollment(it))})
+                FamiliesScreen(model,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null)
             }
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
             SchoolTab.Messages -> {
@@ -465,13 +464,13 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
 }
 
 @Composable
-private fun FamilyWorkspace(model:IdentityViewModel,page:WorkspacePage.Family,close:()->Unit,openEnrollment:(String)->Unit){
+private fun FamilyWorkspace(model:IdentityViewModel,page:WorkspacePage.Family,close:()->Unit,rights:SchoolRights,state:SchoolNavigation){
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
         TextButton(onClick=close){Text(stringResource(R.string.back))}
         FamiliesScreen(model,initialStudent=page.student,initialGuardian=page.guardian,initialLink=page.link,
-            addGuardian=page.addGuardian,openEnrollment=openEnrollment)
+            addGuardian=page.addGuardian,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null)
     }
 }
 
