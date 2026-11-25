@@ -6,6 +6,7 @@ import { SchoolHome } from "@/features/school/SchoolHome";
 import { schoolProfile } from "@/server/identity/profile";
 import { webSchoolSession } from "@/server/identity/web-session";
 import { schoolMenuAccess, mayUse } from "@/server/access/capabilities";
+import { mayManageStops } from "@/server/finance/stops";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
 import { Children, Families } from "@/features/school/Families";
 import { InviteWorkspace } from "@/features/identity/Invitations";
@@ -36,13 +37,14 @@ export default async function SchoolPage({ params, searchParams }: {
   const invites = teacherInvites || placement;
   const families = tab === "students" && await mayUse(session, "students.manage");
   if (tab === "students" && !families) notFound();
+  const familyAccess=families?await Promise.all([mayUse(session,"finance.issue"),mayUse(session,"finance.read"),mayUse(session,"finance.post"),mayUse(session,"attendance.supervise"),mayUse(session,"academics.supervise"),mayManageStops(session)]):[false,false,false,false,false,false];
   const welcome=tab==="home"?await schoolProfile(session).catch(()=>null):null;
   return (
     <>
-      {tab!=="messages"&&<h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="students" ? (locale==="ar"?"الطلاب والأسر":"Schüler und Familien") : text[tab as Tab]}</h1>}
+      {tab!=="messages"&&tab!=="students"&&<h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : text[tab as Tab]}</h1>}
       {tab==="messages"&&<CommunicationHub locale={locale} thread={z.uuid().safeParse(search.thread).data} section={search.section}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
-      {families && <><Link className="plain-button" href={`/${locale}/school/students/import`}>{locale === "ar" ? "استيراد الأسر" : "Familien importieren"}</Link><Families locale={locale} />
+      {families && <><Families locale={locale} access={{financeIssue:familyAccess[0],financeRead:familyAccess[0]||familyAccess[1]||familyAccess[2],oversight:familyAccess[3]&&familyAccess[4],stops:familyAccess[5]}}/>
         {(search.batchId || search.invite) && <InviteWorkspace locale={locale} guardians={true}
           batchId={z.uuid().safeParse(search.batchId).data} invitationId={z.uuid().safeParse(search.invite).data}/>}
       </>}

@@ -36,9 +36,9 @@ export function FamilyGroupList({locale,select}:{locale:Locale;select:(id:string
   {error&&rows&&<p role="alert">{error}</p>}{cursor&&<button type="button" className="plain-button" disabled={busy} onClick={()=>void more()}>{t.more}</button>}
  </div>;
 }
-export function FamilyGroupProfile({locale,id,financeIssue=false,openPerson}:{locale:Locale;id:string;financeIssue?:boolean;openPerson:(kind:"students"|"guardians",id:string)=>void}){
+export function FamilyGroupProfile({locale,id,financeIssue=false,initialAction,openPerson}:{locale:Locale;id:string;financeIssue?:boolean;initialAction?:"student"|"guardian";openPerson:(kind:"students"|"guardians",id:string)=>void}){
  const t=copy[locale],command=useAdminCommand();
- const [group,setGroup]=useState<Group>(),[generation,refresh]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState(false),[view,setView]=useState<"edit"|"student"|"guardian">(),[mode,setMode]=useState<"existing"|"new">("existing"),[selected,setSelected]=useState<Student|Guardian>();
+ const [group,setGroup]=useState<Group>(),[generation,refresh]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState(false),[view,setView]=useState<"edit"|"student"|"guardian"|undefined>(initialAction),[mode,setMode]=useState<"existing"|"new">("existing"),[selected,setSelected]=useState<Student|Guardian>();
  useEffect(()=>{const ctrl=new AbortController();setGroup(undefined);setError("");requestApi(`/school/families/${id}`,familyGroupDetail,{signal:ctrl.signal}).then(({data})=>{if(!ctrl.signal.aborted)setGroup(data);}).catch(e=>{if(!ctrl.signal.aborted)setError(err(locale,e));});return()=>ctrl.abort();},[id,generation,locale]);
  const done=()=>{setView(undefined);setSelected(undefined);refresh(v=>v+1);};
  const run=async(work:()=>Promise<unknown>)=>{if(busy)return;setBusy(true);setError("");try{await work();done();}catch(e){setError(err(locale,e));}finally{setBusy(false);}};
