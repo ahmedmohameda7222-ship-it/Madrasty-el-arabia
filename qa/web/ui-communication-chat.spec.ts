@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { schoolFixtures } from "../fixtures/school";
 import { setUpCalendar } from "../fixtures/calendar";
@@ -8,6 +9,7 @@ import { localOrigin } from "../support/target";
 test("direct chat presents sent and received bubbles and compact actions", async ({page,context})=>{
   const school=schoolFixtures();
   try {
+    await school.seed();
     const admin=await school.bearer("admin","admin");
     await setUpCalendar(school,admin);
     const guardian=await school.bearer("guardian-de","guardian");
@@ -27,5 +29,30 @@ test("direct chat presents sent and received bubbles and compact actions", async
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
     await expect(page.locator(".comms-composer textarea")).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+    mkdirSync("qa-artifacts/ui-after",{recursive:true});
+    await page.screenshot({path:"qa-artifacts/ui-after/communication-chat-de-390.png",animations:"disabled"});
+  }finally{await school.close();}
+});
+
+test("guardian contact picker exposes responsible teacher first, then the full searchable directory",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:320,height:844});
+    await page.goto("/de/school/messages");
+    await page.getByRole("link",{name:"Neue Nachricht"}).click();
+    await expect(page.getByRole("button",{name:"Meine Kontakte"})).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator(".comms-people-group h2").first()).toHaveText("Lehrkräfte meiner Kinder");
+    await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toHaveCount(0);
+    await page.getByRole("button",{name:"Alle Personen"}).click();
+    await page.getByRole("searchbox",{name:"Person suchen"}).fill("Johannes Peter Schneider");
+    await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+    mkdirSync("qa-artifacts/ui-after",{recursive:true});
+    await page.screenshot({path:"qa-artifacts/ui-after/communication-directory-de-320.png",animations:"disabled"});
   }finally{await school.close();}
 });
