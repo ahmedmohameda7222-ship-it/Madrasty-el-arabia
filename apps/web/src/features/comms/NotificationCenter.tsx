@@ -144,7 +144,7 @@ export function NotificationCenter({locale,selected}:{locale:Locale;selected?:st
             </li>;
           })}</ul>;
         }}</AcademicPageItems>
-        <PushPreferences locale={locale}/>
+        <Link className="plain-button" href={`/${locale}/account/preferences`}>{labels.preferences}</Link>
       </>}
   </section>;
 }
@@ -189,7 +189,7 @@ function NoticeDetail({locale,selected}:{locale:Locale;selected:string}){
   </div>;
 }
 
-function PushPreferences({locale}:{locale:Locale}){
+export function PushPreferences({locale}:{locale:Locale}){
   const actor=useAccountScope(),labels=copy[locale];
   const [option,setOption]=useState<Awaited<ReturnType<typeof prepareBrowserPush>>>();
   const [state,setState]=useState<"loading"|"enabled"|"denied"|"disabled"|"unavailable"|"install">("loading");
@@ -226,7 +226,6 @@ function PushPreferences({locale}:{locale:Locale}){
   return <section className="timetable-day auth-form">
     <h2>{labels.device}</h2>
     {preference&&<p>{labels.correspondence} · {labels[preference]}</p>}
-    <Link className="plain-button" href={`/${locale}/account/preferences`}>{labels.preferences}</Link>
     {state==="install"&&<p>{labels.install}</p>}
     {state==="unavailable"&&<p>{labels.pushUnavailable}</p>}
     {state==="denied"&&<p>{labels.denied}</p>}

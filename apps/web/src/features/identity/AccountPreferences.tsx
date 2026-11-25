@@ -7,6 +7,7 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
+import { PushPreferences } from "@/features/comms/NotificationCenter";
 
 const words = {
   ar: {
@@ -84,8 +85,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
         </form>
       </section>
       <section className="auth-card">
-        <h2>{labels.notifications}</h2>
-        <p>{labels.notificationsPending}</p>
+        <PushPreferences locale={locale}/>
         <Link className="plain-button" href={`/${locale}/account/security`}>{labels.security}</Link>
       </section>
     </div>

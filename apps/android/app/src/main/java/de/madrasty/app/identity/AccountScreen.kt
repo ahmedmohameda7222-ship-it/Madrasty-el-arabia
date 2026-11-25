@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
+import de.madrasty.app.comms.DeviceNotificationSettings
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
@@ -82,7 +83,7 @@ fun AccountScreen(model: IdentityViewModel, close: () -> Unit, security: () -> U
                 PreferencesEditor(model, preferences, save = { state = AsyncState.Ready(it) }, reload = { reload++ })
             }
         }
-        Text(stringResource(R.string.account_notifications), style = MaterialTheme.typography.titleLarge)
+        DeviceNotificationSettings(model,fallback)
         TextButton(onClick = {
             val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
             context.startActivity(intent)
