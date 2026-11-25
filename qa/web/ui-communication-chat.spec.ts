@@ -258,25 +258,40 @@ test("message retry preserves the client identifier and a remote reply arrives w
     const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
     await signInForWrite(page,school,"guardian-de");
     await page.setViewportSize({width:390,height:844});
+    // Simulate one lost connection at the actual browser fetch boundary.
+    // The app's installed Service Worker can hide requests from Playwright routing.
+    // Only this local synthetic message endpoint is affected; the retry uses
+    // the real fetch implementation, application authentication and database.
+    await page.addInitScript(({path})=>{
+      const original=window.fetch.bind(window);
+      const ids:string[]=[];
+      Object.defineProperty(window,"__qaMessageAttempts",{value:ids});
+      window.fetch=(input,init)=>{
+        const url=new URL(input instanceof Request?input.url:String(input),location.origin);
+        const method=init?.method??(input instanceof Request?input.method:"GET");
+        if(url.origin===location.origin&&url.pathname===path&&method.toUpperCase()==="POST"&&typeof init?.body==="string"){
+          const message=JSON.parse(init.body) as {clientMessageId:string};
+          ids.push(message.clientMessageId);
+          if(ids.length===1)return Promise.reject(new TypeError("Synthetic QA connection interruption"));
+        }
+        return original(input,init);
+      };
+    },{path:"/api/v1/threads/"+thread+"/messages"});
     await page.goto("/de/school/messages?thread="+thread);
     const body="Retry QA "+randomUUID().slice(0,8);
-    const ids:string[]=[];
-    await page.route("**/api/v1/threads/"+thread+"/messages",async route=>{
-      if(route.request().method()!=="POST"){await route.continue();return;}
-      const request=route.request().postDataJSON() as {clientMessageId:string};
-      ids.push(request.clientMessageId);
-      if(ids.length===1){await route.abort("failed");return;}
-      await route.continue();
-    });
+    const attempts=()=>page.evaluate(()=>(window as Window&{__qaMessageAttempts:string[]}).__qaMessageAttempts);
     const composer=page.locator(".comms-composer");
     const input=composer.locator("textarea");
     await input.fill(body);
     await composer.getByRole("button",{name:"Senden",exact:true}).click();
-    await expect.poll(()=>ids.length,{message:"browser POST reached the failure simulation"}).toBe(1);
+    await expect.poll(async()=>(await attempts()).length,{message:"browser send reached the failure simulation"}).toBe(1);
     await expect(composer.getByRole("button",{name:"Erneut senden"})).toBeVisible();
     await expect(input).toHaveValue(body);
+    const before=(await fixtureApi(school,"/threads/"+thread+"/messages",{token:teacher,persona:"teacher"})).payload.data;
+    expect(before.filter((item:{body:string})=>item.body===body)).toHaveLength(0);
     await composer.getByRole("button",{name:"Erneut senden"}).click();
     await expect(page.locator(".comms-timeline .comms-message").filter({hasText:body})).toHaveCount(1);
+    const ids=await attempts();
     expect(ids).toHaveLength(2);
     expect(ids[1]).toBe(ids[0]);
     const actual=(await fixtureApi(school,"/threads/"+thread+"/messages",{token:teacher,persona:"teacher"})).payload.data;
