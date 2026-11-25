@@ -518,7 +518,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-hub .comms-feed-filters button{font-size:.8rem;padding:4px 2px;white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none}
 .comms-hub .comms-feed-filters{gap:2px;padding:3px}
 .comms-hub .comms-feed-toolbar h2{font-size:1rem}
-.comms-thread-copy strong,.comms-person-label>bdi{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;text-align:start;line-height:1.35}
+.comms-thread-copy strong,.comms-person-label>.comms-person-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;text-align:start;line-height:1.35}
 .comms-thread-copy strong{font-size:.9rem}
 .comms-thread-meta{max-inline-size:60px;gap:4px}
 .comms-thread-meta>small{font-size:.72rem;white-space:nowrap}
@@ -526,7 +526,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-directory .comms-segments button{font-size:.875rem;overflow-wrap:normal;word-break:normal;padding:6px}
 .comms-directory .comms-person-row{gap:8px}
 .comms-directory .comms-person-label{gap:2px}
-.comms-directory .comms-person-label>bdi{font-size:.95rem}
+.comms-directory .comms-person-name{font-size:.95rem;text-align:start;min-inline-size:0}
 .comms-thread-toolbar h2{font-size:.95rem;line-height:1.3}
 .comms-broadcast-screen,.comms-notifications{min-inline-size:0}
 .comms-broadcast-navigation,.comms-notice-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
@@ -571,3 +571,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-publications .notice p,.comms-broadcast-screen .notice p{display:block}
 .comms-publications .notice article h3,.comms-broadcast-screen .notice article h3{font-size:1rem;line-height:1.4;hyphens:auto;overflow-wrap:break-word;word-break:normal}
 @media(max-width:360px){.comms-publications .notice,.comms-broadcast-screen .notice{padding:12px}}
+
+.comms-person-name bdi{font-weight:650}
+.comms-directory .comms-composer{min-inline-size:0}
+.comms-directory .comms-first-contact h1{hyphens:auto;overflow-wrap:break-word}

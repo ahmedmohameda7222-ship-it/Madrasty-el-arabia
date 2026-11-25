@@ -255,6 +255,8 @@ for(const scenario of cases){
         await page.locator(".comms-person-row").filter({hasText:candidate!.displayName!}).click();
         await expect(page.locator(".comms-first-contact")).toBeVisible();
         await page.locator(".comms-composer textarea").fill(longChat);
+        const firstDraft=page.locator(".comms-composer textarea");
+        await expect.poll(()=>firstDraft.evaluate(e=>e.clientHeight>=Math.min(118,e.scrollHeight-2))).toBe(true);
         await shot("14-first-message");
         });
         await section("feed",async()=>{
