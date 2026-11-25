@@ -468,3 +468,5 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-thread-screen .comms-message-area{max-block-size:clamp(180px,55dvh,720px)}
 @media(max-width:600px){.comms-thread-screen{padding:10px}.comms-thread-toolbar{grid-template-columns:44px 36px minmax(0,1fr) 44px;gap:6px}.comms-thread-toolbar .comms-avatar{width:36px;height:36px}}
 @media(prefers-reduced-motion:no-preference){.comms-publish-menu-items{animation:comms-send-in 140ms ease-out both}}
+
+.comms-first-contact{display:flex;gap:12px;align-items:center;min-inline-size:0}.comms-first-contact>div{min-inline-size:0}.comms-first-contact h1{font-size:1.25rem;overflow-wrap:anywhere;margin:0}.comms-first-contact p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}.comms-directory .comms-input-bar>.comms-attach-button{grid-column:1;grid-row:1}

@@ -7,6 +7,20 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Surface
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import de.madrasty.app.comms.ChatInputField
+import de.madrasty.app.comms.ChatSendAction
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
@@ -112,7 +126,7 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
             if (members.isEmpty()) continue
             Text(stringResource(label),style = MaterialTheme.typography.labelLarge)
             for (row in members) {
-                TextButton(enabled = !opening, modifier = Modifier.fillMaxWidth(), onClick = {
+                ListItem(modifier = Modifier.fillMaxWidth().clickable(enabled=!opening) {
                     if (!opening) {
                         opening = true
                         failed = false
@@ -126,16 +140,20 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
                             finally { opening = false }
                         }
                     }
-                }) {
-                    Column(Modifier.fillMaxWidth()) {
-                        Text(isolate(row.optional("displayName") ?: title(row,language)),style = MaterialTheme.typography.titleMedium)
-                        Text(isolate(title(row,language)),style = MaterialTheme.typography.bodySmall)
-                        val contexts = row.getJSONArray("contexts")
-                        if (contexts.length() > 0) Text((0 until contexts.length()).joinToString(" · ") { i ->
-                            isolate(contexts.getJSONObject(i).getString(if(language=="de") "nameDe" else "nameAr"))
-                        },style=MaterialTheme.typography.bodySmall)
+                },
+                    leadingContent={ContactAvatar(row,language)},
+                    headlineContent={Text(isolate(row.optional("displayName") ?: title(row,language)),maxLines=2,overflow=TextOverflow.Ellipsis)},
+                    supportingContent={
+                        Column{
+                            Text(isolate(title(row,language)))
+                            val contexts=row.getJSONArray("contexts")
+                            if(contexts.length()>0)Text((0 until contexts.length()).joinToString(" · "){i->
+                                isolate(contexts.getJSONObject(i).getString(if(language=="de")"nameDe" else "nameAr"))
+                            },maxLines=2,overflow=TextOverflow.Ellipsis)
+                        }
                     }
-                }
+                )
+                HorizontalDivider()
             }
         }
         if(failed) Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
@@ -171,13 +189,28 @@ private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:
               finally{sending=false}
         }
     }
-    Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.headlineSmall)
-    Text(isolate(title(row,language)))
-    OutlinedTextField(value=body,onValueChange={body=it.take(4000);firstId=java.util.UUID.randomUUID().toString()},
-        enabled=!sending,modifier=Modifier.fillMaxWidth(),label={Text(stringResource(R.string.comms_first_message))})
-    Button(onClick={send(false)},enabled=!sending&&body.isNotBlank()){Text(stringResource(R.string.comms_first_send))}
-    if(body.isBlank())TextButton(onClick={send(true)},enabled=!sending){Text(stringResource(R.string.comms_first_media))}
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
+        ContactAvatar(row,language)
+        Column(Modifier.weight(1f)){
+            Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.titleLarge,maxLines=2,overflow=TextOverflow.Ellipsis)
+            Text(isolate(title(row,language)),style=MaterialTheme.typography.bodyMedium)
+        }
+    }
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        IconButton(enabled=!sending&&body.isBlank(),onClick={send(true)},modifier=Modifier.size(48.dp)){
+            Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_first_media))
+        }
+        ChatInputField(body,!sending){body=it;firstId=java.util.UUID.randomUUID().toString();failed=false}
+        ChatSendAction(!sending&&body.isNotBlank(),failed){send(false)}
+    }
     if(failed)Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
+}
+@Composable
+private fun ContactAvatar(row:JSONObject,language:String){
+    val name=(row.optional("displayName")?:title(row,language)).trim()
+    Surface(Modifier.size(44.dp),shape=CircleShape,color=MaterialTheme.colorScheme.secondaryContainer){
+        Box(contentAlignment=Alignment.Center){Text(name.firstOrNull()?.uppercase()?:"•",style=MaterialTheme.typography.titleMedium)}
+    }
 }
 private suspend fun directoryPage(model: IdentityViewModel, query: String, view: String, cursor: String?) =
     decodeData(model.schoolRequest("/directory?limit=30&view=$view&query=${Uri.encode(query)}" +

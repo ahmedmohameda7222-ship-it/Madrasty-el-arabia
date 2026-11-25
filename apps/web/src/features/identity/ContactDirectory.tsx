@@ -149,11 +149,13 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
   </section>;
   if(draft)return <section className="comms-directory">
     <button className="plain-button" type="button" disabled={!!opening} onClick={()=>{setDraft(undefined);setOpenError("");}}>{text.back}</button>
-    <h1><bdi>{draft.displayName??label(draft,locale)}</bdi></h1><p>{label(draft,locale)}</p>
-    <form className="comms-composer" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
-      <textarea aria-label={text.start} placeholder={text.start} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());}}/>
-      <button className="plain-button" type="submit" disabled={!!opening||!body.trim()}>{text.send}</button>
-      {!body.trim()&&<button className="plain-button" type="button" disabled={!!opening} onClick={()=>void sendFirst(true)}>{text.media}</button>}
+    <div className="comms-first-contact"><span className="comms-avatar" aria-hidden="true">{initials(draft,locale)}</span><div><h1><bdi>{draft.displayName??label(draft,locale)}</bdi></h1><p>{label(draft,locale)}</p></div></div>
+    <form className="comms-composer auth-form" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
+      <div className="comms-input-bar">
+        <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening||!!body.trim()} onClick={()=>void sendFirst(true)}><Icon name="plus"/></button>
+        <label className="comms-input-field"><textarea aria-label={text.start} placeholder={text.start} dir="auto" rows={2} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());setOpenError("");}}/></label>
+        <button className="comms-icon-button comms-send-button" type="submit" aria-label={text.send} disabled={!!opening||!body.trim()}><Icon name={openError?"retry":"sendUp"}/></button>
+      </div>
     </form>{openError&&<p role="alert">{openError}</p>}
   </section>;
   return <section className="comms-directory">
