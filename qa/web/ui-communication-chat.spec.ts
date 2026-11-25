@@ -51,6 +51,7 @@ test("guardian contact picker exposes responsible teacher first, then the full s
     await page.getByRole("button",{name:"Alle Personen"}).click();
     await page.getByRole("searchbox",{name:"Person suchen"}).fill("Johannes Peter Schneider");
     await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible();
+    await expect(page.locator(".comms-person-row")).toHaveCount(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-directory-de-320.png",animations:"disabled"});
@@ -137,5 +138,43 @@ test("a touch long press exposes message actions and copies the actual message t
     await message.dispatchEvent("pointerup",{pointerType:"touch",pointerId:1,isPrimary:true,button:0});
     await bubble.getByRole("button",{name:"Text kopieren"}).click();
     await expect(page.locator("html")).toHaveAttribute("data-qa-copied",body);
+  }finally{await school.close();}
+});
+
+
+test("mobile chat composer keeps media actions collapsed until requested",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const contacts=(await fixtureApi(school,"/directory",{token:guardian,persona:"guardian"})).payload.data;
+    const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
+    const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    for(const scenario of [
+      {locale:"de",width:390,attach:"Anhang hinzufügen",actions:["Foto auswählen","Foto aufnehmen","Audio aufnehmen"]},
+      {locale:"ar",width:320,attach:"إضافة مرفق",actions:["اختيار صورة","تصوير","سجّل صوت"]},
+    ] as const){
+      await page.setViewportSize({width:scenario.width,height:844});
+      await page.goto("/"+scenario.locale+"/school/messages?thread="+thread);
+      const composer=page.locator(".comms-composer");
+      const input=composer.locator("textarea");
+      await expect(input).toBeVisible();
+      await input.fill("QA unsent draft");
+      const toggle=composer.getByRole("button",{name:scenario.attach});
+      await expect(toggle).toHaveAttribute("aria-expanded","false");
+      for(const action of scenario.actions)await expect(composer.getByRole("button",{name:action,exact:true})).toBeHidden();
+      expect((await composer.boundingBox())!.height,"idle composer must leave room for chat messages").toBeLessThanOrEqual(180);
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded","true");
+      for(const action of scenario.actions)await expect(composer.getByRole("button",{name:action,exact:true})).toBeVisible();
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded","false");
+      await expect(input).toHaveValue("QA unsent draft");
+      for(const action of scenario.actions)await expect(composer.getByRole("button",{name:action,exact:true})).toBeHidden();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+    }
   }finally{await school.close();}
 });
