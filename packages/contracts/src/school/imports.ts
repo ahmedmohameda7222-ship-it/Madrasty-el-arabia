@@ -11,6 +11,7 @@ export const importUploadInput = z.object({
     .regex(/^[A-Za-z0-9+/]+={0,2}$/),
 });
 export const importColumns = z.object({
+  familyKey: column.optional(), familyName: column.optional(),
   childKey: column, studentNumber: column.optional(), childName: column,
   guardianKey: column, guardianName: column, email: column,
   communicationLocale: column, payerCandidate: column.optional(),
@@ -38,11 +39,12 @@ export const importInspectionSchema = importVersionSchema.extend({
 
 const mappedText = z.string().trim().min(1).max(160);
 export const normalizedImportSchema = z.object({
+  familyKey: mappedText.nullable().optional(), familyName: z.string().trim().min(1).max(200).nullable().optional(),
   childKey: mappedText, studentNumber: z.string().regex(/^MA-\d{6,}$/).nullable(),
   childName: z.string().trim().min(1).max(200), guardianKey: mappedText,
   guardianName: z.string().trim().min(1).max(200), email: z.email().max(254).transform((value) => value.toLowerCase()),
   communicationLocale: localeSchema, payerCandidate: z.boolean().nullable(),
-});
+}).refine(row=>Boolean(row.familyKey)===Boolean(row.familyName),{path:["familyKey"],message:"Family key and name must be supplied together"});
 export const importDispositions = z.enum(["new", "existing", "duplicate", "conflict", "revoked", "skipped"]);
 export const importReasonSchema = z.enum([
   "invalid_value", "identifier_needs_text", "formula", "student_number_unknown", "source_key_mismatch",

@@ -1,0 +1,4 @@
+﻿familyKey,familyName,childKey,studentNumber,childName,guardianKey,guardianName,email,communicationLocale,payerCandidate
+F-001,Example Family,C-301,,Salma Example,G-17,Nora Example,nora@example.invalid,ar,yes
+F-001,Example Family,C-302,,Omar Example,G-17,Nora Example,nora@example.invalid,ar,yes
+F-001,Example Family,C-301,,Salma Example,G-19,Jan Example,jan@example.invalid,de,no

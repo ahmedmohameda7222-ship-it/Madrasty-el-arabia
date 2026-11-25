@@ -53,12 +53,13 @@ private const val maxUpload = 2_500_000
 private const val base = "/school/family-imports"
 private const val xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 private val fields = mapOf(
+    "familyKey" to R.string.fm_import_key, "familyName" to R.string.fm_import_name,
     "childKey" to R.string.import_child_key, "studentNumber" to R.string.student_number,
     "childName" to R.string.import_child_name, "guardianKey" to R.string.import_guardian_key,
     "guardianName" to R.string.import_guardian_name, "email" to R.string.guardian_email,
     "communicationLocale" to R.string.guardian_locale, "payerCandidate" to R.string.import_candidate,
 )
-private val optional = setOf("studentNumber", "payerCandidate")
+private val optional = setOf("studentNumber", "payerCandidate","familyKey","familyName")
 private val dispositions = mapOf("new" to R.string.import_new, "existing" to R.string.import_existing,
     "duplicate" to R.string.import_duplicate, "conflict" to R.string.import_conflict, "revoked" to R.string.import_revoked,
     "skipped" to R.string.import_skipped)
@@ -131,7 +132,7 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
         listOf("csv" to R.string.import_csv, "xlsx" to R.string.import_xlsx).forEach { (extension, label) ->
             TextButton(onClick = {
                 context.startActivity(Intent(Intent.ACTION_VIEW,
-                    Uri.parse("${BuildConfig.API_ORIGIN}/templates/family-import.$extension")))
+                    Uri.parse("${BuildConfig.API_ORIGIN}/templates/${if(extension=="csv")"family-import-groups.csv" else "family-import.xlsx"}")))
             }) { Text(stringResource(label)) }
         }
         TextButton(onClick = { picker.launch(arrayOf("text/csv", "text/plain", xlsx)) }) {
@@ -214,7 +215,7 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
                     RowDecision(model, row) { decision ->
                         val result = model.schoolCommand(requests, "$base/$id/decisions", "PATCH",
                             JSONObject().put("revision", review.getInt("revision")).put("rows", JSONArray(listOf(decision))))
-                        preview = result
+                        preview = result;confirmed=false
                         inspection = inspection?.let { JSONObject(it.toString()).put("revision", result.getInt("revision")) }
                     }
                 }

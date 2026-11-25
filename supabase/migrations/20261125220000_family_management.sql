@@ -2,6 +2,7 @@
 create table app.family_group (
   id uuid primary key default gen_random_uuid(),
   display_name text not null check (char_length(btrim(display_name)) between 1 and 200),
+  import_key text unique check (char_length(btrim(import_key)) between 1 and 160),
   situation text not null default 'unknown' check (situation in ('unknown','together','separated','divorced','single','other')),
   revision integer not null default 1 check (revision >= 1),
   created_at timestamptz not null default now()

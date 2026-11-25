@@ -31,7 +31,7 @@ export type Reviewed = {
   link: LinkMatch | null;
 };
 
-const identifiers = new Set(["childKey", "guardianKey", "studentNumber"]);
+const identifiers = new Set(["childKey", "guardianKey", "studentNumber", "familyKey"]);
 
 function payer(value: string) {
   if (!value) return null;
@@ -58,7 +58,7 @@ export function normalizeRows(parsed: ParsedImport, columns: z.infer<typeof impo
     }
     const candidate = payer(typeof fields.payerCandidate === "string" ? fields.payerCandidate : "");
     const parsedRow = normalizedImportSchema.safeParse({
-      ...fields, studentNumber: fields.studentNumber || null, payerCandidate: candidate,
+      ...fields, familyKey:fields.familyKey||null,familyName:fields.familyName||null, studentNumber: fields.studentNumber || null, payerCandidate: candidate,
     });
     return parsedRow.success ? { ...review, fields: parsedRow.data }
       : { ...review, issue: "invalid_value", issueColumn: String(parsedRow.error.issues[0]?.path[0] ?? "") };
@@ -95,9 +95,11 @@ export async function reviewRows(tx: Transaction, rows: ReviewRow[]) {
   const adults = new Map<string, string>();
   const emailKeys = new Map<string, Set<string>>();
   const inconsistent = new Set<string>();
+  const families=new Map<string,string>();
   for (const item of rows) {
     if (!item.fields || item.decision === "skip") continue;
     const fields = item.fields;
+    if(fields.familyKey&&fields.familyName){if(families.has(fields.familyKey)&&families.get(fields.familyKey)!==fields.familyName)inconsistent.add("family:"+fields.familyKey);families.set(fields.familyKey,fields.familyName);}
     const child = hashCommand([fields.childName, fields.studentNumber]);
     const guardian = hashCommand([fields.guardianName, fields.email, fields.communicationLocale]);
     if (children.has(fields.childKey) && children.get(fields.childKey) !== child) inconsistent.add("child:" + fields.childKey);
@@ -120,10 +122,11 @@ export async function reviewRows(tx: Transaction, rows: ReviewRow[]) {
     result.push(current);
     if (item.decision === "skip") { preview.disposition = "skipped"; continue; }
     if (!fields || item.issue) { preview.disposition = "conflict"; continue; }
-    if (inconsistent.has("child:" + fields.childKey) || inconsistent.has("guardian:" + fields.guardianKey)) {
+    if ((fields.familyKey&&inconsistent.has("family:"+fields.familyKey)) || inconsistent.has("child:" + fields.childKey) || inconsistent.has("guardian:" + fields.guardianKey)) {
       preview.disposition = "conflict"; preview.reason = "conflicting_rows"; continue;
     }
 
+    if(fields.familyKey){const [group]=await tx<{name:string}[]>`select display_name as name from app.family_group where import_key=${fields.familyKey}`;if(group&&group.name!==fields.familyName){preview.disposition="conflict";preview.reason="conflicting_rows";preview.column="familyName";continue;}}
     const childOverride = item.decision === "match_student" ? item.matchedOverride : null;
     const adultOverride = item.decision === "match_guardian" ? item.matchedOverride : null;
     current.student = await findStudent(tx, fields, childOverride);
@@ -164,7 +167,7 @@ export async function reviewRows(tx: Transaction, rows: ReviewRow[]) {
     }
 
     const pair = JSON.stringify([student?.id ?? fields.childKey, guardian?.id ?? fields.guardianKey]);
-    const fingerprint = hashCommand([fields.childName, fields.guardianName, fields.email, candidate]);
+    const fingerprint = hashCommand([fields.childName, fields.guardianName, fields.email, candidate,fields.familyKey??null,fields.familyName??null]);
     if (seenPairs.has(pair)) {
       const same = seenPairs.get(pair) === fingerprint;
       preview.disposition = same ? "duplicate" : "conflict";
