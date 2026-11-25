@@ -86,6 +86,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
         AsyncSurface<Unit>(AsyncState.Forbidden()){}
         return
     }
+    val failed=outgoing?.pending==false
     var optionsOpen by remember(id){mutableStateOf(false)}
     Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)){
     TextButton(onClick={optionsOpen=!optionsOpen}){Text(stringResource(R.string.chat_search_thread)+" · ⋯")}
@@ -113,7 +114,6 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
             if(outgoing?.pending!=true){quote=message;outgoing=null}
         }
     }
-    val failed=outgoing?.pending==false
     outgoing?.let{message->
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End){
             Surface(shape=RoundedCornerShape(18.dp),color=MaterialTheme.colorScheme.primaryContainer){
