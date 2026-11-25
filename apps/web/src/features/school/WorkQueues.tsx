@@ -8,6 +8,7 @@ import { dictionary } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { RoleHero } from "@/ui/RoleHero";
+import { Icon } from "@/ui/Icon";
 import { TimetableRead, timetableError, useTimetableRead } from "./timetable/shared";
 
 const queueLabels: Record<Locale,Record<WorkQueueKey,string>> = {
@@ -36,39 +37,46 @@ const overviewCopy = {
     news:"Aktuelles aus der Schule", events:"Veranstaltungen", allNews:"Schulnachrichten", addStudent:"Neue Familie hinzufügen", school:"Schulbereiche"},
 } as const;
 
+const dashboardCopy={
+  de:{done:"Alles erledigt",tasks:"offene Aufgaben",partial:"Einige Aufgaben konnten nicht geladen werden.",all:"Alle Aufgaben",overview:"Schulübersicht",last:"Letzter Schultag",today:"Heutiger Schultag",next:"Nächster Schultag",present:"Anwesend",late:"Verspätet",absent:"Abwesend",approved:"Bestätigte Klassen",noAttendance:"Noch keine bestätigte Anwesenheit.",finance:"Finanzen",income:"Einnahmen nach Erstattungen",cash:"Barzahlung",bank:"Überweisung",openFinance:"Finanzen öffnen",openAttendance:"Anwesenheit ansehen",classMonitor:"Klassen im Blick",schedule:"Stundenplan",noNext:"Kein weiterer Schultag geplant.",unknown:"Nicht verfügbar",family:"Familie",event:"Termin",announce:"Mitteilung",invoice:"Rechnung",news:"Aktuelles",newsType:"Schulnachricht",eventType:"Veranstaltung",noNews:"Keine aktuellen Einträge.",profile:"Profil",allNews:"Alle Nachrichten",allEvents:"Alle Termine"},
+  ar:{done:"كل المهام خلصت",tasks:"مهام مفتوحة",partial:"تعذّر تحميل بعض المهام.",all:"كل المهام",overview:"نظرة على المدرسة",last:"آخر يوم دراسي",today:"اليوم الدراسي",next:"اليوم الدراسي القادم",present:"حاضر",late:"متأخر",absent:"غائب",approved:"فصول تم اعتمادها",noAttendance:"لا يوجد حضور معتمد حتى الآن.",finance:"الحسابات",income:"المتحصلات بعد الاسترداد",cash:"نقدي",bank:"تحويل بنكي",openFinance:"فتح الحسابات",openAttendance:"عرض الحضور",classMonitor:"متابعة الفصول",schedule:"الجدول الدراسي",noNext:"لا يوجد يوم دراسي قادم محدد.",unknown:"غير متاح",family:"أسرة",event:"حدث",announce:"إعلان",invoice:"فاتورة",news:"أخبار المدرسة",newsType:"خبر",eventType:"حدث",noNews:"لا توجد أخبار أو أحداث حاليًا.",profile:"الملف الشخصي",allNews:"كل الأخبار",allEvents:"كل الأحداث"},
+} as const;
+const dateLabel=(day:string,locale:Locale)=>new Intl.DateTimeFormat(locale,{dateStyle:"long",timeZone:"UTC"}).format(new Date(day+"T12:00:00Z"));
 function SchoolUpdates({locale,today,version}:{locale:Locale;today:string;version:number}) {
-  const labels = overviewCopy[locale], base = `/${locale}/school/more`;
-  const news = useTimetableRead("/news?limit=3",publications,version);
-  const events = useTimetableRead(`/events?month=${today.slice(0,7)}&limit=60`,publications,version);
-  const recent = news.value?.data ?? [];
-  const upcoming = events.value?.data?.filter(item => item.kind === "event" &&
-    (item.timing.end?.date ?? item.timing.start.date) >= today).slice(0,2) ?? [];
-  return <section className="auth-card">
-    <h2>{labels.news}</h2>
-    <ul className="group-list">{[...recent,...upcoming].map(item => <li key={item.id}>
-      <Link className="group-row" href={`${base}/${item.kind === "news" ? "news" : "events"}?item=${item.id}`}>
-        {(item.copy[locale] ?? item.copy[item.sourceLocale])?.title}
-      </Link>
-    </li>)}</ul>
-    <div className="header-actions">
-      <Link className="plain-button" href={`${base}/news`}>{labels.allNews}</Link>
-      <Link className="plain-button" href={`${base}/events`}>{labels.events}</Link>
+  const t=dashboardCopy[locale],base=`/${locale}/school/more`;
+  const news=useTimetableRead("/news?limit=3",publications,version);
+  const events=useTimetableRead(`/events?month=${today.slice(0,7)}&limit=60`,publications,version);
+  const recent=news.value?.data??[];
+  const upcoming=events.value?.data?.filter(item=>item.kind==="event"&&(item.timing.end?.date??item.timing.start.date)>=today)
+    .sort((a,b)=>(a.kind==="event"?a.timing.start.date:"").localeCompare(b.kind==="event"?b.timing.start.date:"")).slice(0,2)??[];
+  const loading=!news.value||!events.value;
+  return <section className="admin-start-section">
+    <h2>{t.news}</h2>
+    <div className="admin-start-panel admin-start-list">
+      {loading?<p className="admin-start-muted">{dictionary(locale).pending}</p>:null}
+      {news.value?.error||events.value?.error?<p className="admin-start-muted">{t.unknown}</p>:null}
+      {!loading&&!news.value?.error&&!events.value?.error&&!recent.length&&!upcoming.length?<p className="admin-start-muted">{t.noNews}</p>:null}
+      {[...recent,...upcoming].map(item=><Link key={item.id} className="admin-start-row" href={`${base}/${item.kind==="news"?"news":"events"}?item=${item.id}`}>
+        <span className="admin-start-icon"><Icon name={item.kind==="news"?"messages":"attendance"}/></span>
+        <span><strong>{(item.copy[locale]??item.copy[item.sourceLocale])?.title}</strong><small>{item.kind==="event"?dateLabel(item.timing.start.date,locale):t.newsType}</small></span>
+        <Icon name="chevron"/>
+      </Link>)}
+      <div className="admin-start-links"><Link href={`${base}/news`}>{t.allNews}</Link><Link href={`${base}/events`}>{t.allEvents}</Link></div>
     </div>
   </section>;
 }
 
-export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}){
-  const text=copy[locale];
+export function AdminWork({locale,initialDay,tasksOnly=false}:{locale:Locale;initialDay?:string;tasksOnly?:boolean}){
+  const text=copy[locale],t=dashboardCopy[locale],labels=overviewCopy[locale],base=`/${locale}/school`;
   const [dateText,setDate]=useState(initialDay??"");
   const [asOf,setAsOf]=useState(initialDay);
   const [version,setVersion]=useState(0);
   const result=useTimetableRead(`/school/work-queues${query(asOf)}`,workQueuesSchema,version);
   useEffect(()=>{
-    const refresh=()=>setVersion((count)=>count+1);
+    const refresh=()=>setVersion(count=>count+1);
     window.addEventListener("focus",refresh);
     return ()=>window.removeEventListener("focus",refresh);
   },[]);
-
   function update(){
     const url=new URL(window.location.href);
     if(dateText)url.searchParams.set("asOf",dateText);
@@ -76,63 +84,88 @@ export function AdminWork({locale,initialDay}:{locale:Locale;initialDay?:string}
     window.history.replaceState(null,"",url);
     setAsOf(dateText||undefined);
   }
-
-  if (!result.value?.data) {
-    return <>
-      <RoleHero persona="admin" title={text.work}
-        detail={locale==="ar"?"متابعة أعمال المدرسة":"Schulaufgaben im Überblick"}
-        action={{href:`/${locale}/school/more`,label:locale==="ar"?"أقسام المدرسة":"Schulbereiche"}} />
-      <TimetableRead locale={locale} result={result}>{()=>null}</TimetableRead>
-    </>;
+  if(!result.value?.data){
+    return <>{!tasksOnly&&<RoleHero persona="admin" title={text.work} detail={locale==="ar"?"متابعة أعمال المدرسة":"Schulaufgaben im Überblick"} action={{href:`${base}/more`,label:labels.school}}/>}<TimetableRead locale={locale} result={result}>{()=>null}</TimetableRead></>;
   }
-  return <TimetableRead locale={locale} result={result}>{(summary)=>{
-    if (summary.setupRequired === true) {
-      return <RoleHero persona="admin" title={text.work}
-        detail={locale==="ar"?"إعدادات المدرسة مطلوبة قبل عرض المهام.":"Die Schule muss eingerichtet werden."}
-        action={summary.mayConfigure
-          ? {href:`/${locale}/school/more/calendar`,label:locale==="ar"?"إعداد المدرسة":"Schule einrichten"}
-          : {href:`/${locale}/directory`,label:text.directory}} />;
-    }
-    const date=summary.asOf;
-    const first=summary.queues.find((row)=>row.state==="ready"&&row.count>0);
-    const detail=first?queueLabels[locale][first.key]:summary.queues.some((row)=>row.state==="unavailable")?text.unavailable:text.empty;
-    const overview=summary.overview, labels=overviewCopy[locale], base=`/${locale}/school`;
-    const metrics=(["students","classes","teachers"] as const).filter(key=>overview?.[key] != null);
-    const formatter=new Intl.NumberFormat(locale);
-    return <>
-      <RoleHero persona="admin" title={text.work} detail={detail}
-        action={first?{href:queueRoute(locale,first.route,first.filters.asOf),label:text.open}
-          :overview?.students != null ? {href:`${base}/students?add=family`,label:labels.addStudent}
-          :{href:`${base}/more`,label:labels.school}} />
-      {metrics.length>0&&<section className="auth-card">
-        <h2>{labels.title}</h2>
-        <dl className="school-overview-metrics">{metrics.map(key=><div key={key}>
-          <dt>{labels[key]}</dt><dd>{formatter.format(overview![key]!)}</dd>
-        </div>)}</dl>
-      </section>}
-      {overview&&(overview.students != null||overview.mayIssue||overview.mayPublish)&&<section className="auth-card">
-        <h2>{labels.quick}</h2>
-        <div className="header-actions">
-          {overview.students != null&&<Link className="plain-button" href={`${base}/students?add=family`}>{labels.guardian}</Link>}
-          {overview.mayPublish&&<><Link className="plain-button" href={`${base}/more/events?add=1`}>{labels.event}</Link>
-            <Link className="plain-button" href={`${base}/more/broadcasts`}>{labels.announcement}</Link></>}
-          {overview.mayIssue&&<Link className="plain-button" href={`${base}/more/issue-invoices`}>{labels.invoice}</Link>}
-        </div>
-      </section>}
-      <section className="auth-card">
-        <form className="auth-form" onSubmit={(event)=>{event.preventDefault();update();}}>
-          <label>{text.date}<input type="date" value={dateText||date}
-            onChange={(event)=>setDate(event.target.value)}/></label>
+  return <TimetableRead locale={locale} result={result}>{summary=>{
+    if(summary.setupRequired===true)return <RoleHero persona="admin" title={text.work}
+      detail={locale==="ar"?"إعدادات المدرسة مطلوبة قبل عرض المهام.":"Die Schule muss eingerichtet werden."}
+      action={summary.mayConfigure?{href:`${base}/more/calendar`,label:locale==="ar"?"إعداد المدرسة":"Schule einrichten"}:{href:`/${locale}/directory`,label:text.directory}}/>;
+    const overview=summary.overview;
+    const queues=summary.queues.filter(row=>row.key!=="noncontinuation_requests");
+    const active=queues.filter(row=>row.state==="ready"&&row.count>0);
+    const unavailable=queues.some(row=>row.state==="unavailable");
+    const total=active.reduce((sum,row)=>sum+(row.state==="ready"?row.count:0),0);
+    const number=(value:number)=>new Intl.NumberFormat(locale).format(value);
+    const tasksHref=`${base}/home/tasks${query(summary.asOf)}`;
+    if(tasksOnly)return <div className="admin-start">
+      <Link className="plain-button" href={`${base}/home`}>{text.back}</Link>
+      <section className="admin-start-panel">
+        <form className="admin-start-filter" onSubmit={event=>{event.preventDefault();update();}}>
+          <label>{text.date}<input type="date" value={dateText||summary.asOf} onChange={event=>setDate(event.target.value)}/></label>
           <button className="plain-button" type="submit">{text.apply}</button>
         </form>
-        <ul className="group-list">{summary.queues.map((entry)=><li key={entry.key}>
-          {entry.state==="ready"?<Link className="group-row" href={queueRoute(locale,entry.route,entry.filters.asOf)}>
-            <span>{queueLabels[locale][entry.key]}</span><output>{new Intl.NumberFormat(locale).format(entry.count)}</output>
-          </Link>:<div className="group-row"><span>{queueLabels[locale][entry.key]}</span><small>{text.unavailable}</small></div>}
-        </li>)}</ul>
       </section>
-      <SchoolUpdates locale={locale} today={summary.today} version={version} />
-    </>;
+      <section className="admin-start-panel admin-start-list">
+        {!active.length&&!unavailable&&<p>{t.done}</p>}
+        {queues.filter(row=>row.state==="unavailable"||row.count>0).map(row=>row.state==="ready"?
+          <Link key={row.key} className="admin-start-row group-row" href={queueRoute(locale,row.route,row.filters.asOf)}><span>{queueLabels[locale][row.key]}</span><output>{number(row.count)}</output><Icon name="chevron"/></Link>:
+          <div key={row.key} className="admin-start-row"><span>{queueLabels[locale][row.key]}</span><small>{t.unknown}</small></div>)}
+        {queues.some(row=>row.state==="ready"&&row.count===0)&&<details className="admin-start-zero"><summary>{t.all}</summary>
+          {queues.filter(row=>row.state==="ready"&&row.count===0).map(row=><Link key={row.key} className="admin-start-row group-row" href={queueRoute(locale,row.route,row.filters.asOf)}><span>{queueLabels[locale][row.key]}</span><output>{number(0)}</output><Icon name="chevron"/></Link>)}
+        </details>}
+      </section>
+    </div>;
+    const metrics=(["students","classes","teachers"] as const).filter(key=>overview?.[key]!=null);
+    const attendance=overview?.attendance;
+    const marked=attendance?attendance.present+attendance.late+attendance.absent:0;
+    const percent=marked?Math.round(100*(attendance!.present+attendance!.late)/marked):0;
+    const finance=overview?.finance;
+    const currency=(minor:number)=>new Intl.NumberFormat(locale,{style:"currency",currency:finance!.currency}).format(minor/100);
+    const detail=total>0?`${number(total)} ${t.tasks}`:unavailable?t.partial:t.done;
+    return <div className="admin-start">
+      <div className="admin-start-date">{dateLabel(summary.today,locale)} <Link href={`/${locale}/account/profile`}>{t.profile}</Link></div>
+      <div className="admin-start-hero">
+        <RoleHero persona="admin" title={text.work} detail={detail} emphasizeDetail highlights={active.slice(0,2).map(row=>`${number(row.state==="ready"?row.count:0)} ${queueLabels[locale][row.key]}`)} action={{href:tasksHref,label:text.open}}/>
+        {unavailable&&total>0&&<p className="admin-start-muted">{t.partial}</p>}
+      </div>
+      {metrics.length>0&&<section className="admin-start-section"><h2>{t.overview}</h2>
+        <dl className="admin-start-metrics">{metrics.map(key=><div key={key} className="admin-start-panel">
+          <Icon name={key==="students"?"students":key==="classes"?"school":"teacher"}/>
+          <dt>{labels[key]}</dt><dd>{number(overview![key]!)}</dd>
+        </div>)}</dl>
+        {overview?.mayMonitor&&<Link className="admin-start-inline" href={`${base}/more/oversight`}>{t.classMonitor}<Icon name="chevron"/></Link>}
+      </section>}
+      {attendance&&<section className="admin-start-section"><h2>{attendance.date===summary.today?t.today:t.last}</h2>
+        <div className="admin-start-panel">
+          <p className="admin-start-muted">{dateLabel(attendance.date,locale)}</p>
+          {marked>0?<div className="admin-start-attendance">
+            <div className="admin-start-ring" style={{background:`conic-gradient(var(--primary) ${percent}%, var(--inset) 0)`}}><span>{number(percent)}%</span></div>
+            <dl><div><dt>{t.present}</dt><dd>{number(attendance.present)}</dd></div><div><dt>{t.late}</dt><dd>{number(attendance.late)}</dd></div><div><dt>{t.absent}</dt><dd>{number(attendance.absent)}</dd></div></dl>
+          </div>:<p>{t.noAttendance}</p>}
+          <p className="admin-start-muted">{t.approved}: {number(attendance.approvedClasses)} / {number(attendance.expectedClasses)}</p>
+          {overview?.mayMonitor&&<Link className="admin-start-inline" href={`${base}/more/attendance?date=${attendance.date}`}>{t.openAttendance}<Icon name="chevron"/></Link>}
+        </div>
+      </section>}
+      {finance&&<section className="admin-start-section"><h2>{t.finance}</h2><div className="admin-start-panel">
+        <p className="admin-start-muted">{new Intl.DateTimeFormat(locale,{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(finance.month+"-01T12:00:00Z"))} · {t.income}</p>
+        <p className="admin-start-value"><bdi>{currency(finance.cash+finance.bank)}</bdi></p>
+        <dl className="admin-start-split"><div><dt>{t.cash}</dt><dd><bdi>{currency(finance.cash)}</bdi></dd></div><div><dt>{t.bank}</dt><dd><bdi>{currency(finance.bank)}</bdi></dd></div></dl>
+        <Link className="admin-start-inline" href={`${base}/more/finance-reports?period=${finance.month}`}>{t.openFinance}<Icon name="chevron"/></Link>
+      </div></section>}
+      {overview&&(overview.students!=null||overview.mayIssue||overview.mayPublish)&&<section className="admin-start-section"><h2>{labels.quick}</h2>
+        <div className="admin-start-actions">
+          {overview.students!=null&&<Link href={`${base}/students?add=family`}><span><Icon name="students"/></span>{t.family}</Link>}
+          {overview.mayPublish&&<><Link href={`${base}/more/events?add=1`}><span><Icon name="attendance"/></span>{t.event}</Link><Link href={`${base}/more/broadcasts`}><span><Icon name="messages"/></span>{t.announce}</Link></>}
+          {overview.mayIssue&&<Link href={`${base}/more/issue-invoices`}><span><Icon name="receipt"/></span>{t.invoice}</Link>}
+        </div>
+      </section>}
+      {overview?.schoolDays&&<section className="admin-start-section"><h2>{t.next}</h2><div className="admin-start-panel">
+        <p className="admin-start-value">{overview.schoolDays.next?dateLabel(overview.schoolDays.next,locale):t.noNext}</p>
+        {overview.maySchedule&&<Link className="admin-start-inline" href={`${base}/more/timetable`}>{t.schedule}<Icon name="chevron"/></Link>}
+      </div></section>}
+      <SchoolUpdates locale={locale} today={summary.today} version={version}/>
+    </div>;
   }}</TimetableRead>;
 }
 
@@ -188,7 +221,7 @@ export function WorkQueue({locale,queue,asOf}:{locale:Locale;queue:WorkQueueKey;
 
   return <>
     <h1>{queueLabels[locale][queue]}</h1>
-    <Link className="plain-button" href={`/${locale}/school/home${query(payload?.asOf??asOf)}`}>{text.back}</Link>
+    <Link className="plain-button" href={`/${locale}/school/home/tasks${query(payload?.asOf??asOf)}`}>{text.back}</Link>
     <AsyncSurface locale={locale} state={current?.error?current.error instanceof ApiResponseError&&[401,403,404].includes(current.error.status)
       ?{kind:"forbidden"}:{kind:"error",retry:()=>setGeneration((count)=>count+1),message:timetableError(locale,current.error)}
       :payload?{kind:"ready",content:<section className="auth-card">

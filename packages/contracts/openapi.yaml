@@ -4805,6 +4805,32 @@ components:
                 teachers: { type: [integer, 'null'], minimum: 0 }
                 mayPublish: { type: boolean }
                 mayIssue: { type: boolean }
+                schoolDays:
+                  type: object
+                  required: [last, next]
+                  properties:
+                    last: { type: [string, 'null'], format: date }
+                    next: { type: [string, 'null'], format: date }
+                maySchedule: { type: boolean }
+                mayMonitor: { type: boolean }
+                attendance:
+                  type: [object, 'null']
+                  required: [date, expectedClasses, approvedClasses, present, late, absent]
+                  properties:
+                    date: { type: string, format: date }
+                    expectedClasses: { type: integer, minimum: 0 }
+                    approvedClasses: { type: integer, minimum: 0 }
+                    present: { type: integer, minimum: 0 }
+                    late: { type: integer, minimum: 0 }
+                    absent: { type: integer, minimum: 0 }
+                finance:
+                  type: object
+                  required: [month, currency, cash, bank]
+                  properties:
+                    month: { type: string, pattern: '^[0-9]{4}-[0-9]{2}$' }
+                    currency: { type: string, minLength: 3, maxLength: 3 }
+                    cash: { type: integer, minimum: 0 }
+                    bank: { type: integer, minimum: 0 }
             queues:
               type: array
               items:

@@ -82,12 +82,12 @@ private class PublicationFeedState(today:LocalDate){
 }
 
 @Composable
-internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit){
+internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false){
     val language=LocalContext.current.resources.configuration.locales[0].language.let{if(it=="de")"de" else "ar"}
     val locale=Locale.forLanguageTag(language)
     var selected by remember(initial){mutableStateOf(initial)}
     var editing by remember{mutableStateOf(false)}
-    var creating by remember{mutableStateOf(false)}
+    var creating by remember(initialCreate){mutableStateOf(initialCreate)}
     var refresh by remember{mutableIntStateOf(0)}
     val version=refresh+model.attendanceNetworkRevision
     val calendar=academicRead("/school/publishing-options",version){path->
@@ -124,7 +124,7 @@ internal fun SchoolPublicationScreen(model:IdentityViewModel,section:Publication
                         }
                     }
                 }
-                creating->PublicationEditor(model,section,options,language,null){filter.managed=true;back()}
+                creating&&options.canCompose->PublicationEditor(model,section,options,language,null){filter.managed=true;back()}
                 else->PublicationFeed(model,section,options,locale,version,filter,open={selected=it},compose={creating=true})
             }
         }

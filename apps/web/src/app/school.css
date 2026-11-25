@@ -302,3 +302,55 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .class-settings-toggle {margin-block:12px;border:1px solid var(--rule);border-radius:13px;padding:12px;background:var(--inset);}
 .class-settings-toggle > summary {cursor:pointer;color:var(--ink);font-weight:600;min-block-size:26px;}
 .class-settings-toggle[open] > summary {margin-block-end:12px;}
+
+/* Admin start: scoped styles; the existing notebook artwork and shell are unchanged. */
+.admin-start { display:grid; gap:20px; min-inline-size:0; max-inline-size:56rem; }
+.admin-start h2 { font-size:1.08rem; margin:0; }
+.admin-start-section { display:grid; gap:10px; min-inline-size:0; }
+.admin-start-date { display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:.875rem; gap:8px; }
+.admin-start a:not(.hero-action) { text-decoration:none; }
+.admin-start-hero .role-hero { padding:16px; min-block-size:0; }
+.admin-start-hero .role-hero h2 { font-size:1.1rem; }
+.admin-start-hero .role-hero img { max-inline-size:32%; }
+.admin-start-panel { background:var(--card); border:1px solid var(--rule); border-radius:18px; padding:14px; display:grid; gap:10px; min-inline-size:0; }
+.admin-start-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0; }
+.admin-start-metrics .admin-start-panel { padding:12px 8px; gap:3px; }
+.admin-start-metrics svg,.admin-start-icon svg,.admin-start-actions svg { color:var(--primary); }
+.admin-start-metrics dd { font-size:1.7rem; font-weight:700; line-height:1.15; margin:4px 0 0; }
+.admin-start-metrics dt,.admin-start-muted,.admin-start-row small,.admin-start-split dt { color:var(--muted); font-size:.8rem; overflow-wrap:anywhere; }
+.admin-start-value { font-size:1.4rem; font-weight:700; overflow-wrap:anywhere; }
+.admin-start-attendance { display:flex; align-items:center; gap:16px; }
+.admin-start-ring { display:grid; place-items:center; width:86px; height:86px; border-radius:50%; flex:none; }
+.admin-start-ring span { width:68px; height:68px; display:grid; place-items:center; background:var(--card); border-radius:50%; font-weight:700; }
+.admin-start-attendance dl { flex:1; margin:0; display:grid; gap:5px; min-inline-size:0; }
+.admin-start-attendance dl div { display:flex; justify-content:space-between; gap:8px; }
+.admin-start-attendance dd,.admin-start-split dd { margin:0; font-weight:700; }
+.admin-start-split { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0; }
+.admin-start-split > div { background:var(--inset); border-radius:12px; padding:10px; overflow-wrap:anywhere; }
+.admin-start-inline { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:44px; font-weight:600; font-size:.92rem; }
+.admin-start-actions { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.admin-start-actions a { display:grid; justify-items:center; align-content:start; gap:6px; text-align:center; color:var(--ink); font-size:.8rem; min-width:0; overflow-wrap:anywhere; }
+.admin-start-actions a span { background:var(--card); border:1px solid var(--rule); border-radius:16px; display:grid; place-items:center; width:52px; height:52px; }
+.admin-start-list { padding:0; gap:0; overflow:hidden; }
+.admin-start-list > p,.admin-start-zero { padding:12px; }
+.admin-start-row { display:flex; flex-wrap:nowrap; align-items:center; gap:10px; padding:12px; color:var(--ink); min-block-size:52px; min-inline-size:0; }
+.admin-start-row + .admin-start-row,.admin-start-links { border-block-start:1px solid var(--rule); }
+.admin-start-row > span:not(.admin-start-icon) { flex:1; min-width:0; overflow-wrap:anywhere; }
+.admin-start-row strong,.admin-start-row small { display:block; }
+.admin-start-row > svg { flex:none; width:18px; color:var(--muted); }
+.admin-start-row output { font-weight:700; font-variant-numeric:tabular-nums; }
+.admin-start-icon { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:var(--inset); flex:none; }
+.admin-start-links { display:flex; justify-content:space-between; gap:12px; padding:12px; font-size:.85rem; }
+.admin-start-filter { display:grid; gap:10px; }
+.admin-start-filter label { display:grid; gap:6px; min-width:0; }
+.admin-start-filter input { width:100%; min-width:0; }
+.admin-start-zero summary { cursor:pointer; color:var(--primary); padding-block:8px; }
+@media(min-width: 48rem) { .admin-start { gap:24px; } .admin-start-panel { padding:18px; } .admin-start-list { padding:0; } }
+
+.admin-start-hero .role-hero-summary { font-size:1.32rem; font-weight:700; line-height:1.25; margin-block:8px 10px; }
+.admin-start-hero .role-hero-highlights { list-style:none; padding:0; margin:0 0 12px; font-size:.82rem; line-height:1.45; display:grid; gap:4px; }
+.admin-start-hero .role-hero > div { min-inline-size:0; }
+.admin-start-metrics .admin-start-panel { grid-template-rows:auto auto auto; align-content:start; }
+.admin-start-metrics .admin-start-panel dd { grid-row:2; }
+.admin-start-metrics .admin-start-panel dt { grid-row:3; }
+@media(max-width:22rem){ .admin-start-hero .role-hero img { display:block; max-inline-size:25%; } .admin-start-hero .role-hero { padding:12px; gap:8px; } .admin-start-actions a span { width:44px;height:44px; } }

@@ -56,7 +56,7 @@ export async function readWorkQueues(actor: ActorContext, asOf?: string) {
       const [setup]=await tx<{allowed:boolean}[]>`select app.has_capability('school.manage') as allowed`;
       return workQueuesSchema.parse({asOf:null,today:null,timezone:null,setupRequired:true,mayConfigure:setup.allowed,queues:[]});
     }
-    const eligible=actor.persona==="admin"?await visibleKeys(tx):[];
+    const eligible=actor.persona==="admin"?(await visibleKeys(tx)).filter(key=>key!=="noncontinuation_requests"):[];
     const queues=[];
     for(const key of eligible){
       const target={key,route:`/school/home/queues/${key}`,filters:{asOf:date.asOf}};
@@ -83,7 +83,23 @@ export async function readWorkQueues(actor: ActorContext, asOf?: string) {
         app.has_capability('comms.publish') as "mayPublish",
         app.has_capability('finance.issue') as "mayIssue"
     ` : [];
-    return workQueuesSchema.parse({...date,queues,overview});
+    let schoolDays:Record<string,unknown>|undefined, finance:Record<string,unknown>|undefined;
+    if(actor.persona==="admin"){
+      // Keep the home usable even while an additive migration is rolling out.
+      try{schoolDays=await tx.savepoint(async scoped=>{
+        const [row]=await scoped<{value:Record<string,unknown>|null}[]>`select app.admin_start_school_days() as value`;
+        return row?.value??undefined;
+      });}catch{/* Optional projection is unavailable, never invent zero values. */}
+      try{finance=await tx.savepoint(async scoped=>{
+        const [row]=await scoped`select to_char(f.school_month,'YYYY-MM') as month,f.currency,
+          (m.value->>'cash')::bigint::float8 as cash,(m.value->>'bank')::bigint::float8 as bank
+          from app.finance_overview(app.billing_school_month()) f
+          cross join lateral jsonb_array_elements(f.months) m(value)
+          where m.value->>'month'=to_char(f.school_month,'YYYY-MM')`;
+        return row;
+      });}catch{/* Finance unavailable. */}
+    }
+    return workQueuesSchema.parse({...date,queues,overview:overview?{...overview,...schoolDays,finance}:undefined});
   });
 }
 
