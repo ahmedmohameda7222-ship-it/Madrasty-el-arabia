@@ -51,3 +51,28 @@ test("a guardian and teacher exchange one private message, read and react withou
     await school.close();
   }
 });
+
+test("first message opens a direct conversation atomically and retries do not duplicate it",async()=>{
+  const school=schoolFixtures();
+  try{
+    const token=await school.bearer("guardian-de","guardian");
+    const contacts=(await fixtureApi(school,"/directory?view=all&limit=100",{token})).payload.data;
+    const otherContact=contacts.find((entry:{role:string;target:{kind:string}})=>entry.role==="guardian"&&entry.target.kind==="person");
+    assert.ok(otherContact);
+    const lookup=async()=> (await fixtureApi(school,`/directory/${otherContact.id}`,{token})).payload.data;
+    const before=await lookup();
+    const clientMessageId=randomUUID(),key=randomUUID(),body="QA atomic first message "+clientMessageId;
+    const input={target:otherContact.target,firstMessage:{clientMessageId,body}};
+    const send={token,persona:"guardian",method:"POST",key,body:input} as const;
+    const first=(await fixtureApi(school,"/threads",send)).payload.data;
+    if(before.directThreadId)assert.equal(first.threadId,before.directThreadId);
+    assert.equal((await lookup()).directThreadId,first.threadId);
+    assert.deepEqual((await fixtureApi(school,"/threads",send)).payload.data,first);
+    const repeat=(await fixtureApi(school,"/threads",{...send,key:randomUUID()})).payload.data;
+    assert.equal(repeat.threadId,first.threadId);
+    const messages=(await fixtureApi(school,`/threads/${first.threadId}/messages?q=${encodeURIComponent(clientMessageId)}`,{token})).payload.data;
+    assert.equal(messages.length,1);
+    assert.equal(messages[0].body,body);
+    assert.equal(messages[0].clientMessageId,clientMessageId);
+  }finally{await school.close();}
+});
