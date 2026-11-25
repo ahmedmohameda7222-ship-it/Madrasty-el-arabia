@@ -83,7 +83,7 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
 
 for(const scenario of cases){
   test("communication populated visual audit "+scenario.persona+" "+scenario.locale,async({page})=>{
-    test.setTimeout(240000);
+    test.setTimeout(360000);
     const school=schoolFixtures(),issues:string[]=[],files:string[]=[];
     mkdirSync(out,{recursive:true});
     const key=scenario.persona+"-"+scenario.locale;
@@ -113,6 +113,7 @@ for(const scenario of cases){
         return item.id as string;
       };
       const news=await publish("/news",{});
+      if(scenario.persona==="teacher")await fixtureApi(school,"/news",{token:actor,persona:"teacher",method:"POST",key:randomUUID(),status:[200,201],body:{audience:{kind:"class",classId:apple.id},sourceLocale:"de",copy:copies}});
       const event=await publish("/events",{timing:{start:{date:day,time:null},end:null,allDay:true}});
       const announcementCopy={ar:{title:"تنبيه مهم لأولياء الأمور",body:body.ar},de:{title:"Wichtige Mitteilung der Schulverwaltung",body:body.de}};
       const audience=scenario.persona==="teacher"?{kind:"all_teachers"}:{kind:"class_guardians",classId:apple.id};
@@ -198,8 +199,16 @@ for(const scenario of cases){
         await open(base+"/school/more/notifications",".comms-notifications");
         await expect(page.locator(".comms-notifications .group-list,.comms-notifications [data-async-state=empty]").first()).toBeVisible();
         await shot("22-notifications");
-        await open(base+"/school/more/broadcasts?announcement="+broadcast,".comms-broadcast-screen .timetable-day");
-        await shot("23-broadcast-detail");
+        if(scenario.persona==="admin"){
+          await open(base+"/school/more/broadcasts",".comms-broadcast-navigation");
+          await page.getByRole("button",{name:ar?"الإعلانات المنشورة":"Veröffentlichte Mitteilungen",exact:true}).click();
+          const sent=page.locator(".comms-broadcast-screen details").filter({hasText:announcementCopy[scenario.locale].title}).first();
+          await expect(sent).toBeVisible();await sent.locator("summary").click();
+          await shot("23-broadcast-sent-detail");
+        }else{
+          await open(base+"/school/more/broadcasts?announcement="+broadcast,".comms-broadcast-screen .timetable-day");
+          await shot("23-broadcast-received-detail");
+        }
         if(scenario.persona!=="guardian"){
           await open(hub+"?section=feed",".comms-publish-menu>summary");
           await page.locator(".comms-publish-menu>summary").click();
@@ -208,10 +217,22 @@ for(const scenario of cases){
           await shot("25-managed-news");
           await open(base+"/school/more/news?create=1&from=hub",".comms-publications input");
           await shot("26-news-editor");
+          await page.getByLabel(ar?"الجمهور":"Zielgruppe").selectOption(scenario.persona==="admin"?"school":apple.id);
+          await page.getByLabel(words.title,{exact:true}).fill(title[scenario.locale]);
+          await page.getByLabel(words.body,{exact:true}).fill(body[scenario.locale]);
+          await page.getByRole("button",{name:ar?"معاينة":"Vorschau",exact:true}).click();
+          await expect(page.locator(".comms-publications .notice article")).toBeVisible();
+          await shot("26a-news-preview");
           await open(hub+"?section=calendar&month="+month,".comms-calendar-actions");
           await page.getByRole("button",{name:words.newEvent,exact:true}).click();
           await expect(page.locator(".comms-publications input[type=date]")).toBeVisible();
           await shot("27-event-editor");
+          await page.getByLabel(ar?"الجمهور":"Zielgruppe").selectOption(scenario.persona==="admin"?"school":apple.id);
+          await page.getByLabel(words.title,{exact:true}).fill(title[scenario.locale]);
+          await page.getByLabel(words.body,{exact:true}).fill(body[scenario.locale]);
+          await page.getByRole("button",{name:ar?"معاينة":"Vorschau",exact:true}).click();
+          await expect(page.locator(".comms-publications .notice article")).toBeVisible();
+          await shot("27a-event-preview");
           await open(base+"/school/more/broadcasts",".comms-broadcast-navigation");
           const create=page.getByRole("button",{name:ar?"إعلان جديد":"Neue Mitteilung",exact:true});
           await expect(create).toBeVisible();

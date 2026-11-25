@@ -151,7 +151,7 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
   last.setUTCMonth(first.getUTCMonth()+1,0);
   const offset=(first.getUTCDay()+6)%7,days=last.getUTCDate();
   const weekday=new Intl.DateTimeFormat(intl(locale),{weekday:"long",timeZone:"UTC"});
-  const compactWeekdays=locale==="ar"?["اثن","ثلا","أرب","خمي","جمع","سبت","أحد"]:["Mo","Di","Mi","Do","Fr","Sa","So"];
+  const compactWeekdays=locale==="ar"?["اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت","أحد"]:["Mo","Di","Mi","Do","Fr","Sa","So"];
   const number=new Intl.NumberFormat(locale);
   return <div className="auth-form comms-month-picker">
     <div className="comms-month-heading">
