@@ -287,7 +287,7 @@ private fun MessageTimeline(
 }
 
 @Composable
-private fun ChatMessageItem(
+internal fun ChatMessageItem(
     model:IdentityViewModel,thread:JSONObject,message:JSONObject,focused:Boolean,reply:(JSONObject)->Unit,jump:(JSONObject)->Unit,
     deny:()->Unit,replaceReactions:(JSONArray)->Unit,
 ){
