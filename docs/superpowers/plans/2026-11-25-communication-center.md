@@ -33,3 +33,9 @@
 - Vercel linked project madrasty-el-arabia-prelaunch found on correct account. No deployment triggered manually.
 - Supericons queried; reject irrelevant suggested icons and use coherent existing outline icon library.
 - Designer preflight connector unavailable. No actual device screenshots yet.
+
+## Execution ledger
+- Read-only RED evidence: current live policy returned 0/306 allowed guardian-to-guardian pairs and 0/42 teacher-to-teacher pairs; 108/126 allowed in each guardian/teacher direction. No live writes. Isolated full acceptance run 45544614207 still running at implementation checkpoint; Web build, dashboard-integration and Android debug passed at 15d1d77, not a GREEN result for new code.
+- Ruling: admin with active grant but no staff profile remains a contact; the existing principal account has no staff profile. Show a safe fallback name, never email or guessed identity. Profiled but disabled admins remain excluded. Real names/job titles remain the staff profile's data. Costs: unprofiled admins have generic labels until an actual profile exists; expanded contact eligibility also allows existing notification eligibility checks to recognize those valid admin accounts.
+- Ruling: preserve older office descriptors for installed clients and protected record-origin links; ordinary new compose will only display people. Work emails/phones keep old visibility boundary.
+- Ruling: migration filename selected in chronological repo convention through GitHub (local Supabase CLI unavailable). Preserve the baseline CI run instead of auto-cancelling it while implementation proceeds.
