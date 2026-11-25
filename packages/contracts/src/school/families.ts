@@ -5,13 +5,15 @@ const name = z.string().trim().min(1).max(200);
 const reason = z.string().trim().min(1).max(400);
 const source = z.object({ namespace: z.string().trim().min(1).max(80), key: z.string().trim().min(1).max(160) });
 const studentState = z.enum(["active", "inactive"]);
+const birthday = z.iso.date().refine(value=>value>="1900-01-01"&&value<=new Date().toISOString().slice(0,10)).nullable().optional();
+const familyReference=z.object({id:z.uuid(),displayName:name});
 export const studentSchema = z.object({
   id: z.uuid(), studentNumber: z.string().regex(/^MA-\d{6,}$/), displayName: name,
   state: studentState, revision: revisionSchema, birthDate: z.iso.date().nullable().optional(),
   currentClass:z.object({id:z.uuid(),code:z.string(),nameAr:z.string(),nameDe:z.string()}).nullable().optional(),
 });
 export const createStudentInput = z.object({ displayName: name, source: source.optional() });
-export const updateStudentInput = z.object({ displayName: name, state: studentState, revision: revisionSchema });
+export const updateStudentInput = z.object({ displayName: name, state: studentState, revision: revisionSchema,birthDate:birthday });
 
 const contact = z.object({
   displayName: name,
@@ -24,11 +26,10 @@ export const guardianSchema = contact.extend({
   birthDate: z.iso.date().nullable().optional(), emergencyAddress: z.string().nullable().optional(),
 });
 export const createGuardianInput = contact.extend({ source: source.optional() });
-export const updateGuardianInput = contact.extend({ revision: revisionSchema });
+export const updateGuardianInput = contact.extend({ revision: revisionSchema,birthDate:birthday,emergencyAddress:z.string().trim().min(1).max(500).nullable().optional() });
 /** Family-first registration: guardian(s) and at least one child are saved atomically. */
 export const familySituation = z.enum(["unknown","together","separated","divorced","single","other"]);
 export const familyRelationship = z.enum(["unspecified","father","mother","legal","other"]);
-const birthday = z.iso.date().refine(value=>value>="1900-01-01"&&value<=new Date().toISOString().slice(0,10)).nullable().optional();
 export const createFamilyChildInput = z.object({
   displayName: name,
   classId: z.uuid().nullable().optional(),
@@ -62,7 +63,8 @@ export const childLinkSchema = z.object({
   studentName: name, studentNumber: z.string(), reason: z.string(), revision: revisionSchema,
   relationship: familyRelationship.optional(),
 });
-export const guardianDetailSchema = guardianSchema.extend({ links: childLinkSchema.array() });
+export const guardianDetailSchema = guardianSchema.extend({ links: childLinkSchema.array(),familyGroups:familyReference.array().optional() });
+export const studentDetailSchema=studentSchema.extend({guardianRelationships:childLinkSchema.extend({guardianName:name}).array().optional(),familyGroups:familyReference.array().optional()});
 export const createLinkInput = z.object({ guardianId: z.uuid(), studentId: z.uuid(), approvalReason: reason.optional() });
 export const changeLinkInput = z.object({ revision: revisionSchema, reason });
 

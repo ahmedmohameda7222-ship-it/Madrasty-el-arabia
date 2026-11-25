@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  childLinkSchema, childSummarySchema, guardianDetailSchema, guardianSchema, studentSchema,
+  childLinkSchema, childSummarySchema, guardianDetailSchema, guardianSchema, studentSchema, studentDetailSchema,
   createFamilyInput, createFamilyChildInput, createdFamilySchema, familyGroupSummary, familyGroupDetail, type familyGroupQuery, type familyGroupEdit, type familyGroupAttach, type familyGroupChildInput,
   type createGuardianInput, type createLinkInput, type createStudentInput, type changeLinkInput,
   type updateGuardianInput, type updateStudentInput, type familyQuerySchema,
@@ -76,7 +76,10 @@ export function readStudent(ctx: ActorContext, id: string) {
     await office(ctx)(tx);
     const record=await student(tx,id);
     const [profile]=await tx<{birthDate:string|null}[]>`select birth_date::text as "birthDate" from app.student where id=${id}`;
-    return studentSchema.parse({...record,...profile});
+    const [classroom]=await tx`select jsonb_build_object('id',cl.id,'code',cl.code,'nameAr',cl.name_ar,'nameDe',cl.name_de) as value from app.enrollment e join app.school_class cl on cl.id=e.class_id where e.student_id=${id} and e.voided_at is null and app.school_today()>=e.effective_from and app.school_today()<e.effective_until limit 1`;
+    const guardianRelationships=await tx`select l.id,l.guardian_id as "guardianId",l.student_id as "studentId",l.state,l.reason,l.revision,l.relationship,g.display_name as "guardianName",s.display_name as "studentName",s.student_number as "studentNumber" from app.child_link l join app.guardian_profile g on g.id=l.guardian_id join app.student s on s.id=l.student_id where l.student_id=${id} order by l.created_at desc,l.id`;
+    const familyGroups=await tx`select f.id,f.display_name as "displayName" from app.family_group_student m join app.family_group f on f.id=m.family_id where m.student_id=${id} order by f.display_name,f.id`;
+    return studentDetailSchema.parse({...record,...profile,currentClass:classroom?.value??null,guardianRelationships,familyGroups});
   });
 }
 
@@ -102,6 +105,7 @@ export function updateStudent(ctx: ActorContext, id: string, key: string | null,
       requireRevision(current.revision, input.revision);
       await tx`
         update app.student set display_name = ${input.displayName}, state = ${input.state},
+          birth_date=case when ${input.birthDate!==undefined} then ${input.birthDate??null}::date else birth_date end,
           revision = revision + 1 where id = ${id}
       `;
       await appendAudit(tx, { action: "school.student_updated", aggregateId: id, metadata: { revision: current.revision + 1 } });
@@ -137,7 +141,8 @@ export function readGuardian(ctx: ActorContext, id: string) {
       where l.guardian_id = ${id} order by l.created_at desc, l.id
     `;
     const [profile]=await tx<{birthDate:string|null;emergencyAddress:string|null}[]>`select birth_date::text as "birthDate",emergency_address as "emergencyAddress" from app.guardian_profile where id=${id}`;
-    return guardianDetailSchema.parse({ ...adult, ...profile, links: rows });
+    const familyGroups=await tx`select f.id,f.display_name as "displayName" from app.family_group_guardian m join app.family_group f on f.id=m.family_id where m.guardian_id=${id} order by f.display_name,f.id`;
+    return guardianDetailSchema.parse({ ...adult, ...profile, links: rows,familyGroups });
   });
 }
 
@@ -168,6 +173,8 @@ export function updateGuardian(ctx: ActorContext, id: string, key: string | null
       await tx`
         update app.guardian_profile set display_name = ${input.displayName}, contact_email = ${input.contactEmail},
           contact_phone = ${input.contactPhone}, correspondence_locale = ${input.correspondenceLocale},
+          birth_date=case when ${input.birthDate!==undefined} then ${input.birthDate??null}::date else birth_date end,
+          emergency_address=case when ${input.emergencyAddress!==undefined} then ${input.emergencyAddress??null} else emergency_address end,
           revision = revision + 1 where id = ${id}
       `;
       await appendAudit(tx, { action: "school.guardian_updated", aggregateId: id, metadata: { revision: current.revision + 1 } });
