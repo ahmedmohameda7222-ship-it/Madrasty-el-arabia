@@ -11,6 +11,7 @@ import { timetableError } from "@/features/school/timetable/shared";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { MediaComposer } from "./MediaComposer";
+import { projectReaction } from "./chat-state";
 import { PrivateChatMedia,ReportMessage,reportCopy } from "./ReportQueue";
 
 const copy={
@@ -158,6 +159,8 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
   const [rows,setRows]=useState<ChatMessage[]>(),[cursor,setCursor]=useState<string>();
   const [failure,setFailure]=useState(""),[initialAttempt,setInitialAttempt]=useState(0),[highlight,setHighlight]=useState<string>();
   const [paging,setPaging]=useState(false);
+  const [optimistic,setOptimistic]=useState<Record<string,typeof reactionEmoji.options[number]|null>>({});
+  const reactionBusy=useRef(new Set<string>());
   const expanded=useRef(false),acknowledged=useRef(thread.readThroughSeq),jumpPending=useRef<string|undefined>(undefined);
   const liveActions=useRef({deny,recognize,updateArchive});liveActions.current={deny,recognize,updateArchive};
   const highest=useRef<string|undefined>(undefined);
@@ -254,13 +257,21 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
     if(jumpPending.current)focusMessage(jumpPending.current);
   },[rows]);
   async function react(message:ChatMessage,emoji:typeof reactionEmoji.options[number]){
+    if(reactionBusy.current.has(message.id))return;
     const mine=message.reactions.some((value)=>value.emoji===emoji&&value.mine);
+    const choice=mine?null:emoji;
+    reactionBusy.current.add(message.id);
+    setOptimistic(old=>({...old,[message.id]:choice}));
     try{
       const result=await requestApi(`/threads/${thread.id}/messages/${message.id}/reaction`,reactions,{
-        method:"PUT",headers:webHeaders(persona),body:JSON.stringify({emoji:mine?null:emoji}),
+        method:"PUT",headers:webHeaders(persona),body:JSON.stringify({emoji:choice}),
       });
       setRows((old)=>old?.map((item)=>item.id===message.id?{...item,reactions:result.data}:item));
     }catch(problem){if(unavailable(problem))deny();else setFailure(timetableError(locale,problem));}
+    finally{
+      reactionBusy.current.delete(message.id);
+      setOptimistic(old=>{const next={...old};delete next[message.id];return next;});
+    }
   }
 
   if(!rows)return <AsyncSurface locale={locale} state={failure?{kind:"error",message:failure,retry:()=>setInitialAttempt((n)=>n+1)}:{kind:"initialLoading"}}/>;
@@ -268,7 +279,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
     {cursor&&<button type="button" className="plain-button" onClick={()=>void older()} disabled={paging}>{text.older}</button>}
     {failure&&<p role="alert">{failure}</p>}
     {!rows.length&&<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
-    <ol className="comms-timeline">{rows.map((message)=><li key={message.id} id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
+    <ol className="comms-timeline">{rows.map((original)=>{const pending=Object.prototype.hasOwnProperty.call(optimistic,original.id);const message=pending?{...original,reactions:projectReaction(original.reactions,optimistic[original.id]??null)}:original;return <li key={message.id} id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
       {!message.own&&<strong className="comms-message-author"><bdi>{message.authorName??text.school}</bdi></strong>}
       {message.reply&&<button type="button" className="plain-button" aria-label={text.target} onClick={()=>{
         if(message.reply)void jump(message.reply);
@@ -282,16 +293,16 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
       <div className="header-actions">
         {thread.canReply&&message.replyable&&<button type="button" className="plain-button" onClick={()=>reply(message)}>{text.reply}</button>}
         {(message.body||message.attachments.length>0)&&<ReportMessage locale={locale} thread={thread.id} message={message.id}/>}
-        {message.reactions.map((entry)=><button className="plain-button" type="button" key={entry.emoji} aria-pressed={entry.mine}
+        {message.reactions.map((entry)=><button className="plain-button" type="button" key={entry.emoji} aria-pressed={entry.mine} disabled={pending}
           onClick={()=>void react(message,entry.emoji)}>{entry.emoji} {entry.count}</button>)}
       </div>
       {(message.source==="system"||message.body||message.attachments.length>0)&&<details>
         <summary>{text.reactions}</summary>
         <div className="header-actions">{reactionEmoji.options.map((emoji)=><button type="button" className="plain-button" key={emoji}
-          aria-label={`${text.reactions} ${emoji}`} aria-pressed={message.reactions.some((entry)=>entry.emoji===emoji&&entry.mine)}
+          disabled={pending} aria-label={`${text.reactions} ${emoji}`} aria-pressed={message.reactions.some((entry)=>entry.emoji===emoji&&entry.mine)}
           onClick={()=>void react(message,emoji)}>{emoji}</button>)}</div>
       </details>}
       </details>
-    </li>)}</ol>
+    </li>})}</ol>
   </>;
 }
