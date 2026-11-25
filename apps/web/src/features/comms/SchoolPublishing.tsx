@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
 import {useState,type FormEvent} from "react";
 import {
-  eventDraft,newsDraft,publishingOptions,schoolPublishingEntry,communicationCalendarDay,
+  eventDraft,newsDraft,publishingOptions,schoolPublishingEntry,communicationCalendarDay,schoolMonth,schoolDateSchema,
   type Locale,type PublishingContent,type PublishingEntry,type PublishingOptions,
 } from "@madrasty/contracts";
 import {useSchoolCommand} from "@/api/commands";
@@ -65,20 +66,43 @@ export function SchoolPublishing({locale,kind,selected,create,embedded}:{locale:
 function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:Locale;kind:Kind;selected?:string;create?:boolean;options:PublishingOptions;embedded?:boolean}){
   const text=words[locale],url=endpoint(kind);
   const canWrite=options.schoolWide||options.classes.some((item)=>item.canWrite);
-  const [view,setView]=useState<"feed"|"managed">("feed"),[refresh,setRefresh]=useState(0);
-  const [month,setMonth]=useState(options.schoolDate.slice(0,7)),[day,setDay]=useState<string>();
-  const [classId,setClass]=useState(""),[editor,setEditor]=useState<"new"|"edit"|undefined>(create&&!selected&&canWrite?"new":undefined);
+  const params=useSearchParams();
+  const view=canWrite&&params.get("view")==="managed"?"managed":"feed";
+  const month=schoolMonth.safeParse(params.get("month")).data??options.schoolDate.slice(0,7);
+  const rawDay=schoolDateSchema.safeParse(params.get("day")).data;
+  const day=rawDay?.slice(0,7)===month?rawDay:undefined;
+  const classId=options.classes.find(item=>item.id===params.get("classId"))?.id??"";
+  const [refresh,setRefresh]=useState(0);
+  const [editor,setEditor]=useState<"new"|"edit"|undefined>(create&&!selected&&canWrite?"new":undefined);
+  function patch(changes:Record<string,string|undefined>){
+    const next=new URL(window.location.href);
+    for(const [key,value] of Object.entries(changes)){if(value)next.searchParams.set(key,value);else next.searchParams.delete(key);}
+    window.history.replaceState(null,"",next);
+  }
+  const setView=(value:"feed"|"managed")=>patch({view:value==="managed"?value:undefined});
+  const setClass=(value:string)=>patch({classId:value||undefined});
+  const setDay=(value?:string)=>patch({day:value});
   const query=`${url}?limit=60&view=${view}${classId?"&classId="+classId:""}${kind==="event"?"&month="+month+(day?"&day="+day:""):""}` as const;
   const days=useTimetableRead(kind==="event"&&!selected&&!editor?`/comms/calendar?month=${month}&view=${view}${classId?"&classId="+classId:""}`:null,calendarDays,refresh);
   const page=useAcademicPage(!selected&&!editor?query:null,records,refresh);
   const detail=useTimetableRead(selected?`${url}/${selected}`:null,schoolPublishingEntry,refresh);
-  function goMonth(next:string){setMonth(next);setDay(undefined);}
+  function goMonth(next:string){patch({month:next,day:undefined});}
   const base=href(locale,kind);
+  const context=new URLSearchParams();
+  if(kind==="event"){context.set("month",month);if(day)context.set("day",day);}
+  if(classId)context.set("classId",classId);
+  if(view==="managed")context.set("view",view);
+  const fromHub=embedded||params.get("from")==="hub";
+  const returnParams=new URLSearchParams(context);
+  if(fromHub)returnParams.set("section",kind==="event"?"calendar":"feed");
+  const returnBase=fromHub?`/${locale}/school/messages`:base;
+  const returnHref=returnParams.size?`${returnBase}?${returnParams}`:returnBase;
+  function detailHref(id:string){const next=new URLSearchParams(context);next.set("item",id);if(fromHub)next.set("from","hub");return `${base}?${next}`;}
   return <section className="auth-card auth-form">
     {!embedded&&<h1>{text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
       dismiss={()=>{setEditor(undefined);setView("managed");setRefresh((value)=>value+1);}}/>}
-    {selected&&<><Link className="plain-button" href={base}>{text.back}</Link>
+    {selected&&<><Link className="plain-button" href={returnHref}>{text.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(record)=>editor==="edit"?
         <PublishingEditor locale={locale} kind={kind} options={options} record={record} dismiss={()=>{setEditor(undefined);setRefresh((value)=>value+1);}}/>:
         <>
@@ -105,7 +129,7 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
         return <ul className="group-list">
           {visible.map((record)=><li key={record.id}>
             <ContentCard locale={locale} record={record}/>
-            <Link className="plain-button" href={`${base}?item=${record.id}`}>{text.open}</Link>
+            <Link className="plain-button" href={detailHref(record.id)}>{text.open}</Link>
           </li>)}
         </ul>;
       }}</AcademicPageItems>

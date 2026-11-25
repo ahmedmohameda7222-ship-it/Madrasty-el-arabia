@@ -75,3 +75,30 @@ test("announcement draft survives changing tabs without selecting recipients aut
     await expect(page.getByRole("button",{name:"Vorschau erstellen"})).toBeDisabled();
   }finally{await school.close();}
 });
+
+
+test("calendar detail returns to the same month, day and class filter",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");
+    const {apple}=await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const day=new Date().toISOString().slice(0,10);
+    const event=(await fixtureApi(school,"/events",{token:admin,persona:"admin",method:"POST",key:randomUUID(),body:{audience:{kind:"class",classId:apple.id},sourceLocale:"de",copy:{de:{title:"QA event for calendar return",body:"Test"}},timing:{start:{date:day,time:null},end:null,allDay:true}},status:[200,201]})).payload.data;
+    await fixtureApi(school,"/events/"+event.id,{token:admin,persona:"admin",method:"PATCH",key:randomUUID(),body:{action:"publish",revision:event.revision}});
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});
+    const params=new URLSearchParams({section:"calendar",month:day.slice(0,7),day,classId:apple.id});
+    await page.goto("/de/school/messages?"+params);
+    await page.getByRole("link",{name:"Details öffnen"}).first().click();
+    await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
+    await page.getByRole("link",{name:"Zurück zu Kontakt"}).click();
+    await expect(page).toHaveURL(/section=calendar/);
+    const returned=new URL(page.url()).searchParams;
+    assertContext(returned,"month",day.slice(0,7));
+    assertContext(returned,"day",day);
+    assertContext(returned,"classId",apple.id);
+  }finally{await school.close();}
+});
+function assertContext(params:URLSearchParams,key:string,value:string){expect(params.get(key)).toBe(value);}
