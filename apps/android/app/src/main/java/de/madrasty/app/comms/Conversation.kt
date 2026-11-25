@@ -9,6 +9,12 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -153,12 +159,12 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
         quoted.string("body")?.let{Text(isolate(it.take(140)))}
         TextButton(enabled=outgoing?.pending!=true,onClick={quote=null;outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
     }
-    if(outgoing?.pending!=true)AcademicLongField(R.string.chat_body,typed,4000){typed=it;outgoing=null}
     MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,onReady={
         if(attachment!=it&&outgoing?.pending!=true)outgoing=null
         attachment=it
-    },onBusy={preparing=it})
-    Button(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,onClick={
+    },onBusy={preparing=it}){
+    ChatInputField(typed,outgoing?.pending!=true){typed=it;outgoing=null}
+    ChatSendAction(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,failed=failed,onClick={
         val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),attachment,true)
         outgoing=sending
         scope.launch{
@@ -179,8 +185,24 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
             }
             catch(_:Exception){if(outgoing?.id==sending.id)outgoing=sending.copy(pending=false)}
         }
-    }){Text(stringResource(if(failed)R.string.chat_retry else R.string.chat_send))}
+    })
     }
+    }
+    }
+}
+
+@Composable
+internal fun RowScope.ChatInputField(value:String,enabled:Boolean,change:(String)->Unit){
+    OutlinedTextField(value=value,onValueChange={change(it.take(4000))},enabled=enabled,
+        modifier=Modifier.weight(1f),shape=RoundedCornerShape(28.dp),minLines=1,maxLines=4,
+        placeholder={Text(stringResource(R.string.comms_first_message),maxLines=1)})
+}
+
+@Composable
+internal fun ChatSendAction(enabled:Boolean,failed:Boolean,onClick:()->Unit){
+    FilledIconButton(enabled=enabled,onClick=onClick,modifier=Modifier.size(48.dp)){
+        Icon(painterResource(if(failed)R.drawable.ic_comms_retry else R.drawable.ic_comms_send),
+            contentDescription=stringResource(if(failed)R.string.chat_retry else R.string.chat_send))
     }
 }
 
