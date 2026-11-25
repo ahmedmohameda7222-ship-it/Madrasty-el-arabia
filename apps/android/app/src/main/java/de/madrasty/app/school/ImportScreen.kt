@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -73,6 +75,10 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
     var maxRows by remember { mutableStateOf(30) }
     var restoreAttempt by remember(initialJob) { mutableStateOf(0) }
     var restored by remember(initialJob) { mutableStateOf<AsyncState<Unit>>(AsyncState.InitialLoading()) }
+    var stage by remember { mutableStateOf(1) }
+    var history by remember { mutableStateOf(emptyList<JSONObject>()) }
+    var filter by remember { mutableStateOf("all") }
+    var confirmed by remember { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         file = uri
         name = uri?.let { value ->
@@ -95,11 +101,17 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
         preview = null
     }
 
+    suspend fun resume(id:String){
+        val status=model.objectAt("$base/$id/status")
+        if(status.getString("state")=="committed"){receipt=model.objectAt("$base/$id/receipt");stage=4;return}
+        inspect(id);stage=2
+        if(status.getString("state")=="review"){preview=model.objectAt("$base/$id/preview");stage=3}
+    }
+    LaunchedEffect(Unit){history=try{model.records(base)}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(_:Exception){emptyList()}}
     LaunchedEffect(initialJob,restoreAttempt) {
         if (initialJob != null) {
             restored = loadAccountSurface({ restoreAttempt++ }) {
-                inspect(initialJob)
-                if (inspection?.getString("state") == "review") preview = model.objectAt("$base/$initialJob/preview")
+                resume(initialJob)
             }
         }
     }
@@ -111,6 +123,10 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
         TextButton(onClick = close) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.import_families), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
         if (initialJob != null) AsyncSurface(restored) {}
+        Text(fm("Schritt ","الخطوة ")+stage+"/4",style=MaterialTheme.typography.labelLarge)
+        if(stage==1){
+        if(history.isNotEmpty())Text(fm("Frühere Importe","الاستيرادات السابقة"),style=MaterialTheme.typography.titleMedium)
+        history.forEach{job->Text(isolate(job.getString("fileName")));Submit(true,if(job.getString("state")=="committed")R.string.import_receipt else R.string.import_preview,success=null){resume(job.getString("id"))}}
         Text(stringResource(R.string.import_instructions))
         listOf("csv" to R.string.import_csv, "xlsx" to R.string.import_xlsx).forEach { (extension, label) ->
             TextButton(onClick = {
@@ -140,11 +156,12 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
             val data = model.schoolCommand(requests, base, "POST", JSONObject().put("fileName", name)
                 .put("mime", if (name.endsWith(".csv", true)) "text/csv" else xlsx).put("bytesBase64", encoded))
             receipt = null
-            inspect(data.getString("id"))
+            inspect(data.getString("id"));stage=2
+        }
         }
 
         val current = inspection
-        if (current != null && receipt == null) {
+        if (stage==2 && current != null && receipt == null) {
             val id = current.getString("id")
             HorizontalDivider()
             Text(stringResource(R.string.import_columns), style = MaterialTheme.typography.titleLarge)
@@ -164,14 +181,9 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
             }
             val columns = current.getJSONArray("columns").objects()
             fields.forEach { (field, label) ->
-                Text(stringResource(label), style = MaterialTheme.typography.bodyLarge)
-                if (field in optional) FilterChip(field !in mapping, {
-                    mapping = mapping - field; preview = null
-                }, label = { Text(stringResource(R.string.import_unused)) })
-                columns.forEach { column ->
-                    val index = column.getInt("index")
-                    FilterChip(mapping[field] == index, { mapping = mapping + (field to index); preview = null },
-                        label = { Text("$index · ${isolate(column.getString("label"))}") })
+                FamilyChoice(stringResource(label),mapping[field]?.toString()?:"",listOf("" to stringResource(R.string.import_unused))+columns.map{it.getInt("index").toString() to (it.getInt("index").toString()+" · "+isolate(it.getString("label")))}){value->
+                    mapping=if(value.isBlank())mapping-field else mapping+(field to value.toInt())
+                    preview=null
                 }
             }
             val canMap = fields.keys.all { it in optional || it in mapping } && mapping.values.toSet().size == mapping.size
@@ -183,18 +195,19 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
                 val result = model.schoolCommand(requests, "$base/$id/mapping", "PUT", input)
                 preview = result
                 inspection = JSONObject(current.toString()).put("revision", result.getInt("revision"))
-                maxRows = 30
+                maxRows = 30;stage=3;confirmed=false
             }
         }
 
         val review = preview
-        if (review != null && receipt == null) {
+        if (stage==3 && review != null && receipt == null) {
             val id = review.getString("id")
             HorizontalDivider()
             Text(stringResource(R.string.import_review), style = MaterialTheme.typography.titleLarge)
             val counts = review.getJSONObject("counts")
             dispositions.forEach { (state, label) -> Text("${stringResource(label)} · ${counts.getInt(state)}") }
-            val records = review.getJSONArray("rows").objects()
+            FamilyChoice(fm("Status filtern","تصفية الحالة"),filter,listOf("all" to fm("Alle","الكل"))+dispositions.map{(v,label)->v to stringResource(label)}){filter=it;maxRows=30}
+            val records = review.getJSONArray("rows").objects().filter{filter=="all"||it.getString("disposition")==filter}
             records.take(maxRows).forEach { row ->
                 val number = row.getInt("rowNo")
                 key(number) {
@@ -207,14 +220,16 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
                 }
             }
             if (records.size > maxRows) TextButton(onClick = { maxRows += 30 }) { Text(stringResource(R.string.import_more)) }
-            Submit(counts.getInt("conflict") + counts.getInt("revoked") == 0 &&
+            Row{Checkbox(checked=confirmed,onCheckedChange={confirmed=it});Text(fm("Ich habe die Verknüpfungen geprüft.","راجعت الروابط والصلاحيات."))}
+            TextButton(onClick={stage=2;confirmed=false}){Text(stringResource(R.string.import_columns))}
+            Submit(confirmed && counts.getInt("conflict") + counts.getInt("revoked") == 0 &&
                 counts.getInt("new") + counts.getInt("existing") > 0, R.string.import_commit) {
                 receipt = model.schoolCommand(requests, "$base/$id/commit", "POST",
-                    JSONObject().put("reviewedRevision", review.getInt("revision")))
+                    JSONObject().put("reviewedRevision", review.getInt("revision")));stage=4
             }
         }
 
-        receipt?.let {
+        if(stage==4)receipt?.let {
             HorizontalDivider()
             Text(stringResource(R.string.import_receipt), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.import_rows, it.getInt("rowsCommitted")))
@@ -225,6 +240,7 @@ fun ImportScreen(model: IdentityViewModel, invitations: (String) -> Unit, initia
                 Text(stringResource(R.string.invite_batch))
             }
         }
+        if(stage>1)Submit(true,R.string.import_select,success=null){history=model.records(base);stage=1;inspection=null;preview=null;receipt=null;confirmed=false;file=null;name=""}
     }
 }
 
