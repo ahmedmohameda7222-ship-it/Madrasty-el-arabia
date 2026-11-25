@@ -29,4 +29,6 @@
     <string name="comms_calendar">التقويم</string>
     <string name="comms_unread">غير مقروءة</string>
     <string name="comms_manage">نشر وإدارة</string>
+    <string name="comms_teaching_day">يوم دراسي</string>
+    <string name="comms_free_day">عطلة</string>
 </resources>

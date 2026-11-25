@@ -29,4 +29,6 @@
     <string name="comms_calendar">Kalender</string>
     <string name="comms_unread">Ungelesen</string>
     <string name="comms_manage">Veröffentlichen und verwalten</string>
+    <string name="comms_teaching_day">Unterricht</string>
+    <string name="comms_free_day">Unterrichtsfrei</string>
 </resources>

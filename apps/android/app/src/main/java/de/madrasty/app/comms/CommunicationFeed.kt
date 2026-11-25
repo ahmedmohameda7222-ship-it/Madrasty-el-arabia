@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
+import de.madrasty.app.api.decodeData
+import org.json.JSONObject
 import de.madrasty.app.academics.academicPages
 import de.madrasty.app.academics.academicRead
 import de.madrasty.app.identity.IdentityViewModel
@@ -30,7 +32,7 @@ internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcast
     var refresh by remember{mutableStateOf(0)}
     var manage by remember{mutableStateOf(false)}
     if(persona!=Persona.Guardian){
-        val options=academicRead("/school/publishing-options",refresh){model.publishingObject(it)}
+        val options=academicRead("/school/publishing-options",refresh){decodeData(model.schoolRequest(it)){it as JSONObject}.data}
         val data=(options as? AsyncState.Ready)?.content
         val classes=data?.optJSONArray("classes")
         val canWrite=data?.optBoolean("schoolWide")==true||(classes!=null&&(0 until classes.length()).any{classes.getJSONObject(it).optBoolean("canWrite")})

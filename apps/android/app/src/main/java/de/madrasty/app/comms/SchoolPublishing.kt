@@ -164,9 +164,14 @@ private fun PublicationFeed(
         }
     }
     val page="${section.endpoint}?limit=60&view="+(if(managed)"managed" else "feed")+
-        (if(classId.isEmpty())"" else "&classId=${Uri.encode(classId)}")+(if(section==PublicationSection.Events)"&month=$month" else "")
+        (if(classId.isEmpty())"" else "&classId=${Uri.encode(classId)}")+(if(section==PublicationSection.Events)"&month=$month"+(day?.let{"&day=$it"}?:"") else "")
+    if(section==PublicationSection.Events){
+        val summary=academicRead("/comms/calendar?month=$month&view="+(if(managed)"managed" else "feed")+(if(classId.isEmpty())"" else "&classId=${Uri.encode(classId)}"),version){path->
+            decodeData(model.schoolRequest(path)){it as org.json.JSONArray}.data
+        }
+        AsyncSurface(summary){days->MonthGrid(locale,month,day,days){day=it}}
+    }
     academicPages(model,page,version){items->
-        if(section==PublicationSection.Events)MonthGrid(locale,month,day,items){day=it}
         val selected=day
         val visible=if(selected==null)items else items.filter{eventOn(it,selected)}
         if(selected!=null&&items.isNotEmpty()&&visible.isEmpty())Text(stringResource(R.string.publish_empty_day))
@@ -179,7 +184,7 @@ private fun PublicationFeed(
 }
 
 @Composable
-private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,events:List<JSONObject>,pick:(LocalDate)->Unit){
+private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,days:org.json.JSONArray,pick:(LocalDate)->Unit){
     val calendar=DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
     val numbers=NumberFormat.getIntegerInstance(locale)
     val offset=month.atDay(1).dayOfWeek.value-1
@@ -196,14 +201,16 @@ private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,events:List<J
                 if(index !in 1..month.lengthOfMonth())Spacer(Modifier.weight(1f))
                 else {
                     val date=month.atDay(index)
-                    val amount=events.count{eventOn(it,date)}
-                    val description=date.format(calendar)+(if(amount>0)" · "+numbers.format(amount) else "")
+                    val info=(0 until days.length()).map{days.getJSONObject(it)}.firstOrNull{it.getString("date")==date.toString()}
+                    val amount=info?.optInt("events")?:0
+                    val teaching=info?.let{if(it.isNull("teaching"))null else it.getBoolean("teaching")}
+                    val description=date.format(calendar)+(if(teaching==null)"" else " · "+stringResource(if(teaching)R.string.comms_teaching_day else R.string.comms_free_day))+(if(amount>0)" · "+numbers.format(amount) else "")
                     TextButton(modifier=Modifier.weight(1f).semantics{
                         contentDescription=description
                         selected=day==date
                     },onClick={pick(date)},contentPadding=PaddingValues(0.dp)){
                         Column(horizontalAlignment=Alignment.CenterHorizontally){
-                            Text(numbers.format(index))
+                            Text(numbers.format(index),color=if(teaching==true)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                             if(amount>0)Text("●",style=MaterialTheme.typography.labelSmall)
                         }
                     }

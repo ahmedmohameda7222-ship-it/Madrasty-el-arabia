@@ -3047,6 +3047,22 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AcademicReport"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /comms/calendar:
+    get:
+      operationId: readCommunicationCalendar
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"name":"month","in":"query","required":true,"schema":{"type":"string","pattern":"^\\d{4}-(0[1-9]|1[0-2])$"}}
+        - {"name":"classId","in":"query","schema":{"type":"string","format":"uuid"}}
+        - {"name":"view","in":"query","schema":{"type":"string","enum":["feed","managed"]}}
+      responses:
+        '200':
+          description: Scoped academic calendar and event counts
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"array","items":{"type":"object","required":["date","teaching","events"],"properties":{"date":{"type":"string","format":"date"},"teaching":{"type":["boolean","null"]},"events":{"type":"integer","minimum":0}}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
   /comms/feed:
     get:
       operationId: listCommunicationFeed
@@ -3878,6 +3894,7 @@ paths:
         - {"name":"classId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
         - {"name":"view","in":"query","required":false,"schema":{"type":"string","enum":["feed","managed"],"default":"feed"}}
         - {"name":"month","in":"query","required":true,"schema":{"type":"string","pattern":"^[0-9]{4}-(0[1-9]|1[0-2])$"}}
+        - {"name":"day","in":"query","schema":{"type":"string","format":"date"}}
       responses:
         '200':
           description: Read the authorized school-local month including overlapping events

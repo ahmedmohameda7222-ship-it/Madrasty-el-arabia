@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {
-  eventDraft,newsDraft,publishingOptions,schoolPublishingEntry,
+  eventDraft,newsDraft,publishingOptions,schoolPublishingEntry,communicationCalendarDay,
   type Locale,type PublishingContent,type PublishingEntry,type PublishingOptions,
 } from "@madrasty/contracts";
 import {useSchoolCommand} from "@/api/commands";
@@ -32,6 +32,7 @@ const words={
 } as const;
 type Kind="news"|"event";
 const records=schoolPublishingEntry.array();
+const calendarDays=communicationCalendarDay.array();
 const originalLocales=["ar","de"] as const;
 const endpoint=(kind:Kind)=>kind==="news"?"/news" as const:"/events" as const;
 const href=(locale:Locale,kind:Kind)=>`/${locale}/school/more${endpoint(kind)}`;
@@ -66,7 +67,8 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   const [view,setView]=useState<"feed"|"managed">("feed"),[refresh,setRefresh]=useState(0);
   const [month,setMonth]=useState(options.schoolDate.slice(0,7)),[day,setDay]=useState<string>();
   const [classId,setClass]=useState(""),[editor,setEditor]=useState<"new"|"edit"|undefined>(create&&!selected&&canWrite?"new":undefined);
-  const query=`${url}?limit=60&view=${view}${classId?"&classId="+classId:""}${kind==="event"?"&month="+month:""}` as const;
+  const query=`${url}?limit=60&view=${view}${classId?"&classId="+classId:""}${kind==="event"?"&month="+month+(day?"&day="+day:""):""}` as const;
+  const days=useTimetableRead(kind==="event"&&!selected&&!editor?`/comms/calendar?month=${month}&view=${view}${classId?"&classId="+classId:""}`:null,calendarDays,refresh);
   const page=useAcademicPage(!selected&&!editor?query:null,records,refresh);
   const detail=useTimetableRead(selected?`${url}/${selected}`:null,schoolPublishingEntry,refresh);
   function goMonth(next:string){setMonth(next);setDay(undefined);}
@@ -95,7 +97,7 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
         {options.classes.map((choice)=><option key={choice.id} value={choice.id}>{choice.code} · {locale==="ar"?choice.nameAr:choice.nameDe}</option>)}
       </select></label>}
       {kind==="event"&&<MonthPicker locale={locale} month={month} go={goMonth} day={day} choose={setDay}
-        today={options.schoolDate} entries={page.visible?.items??[]}/>}
+        today={options.schoolDate} entries={page.visible?.items??[]} summary={days.value?.data}/>}
       <AcademicPageItems locale={locale} page={page}>{(entries)=>{
         const visible=kind==="event"&&day?entries.filter((entry)=>activeOn(entry,day)):entries;
         if(!visible.length)return <p>{kind==="event"?text.emptyDay:locale==="ar"?"مفيش أخبار منشورة.":"Keine Neuigkeiten."}</p>;
@@ -110,8 +112,8 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   </section>;
 }
 
-function MonthPicker({locale,month,go,day,choose,today,entries}:{
-  locale:Locale;month:string;go:(month:string)=>void;day?:string;choose:(day?:string)=>void;today:string;entries:PublishingEntry[];
+function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
+  locale:Locale;month:string;go:(month:string)=>void;day?:string;choose:(day?:string)=>void;today:string;entries:PublishingEntry[];summary?:ReturnType<typeof calendarDays.parse>;
 }){
   const text=words[locale],first=monthStart(month),last=new Date(first);
   last.setUTCMonth(first.getUTCMonth()+1,0);
@@ -124,14 +126,17 @@ function MonthPicker({locale,month,go,day,choose,today,entries}:{
       <h2>{new Intl.DateTimeFormat(intl(locale),{month:"long",year:"numeric",timeZone:"UTC",calendar:"gregory"}).format(first)}</h2>
       <button className="plain-button" type="button" onClick={()=>go(shiftMonth(month,1))}>{text.next}</button>
     </div>
+    <div className="calendar-legend"><span><i data-teaching="yes"/>{locale==="ar"?"يوم دراسي":"Unterricht"}</span><span><i data-teaching="no"/>{locale==="ar"?"عطلة":"Unterrichtsfrei"}</span><span>● {locale==="ar"?"حدث":"Termin"}</span></div>
     <div className="school-month-grid" role="group" aria-label={text.event}>
       {Array.from({length:7},(_,index)=><small key={index}>{weekday.format(new Date(Date.UTC(2024,0,index+1,12)))}</small>)}
       {Array.from({length:offset},(_,index)=><span key={`blank-${index}`}/>)}
       {Array.from({length:days},(_,index)=>{
         const dayId=`${month}-${String(index+1).padStart(2,"0")}`;
-        const total=entries.filter((item)=>activeOn(item,dayId)).length;
+        const info=summary?.find(item=>item.date===dayId);
+        const total=info?.events??entries.filter((item)=>activeOn(item,dayId)).length;
+        const teaching=info?.teaching;
         return <button type="button" key={dayId} className="plain-button" aria-pressed={day===dayId} aria-current={dayId===today?"date":undefined}
-          aria-label={shortDate(locale,dayId)+(total?` · ${number.format(total)}`:"")} onClick={()=>choose(dayId)}>
+          data-teaching={teaching===true?"yes":teaching===false?"no":undefined} aria-label={shortDate(locale,dayId)+(teaching===true?(locale==="ar"?" · يوم دراسي":" · Unterricht"):teaching===false?(locale==="ar"?" · عطلة":" · Unterrichtsfrei"):"")+(total?` · ${number.format(total)}`:"")} onClick={()=>choose(dayId)}>
           {number.format(index+1)}{total>0&&<span aria-hidden="true" className="school-month-dot">●</span>}
         </button>;
       })}

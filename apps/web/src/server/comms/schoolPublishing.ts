@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  eventTiming,publishingOptions,schoolPublishingEntry,schoolPublishingReceipt,
+  eventTiming,publishingOptions,schoolPublishingEntry,schoolPublishingReceipt,communicationCalendarDay,type communicationCalendarQuery,
   type PublishingContent,type eventsQuery,type newsQuery,
 } from "@madrasty/contracts";
 import {z} from "zod";
@@ -60,11 +60,12 @@ export function listSchoolPublishing(actor:ActorContext,kind:Kind,input:z.infer<
       if(!access.allowed)throw new ApiError("not_found");
     }
     const at=after?.sortAt??null,afterId=after?.id??null;
+    const day="day" in input?input.day??null:null;
     const next=kind==="event"?tx`(p.sort_at,p.id)>(${at}::timestamptz,${afterId}::uuid)`:tx`(p.sort_at,p.id)<(${at}::timestamptz,${afterId}::uuid)`;
     const sort=kind==="event"?tx`p.sort_at asc,p.id asc`:tx`p.sort_at desc,p.id desc`;
     const rows=await tx<Row[]>`select ${fields(tx)}
       from app.school_publishing_rows(${kind},${input.view},null,${classId},${month}::date) p
-      where (${afterId}::uuid is null or ${next}) order by ${sort} limit ${input.limit+1}`;
+      where (${afterId}::uuid is null or ${next}) and (${day}::date is null or (p.starts_local<${day}::date+interval '1 day' and (p.starts_local>=${day}::date or coalesce(p.ends_local,case when p.all_day then p.starts_local+interval '1 day' end)>${day}::date))) order by ${sort} limit ${input.limit+1}`;
     const items=rows.slice(0,input.limit),tail=items.at(-1);
     return {items:items.map((row)=>shape(kind,row)),nextCursor:rows.length>input.limit&&tail?
       Buffer.from(JSON.stringify(cursor.parse(tail))).toString("base64url"):undefined};
@@ -109,4 +110,18 @@ export async function writeSchoolPublishing(actor:ActorContext,kind:Kind,key:str
     },
   });
   return readSchoolPublishing(actor,kind,result.data.id);
+}
+
+export function communicationCalendar(actor:ActorContext,input:z.infer<typeof communicationCalendarQuery>){
+  const month=input.month+"-01",classId=input.classId??null;
+  return withActor(actor,async tx=>{
+    if(input.view==="managed"&&actor.persona==="guardian")throw new ApiError("forbidden");
+    if(classId){const [access]=await tx<{allowed:boolean}[]>`select app.publishing_class_read(${classId}) as allowed`;if(!access?.allowed)throw new ApiError("not_found");}
+    return communicationCalendarDay.array().parse(await tx`
+      with events as (select * from app.school_publishing_rows('event',${input.view},null,${classId}::uuid,${month}::date))
+      select d.day::text as date,d.teaching,
+        (select count(*)::int from events e where e.starts_local<d.day+interval '1 day'
+          and (e.starts_local>=d.day or coalesce(e.ends_local,case when e.all_day then e.starts_local+interval '1 day' end)>d.day)) as events
+      from app.communication_school_days(${month}::date,${classId}::uuid) d order by d.day`);
+  });
 }
