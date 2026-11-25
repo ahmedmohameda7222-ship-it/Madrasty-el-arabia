@@ -108,7 +108,18 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     if(term.isNotEmpty())TextButton(onClick={term="";search=""}){Text(stringResource(R.string.clear_filter))}
     }
     }
-    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+    val timelineScroll=rememberScrollState()
+    var previousExtent by remember(id,term){mutableStateOf(0)}
+    val followThreshold=with(androidx.compose.ui.platform.LocalDensity.current){80.dp.roundToPx()}
+    LaunchedEffect(id,term,timelineScroll.maxValue){
+        val extent=timelineScroll.maxValue
+        if(extent!=Int.MAX_VALUE){
+            val follow=previousExtent==0||previousExtent-timelineScroll.value<=followThreshold
+            previousExtent=extent
+            if(follow&&term.isEmpty()&&!timelineScroll.isScrollInProgress)timelineScroll.scrollTo(extent)
+        }
+    }
+    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(timelineScroll),verticalArrangement=Arrangement.spacedBy(8.dp)){
     key(id,term){
         MessageTimeline(model,thread,term,acknowledged,::deny,::recognize,{archived=it}){message->
             if(outgoing?.pending!=true){quote=message;outgoing=null}
