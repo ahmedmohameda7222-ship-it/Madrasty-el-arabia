@@ -8,6 +8,7 @@ const studentState = z.enum(["active", "inactive"]);
 export const studentSchema = z.object({
   id: z.uuid(), studentNumber: z.string().regex(/^MA-\d{6,}$/), displayName: name,
   state: studentState, revision: revisionSchema, birthDate: z.iso.date().nullable().optional(),
+  currentClass:z.object({id:z.uuid(),code:z.string(),nameAr:z.string(),nameDe:z.string()}).nullable().optional(),
 });
 export const createStudentInput = z.object({ displayName: name, source: source.optional() });
 export const updateStudentInput = z.object({ displayName: name, state: studentState, revision: revisionSchema });
@@ -68,6 +69,10 @@ export const changeLinkInput = z.object({ revision: revisionSchema, reason });
 export const familyQuerySchema = pageQuerySchema.extend({
   query: z.string().trim().max(120).optional(),
   cursor: z.uuid().optional(),
+  sort:z.enum(["id","name"]).optional(),
+  state:studentState.optional(),
+  classId:z.union([z.uuid(),z.literal("none")]).optional(),
+  ungrouped:z.literal("true").optional(),
 });
 export const childSummarySchema = studentSchema.pick({ id: true, studentNumber: true, displayName: true }).extend({
   currentClass: z.object({ id: z.uuid(), code: z.string(), nameAr: z.string(), nameDe: z.string() }).nullable().optional(),
@@ -80,3 +85,7 @@ export type ChildLink = z.infer<typeof childLinkSchema>;
 export const familyGroupSummary = z.object({id:z.uuid(),displayName:name,guardianCount:z.int().nonnegative(),childCount:z.int().nonnegative(),revision:revisionSchema});
 export const familyGroupDetail = familyGroupSummary.extend({situation:familySituation,guardians:guardianSchema.array(),children:studentSchema.array(),links:childLinkSchema.array()});
 export const familyGroupQuery = z.object({query:z.string().trim().max(120).optional(),cursor:z.uuid().optional(),limit:z.coerce.number().int().min(1).max(100).default(50)});
+
+export const familyGroupEdit=z.object({displayName:name,situation:familySituation,revision:revisionSchema});
+export const familyGroupAttach=z.object({kind:z.enum(["guardian","student"]),personId:z.uuid(),revision:revisionSchema});
+export const familyGroupChildInput=createFamilyChildInput.extend({guardianLinks:z.array(z.object({guardianId:z.uuid(),relationship:familyRelationship,approved:z.boolean()})).min(1).max(8),revision:revisionSchema}).refine(v=>v.guardianLinks.some(l=>l.approved)&&new Set(v.guardianLinks.map(l=>l.guardianId)).size===v.guardianLinks.length);
