@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
   guardianSchema, importColumns, importInspectionSchema, importPreviewSchema, importReceiptSchema,
@@ -79,6 +79,25 @@ function encode(bytes: Uint8Array) {
 export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
   const text = copy[locale], translated = dictionary(locale), command = useAdminCommand();
   const [file, setFile] = useState<File>();
+  const [history,setHistory]=useState<z.infer<typeof importVersionSchema>[]>([]);
+  const [filter,setFilter]=useState("all");
+  const [stage,setStage]=useState(1);
+  const [confirmed,setConfirmed]=useState(false);
+  const fileInput=useRef<HTMLInputElement>(null);
+  const ar=locale==="ar";
+  const tr=(de:string,arabic:string)=>ar?arabic:de;
+  function rememberJob(id?:string){const url=new URL(window.location.href);if(id)url.searchParams.set("job",id);else url.searchParams.delete("job");window.history.replaceState(null,"",url);}
+  async function resume(id:string,signal?:AbortSignal){
+    const {data:status}=await requestApi(`${base}/${id}/status`,importVersionSchema,{signal});
+    if(signal?.aborted)return;
+    if(status.state==="committed"){const {data}=await requestApi(`${base}/${id}/receipt`,importReceiptSchema,{signal});if(!signal?.aborted){setReceipt(data);setStage(4);}return;}
+    setReceipt(undefined);
+    const info=await inspect(id,undefined,signal);
+    if(!info||signal?.aborted)return;
+    setStage(2);
+    if(info.state==="review"){const {data}=await requestApi(`${base}/${id}/preview`,importPreviewSchema,{signal});if(!signal?.aborted){setPreview(data);setStage(3);}}
+  }
+  useEffect(()=>{const ctrl=new AbortController();void requestApi(base,importVersionSchema.array(),{signal:ctrl.signal}).then(({data})=>setHistory(data)).catch(()=>{});return()=>ctrl.abort();},[]);
   const [inspection, setInspection] = useState<Inspection>();
   const [mapping, setMapping] = useState<Partial<Record<(typeof fields)[number], number>>>({});
   const [preview, setPreview] = useState<Preview>();
@@ -118,12 +137,7 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
     const abort=new AbortController();
     setPending(true);
     setError("");
-    void inspect(job,undefined,abort.signal).then(async(info)=>{
-      if(info?.state==="review"){
-        const {data}=await requestApi(`${base}/${info.id}/preview`,importPreviewSchema,{signal:abort.signal});
-        if(!abort.signal.aborted)setPreview(data);
-      }
-    }).catch((cause)=>{
+    void resume(job,abort.signal).catch((cause)=>{
       if(!abort.signal.aborted)setError(cause instanceof ApiResponseError
         ? localizedError(locale,cause.messageKey) : translated["error.unavailable"]);
     }).finally(()=>{if(!abort.signal.aborted)setPending(false);});
@@ -141,7 +155,8 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
         fileName: file.name, mime, bytesBase64: encode(new Uint8Array(await file.arrayBuffer())),
       }, importVersionSchema);
       setReceipt(undefined);
-      await inspect(result.id);
+      rememberJob(result.id);
+      await inspect(result.id);setStage(2);
     });
   };
 
@@ -158,7 +173,7 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
       }, importPreviewSchema);
       setPreview(next);
       setInspection({ ...inspection, revision: next.revision });
-      setLimit(40);
+      setLimit(40);setStage(3);setConfirmed(false);
     });
   };
 
@@ -172,21 +187,25 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
     });
   };
 
-  return <>
+  const rows=preview?.rows.filter(row=>filter==="all"||row.disposition===filter)??[];
+  return <div className="family-workspace">
+    <Link className="plain-button" href={`/${locale}/school/students`}>{tr("Zurück","رجوع")}</Link>
     <h1>{text.title}</h1>
-    <section className="auth-card">
+    <p role="status">{tr("Schritt","الخطوة")} {stage}/4 · {[tr("Datei auswählen","اختيار الملف"),text.mapping,text.review,text.receipt][stage-1]}</p>
+    {stage===1&&<section className="auth-card">
+      {history.length>0&&<details><summary>{tr("Frühere Importe","الاستيرادات السابقة")}</summary>{history.map(item=><button type="button" className="plain-button" key={item.id} disabled={pending} onClick={()=>void run(async()=>{rememberJob(item.id);await resume(item.id);})}>{item.fileName} · {item.state==="committed"?text.receipt:tr("Fortsetzen","استكمال")}</button>)}</details>}
       <p>{text.instructions}</p>
       <div className="header-actions">
         <a className="plain-button" href="/templates/family-import.csv" download>{text.template} CSV</a>
         <a className="plain-button" href="/templates/family-import.xlsx" download>{text.template} XLSX</a>
       </div>
       <form className="auth-form" onSubmit={upload}>
-        <label>{text.file}<input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          onChange={(event) => setFile(event.target.files?.[0])} required /></label>
+        <p>{text.file} · 2.5 MB max.</p><input ref={fileInput} type="file" hidden accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={event=>setFile(event.target.files?.[0])}/>
+        <button type="button" className="plain-button" disabled={pending} onClick={()=>fileInput.current?.click()}>{file?.name??tr("Datei auswählen","اختيار الملف")}</button>
         <button disabled={pending || !file} className="primary-button">{text.upload}</button>
       </form>
-    </section>
-    {inspection && !receipt && <section className="auth-card">
+    </section>}
+    {stage===2&&inspection && !receipt && <section className="auth-card">
       <h2>{text.mapping}</h2>
       <p><bdi>{inspection.fileName}</bdi></p>
       <form className="auth-form" onSubmit={map}>
@@ -216,19 +235,21 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
         <button disabled={pending} className="plain-button">{text.map}</button>
       </form>
     </section>}
-    {preview && !receipt && <section className="auth-card">
+    {stage===3&&preview && !receipt && <section className="auth-card">
       <h2>{text.review}</h2>
       <p>{Object.entries(preview.counts).map(([key, value]) => `${text[key as keyof typeof preview.counts]} ${value}`).join(" · ")}</p>
+      <label>{tr("Status filtern","تصفية الحالة")}<select value={filter} onChange={e=>{setFilter(e.target.value);setLimit(40);}}><option value="all">{tr("Alle","الكل")}</option>{Object.keys(preview.counts).map(key=><option key={key} value={key}>{text[key as keyof typeof preview.counts]}</option>)}</select></label>
       <ol className="group-list">
-        {preview.rows.slice(0, limit).map((row) => <ImportRow key={row.rowNo} locale={locale} row={row} busy={pending} save={decide} />)}
+        {rows.slice(0, limit).map((row) => <ImportRow key={row.rowNo} locale={locale} row={row} busy={pending} save={decide} />)}
       </ol>
-      {preview.rows.length > limit && <button className="plain-button" onClick={() => setLimit(limit + 40)}>{text.next}</button>}
-      <button className="primary-button" disabled={pending || Boolean(preview.counts.conflict || preview.counts.revoked)
+      {rows.length > limit && <button className="plain-button" onClick={() => setLimit(limit + 40)}>{text.next}</button>}
+      <label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>{tr("Ich habe die Verknüpfungen geprüft.","راجعت روابط الطلاب وأولياء الأمور.")}</label>
+      <button className="plain-button" disabled={pending} onClick={()=>setStage(2)}>{tr("Zuordnung bearbeiten","تعديل الأعمدة")}</button>
+      <button className="primary-button" disabled={!confirmed || pending || Boolean(preview.counts.conflict || preview.counts.revoked)
         || preview.counts.new + preview.counts.existing === 0}
-        onClick={() => void run(async () => setReceipt(await command(`${base}/${preview.id}/commit`, "POST",
-          { reviewedRevision: preview.revision }, importReceiptSchema)))}>{text.commit}</button>
+        onClick={() => void run(async () => {setReceipt(await command(`${base}/${preview.id}/commit`, "POST", { reviewedRevision: preview.revision }, importReceiptSchema));setStage(4);})}>{text.commit}</button>
     </section>}
-    {receipt && <section className="auth-card">
+    {stage===4&&receipt && <section className="auth-card">
       <h2>{text.receipt}</h2>
       <dl><dt>{text.rows}</dt><dd>{receipt.rowsCommitted}</dd>
         <dt>{text.links}</dt><dd>{receipt.linksCreated}</dd>
@@ -236,9 +257,10 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
       <p>{text.sendNotice}</p>
       {receipt.eligibleGuardians > 0 && <Link className="plain-button" href={`/${locale}/school/students?batchId=${receipt.id}`}>{text.eligible}</Link>}
     </section>}
+    {stage>1&&<button type="button" className="plain-button" disabled={pending} onClick={()=>{rememberJob();setStage(1);setFile(undefined);setInspection(undefined);setPreview(undefined);setReceipt(undefined);setConfirmed(false);void requestApi(base,importVersionSchema.array()).then(({data})=>setHistory(data)).catch(()=>{});}}>{tr("Neuer Import","استيراد جديد")}</button>}
     {pending && <p role="status">{translated.pending}</p>}
     {error && <p role="alert" className="notice">{error}</p>}
-  </>;
+  </div>;
 }
 
 function ImportRow({ locale, row, busy, save }: { locale: Locale; row: Review; busy: boolean; save: (edit: Edit) => void }) {
