@@ -29,6 +29,9 @@ test("a guardian and teacher exchange one private message, read and react withou
     const first = chatMessage.parse((await fixtureApi(school, `${path}/messages`, send)).payload.data);
     const replay = chatMessage.parse((await fixtureApi(school, `${path}/messages`, send)).payload.data);
     assert.equal(first.id, replay.id);
+    const unreadList = (await fixtureApi(school, "/threads?unread=true&includeEmpty=false&limit=100", {token: teacher})).payload.data;
+    assert.ok(unreadList.some((row: {id:string;unread:number}) => row.id === thread.payload.data.threadId && row.unread > 0));
+    assert.ok(unreadList.every((row: {unread:number}) => row.unread > 0));
     const teacherInbox = await fixtureApi(school, `${path}/messages?q=${encodeURIComponent(id)}`, { token: teacher });
     assert.deepEqual(teacherInbox.payload.data.map((message: { body: string }) => message.body), [body]);
 
@@ -37,6 +40,8 @@ test("a guardian and teacher exchange one private message, read and react withou
     }
     await fixtureApi(school, `${path}/state`, { method: "PATCH", token: teacher, persona: "teacher",
       body: { readThroughSeq: first.sequence } });
+    const readList = (await fixtureApi(school, "/threads?unread=true&includeEmpty=false&limit=100", {token: teacher})).payload.data;
+    assert.ok(!readList.some((row: {id:string}) => row.id === thread.payload.data.threadId));
     await fixtureApi(school, `${path}/messages/${first.id}/reaction`, { method: "PUT", token: teacher, persona: "teacher",
       body: { emoji: "👍" } });
     const read = chatMessage.parse((await fixtureApi(school, `${path}/messages?limit=1`, { token: guardian })).payload.data[0]);

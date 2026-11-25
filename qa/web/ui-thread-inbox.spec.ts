@@ -45,17 +45,15 @@ for(const scenario of [
       await expect(archive).toHaveAttribute("aria-pressed","false");
       await archive.click();
       await expect(archive).toHaveAttribute("aria-pressed","true");
-      const extras=page.locator(".inbox-mobile-shortcuts summary");
-      await expect(extras).toBeVisible();
-      await extras.click();
-      await expect(page.getByRole("link",{name:scenario.locale==="ar"?"دليل التواصل":"Kontaktverzeichnis"})).toBeVisible();
+      await expect(page.getByRole("link",{name:scenario.locale==="ar"?"رسالة جديدة":"Neue Nachricht"})).toBeVisible();
+      await expect(page.locator(".inbox-mobile-shortcuts")).toHaveCount(0);
       mkdirSync("qa-artifacts/ui-after",{recursive:true});
       await page.screenshot({path:"qa-artifacts/ui-after/UIX10-"+scenario.persona+"-"+scenario.locale+"-messages-"+scenario.width+"-inbox.png",animations:"disabled"});
     }finally{await school.close()}
   });
 }
 
-test("long German inbox shortcuts remain entirely inside their touch targets at 320px",async({page,context})=>{
+test("communication entry links remain inside their touch targets at 320px",async({page,context})=>{
   const school=schoolFixtures();
   try{
     await school.seed();
@@ -63,8 +61,7 @@ test("long German inbox shortcuts remain entirely inside their touch targets at 
     await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     await page.setViewportSize({width:320,height:844});
     await page.goto("/de/school/messages");
-    await page.locator(".inbox-mobile-shortcuts summary").click();
-    for(const name of ["Kontaktverzeichnis","Schulmitteilungen"]){
+    for(const name of ["Neue Nachricht","Aktuelles","Kalender"]){
       const link=page.getByRole("link",{name});
       await expect(link).toBeVisible();
       const bounds=await link.evaluate(el=>{
