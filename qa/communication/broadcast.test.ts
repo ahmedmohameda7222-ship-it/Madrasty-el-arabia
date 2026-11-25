@@ -40,6 +40,30 @@ test("a class announcement uses Arabic and German copy and stays inside the targ
     }
     const outsideFeed=(await fixtureApi(school,"/comms/feed?locale=de",{token:outsider})).payload.data;
     assert.ok(!outsideFeed.some((item:{id:string})=>item.id===receipt.publicationId));
+    // Project into the disposable local inbox, never a live provider.
+    const secret=process.env.SCHOOL_WORKER_SECRET;
+    assert.ok(secret);
+    const count=async(token:string)=>(await fixtureApi(school,"/notifications/count",{token})).payload.data.unread as number;
+    const hasBroadcast=async(token:string)=>{
+      const items=(await fixtureApi(school,"/notifications?limit=100&unread=true",{token})).payload.data;
+      for(const item of items.filter((item:{template:string})=>item.template==="broadcast")){
+        const detail=(await fixtureApi(school,`/notifications/${item.id}`,{token})).payload.data;
+        if(detail.targets?.some((target:{kind:string;id:string})=>target.kind==="broadcast"&&target.id===receipt.publicationId))return true;
+      }
+      return false;
+    };
+    for(let i=0;i<24;i++){
+      if(await hasBroadcast(arabic)&&await hasBroadcast(german))break;
+      await fixtureApi(school,"/internal/dispatch",{method:"POST",token:secret});
+    }
+    assert.ok(await hasBroadcast(arabic),"Arabic recipient must receive a notice");
+    assert.ok(await hasBroadcast(german),"German recipient must receive a notice");
+    const before=await count(arabic),otherBefore=await count(german);
+    const marked=(await fixtureApi(school,"/notifications/read-all",{method:"POST",token:arabic,persona:"guardian"})).payload.data;
+    assert.equal(marked.marked,before);
+    assert.equal(await count(arabic),0);
+    assert.equal(await count(german),otherBefore,"read all must not change another account");
+    assert.equal((await fixtureApi(school,"/notifications/read-all",{method:"POST",token:arabic,persona:"guardian"})).payload.data.marked,0);
   } finally {
     await school.close();
   }
