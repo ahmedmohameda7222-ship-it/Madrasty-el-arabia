@@ -103,9 +103,9 @@ class CommunicationVisualTest {
             val actions=listOf("Foto auswählen","Foto aufnehmen","Audio aufnehmen")
             val attach=compose.onNodeWithContentDescription("Anhang hinzufügen")
             attach.assertIsDisplayed()
-            actions.forEach{compose.onNodeWithText(it,exact=true).assertDoesNotExist()}
+            actions.forEach{compose.onNodeWithText(it,substring=false).assertDoesNotExist()}
             attach.performClick()
-            actions.forEach{compose.onNodeWithText(it,exact=true).assertIsDisplayed()}
+            actions.forEach{compose.onNodeWithText(it,substring=false).assertIsDisplayed()}
         }finally{instrumentation.runOnMainSync{store.clear()}}
     }
     @OptIn(ExperimentalTestApi::class)

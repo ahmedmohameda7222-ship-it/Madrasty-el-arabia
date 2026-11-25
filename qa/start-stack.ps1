@@ -49,7 +49,20 @@ enabled = true
 
 $startLog = Join-Path $qaRoot 'start.log'
 supabase start --workdir $qaRoot --exclude 'studio,realtime,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta' *> $startLog
-if ($LASTEXITCODE -ne 0) { throw "Local QA startup failed. Inspect $startLog privately." }
+if ($LASTEXITCODE -ne 0) {
+  # Log only fixed categories, not CLI output: the raw log may contain credentials.
+  $categories = @{
+    'container image download or registry' = 'pull access denied|failed to pull|toomanyrequests|rate limit|TLS handshake timeout|manifest unknown'
+    'network or service health' = 'connection refused|context deadline exceeded|i/o timeout|health check|unhealthy|network is unreachable'
+    'resource or port conflict' = 'no space left|address already in use|port is already allocated|out of memory'
+    'migration or database failure' = 'SQLSTATE|migration.*failed|syntax error|permission denied'
+  }
+  $raw = Get-Content -LiteralPath $startLog -Raw -ErrorAction SilentlyContinue
+  $found = @($categories.Keys | Where-Object { $raw -match $categories[$_] })
+  if ($found.Count -gt 0) { Write-Warning ("Local QA startup category: " + ($found -join "; ")) }
+  else { Write-Warning 'Local QA startup category: unclassified CLI failure' }
+  throw "Local QA startup failed. Inspect $startLog privately."
+}
 
 if ($Fresh) {
   $containerPath = docker inspect --format '{{ index .Config.Labels "com.supabase.cli.workdir" }}' $qaContainer
