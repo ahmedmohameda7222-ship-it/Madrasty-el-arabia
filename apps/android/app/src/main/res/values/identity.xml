@@ -31,4 +31,5 @@
     <string name="comms_manage">نشر وإدارة</string>
     <string name="comms_teaching_day">يوم دراسي</string>
     <string name="comms_free_day">عطلة</string>
+    <string name="comms_mark_all">تحديد الكل كمقروء</string>
 </resources>

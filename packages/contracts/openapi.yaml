@@ -3692,6 +3692,18 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","properties":{"unread":{"type":"integer","minimum":0}},"required":["unread"]}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /notifications/read-all:
+    post:
+      operationId: markAllScopedNotificationsRead
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      responses:
+        '200':
+          description: Number of notices marked as read for the active actor
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["marked"],"properties":{"marked":{"type":"integer","minimum":0}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
   /notifications/{id}:
     get:
       operationId: resolvePersonalNotice

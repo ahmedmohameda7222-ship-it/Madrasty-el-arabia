@@ -135,7 +135,10 @@ internal fun NotificationCenter(
         FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
             FilterChip(!onlyUnread,onClick={onlyUnread=false},label={Text(stringResource(R.string.notices_all))})
             FilterChip(onlyUnread,onClick={onlyUnread=true},label={Text(stringResource(R.string.notices_unread))})
-            TextButton(onClick={refresh++}){Text(stringResource(R.string.broadcast_refresh))}
+            Submit(true,R.string.comms_mark_all,success=null){
+                model.noticeObject("/notifications/read-all",method="POST")
+                refresh++
+            }
         }
         academicPages(model,"/notifications?limit=25&locale=$language&unread=$onlyUnread",refresh+model.attendanceNetworkRevision){rows->
             val visible=rows.filter{!onlyUnread||it.getString("id") !in read}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useEffect,useState} from "react";
 import {
-  noticeCount,noticeDestination,noticeReadReceipt,noticeRecord,preferencesSchema,type Locale,
+  noticeCount,noticeDestination,noticeReadReceipt,noticeReadAllReceipt,noticeRecord,preferencesSchema,type Locale,
 } from "@madrasty/contracts";
 import {ApiResponseError,requestApi} from "@/api/client";
 import {webHeaders} from "@/api/client-headers";
@@ -19,14 +19,14 @@ import {
 } from "./push-device";
 
 const copy={
-  ar:{title:"الإشعارات",unread:"غير المقروءة",all:"كل الإشعارات",mark:"تحديد كمقروء",open:"افتح الإشعار",updated:"اتحدّث",back:"رجوع للإشعارات",
+  ar:{title:"الإشعارات",unread:"غير المقروءة",all:"كل الإشعارات",mark:"تحديد كمقروء",markAll:"تحديد الكل كمقروء",open:"افتح الإشعار",updated:"اتحدّث",back:"رجوع للإشعارات",
     refresh:"تحديث",unavailable:"التفاصيل مش متاحة لحسابك حاليًا.",preferences:"تفضيلات الحساب",correspondence:"لغة المراسلات",
     ar:"العربية",de:"الألمانية",device:"إشعارات الجهاز",enable:"تفعيل على الجهاز ده",disable:"إيقاف على الجهاز ده",enabled:"إشعارات الجهاز مفعّلة.",
     denied:"السماح بإشعارات الجهاز موقوف في إعداداته.",pushUnavailable:"إشعارات الجهاز غير متاحة. الإشعارات داخل التطبيق والبريد شغّالين حسب إعداداتك.",
     install:"على iPhone افتح التطبيق من أيقونته على الشاشة الرئيسية عشان تفعّل إشعارات الجهاز.",
     thread:"المحادثة",broadcast:"الإعلان",child:"ملف الطالب",attendance:"سجل الحضور",exam:"الامتحان",evaluation:"التقييم",
     homework:"الواجب",activity:"النشاط",invoice:"الفاتورة",receipt:"الإيصال",fee_stop:"طلب عدم الاستمرار"},
-  de:{title:"Benachrichtigungen",unread:"Ungelesen",all:"Alle Benachrichtigungen",mark:"Als gelesen markieren",open:"Benachrichtigung öffnen",
+  de:{title:"Benachrichtigungen",unread:"Ungelesen",all:"Alle Benachrichtigungen",mark:"Als gelesen markieren",markAll:"Alle als gelesen markieren",open:"Benachrichtigung öffnen",
     updated:"Aktualisiert",back:"Zurück zu den Benachrichtigungen",refresh:"Aktualisieren",unavailable:"Die Details sind für dein Konto derzeit nicht verfügbar.",
     preferences:"Kontoeinstellungen",correspondence:"Sprache für Mitteilungen",ar:"Arabisch",de:"Deutsch",device:"Gerätebenachrichtigungen",
     enable:"Auf diesem Gerät aktivieren",disable:"Auf diesem Gerät deaktivieren",enabled:"Gerätebenachrichtigungen sind aktiviert.",
@@ -109,6 +109,15 @@ export function NotificationCenter({locale,selected}:{locale:Locale;selected?:st
     }catch(problem){setError(timetableError(locale,problem));}
     finally{setBusy(undefined);}
   }
+  async function markAll(){
+    if(busy)return;
+    setBusy("all");setError("");
+    try{
+      await requestApi("/notifications/read-all",noticeReadAllReceipt,{method:"POST",headers:webHeaders(persona)});
+      wake();window.dispatchEvent(new Event(changed));
+    }catch(problem){setError(timetableError(locale,problem));}
+    finally{setBusy(undefined);}
+  }
   return <section className="auth-card auth-form">
     <h1>{labels.title}</h1>
     {selected?<NoticeDetail key={selected} locale={locale} selected={selected}/>:
@@ -116,7 +125,7 @@ export function NotificationCenter({locale,selected}:{locale:Locale;selected?:st
         <div className="header-actions">
           <button type="button" className="plain-button" aria-pressed={!onlyUnread} onClick={()=>setOnlyUnread(false)}>{labels.all}</button>
           <button type="button" className="plain-button" aria-pressed={onlyUnread} onClick={()=>setOnlyUnread(true)}>{labels.unread}</button>
-          <button type="button" className="plain-button" onClick={wake}>{labels.refresh}</button>
+          <button type="button" className="plain-button" disabled={!!busy} onClick={()=>void markAll()}>{labels.markAll}</button>
         </div>
         {error&&<p role="alert">{error}</p>}
         <AcademicPageItems locale={locale} page={rows}>{(entries)=>{
