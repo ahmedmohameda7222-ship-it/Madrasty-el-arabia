@@ -6,7 +6,7 @@ import {fixtureApi} from "../support/api";
 import {schoolClock as clock} from "../fixtures/clock";
 import {localOrigin} from "../support/target";
 
-test("admin dashboard is compact, localized, theme-safe and uses real notebook and data",async({page,context})=>{
+test("admin dashboard is compact, localized, theme-safe and uses real notebook and data",async({context})=>{
   test.setTimeout(180_000);
   const school=schoolFixtures();
   try{
@@ -28,10 +28,15 @@ test("admin dashboard is compact, localized, theme-safe and uses real notebook a
     expect(dashboard.overview.attendance.present).toBeGreaterThan(0);
     await context.addCookies([{name:"madrasty-session",value:admin,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     mkdirSync("qa-artifacts/admin-start",{recursive:true});
-    for(const locale of ["de","ar"] as const)for(const width of [320,390])for(const theme of ["light","dark"] as const){
+    for(const locale of ["de","ar"] as const){
+      const page=await context.newPage();
+      try{
+      await page.setViewportSize({width:320,height:844});
+      await page.goto(`/${locale}/school/home`,{waitUntil:"domcontentloaded"});
+      await expect(page.locator("html")).toHaveAttribute("lang",locale);
+      for(const width of [320,390])for(const theme of ["light","dark"] as const){
       await page.setViewportSize({width,height:844});
       await page.emulateMedia({colorScheme:theme});
-      await page.goto(`/${locale}/school/home`);
       const main=page.locator(".school-content");
       await expect(main.locator(".admin-start-hero .role-hero img")).toHaveAttribute("src","/notebook-admin.svg",{timeout:30000});
       await expect(main.locator(".admin-start-metrics > div")).toHaveCount(3);
@@ -46,6 +51,8 @@ test("admin dashboard is compact, localized, theme-safe and uses real notebook a
       await page.screenshot({path:`qa-artifacts/admin-start/${locale}-${width}-${theme}-top.png`,animations:"disabled"});
       await main.evaluate(el=>el.scrollTop=el.scrollHeight);
       await page.screenshot({path:`qa-artifacts/admin-start/${locale}-${width}-${theme}-bottom.png`,animations:"disabled"});
+      }
+      }finally{await page.close();}
     }
   }finally{await school.close();}
 });
