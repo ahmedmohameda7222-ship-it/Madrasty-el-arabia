@@ -3110,7 +3110,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: {"type":"object","required":["target"],"properties":{"target":{"oneOf":[{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"person"},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"office"},"id":{"type":"string","enum":["student_affairs","accounts"]}}}]},"context":{"type":"object","required":["kind","id"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"}}}}}
+            schema: {"type":"object","required":["target"],"properties":{"target":{"oneOf":[{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"person"},"id":{"type":"string","format":"uuid"}}},{"type":"object","required":["kind","id"],"properties":{"kind":{"const":"office"},"id":{"type":"string","enum":["student_affairs","accounts"]}}}]},"context":{"type":"object","required":["kind","id"],"properties":{"kind":{"type":"string","enum":["homework","invoice","attendance"]},"id":{"type":"string","format":"uuid"}}},"firstMessage":{"type":"object","required":["clientMessageId","body"],"properties":{"clientMessageId":{"type":"string","format":"uuid"},"body":{"type":"string","minLength":1,"maxLength":4000}},"description":"Optional atomic first text message for an ordinary person-to-person conversation; not allowed with context or office targets."}}}
       responses:
         '200':
           description: Scoped conversation or delegated office case
@@ -4958,7 +4958,8 @@ components:
         displayName: { type: [string, 'null'] }
         titleAr: { type: string }
         titleDe: { type: string }
-        role: { type: string, enum: [teacher, principal, deputy, office, guardian] }
+        role: { type: string, enum: [teacher, admin, principal, deputy, office, guardian] }
+        directThreadId: { type: [string, 'null'], format: uuid }
         workEmail: { type: [string, 'null'], format: email }
         workPhone: { type: [string, 'null'] }
         contexts:

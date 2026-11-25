@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -58,7 +60,8 @@ fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, clos
     var refresh by remember { mutableStateOf(0) }
     val language = LocalConfiguration.current.locales[0].language
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    BackHandler(onBack = close)
+    var draft by remember { mutableStateOf<JSONObject?>(null) }
+    BackHandler { if(draft!=null) draft=null else close() }
     DisposableEffect(lifecycle) {
         val observe = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) refresh++ }
         lifecycle.addObserver(observe)
@@ -69,19 +72,24 @@ fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, clos
         Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = close) { Text(stringResource(R.string.back)) }
+        TextButton(onClick = { if(draft!=null) draft=null else close() }) { Text(stringResource(R.string.back)) }
+        val current=draft
+        if(current!=null) {
+            FirstContactMessage(model,current,language,openThread)
+        } else {
         Text(stringResource(R.string.comms_new_message), style = MaterialTheme.typography.headlineMedium)
         Field(R.string.directory_query, search) { search = it.take(120) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(view == "mine", onClick = { view = "mine" }, label = { Text(stringResource(R.string.comms_my_contacts)) })
             FilterChip(view == "all", onClick = { view = "all" }, label = { Text(stringResource(R.string.comms_all_people)) })
         }
-        DirectoryResults(model, query, view, refresh, language, openThread)
+        DirectoryResults(model, query, view, refresh, language, openThread) { draft=it }
+        }
     }
 }
 
 @Composable
-private fun DirectoryResults(model: IdentityViewModel, query: String, view: String, refresh: Int, language: String, open: (String) -> Unit) {
+private fun DirectoryResults(model: IdentityViewModel, query: String, view: String, refresh: Int, language: String, open: (String) -> Unit, compose: (JSONObject) -> Unit) {
     var retry by remember { mutableStateOf(0) }
     var state by remember(query,view,refresh) { mutableStateOf<AsyncState<WirePage<List<JSONObject>>>>(AsyncState.InitialLoading()) }
     var opening by remember { mutableStateOf(false) }
@@ -110,8 +118,9 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
                         failed = false
                         scope.launch {
                             try {
-                                val result = model.schoolCommand(attempts,"/threads","POST",JSONObject().put("target",row.getJSONObject("target")))
-                                open(result.getString("threadId"))
+                                val detail=decodeData(model.schoolRequest("/directory/${row.getString("id")}")) { it as JSONObject }.data
+                                val existing=detail.optional("directThreadId")
+                                if(existing!=null) open(existing) else compose(detail)
                             } catch (cancel: CancellationException) { throw cancel }
                             catch (_: Exception) { failed = true }
                             finally { opening = false }
@@ -140,6 +149,35 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
             }
         }
     }
+}
+@Composable
+private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit) {
+    var body by remember(row.getString("id")) { mutableStateOf("") }
+    var firstId by remember(row.getString("id")) { mutableStateOf(java.util.UUID.randomUUID().toString()) }
+    var sending by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    val scope=rememberCoroutineScope()
+    val attempts=remember { mutableMapOf<String,Pair<String,String>>() }
+    fun send(media:Boolean) {
+        if(sending||(!media&&body.isBlank())) return
+        sending=true;failed=false
+        scope.launch {
+            try {
+                val payload=JSONObject().put("target",row.getJSONObject("target"))
+                if(!media)payload.put("firstMessage",JSONObject().put("clientMessageId",firstId).put("body",body.trim()))
+                open(model.schoolCommand(attempts,"/threads","POST",payload).getString("threadId"))
+            } catch(cancel:CancellationException){throw cancel}
+              catch(_:Exception){failed=true}
+              finally{sending=false}
+        }
+    }
+    Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.headlineSmall)
+    Text(isolate(title(row,language)))
+    OutlinedTextField(value=body,onValueChange={body=it.take(4000);firstId=java.util.UUID.randomUUID().toString()},
+        enabled=!sending,modifier=Modifier.fillMaxWidth(),label={Text(stringResource(R.string.comms_first_message))})
+    Button(onClick={send(false)},enabled=!sending&&body.isNotBlank()){Text(stringResource(R.string.comms_first_send))}
+    if(body.isBlank())TextButton(onClick={send(true)},enabled=!sending){Text(stringResource(R.string.comms_first_media))}
+    if(failed)Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
 }
 private suspend fun directoryPage(model: IdentityViewModel, query: String, view: String, cursor: String?) =
     decodeData(model.schoolRequest("/directory?limit=30&view=$view&query=${Uri.encode(query)}" +

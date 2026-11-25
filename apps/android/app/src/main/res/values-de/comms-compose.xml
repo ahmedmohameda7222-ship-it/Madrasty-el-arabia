@@ -1,0 +1,5 @@
+<resources>
+    <string name="comms_first_message">Nachricht schreiben</string>
+    <string name="comms_first_send">Senden</string>
+    <string name="comms_first_media">Anhang hinzufügen</string>
+</resources>

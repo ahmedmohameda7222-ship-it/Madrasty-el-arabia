@@ -33,6 +33,7 @@ export const directoryEntrySchema = z.object({
   workPhone: z.string().nullable(),
   contexts: z.object({ id:z.uuid(),nameAr:z.string(),nameDe:z.string() }).array(),
   target: directoryTargetSchema,
+  directThreadId: z.uuid().nullable().optional(),
 });
 export type DirectoryEntry = z.infer<typeof directoryEntrySchema>;
 export type DirectoryTarget = z.infer<typeof directoryTargetSchema>;

@@ -6,7 +6,7 @@ import {
 import { z } from "zod";
 import { resolveDirectoryTarget } from "@/server/identity/directory";
 import { commitCommand,hashCommand } from "@/server/db/commands";
-import { appendAudit } from "@/server/db/outbox";
+import { appendAudit,appendEvent } from "@/server/db/outbox";
 import { withActor,type ActorContext,type Transaction } from "@/server/db/scoped";
 import { ApiError } from "@/server/http";
 
@@ -42,7 +42,17 @@ export function startThread(actor:ActorContext,key:string|null,input:z.infer<typ
     mutate:async(tx)=>{
       const [row]=await tx`select thread_id as "threadId",kind,can_reply as "canReply",case_id as "caseId"
         from app.open_thread(${input.target.kind},${input.target.id},${context?.kind??null}::text,${context?.id??null}::uuid)`;
-      return threadReceipt.parse({...row,caseId:row.caseId??undefined});
+      const receipt=threadReceipt.parse({...row,caseId:row.caseId??undefined});
+      if(input.firstMessage){
+        const thread=receipt.threadId,first=input.firstMessage,requestHash=hashCommand({thread,...first});
+        const [message]=await tx<{id:string;sequence:string;inserted:boolean}[]>`
+          select message_id as id,sequence::text as sequence,inserted
+          from app.post_thread_message(${thread},${first.clientMessageId},${requestHash},${first.body}::text,
+            ARRAY[]::uuid[],null::uuid)`;
+        if(message.inserted)await appendEvent(tx,{type:"chat.message_created",aggregateId:thread,actorId:actor.accountId,
+          payload:{threadId:thread,messageId:message.id,sequence:message.sequence,source:"human"}});
+      }
+      return receipt;
     },
   });
 }

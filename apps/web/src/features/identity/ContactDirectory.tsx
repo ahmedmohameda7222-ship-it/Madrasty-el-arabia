@@ -15,11 +15,11 @@ const words = {
   ar: { title:"رسالة جديدة", query:"ابحث عن شخص", mine:"جهات اتصالي", all:"كل الأشخاص", teacher:"المدرسون",
     ownTeachers:"مدرسو أبنائي", admin:"إدارة المدرسة", guardian:"أولياء الأمور", more:"عرض المزيد",
     empty:"لا توجد جهات اتصال مطابقة.", back:"رجوع للأشخاص", unavailable:"جهة الاتصال غير متاحة.",
-    mail:"بريد العمل", call:"هاتف العمل", start:"اكتب رسالة" },
+    mail:"بريد العمل", call:"هاتف العمل", start:"اكتب رسالة", send:"إرسال", media:"إضافة مرفق" },
   de: { title:"Neue Nachricht", query:"Person suchen", mine:"Meine Kontakte", all:"Alle Personen", teacher:"Lehrkräfte",
     ownTeachers:"Lehrkräfte meiner Kinder", admin:"Schulverwaltung", guardian:"Eltern", more:"Weitere anzeigen",
     empty:"Keine passenden Kontakte.", back:"Zurück zu Personen", unavailable:"Dieser Kontakt ist nicht verfügbar.",
-    mail:"Dienstliche E-Mail", call:"Diensttelefon", start:"Nachricht schreiben" },
+    mail:"Dienstliche E-Mail", call:"Diensttelefon", start:"Nachricht schreiben", send:"Senden", media:"Anhang hinzufügen" },
 } as const;
 type Mode = "mine" | "all";
 type Page = { data: DirectoryEntry[]; meta?: { nextCursor?: string } };
@@ -49,6 +49,7 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
   const [gettingMore,setGettingMore]=useState(false),[moreError,setMoreError]=useState("");
   const [opening,setOpening]=useState<string>(),[openError,setOpenError]=useState("");
   const openingRef=useRef(false);
+  const [draft,setDraft]=useState<DirectoryEntry>(),[body,setBody]=useState(""),[firstId,setFirstId]=useState("");
   useEffect(()=>{
     const timer=window.setTimeout(()=>setTerm(query.trim()),250);
     return ()=>window.clearTimeout(timer);
@@ -97,7 +98,18 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     if(openingRef.current||row.target.kind!=="person")return;
     openingRef.current=true;setOpening(row.id);setOpenError("");
     try{
-      const value=await command("/threads","POST",{target:row.target},threadReceipt);
+      const detail=(await requestApi(`/directory/${row.id}`,directoryEntrySchema,{headers:{"X-School-Persona":actor.persona}})).data;
+      if(detail.directThreadId)router.push(`/${locale}/school/messages?thread=${detail.directThreadId}`);
+      else {setDraft(detail);setBody("");setFirstId(crypto.randomUUID());}
+    }catch(error){setOpenError(message(locale,error));}
+    finally{openingRef.current=false;setOpening(undefined);}
+  }
+  async function sendFirst(media=false){
+    if(!draft||openingRef.current||(!media&&!body.trim()))return;
+    openingRef.current=true;setOpening(draft.id);setOpenError("");
+    try{
+      const value=await command("/threads","POST",{target:draft.target,
+        ...(media?{}:{firstMessage:{clientMessageId:firstId,body:body.trim()}})},threadReceipt);
       router.push(`/${locale}/school/messages?thread=${value.threadId}`);
     }catch(error){setOpenError(message(locale,error));}
     finally{openingRef.current=false;setOpening(undefined);}
@@ -134,6 +146,15 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     {rows.meta?.nextCursor&&<button className="plain-button" type="button" onClick={()=>void more()} disabled={gettingMore}>{text.more}</button>}
     {moreError&&<p role="alert">{moreError}</p>}
     {openError&&<p role="alert">{openError}</p>}
+  </section>;
+  if(draft)return <section className="comms-directory">
+    <button className="plain-button" type="button" disabled={!!opening} onClick={()=>{setDraft(undefined);setOpenError("");}}>{text.back}</button>
+    <h1><bdi>{draft.displayName??label(draft,locale)}</bdi></h1><p>{label(draft,locale)}</p>
+    <form className="comms-composer" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
+      <textarea aria-label={text.start} placeholder={text.start} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());}}/>
+      <button className="plain-button" type="submit" disabled={!!opening||!body.trim()}>{text.send}</button>
+      {!body.trim()&&<button className="plain-button" type="button" disabled={!!opening} onClick={()=>void sendFirst(true)}>{text.media}</button>}
+    </form>{openError&&<p role="alert">{openError}</p>}
   </section>;
   return <section className="comms-directory">
     <h1>{text.title}</h1>

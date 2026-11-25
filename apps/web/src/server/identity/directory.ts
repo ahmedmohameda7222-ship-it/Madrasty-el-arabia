@@ -39,7 +39,7 @@ export function listDirectory(actor: ActorContext, input: z.infer<typeof directo
 
 export function readDirectoryEntry(actor: ActorContext, id: string) {
   return withActor(actor, async (tx) => {
-    const [row] = await tx`select ${fields(tx)} from app.directory_contacts() where id = ${id}`;
+    const [row] = await tx`select ${fields(tx)}, app.direct_thread_for_contact(id) as "directThreadId" from app.directory_contacts() where id = ${id}`;
     if (!row) throw new ApiError("not_found");
     return directoryEntrySchema.parse(row);
   });
