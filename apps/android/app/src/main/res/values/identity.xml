@@ -24,4 +24,9 @@
     <string name="comms_administration">إدارة المدرسة</string>
     <string name="comms_parents">أولياء الأمور</string>
     <string name="comms_open_failed">لم يتم فتح المحادثة. حاول مرة أخرى.</string>
+    <string name="comms_chats">المحادثات</string>
+    <string name="comms_feed">المستجدات</string>
+    <string name="comms_calendar">التقويم</string>
+    <string name="comms_unread">غير مقروءة</string>
+    <string name="comms_manage">نشر وإدارة</string>
 </resources>

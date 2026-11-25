@@ -82,7 +82,7 @@ private class PublicationFeedState(today:LocalDate){
 }
 
 @Composable
-internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false){
+internal fun SchoolPublicationScreen(model:IdentityViewModel,section:PublicationSection,initial:String?,close:()->Unit,initialCreate:Boolean=false,embedded:Boolean=false){
     val language=LocalContext.current.resources.configuration.locales[0].language.let{if(it=="de")"de" else "ar"}
     val locale=Locale.forLanguageTag(language)
     var selected by remember(initial){mutableStateOf(initial)}
@@ -106,10 +106,11 @@ internal fun SchoolPublicationScreen(model:IdentityViewModel,section:Publication
         else close()
     }
     BackHandler(onBack=::back)
-    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
+    val frame=if(embedded)Modifier.fillMaxWidth() else Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp)
+    Column(frame,
         verticalArrangement=Arrangement.spacedBy(8.dp)){
-        TextButton(onClick=::back){Text(stringResource(R.string.back))}
-        Text(stringResource(section.heading),style=MaterialTheme.typography.headlineMedium)
+        if(!embedded||selected!=null||creating||editing)TextButton(onClick=::back){Text(stringResource(R.string.back))}
+        if(!embedded)Text(stringResource(section.heading),style=MaterialTheme.typography.headlineMedium)
         AsyncSurface(calendar){options->
             val filter=remember(section){PublicationFeedState(options.date)}
             val id=selected

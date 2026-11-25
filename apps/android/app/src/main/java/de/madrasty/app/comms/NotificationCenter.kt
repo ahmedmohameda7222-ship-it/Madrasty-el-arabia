@@ -178,6 +178,9 @@ private fun NoticeDetail(model:IdentityViewModel,id:String,open:(JSONObject)->Bo
         val targets=item.optJSONArray("targets")
         if(item.getString("state")!="open"||targets==null||targets.length()==0||unavailable){
             Text(stringResource(R.string.notices_unavailable))
+        }else if(targets.length()==1){
+            val target=targets.getJSONObject(0)
+            LaunchedEffect(id){if(!open(target))unavailable=true}
         }else for(index in 0 until targets.length()){
             val target=targets.getJSONObject(index)
             val label=targetLabel(target.getString("kind"))

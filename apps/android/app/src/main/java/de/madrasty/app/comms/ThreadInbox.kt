@@ -4,6 +4,12 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -48,37 +54,31 @@ private val caseLabels=mapOf(
     "in_progress" to R.string.conversation_case_in_progress,
     "closed" to R.string.conversation_case_closed,
 )
-private val inboxFilters=listOf(
-    "" to R.string.directory_all,"kind=direct" to R.string.conversation_direct,"kind=office" to R.string.conversation_office,
-    "inbox=student_affairs" to R.string.conversation_student_affairs,"inbox=accounts" to R.string.conversation_accounts,
-)
-
 @Composable
 internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String)->Unit){
     val version=threadRefreshVersion()
-    var filter by remember{mutableStateOf("")}
+    var filter by remember{mutableStateOf("all")}
     var search by remember{mutableStateOf("")}
     var queryTerm by remember{mutableStateOf("")}
-    var archived by remember{mutableStateOf(false)}
-    TextButton(onClick=directory){Text(stringResource(R.string.directory_title))}
-    FilterChip(archived,onClick={archived=!archived},label={Text(stringResource(R.string.chat_archive_filter))})
+    LaunchedEffect(search){delay(250);queryTerm=search.trim()}
+    Button(onClick=directory,modifier=Modifier.fillMaxWidth()){Text(stringResource(R.string.comms_new_message))}
     Field(R.string.chat_search_inbox,search){search=it.take(120)}
-    TextButton(onClick={queryTerm=search.trim()}){Text(stringResource(R.string.staff_search))}
-    for((key,label) in inboxFilters){
-        FilterChip(filter==key,onClick={filter=key},label={Text(stringResource(label))})
+    FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        FilterChip(filter=="all",onClick={filter="all"},label={Text(stringResource(R.string.directory_all))})
+        FilterChip(filter=="unread",onClick={filter="unread"},label={Text(stringResource(R.string.comms_unread))})
+        FilterChip(filter=="archive",onClick={filter="archive"},label={Text(stringResource(R.string.chat_archive_filter))})
     }
-    val query=filter.takeIf(String::isNotEmpty)?.let{"&$it"}.orEmpty()
     val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
-    academicPages(model,"/threads?limit=30$query&archived=$archived$term",version+model.attendanceNetworkRevision){threads->
+    academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${filter=="archive"}&unread=${filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
         for(thread in threads){
-            TextButton(onClick={open(thread.getString("id"))}){
-                Column {
-                    Text(threadTitle(thread))
-                    thread.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
-                    thread.string("latestPreview")?.let{Text(isolate(it))}
-                    if(thread.getInt("unread")>0)Text(stringResource(R.string.chat_unread)+" · "+thread.getInt("unread"))
+            TextButton(onClick={open(thread.getString("id"))},modifier=Modifier.fillMaxWidth()){
+                Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)){
+                    Text(threadTitle(thread),style=MaterialTheme.typography.titleMedium)
+                    thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2)}
+                    if(thread.getInt("unread")>0)Text(stringResource(R.string.chat_unread)+" · "+thread.getInt("unread"),color=MaterialTheme.colorScheme.primary)
                 }
             }
+            HorizontalDivider()
         }
     }
 }
@@ -86,6 +86,7 @@ internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String
 @Composable
 internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(ReportTarget)->Unit,close:()->Unit){
     var changed by remember{mutableStateOf(0)}
+    var showDetails by remember(id){mutableStateOf(false)}
     val revision=threadRefreshVersion()+changed
     val thread=academicRead("/threads/$id",revision){model.timetableObject(it)}
     BackHandler(onBack=close)
@@ -97,10 +98,15 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))
             }
-            value.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
-            ReferencedRecords(value,openReference)
             val officeCase=value.string("caseId")
-            if(value.optBoolean("canManageCase")&&officeCase!=null)OfficeCaseEditor(model,officeCase,revision){changed++}
+            if(value.getJSONArray("references").length()>0||officeCase!=null){
+                TextButton(onClick={showDetails=!showDetails}){Text(stringResource(R.string.conversation_references))}
+                if(showDetails){
+                    value.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
+                    ReferencedRecords(value,openReference)
+                    if(value.optBoolean("canManageCase")&&officeCase!=null)OfficeCaseEditor(model,officeCase,revision){changed++}
+                }
+            }
             Conversation(model,value){changed++}
             TextButton(onClick={changed++}){Text(stringResource(R.string.curriculum_refresh))}
         }

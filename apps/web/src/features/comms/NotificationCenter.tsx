@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {useRouter} from "next/navigation";
 import {useEffect,useState} from "react";
 import {
   noticeCount,noticeDestination,noticeReadReceipt,noticeRecord,preferencesSchema,type Locale,
@@ -139,7 +140,7 @@ export function NotificationCenter({locale,selected}:{locale:Locale;selected?:st
 }
 
 function NoticeDetail({locale,selected}:{locale:Locale;selected:string}){
-  const {persona}=useAccountScope(),labels=copy[locale];
+  const {persona}=useAccountScope(),labels=copy[locale],router=useRouter();
   const [value,setValue]=useState<ReturnType<typeof noticeDestination.parse>>(),[error,setError]=useState("");
   const [retry,setRetry]=useState(0);
   useEffect(()=>{
@@ -152,7 +153,12 @@ function NoticeDetail({locale,selected}:{locale:Locale;selected:string}){
         await requestApi(route,noticeReadReceipt,{
           method:"PATCH",headers:webHeaders(persona),signal:abort.signal,body:JSON.stringify({read:true}),
         });
+        if(abort.signal.aborted)return;
         window.dispatchEvent(new Event(changed));
+        if(data.state==="open"&&data.targets.length===1){
+          const href=schoolResourceDestination(locale,data.targets[0]!);
+          if(href)router.replace(href);
+        }
       }).catch((problem)=>{
         if(!abort.signal.aborted){
           if(problem instanceof ApiResponseError&&[401,403,404].includes(problem.status)){setValue({state:"unavailable"});return;}
@@ -160,7 +166,7 @@ function NoticeDetail({locale,selected}:{locale:Locale;selected:string}){
         }
       });
     return ()=>abort.abort();
-  },[selected,persona,retry,locale]);
+  },[selected,persona,retry,locale,router]);
   const links=value?.state==="open"?value.targets.map((item)=>({item,href:schoolResourceDestination(locale,item)})):[];
   return <div className="auth-form">
     <Link className="plain-button" href={noticeURL(locale)}>{labels.back}</Link>
