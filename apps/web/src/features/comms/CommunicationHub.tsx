@@ -25,7 +25,7 @@ function CommunicationFeed({locale}:{locale:Locale}){
   const write=options.value?.data?.schoolWide||options.value?.data?.classes.some(item=>item.canWrite);
   useEffect(()=>{const wake=()=>{if(!document.hidden&&navigator.onLine)setRefresh(n=>n+1);};window.addEventListener("online",wake);window.addEventListener("focus",wake);document.addEventListener("visibilitychange",wake);return()=>{window.removeEventListener("online",wake);window.removeEventListener("focus",wake);document.removeEventListener("visibilitychange",wake);};},[]);
   return <section className="auth-form">
-    <div className="comms-segments" role="group" aria-label={ar?"تصفية المستجدات":"Aktuelles filtern"}>
+    <div className="comms-segments comms-feed-filters" role="group" aria-label={ar?"تصفية المستجدات":"Aktuelles filtern"}>
       {(["all","announcement","news"] as const).map(key=><button className="plain-button" key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)}>{key==="all"?(ar?"الكل":"Alle"):key==="news"?(ar?"الأخبار":"Neuigkeiten"):(ar?"الإعلانات":"Mitteilungen")}</button>)}
     </div>
     <div className="comms-feed-toolbar"><h2>{ar?"المستجدات":"Aktuelles"}</h2>

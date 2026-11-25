@@ -53,13 +53,13 @@ export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string})
     window.addEventListener("focus",wake);window.addEventListener("online",wake);
     return ()=>{window.removeEventListener("focus",wake);window.removeEventListener("online",wake);};
   },[]);
-  return <section className="auth-card auth-form">
+  return <section className="auth-card auth-form comms-broadcast-screen">
     <h1>{labels.title}</h1>
     {selected?<><Link className="plain-button" href={base}>{labels.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(item)=><BroadcastText locale={locale} title={item.title} body={item.body}
         date={date(item.publishedAt)}/>}</TimetableRead>
     </>:<>
-      <div className="header-actions">
+      <div className="comms-broadcast-navigation">
         <button type="button" className="plain-button" aria-pressed={mode==="inbox"} onClick={()=>setMode("inbox")}>{labels.inbox}</button>
         {allowed&&<>
           <button type="button" className="plain-button" aria-pressed={mode==="compose"} onClick={()=>setMode("compose")}>{labels.compose}</button>
