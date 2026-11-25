@@ -263,3 +263,41 @@ test("message retry preserves the client identifier and a remote reply arrives w
     await expect(page.locator(".comms-timeline .comms-message[data-own=false]").filter({hasText:reply})).toBeVisible({timeout:20000});
   }finally{await school.close();}
 });
+
+
+for(const scenario of [
+  {actor:"admin",persona:"admin",locale:"de",width:390},
+  {actor:"teacher",persona:"teacher",locale:"ar",width:320},
+  {actor:"guardian-ar",persona:"guardian",locale:"ar",width:390},
+  {actor:"admin",persona:"admin",locale:"ar",width:320},
+  {actor:"teacher",persona:"teacher",locale:"de",width:390},
+  {actor:"guardian-de",persona:"guardian",locale:"de",width:320},
+] as const){
+  test("communication mobile sections "+scenario.persona+" "+scenario.locale,async({page,context})=>{
+    test.setTimeout(90000);
+    const school=schoolFixtures();
+    try{
+      await school.seed();
+      const admin=await school.bearer("admin","admin");
+      await setUpCalendar(school,admin);
+      const token=await school.bearer(scenario.actor,scenario.persona);
+      await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+      await page.setViewportSize({width:scenario.width,height:844});
+      const ar=scenario.locale==="ar";
+      for(const section of ["chat","feed","calendar"] as const){
+        const endpoint=section==="chat"?"/api/v1/threads?":section==="feed"?"/api/v1/comms/feed?":"/api/v1/comms/calendar?";
+        const read=page.waitForResponse(r=>r.url().includes(endpoint)&&r.request().method()==="GET",{timeout:25000});
+        await page.goto("/"+scenario.locale+"/school/messages?section="+section);
+        expect((await read).ok(),section+" data request must succeed").toBe(true);
+        const content=page.locator(".comms-hub");
+        const result=section==="chat"?".comms-thread-row, [data-async-state=empty]":section==="feed"?".comms-feed-card, [data-async-state=empty]":".school-month-grid";
+        await expect(content.locator(result).first()).toBeVisible({timeout:25000});
+        await expect(content.locator(".comms-hub-tabs a[aria-current=page]")).toHaveText(section==="chat"?(ar?"المحادثات":"Chats"):section==="feed"?(ar?"المستجدات":"Aktuelles"):(ar?"التقويم":"Kalender"));
+        if(scenario.persona==="guardian"&&section==="feed")await expect(content.locator(".comms-publish-menu")).toHaveCount(0);
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+        mkdirSync("qa-artifacts/ui-after",{recursive:true});
+        await page.screenshot({path:"qa-artifacts/ui-after/comms-"+scenario.persona+"-"+scenario.locale+"-"+scenario.width+"-"+section+".png",animations:"disabled"});
+      }
+    }finally{await school.close();}
+  });
+}

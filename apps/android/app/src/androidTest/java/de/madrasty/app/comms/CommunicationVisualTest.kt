@@ -87,28 +87,29 @@ class CommunicationVisualTest {
         instrumentation.runOnMainSync{
             model=ViewModelProvider(store,ViewModelProvider.AndroidViewModelFactory.getInstance(app))[IdentityViewModel::class.java]
         }
+        lateinit var actions:List<String>
+        lateinit var attachLabel:String
         try{
             compose.setContent{
+                // DropdownMenu is a separate Android window. Exercise it with the
+                // actual Activity context, not a configuration-only Context.
                 val context=LocalContext.current
-                // Preserve the real test Activity registry before overriding its Context for localization.
-                val registryOwner=requireNotNull(LocalActivityResultRegistryOwner.current)
-                val localized=remember(context){context.createConfigurationContext(Configuration(context.resources.configuration).apply{setLocale(Locale.GERMAN)})}
-                CompositionLocalProvider(LocalContext provides localized,LocalConfiguration provides localized.resources.configuration,
-                    LocalActivityResultRegistryOwner provides registryOwner,LocalLayoutDirection provides LayoutDirection.Ltr){
-                    SchoolTheme(darkMode=false){
-                        Surface{
-                            Column(Modifier.fillMaxSize().padding(16.dp)){
-                                MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={})
-                            }
+                actions=listOf(R.string.chat_media_gallery,R.string.chat_media_camera,R.string.chat_media_record).map{context.getString(it)}
+                attachLabel=context.getString(R.string.comms_first_media)
+                SchoolTheme(darkMode=false){
+                    Surface{
+                        Column(Modifier.fillMaxSize().padding(16.dp)){
+                            MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={})
                         }
                     }
                 }
             }
-            val actions=listOf("Foto auswählen","Foto aufnehmen","Audio aufnehmen")
-            val attach=compose.onNodeWithContentDescription("Anhang hinzufügen")
+            compose.waitForIdle()
+            val attach=compose.onNodeWithContentDescription(attachLabel)
             attach.assertIsDisplayed()
             actions.forEach{compose.onNodeWithText(it,substring=false).assertDoesNotExist()}
             attach.performClick()
+            compose.waitUntil(timeoutMillis=5000){actions.all{compose.onAllNodesWithText(it,substring=false).fetchSemanticsNodes().isNotEmpty()}}
             actions.forEach{compose.onNodeWithText(it,substring=false).assertIsDisplayed()}
         }finally{instrumentation.runOnMainSync{store.clear()}}
     }
@@ -117,38 +118,47 @@ class CommunicationVisualTest {
         val ar=language=="ar"
         val outgoing=if(ar)"شكرًا، وصلني الإعلان الجديد." else "Vielen Dank für die Nachricht."
         val incoming=if(ar)"مرحبًا، موعد اللقاء يوم السبت الساعة العاشرة." else "Guten Tag, wir treffen uns am Samstag um 10 Uhr."
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val app=instrumentation.targetContext.applicationContext as Application
+        val store=ViewModelStore()
+        lateinit var model:IdentityViewModel
+        instrumentation.runOnMainSync{
+            model=ViewModelProvider(store,ViewModelProvider.AndroidViewModelFactory.getInstance(app))[IdentityViewModel::class.java]
+        }
+        val thread=JSONObject().put("id","qa-thread").put("canReply",true)
+        fun message(id:String,own:Boolean,body:String)=JSONObject()
+            .put("id",id).put("own",own).put("body",body)
+            .put("source","human").put("createdAt","2026-01-01T10:00:00Z").put("replyable",true)
+            .put("authorName",if(ar)"مدرس الفصل" else "Lehrkraft")
+            .put("attachments",JSONArray())
+            .put("reactions",if(own)JSONArray().put(JSONObject().put("emoji","👍").put("count",1).put("mine",false)) else JSONArray())
+        try{
         compose.setContent {
             val context=LocalContext.current
+            val registryOwner=requireNotNull(LocalActivityResultRegistryOwner.current)
             val localized=remember(context,language){context.createConfigurationContext(Configuration(context.resources.configuration).apply{setLocale(Locale.forLanguageTag(language))})}
             CompositionLocalProvider(LocalContext provides localized,LocalConfiguration provides localized.resources.configuration,
-                LocalLayoutDirection provides if(ar)LayoutDirection.Rtl else LayoutDirection.Ltr){
+                LocalActivityResultRegistryOwner provides registryOwner,LocalLayoutDirection provides if(ar)LayoutDirection.Rtl else LayoutDirection.Ltr){
                 SchoolTheme(darkMode=dark){
                     Surface(color=MaterialTheme.colorScheme.background){
                         Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
                             Text(if(ar)"المحادثات" else "Chats",style=MaterialTheme.typography.headlineSmall)
-                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Start){
-                                CommunicationBubble(false){
-                                    Text(if(ar)"مدرس الفصل" else "Klassenlehrkraft",style=MaterialTheme.typography.labelMedium)
-                                    Text(incoming)
-                                    Text("10:00",style=MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End){
-                                CommunicationBubble(true){
-                                    Text(outgoing)
-                                    Text(stringResource(R.string.chat_sent),style=MaterialTheme.typography.labelSmall)
-                                }
-                            }
+                            ChatMessageItem(model,thread,message("qa-incoming",false,incoming),false,{},{},{},{})
+                            ChatMessageItem(model,thread,message("qa-outgoing",true,outgoing),false,{},{},{},{})
                             Spacer(Modifier.weight(1f))
-                            OutlinedTextField(value="",onValueChange={},modifier=Modifier.fillMaxWidth(),label={Text(stringResource(R.string.chat_body))})
-                            Button(onClick={},modifier=Modifier.fillMaxWidth()){Text(stringResource(R.string.chat_send))}
+                            var typed by remember{mutableStateOf("")}
+                            MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={}){
+                                ChatInputField(typed,true){typed=it}
+                                ChatSendAction(typed.isNotBlank(),false){}
+                            }
                         }
                     }
                 }
             }
         }
-        compose.onNodeWithText(incoming).assertIsDisplayed()
-        compose.onNodeWithText(outgoing).assertIsDisplayed()
+        compose.onNodeWithText(incoming,substring=true).assertIsDisplayed()
+        compose.onNodeWithText(outgoing,substring=true).assertIsDisplayed()
+        compose.onNodeWithText("👍 1").assertIsDisplayed()
         compose.waitForIdle()
         val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
         assertTrue(bitmap.width>=640&&bitmap.height>=1000)
@@ -162,5 +172,6 @@ class CommunicationVisualTest {
         requireNotNull(resolver.openOutputStream(uri)).use{assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,it))}
         resolver.update(uri,ContentValues().apply{put(MediaStore.MediaColumns.IS_PENDING,0)},null,null)
         bitmap.recycle()
+        }finally{instrumentation.runOnMainSync{store.clear()}}
     }
 }
