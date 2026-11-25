@@ -282,11 +282,12 @@ private fun PublicationEditor(
     val scope=rememberCoroutineScope()
     val options=calendar.classes.filter{it.canWrite}
     val existingClass=record?.optJSONObject("audience")?.string("classId")
-    val initial=existingClass?:if(calendar.schoolWide)"school" else options.firstOrNull()?.id
+    val initial=existingClass?:if(record?.optJSONObject("audience")?.optString("kind")=="school")"school" else null
     val initialTime=record?.optJSONObject("timing")
     val arValue=record?.optJSONObject("copy")?.optJSONObject("ar")
     val deValue=record?.optJSONObject("copy")?.optJSONObject("de")
     var original by remember{mutableStateOf(record?.optString("sourceLocale")?:language)}
+    var editingLanguage by remember{mutableStateOf(language)}
     var classKey by remember{mutableStateOf(initial)}
     var ar by remember{mutableStateOf(ContentFields.read(arValue))}
     var de by remember{mutableStateOf(ContentFields.read(deValue))}
@@ -389,8 +390,12 @@ private fun PublicationEditor(
             FilterChip(original=="ar",onClick={original="ar"},label={Text(stringResource(R.string.broadcast_arabic))})
             FilterChip(original=="de",onClick={original="de"},label={Text(stringResource(R.string.broadcast_german))})
         }
-        LocalizedFields("ar",ar){ar=it}
-        LocalizedFields("de",de){de=it}
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            FilterChip(editingLanguage=="ar",onClick={editingLanguage="ar"},label={Text(stringResource(R.string.broadcast_arabic)+(if(ar.complete)" ✓" else ""))})
+            FilterChip(editingLanguage=="de",onClick={editingLanguage="de"},label={Text(stringResource(R.string.broadcast_german)+(if(de.complete)" ✓" else ""))})
+        }
+        if(editingLanguage=="ar")LocalizedFields("ar",ar){ar=it}
+        else LocalizedFields("de",de){de=it}
         if(section==PublicationSection.Events){
             Text(isolate(calendar.timezone))
             FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){

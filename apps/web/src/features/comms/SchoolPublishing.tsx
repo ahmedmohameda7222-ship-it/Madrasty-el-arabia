@@ -173,9 +173,10 @@ function PublishingEditor({locale,kind,options,record,dismiss}:{
   const {persona}=useAccountScope(),command=useSchoolCommand(persona),text=words[locale],url=endpoint(kind);
   const [selected,setSelected]=useState<PublishingEntry|undefined>(record);
   const [language,setLanguage]=useState<Locale>(record?.sourceLocale??locale);
+  const [editingLanguage,setEditingLanguage]=useState<Locale>(locale);
   const classes=options.classes.filter((choice)=>choice.canWrite);
   const existingClass=record?.audience.kind==="class"?record.audience.classId:undefined;
-  const [classId,setClassId]=useState(existingClass??(options.schoolWide?"school":classes[0]?.id??""));
+  const [classId,setClassId]=useState(existingClass??(record?.audience.kind==="school"?"school":""));
   const [copy,setCopy]=useState({ar:record?.copy.ar??{title:"",body:""},de:record?.copy.de??{title:"",body:""}});
   const originalTiming=record?.kind==="event"?record.timing:undefined;
   const [startDate,setStartDate]=useState(originalTiming?.start.date??options.schoolDate);
@@ -243,6 +244,7 @@ function PublishingEditor({locale,kind,options,record,dismiss}:{
       </div>
     </section>:<form className="auth-form" onSubmit={preview}>
       <label>{text.audience}<select value={classId} onChange={(event)=>setClassId(event.target.value)} disabled={busy}>
+        <option value="">{locale==="ar"?"اختر المستلمين":"Empfänger auswählen"}</option>
         {options.schoolWide&&<option value="school">{text.school}</option>}
         {existingClass&&!classes.some((item)=>item.id===existingClass)&&<option value={existingClass}>{reviewName}</option>}
         {classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
@@ -250,7 +252,8 @@ function PublishingEditor({locale,kind,options,record,dismiss}:{
       <label>{text.original}<select value={language} onChange={(event)=>setLanguage(event.target.value as Locale)} disabled={busy}>
         {originalLocales.map((key)=><option key={key} value={key}>{text[key]}</option>)}
       </select></label>
-      {originalLocales.map((key)=><fieldset className="auth-form" key={key} disabled={busy}>
+      <div className="comms-segments" role="group" aria-label={locale==="ar"?"لغة النص":"Textsprache"}>{originalLocales.map(key=><button type="button" key={key} aria-pressed={editingLanguage===key} disabled={busy} onClick={()=>setEditingLanguage(key)}>{text[key]}{copy[key].title.trim()&&copy[key].body.trim()?" ✓":""}</button>)}</div>
+      {[editingLanguage].map((key)=><fieldset className="auth-form" key={key} disabled={busy}>
         <legend>{text[key]}</legend>
         <label>{text.title}<input dir={key==="ar"?"rtl":"ltr"} required={key===language} value={copy[key].title} maxLength={180}
           onChange={(event)=>setCopy({...copy,[key]:{...copy[key],title:event.target.value}})}/></label>
