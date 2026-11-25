@@ -42,3 +42,33 @@ test("all three active school personas can discover and start direct conversatio
     await school.close();
   }
 });
+
+test("recommended contacts prioritize the assigned teacher, all people includes other teachers and parents, and pagination does not omit contacts", async () => {
+  const school = schoolFixtures();
+  try {
+    const admin = await school.bearer("admin", "admin");
+    await setUpCalendar(school, admin);
+    const token = await school.bearer("guardian-ar", "guardian");
+    const request = (path: string) => fixtureApi(school, path, { token, persona: "guardian" });
+    const mine: Contact[] = (await request("/directory?view=mine&limit=100")).payload.data;
+    assert.equal(mine[0]?.displayName, "يوسف عبد الرحمن محمود", "assigned teacher first");
+    assert.ok(!mine.some(c => c.displayName === "Johannes Peter Schneider"));
+    assert.ok(mine.every(c => c.target.kind === "person"));
+    const all: Contact[] = (await request("/directory?view=all&limit=100")).payload.data;
+    assert.ok(all.some(c => c.displayName === "Johannes Peter Schneider"));
+    assert.ok(all.some(c => c.role === "guardian"));
+    assert.ok(all.every(c => c.target.kind === "person"));
+    assert.ok(!all.some(c => c.displayName === "سلمى عبد الرحمن محمد"), "no self contact");
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    do {
+      const response = (await request("/directory?view=all&limit=2" + (cursor ? "&cursor=" + encodeURIComponent(cursor) : ""))).payload;
+      seen.push(...response.data.map((c: Contact) => c.id));
+      cursor = response.meta?.nextCursor;
+      assert.ok(seen.length <= all.length, "pagination cannot loop or duplicate");
+    } while (cursor);
+    assert.deepEqual(seen, all.map(c => c.id));
+  } finally {
+    await school.close();
+  }
+});
