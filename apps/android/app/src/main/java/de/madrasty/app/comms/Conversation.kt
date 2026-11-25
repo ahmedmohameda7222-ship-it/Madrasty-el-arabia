@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Icon
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Column
@@ -346,8 +350,11 @@ internal fun ChatMessageItem(
     }
     val hasContent=message.string("body")!=null||media.length()>0
     if(!hasContent&&message.getString("source")=="human")Text(stringResource(R.string.chat_message_redacted))
-    Text(isolate(message.getString("createdAt").replace("T"," ").take(16))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),style=MaterialTheme.typography.labelSmall)
-    TextButton(onClick={actions=!actions}){Text(stringResource(R.string.chat_reactions)+" · ⋯")}
+    val actionLabel=stringResource(R.string.chat_reactions)
+    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+        Text(isolate(message.getString("createdAt").replace("T"," ").take(16))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),modifier=Modifier.weight(1f,fill=false),style=MaterialTheme.typography.labelSmall)
+        IconButton(onClick={actions=!actions},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
+    }
     if(actions){
     if(message.optBoolean("replyable")&&thread.optBoolean("canReply")){
         TextButton(onClick={reply(message)}){Text(stringResource(R.string.chat_reply))}

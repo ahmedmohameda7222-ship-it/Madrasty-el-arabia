@@ -470,3 +470,17 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 @media(prefers-reduced-motion:no-preference){.comms-publish-menu-items{animation:comms-send-in 140ms ease-out both}}
 
 .comms-first-contact{display:flex;gap:12px;align-items:center;min-inline-size:0}.comms-first-contact>div{min-inline-size:0}.comms-first-contact h1{font-size:1.25rem;overflow-wrap:anywhere;margin:0}.comms-first-contact p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}.comms-directory .comms-input-bar>.comms-attach-button{grid-column:1;grid-row:1}
+
+/* Visual QA: compact message metadata and all three filters visible at 320px. */
+.comms-message-footer{display:flex;align-items:center;justify-content:space-between;gap:4px;min-inline-size:0;flex-wrap:wrap}
+.comms-message-footer>.comms-message-time{flex:1;min-inline-size:0;text-align:start;overflow-wrap:anywhere}
+.comms-message-footer>.comms-message-actions{flex:0 0 44px;min-inline-size:44px}
+.comms-message-footer>.comms-message-actions[open]{flex:1 0 100%}
+.comms-message-footer>.comms-message-actions>summary{inline-size:44px;min-inline-size:44px;justify-content:center;margin-inline-start:auto}
+.comms-message-footer>.comms-message-actions[open]>summary{margin-inline-start:auto}
+.comms-hub .inbox-search{align-items:center;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.comms-hub .inbox-search input{min-inline-size:0;min-block-size:44px;max-inline-size:100%;font-size:16px}
+.comms-hub .inbox-filter-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;overflow:visible;padding-block-end:0}
+.comms-hub .inbox-filter-strip>button{min-inline-size:0;min-block-size:44px;white-space:normal;overflow-wrap:anywhere;padding:6px 3px;font-size:.8rem}
+.comms-hub-tabs a{min-inline-size:0;font-size:.9rem;padding-inline:4px}
+@media(max-width:360px){.comms-hub-tabs a{font-size:.8rem}.comms-hub .inbox-search>button{padding-inline:10px;font-size:.85rem}}

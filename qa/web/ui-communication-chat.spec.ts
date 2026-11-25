@@ -29,6 +29,10 @@ test("direct chat presents sent and received bubbles and compact actions", async
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
     await expect(page.getByRole("button",{name:"👍 1",exact:true})).toBeVisible();
+    const footer=page.locator(".comms-message-footer").first();
+    const layout=await footer.evaluate(el=>{const stamp=el.querySelector(".comms-message-time")!.getBoundingClientRect(),actions=el.querySelector("summary")!.getBoundingClientRect();return {gap:Math.abs(stamp.y+stamp.height/2-actions.y-actions.height/2),target:actions.height};});
+    expect(layout.gap,"timestamp and actions share the same compact row").toBeLessThanOrEqual(8);
+    expect(layout.target).toBeGreaterThanOrEqual(44);
     await expect(page.locator(".comms-composer textarea")).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});

@@ -321,11 +321,11 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
       {message.attachments.map((file)=><PrivateChatMedia key={file.id} locale={locale} kind={file.kind}
         path={`/api/v1/threads/${thread.id}/media/${file.id}`}/>)}
       {message.source==="human"&&!message.body&&!message.attachments.length&&<p>{reportCopy[locale].removed}</p>}
-      <small className="comms-message-time"><bdi>{new Date(message.createdAt).toLocaleTimeString(locale==="ar"?"ar":"de-DE",{hour:"2-digit",minute:"2-digit"})}</bdi>{message.own&&<> · {message.counterpartRead?text.seen:text.sent}</>}</small>
       {message.reactions.length>0&&<div className="comms-reaction-strip" role="group" aria-label={text.reactions}>
         {message.reactions.map((entry)=><button type="button" className="comms-reaction-chip" key={entry.emoji} aria-pressed={entry.mine} disabled={pending}
           onClick={()=>void react(message,entry.emoji)}>{entry.emoji} {entry.count}</button>)}
       </div>}
+      <div className="comms-message-footer"><small className="comms-message-time"><bdi>{new Date(message.createdAt).toLocaleTimeString(locale==="ar"?"ar":"de-DE",{hour:"2-digit",minute:"2-digit"})}</bdi>{message.own&&<> · {message.counterpartRead?text.seen:text.sent}</>}</small>
       <details className="comms-message-actions"><summary aria-label={locale==="ar"?"إجراءات الرسالة":"Nachrichtenoptionen"}>⋯</summary>
       <div className="header-actions">
         {thread.canReply&&message.replyable&&<button type="button" className="plain-button" onClick={()=>reply(message)}>{text.reply}</button>}
@@ -339,7 +339,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
           disabled={pending} aria-label={`${text.reactions} ${emoji}`} aria-pressed={message.reactions.some((entry)=>entry.emoji===emoji&&entry.mine)}
           onClick={()=>void react(message,emoji)}>{emoji}</button>)}</div>
       </details>}
-      </details>
+      </details></div>
     </li>})}</ol>
   </>;
 }

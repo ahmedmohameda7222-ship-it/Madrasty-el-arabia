@@ -34,7 +34,10 @@ for(const scenario of [
         return {activeBg:getComputedStyle(active).backgroundColor,inactiveBg:getComputedStyle(inactive).backgroundColor};
       });
       expect(visualState.activeBg,"selected filter requires visible contrast").not.toBe(visualState.inactiveBg);
-      expect(await filters.evaluate(el=>el.scrollWidth>=el.clientWidth)).toBe(true);
+      expect(await filters.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+      const filterBounds=await filters.evaluate(el=>Array.from(el.querySelectorAll("button")).map(button=>{const outer=el.getBoundingClientRect(),bounds=button.getBoundingClientRect();return {inside:bounds.left>=outer.left-1&&bounds.right<=outer.right+1,height:bounds.height};}));
+      expect(filterBounds).toHaveLength(3);
+      for(const bounds of filterBounds){expect(bounds.inside).toBe(true);expect(bounds.height).toBeGreaterThanOrEqual(44);}
       const status=page.locator(".school-content [data-async-state='empty'], .school-content .group-list").last();
       await expect(status).toBeVisible({timeout:25000});
       const placement=await status.boundingBox();
@@ -47,6 +50,7 @@ for(const scenario of [
       await expect(archive).toHaveAttribute("aria-pressed","true");
       await expect(page.getByRole("link",{name:scenario.locale==="ar"?"رسالة جديدة":"Neue Nachricht"})).toBeVisible();
       await expect(page.locator(".inbox-mobile-shortcuts")).toHaveCount(0);
+      await expect(status).toBeVisible({timeout:25000});
       mkdirSync("qa-artifacts/ui-after",{recursive:true});
       await page.screenshot({path:"qa-artifacts/ui-after/UIX10-"+scenario.persona+"-"+scenario.locale+"-messages-"+scenario.width+"-inbox.png",animations:"disabled"});
     }finally{await school.close()}
