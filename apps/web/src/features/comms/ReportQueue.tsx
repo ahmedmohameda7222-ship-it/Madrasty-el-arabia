@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useState,type FormEvent} from "react";
+import {useEffect,useRef,useState,type FormEvent} from "react";
 import {messageReportEntry,messageReportReceipt,type Locale,type MessageReport} from "@madrasty/contracts";
 import {ApiResponseError,requestApi} from "@/api/client";
 import {webHeaders} from "@/features/identity/SessionControls";
@@ -36,6 +36,8 @@ export function ReportMessage({locale,thread,message}:{locale:Locale;thread:stri
   const text=reportCopy[locale],{persona}=useAccountScope();
   const [open,setOpen]=useState(false),[reason,setReason]=useState(""),[error,setError]=useState("");
   const [key,setKey]=useState<string>(),[sent,setSent]=useState(false),[busy,setBusy]=useState(false);
+  const reportForm=useRef<HTMLFormElement>(null);
+  useEffect(()=>{if(open)reportForm.current?.scrollIntoView({block:"center",inline:"nearest"});},[open]);
   async function submit(event:FormEvent){
     event.preventDefault();
     if(busy||!reason.trim())return;
@@ -51,7 +53,7 @@ export function ReportMessage({locale,thread,message}:{locale:Locale;thread:stri
   }
   if(sent)return <small role="status">{text.sent}</small>;
   if(!open)return <button type="button" className="plain-button" onClick={()=>setOpen(true)}>{text.report}</button>;
-  return <form className="auth-form" onSubmit={(event)=>void submit(event)}>
+  return <form ref={reportForm} className="auth-form comms-report-form" onSubmit={(event)=>void submit(event)}>
     <label>{text.reason}<textarea value={reason} rows={2} maxLength={500} disabled={busy}
       onChange={(event)=>{setReason(event.target.value);setKey(undefined);}}/></label>
     <div className="header-actions">

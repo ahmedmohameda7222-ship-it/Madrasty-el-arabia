@@ -12,6 +12,7 @@ import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
 import {AsyncSurface} from "@/ui/AsyncSurface";
+import {Icon} from "@/ui/Icon";
 import {asExclusiveEnd,asInclusiveEnd} from "@/features/school/calendar-model";
 
 const words={
@@ -99,8 +100,8 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   const returnBase=fromHub&&kind==="event"?`/${locale}/school/messages`:base;
   const returnHref=returnParams.size?`${returnBase}?${returnParams}`:returnBase;
   function detailHref(id:string){const next=new URLSearchParams(context);next.set("item",id);if(fromHub)next.set("from","hub");return `${base}?${next}`;}
-  return <section className="auth-card auth-form comms-publications">
-    {!embedded&&<h1>{text[kind]}</h1>}
+  return <section className={`auth-card auth-form comms-publications${kind==="event"?" comms-calendar":""}`}>
+    {!embedded&&<h1>{kind==="event"&&locale==="de"?"Kalender":text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
       dismiss={()=>{setEditor(undefined);patch({view:"managed",create:undefined});setRefresh((value)=>value+1);}}/>}
     {selected&&<><Link className="plain-button" href={returnHref}>{text.back}</Link>
@@ -113,11 +114,17 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
       </TimetableRead>
     </>}
     {!selected&&!editor&&<>
-      {canWrite&&<><div className="comms-segments" role="group" aria-label={text.managed}>
-        <button type="button" aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{text.feed}</button>
-        <button type="button" aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{text.managed}</button>
-      </div><button className="primary-button" type="button" onClick={()=>setEditor("new")}>{kind==="event"?text.writeEvent:text.write}</button></>}
-      {options.classes.length>0&&<label>{text.class}<select value={classId} onChange={(event)=>setClass(event.target.value)}>
+      {canWrite&&(kind==="event"?<div className="comms-calendar-actions">
+        <div className="comms-segments" role="group" aria-label={text.managed}>
+          <button type="button" aria-label={text.feed} aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{locale==="ar"?"الأحداث":"Termine"}</button>
+          <button type="button" aria-label={text.managed} aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{locale==="ar"?"إدارة":"Verwalten"}</button>
+        </div>
+        <button className="comms-icon-button comms-calendar-add" type="button" aria-label={text.writeEvent} onClick={()=>setEditor("new")}><Icon name="plus"/></button>
+      </div>:<><div className="comms-segments" role="group" aria-label={text.managed}>
+        <button type="button" aria-label={text.feed} aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{locale==="ar"?"المنشورة":"Beiträge"}</button>
+        <button type="button" aria-label={text.managed} aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{locale==="ar"?"إدارة":"Verwalten"}</button>
+      </div><button className="primary-button" type="button" onClick={()=>setEditor("new")}>{text.write}</button></>)}
+      {options.classes.length>0&&<label className={kind==="event"?"comms-calendar-class":undefined}>{text.class}<select value={classId} onChange={(event)=>setClass(event.target.value)}>
         <option value="">{text.allClasses}</option>
         {options.classes.map((choice)=><option key={choice.id} value={choice.id}>{choice.code} · {locale==="ar"?choice.nameAr:choice.nameDe}</option>)}
       </select></label>}
@@ -143,17 +150,17 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
   const text=words[locale],first=monthStart(month),last=new Date(first);
   last.setUTCMonth(first.getUTCMonth()+1,0);
   const offset=(first.getUTCDay()+6)%7,days=last.getUTCDate();
-  const weekday=new Intl.DateTimeFormat(intl(locale),{weekday:"short",timeZone:"UTC"});
+  const weekday=new Intl.DateTimeFormat(intl(locale),{weekday:"long",timeZone:"UTC"});
+  const compactWeekdays=locale==="ar"?["اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت","أحد"]:["Mo","Di","Mi","Do","Fr","Sa","So"];
   const number=new Intl.NumberFormat(locale);
-  return <div className="auth-form">
+  return <div className="auth-form comms-month-picker">
     <div className="comms-month-heading">
       <button className="plain-button" type="button" aria-label={text.previous} onClick={()=>go(shiftMonth(month,-1))}><span aria-hidden="true">{locale==="ar"?"›":"‹"}</span></button>
       <h2>{new Intl.DateTimeFormat(intl(locale),{month:"long",year:"numeric",timeZone:"UTC",calendar:"gregory"}).format(first)}</h2>
       <button className="plain-button" type="button" aria-label={text.next} onClick={()=>go(shiftMonth(month,1))}><span aria-hidden="true">{locale==="ar"?"‹":"›"}</span></button>
     </div>
-    <div className="calendar-legend"><span><i data-teaching="yes"/>{locale==="ar"?"يوم دراسي":"Unterricht"}</span><span><i data-teaching="no"/>{locale==="ar"?"عطلة":"Unterrichtsfrei"}</span><span>● {locale==="ar"?"حدث":"Termin"}</span></div>
-    <div className="school-month-grid" role="group" aria-label={text.event}>
-      {Array.from({length:7},(_,index)=><small key={index}>{weekday.format(new Date(Date.UTC(2024,0,index+1,12)))}</small>)}
+    <div className="school-month-grid" data-calendar-ready={summary!==undefined} data-month={month} role="group" aria-label={text.event}>
+      {compactWeekdays.map((name,index)=><small key={index} className="comms-weekday" aria-label={weekday.format(new Date(Date.UTC(2024,0,index+1,12)))}>{name}</small>)}
       {Array.from({length:offset},(_,index)=><span key={`blank-${index}`}/>)}
       {Array.from({length:days},(_,index)=>{
         const dayId=`${month}-${String(index+1).padStart(2,"0")}`;
@@ -166,7 +173,8 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
         </button>;
       })}
     </div>
-    <div className="header-actions">
+    <div className="calendar-legend"><span><i data-teaching="yes"/>{locale==="ar"?"يوم دراسي":"Unterricht"}</span><span><i data-teaching="no"/>{locale==="ar"?"عطلة":"Unterrichtsfrei"}</span><span><i className="comms-event-indicator"/>{locale==="ar"?"حدث":"Termin"}</span></div>
+    <div className="header-actions comms-calendar-day-actions">
       {day&&<button type="button" className="plain-button" onClick={()=>choose()}>{text.month}</button>}
       <button type="button" className="plain-button" onClick={()=>{go(today.slice(0,7));choose(today);}}>{text.today}</button>
     </div>

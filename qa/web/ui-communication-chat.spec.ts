@@ -6,7 +6,8 @@ import { setUpCalendar } from "../fixtures/calendar";
 import { fixtureApi } from "../support/api";
 import { fixtureEmail, localOrigin } from "../support/target";
 
-test("direct chat presents sent and received bubbles and compact actions", async ({page,context})=>{
+test("direct chat presents sent and received bubbles and compact actions", async ({page})=>{
+  test.setTimeout(90000);
   const school=schoolFixtures();
   try {
     await school.seed();
@@ -22,10 +23,19 @@ test("direct chat presents sent and received bubbles and compact actions", async
       const sent=await fixtureApi(school,`/threads/${thread}/messages`,{token,persona,method:"POST",key:id,status:201,body:{clientMessageId:id,body}});
       if(persona==="guardian")await fixtureApi(school,`/threads/${thread}/messages/${sent.payload.data.id}/reaction`,{token:teacher,persona:"teacher",method:"PUT",body:{emoji:"👍"}});
     }
-    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await signInForWrite(page,school,"guardian-de");
     await page.setViewportSize({width:390,height:844});
-    await page.goto("/de/school/messages?thread="+thread);
-    await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible();
+    // Sign-in may still be finishing its client-side redirect. Use the actual
+    // inbox navigation after the authenticated shell has rendered.
+    await expect(page.locator(".school-content")).toBeVisible({timeout:20000});
+    const inbox=page.locator('a[href="/de/school/messages"]').first();
+    await expect(inbox).toBeVisible({timeout:20000});
+    await inbox.click();
+    const row=page.locator(".comms-thread-row").filter({has:page.locator('small', {hasText:"Guten Tag"})});
+    await expect(row).toBeVisible({timeout:20000});
+    await row.click();
+    await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).toBe(thread);
+    await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible({timeout:20000});
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
     await expect(page.getByRole("button",{name:"👍 1",exact:true})).toBeVisible();

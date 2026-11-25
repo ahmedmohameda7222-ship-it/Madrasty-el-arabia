@@ -73,7 +73,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       <header className="comms-thread-toolbar">
         <Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>
         <span className="comms-avatar" aria-hidden="true">{title(locale,value).trim().slice(0,1).toUpperCase()}</span>
-        <h2><bdi>{title(locale,value)}</bdi></h2>
+        <h2 title={title(locale,value)}><bdi>{title(locale,value)}</bdi></h2>
         <button type="button" className="comms-icon-button" aria-label={text.refresh} onClick={reload}><Icon name="retry"/></button>
       </header>
       {value.inbox&&value.contactName&&<p>{text[value.inbox]}</p>}
@@ -90,7 +90,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   return <section className="auth-card auth-form inbox-panel">
     <div className="comms-inbox-heading"><h2>{locale==="ar"?"المحادثات":"Chats"}</h2><Link className="primary-button" href={`/${locale}/directory`}>{text.directory}</Link></div>
     <form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();patch({search});}}>
-      <input aria-label={text.search} placeholder={text.search} type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/>
+      <input aria-label={text.search} placeholder={locale==="ar"?"ابحث عن محادثة":"Chats suchen"} type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/>
       <button className="plain-button" type="submit">{text.find}</button>
     </form>
     <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>

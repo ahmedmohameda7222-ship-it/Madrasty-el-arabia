@@ -50,6 +50,8 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
   const [opening,setOpening]=useState<string>(),[openError,setOpenError]=useState("");
   const openingRef=useRef(false);
   const [draft,setDraft]=useState<DirectoryEntry>(),[body,setBody]=useState(""),[firstId,setFirstId]=useState("");
+  const draftInput=useRef<HTMLTextAreaElement>(null);
+  useEffect(()=>{const field=draftInput.current;if(!field)return;field.style.height="auto";field.style.height=`${Math.min(140,Math.max(44,field.scrollHeight))}px`;},[draft,body]);
   useEffect(()=>{
     const timer=window.setTimeout(()=>setTerm(query.trim()),250);
     return ()=>window.clearTimeout(timer);
@@ -135,7 +137,7 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
         <ul className="group-list">{people.map(row=><li key={row.id}>
           <button className="comms-person-row" type="button" disabled={!!opening} onClick={()=>void openPerson(row)}>
             <span className="comms-avatar" aria-hidden="true">{initials(row,locale)}</span>
-            <span className="comms-person-label"><bdi>{row.displayName??label(row,locale)}</bdi><small>{label(row,locale)}</small>
+            <span className="comms-person-label"><span className="comms-person-name"><bdi>{row.displayName??label(row,locale)}</bdi></span><small>{label(row,locale)}</small>
               {row.contexts.length>0&&<small>{row.contexts.map(c=>locale==="ar"?c.nameAr:c.nameDe).join(" · ")}</small>}
             </span>
             <Icon name="messages"/>
@@ -153,7 +155,7 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     <form className="comms-composer auth-form" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
       <div className="comms-input-bar">
         <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening||!!body.trim()} onClick={()=>void sendFirst(true)}><Icon name="plus"/></button>
-        <label className="comms-input-field"><textarea aria-label={text.start} placeholder={text.start} dir="auto" rows={2} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());setOpenError("");}}/></label>
+        <label className="comms-input-field"><textarea ref={draftInput} aria-label={text.start} placeholder={text.start} dir="auto" rows={2} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());setOpenError("");}}/></label>
         <button className="comms-icon-button comms-send-button" type="submit" aria-label={text.send} disabled={!!opening||!body.trim()}><Icon name={openError?"retry":"sendUp"}/></button>
       </div>
     </form>{openError&&<p role="alert">{openError}</p>}

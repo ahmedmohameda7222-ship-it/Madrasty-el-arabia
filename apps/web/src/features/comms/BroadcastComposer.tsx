@@ -8,6 +8,7 @@ import {
 } from "@madrasty/contracts";
 import {ApiResponseError} from "@/api/client";
 import {useSchoolCommand} from "@/api/commands";
+import {Icon} from "@/ui/Icon";
 import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
@@ -53,19 +54,18 @@ export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string})
     window.addEventListener("focus",wake);window.addEventListener("online",wake);
     return ()=>{window.removeEventListener("focus",wake);window.removeEventListener("online",wake);};
   },[]);
-  return <section className="auth-card auth-form">
-    <h1>{labels.title}</h1>
+  return <section className="auth-card auth-form comms-broadcast-screen">
+    <header className="comms-section-heading"><h1>{labels.title}</h1>{!selected&&<button type="button" className="comms-icon-button" aria-label={labels.reload} onClick={()=>setRefresh((n)=>n+1)}><Icon name="retry"/></button>}</header>
     {selected?<><Link className="plain-button" href={base}>{labels.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(item)=><BroadcastText locale={locale} title={item.title} body={item.body}
         date={date(item.publishedAt)}/>}</TimetableRead>
     </>:<>
-      <div className="header-actions">
-        <button type="button" className="plain-button" aria-pressed={mode==="inbox"} onClick={()=>setMode("inbox")}>{labels.inbox}</button>
+      <div className="comms-broadcast-navigation comms-segments">
+        <button type="button" aria-label={labels.inbox} aria-pressed={mode==="inbox"} onClick={()=>setMode("inbox")}>{locale==="ar"?"الواردة":"Eingang"}</button>
         {allowed&&<>
-          <button type="button" className="plain-button" aria-pressed={mode==="compose"} onClick={()=>setMode("compose")}>{labels.compose}</button>
-          <button type="button" className="plain-button" aria-pressed={mode==="history"} onClick={()=>{setMode("history");setRefresh((n)=>n+1);}}>{labels.history}</button>
+          <button type="button" aria-label={labels.compose} aria-pressed={mode==="compose"} onClick={()=>setMode("compose")}>{locale==="ar"?"جديد":"Neu"}</button>
+          <button type="button" aria-label={labels.history} aria-pressed={mode==="history"} onClick={()=>{setMode("history");setRefresh((n)=>n+1);}}>{locale==="ar"?"المرسلة":"Gesendet"}</button>
         </>}
-        <button type="button" className="plain-button" onClick={()=>setRefresh((n)=>n+1)}>{labels.reload}</button>
       </div>
       {mode==="inbox"&&<AcademicPageItems locale={locale} page={received}>{(entries)=><ul className="group-list">
         {entries.map((item)=><li className="timetable-day" key={item.id}>
@@ -165,11 +165,11 @@ function BroadcastComposer({locale,options,published,savedDraft,saveDraft}:{loca
         <button type="button" className="plain-button" disabled={busy} onClick={()=>{setReview(undefined);setError("");}}>{labels.edit}</button>
       </div>
     </section>:<form className="auth-form" onSubmit={(event)=>void preview(event)}>
-      <label>{labels.audience}<select value={chosen??""} disabled={busy} onChange={(event)=>{setKind(event.target.value?event.target.value as BroadcastKind:undefined);setClassId("");}}>
+      <label>{labels.audience}<select aria-label={labels.audience} value={chosen??""} disabled={busy} onChange={(event)=>{setKind(event.target.value?event.target.value as BroadcastKind:undefined);setClassId("");}}>
         <option value="">{locale==="ar"?"اختر المستلمين":"Empfänger auswählen"}</option>
         {available.map((id)=><option key={id} value={id}>{labels[id]}</option>)}
       </select></label>
-      {chosen==="class_guardians"&&<label>{labels.class}<select value={classRef??""} disabled={busy} onChange={(event)=>setClassId(event.target.value)}>
+      {chosen==="class_guardians"&&<label>{labels.class}<select aria-label={labels.class} value={classRef??""} disabled={busy} onChange={(event)=>setClassId(event.target.value)}>
         <option value="">{locale==="ar"?"اختر الفصل":"Klasse auswählen"}</option>
         {options.classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
       </select></label>}

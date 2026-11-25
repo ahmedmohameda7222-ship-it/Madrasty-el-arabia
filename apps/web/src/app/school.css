@@ -484,3 +484,100 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-hub .inbox-filter-strip>button{min-inline-size:0;min-block-size:44px;white-space:normal;overflow-wrap:anywhere;padding:6px 3px;font-size:.8rem}
 .comms-hub-tabs a{min-inline-size:0;font-size:.9rem;padding-inline:4px}
 @media(max-width:360px){.comms-hub-tabs a{font-size:.8rem}.comms-hub .inbox-search>button{padding-inline:10px;font-size:.85rem}}
+
+
+/* Communication visual audit — isolate changes to communication surfaces. */
+.comms-hub .comms-publications{margin:0;padding:16px}
+.comms-hub .comms-calendar{margin:0;padding:12px;gap:8px}
+.comms-calendar-actions{display:flex;align-items:center;gap:8px;min-inline-size:0}
+.comms-calendar-actions>.comms-segments{flex:1;min-inline-size:0}
+.comms-calendar-actions .comms-segments button{font-size:.875rem;padding:4px 6px;overflow-wrap:normal;white-space:nowrap}
+.comms-calendar-add{background:var(--primary);color:var(--on-primary)}
+.comms-calendar .comms-calendar-class{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;font-size:.875rem}
+.comms-calendar-class select{min-inline-size:0;inline-size:100%;text-overflow:ellipsis;border:1px solid var(--rule);border-radius:12px;padding:6px 8px;font-size:16px}
+.comms-month-picker{margin-block-start:0;min-inline-size:0;gap:8px}
+.comms-calendar .comms-month-heading{gap:4px}
+.comms-calendar .comms-month-heading h2{font-size:.95rem;line-height:1.25;overflow-wrap:normal}
+.comms-calendar .school-month-grid{gap:2px;grid-template-columns:repeat(7,minmax(0,1fr));min-inline-size:0}
+.comms-calendar .school-month-grid>.comms-weekday{font-size:.75rem;line-height:1.3;white-space:nowrap;overflow-wrap:normal;text-align:center;padding-block:4px;color:var(--muted);font-weight:600}
+.comms-calendar .school-month-grid>button{position:relative;display:grid;place-items:center;min-inline-size:0;min-block-size:44px;padding:4px 0 7px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--ink);box-shadow:none;font-size:.9rem;line-height:1.1}
+.comms-calendar .school-month-grid>button[data-teaching]::after{content:"";position:absolute;inset-block-end:4px;inset-inline-start:50%;transform:translateX(-50%);inline-size:12px;block-size:2px;border-radius:2px;background:var(--primary)}
+[dir=rtl] .comms-calendar .school-month-grid>button[data-teaching]::after{transform:translateX(50%)}
+.comms-calendar .school-month-grid>button[data-teaching=no]::after{background:var(--muted)}
+.comms-calendar .school-month-grid>button[aria-current=date]{border-color:var(--primary);font-weight:700}
+.comms-calendar .school-month-grid>button[aria-pressed=true]{background:var(--primary);color:var(--on-primary)}
+.comms-calendar .school-month-grid>button[aria-pressed=true]::after{background:currentColor}
+.comms-calendar .school-month-dot{position:absolute;inset-block-start:4px;inset-inline-end:4px;font-size:.55rem;line-height:1}
+.comms-calendar .calendar-legend{gap:6px 10px;font-size:.75rem;line-height:1.3}
+.comms-calendar .calendar-legend span{white-space:nowrap;gap:4px}
+.comms-calendar .calendar-legend i{flex:none;inline-size:12px;block-size:8px;border-radius:2px}
+.comms-calendar .calendar-legend .comms-event-indicator{inline-size:6px;block-size:6px;border-radius:50%;background:currentColor}
+.comms-calendar-day-actions{justify-content:space-between;gap:6px}
+.comms-calendar-day-actions>button{min-block-size:44px;min-inline-size:0;font-size:.8rem;padding:8px 12px;overflow-wrap:normal}
+.comms-calendar-day-actions>button:last-child{margin-inline-start:auto}
+.comms-hub .comms-feed-filters button{font-size:.8rem;padding:4px 2px;white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none}
+.comms-hub .comms-feed-filters{gap:2px;padding:3px}
+.comms-hub .comms-feed-toolbar h2{font-size:1rem}
+.comms-thread-copy strong,.comms-person-label>.comms-person-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;text-align:start;line-height:1.35}
+.comms-thread-copy strong{font-size:.9rem}
+.comms-thread-meta{max-inline-size:60px;gap:4px}
+.comms-thread-meta>small{font-size:.72rem;white-space:nowrap}
+.comms-thread-row{gap:8px;align-items:center}
+.comms-directory .comms-segments button{font-size:.875rem;overflow-wrap:normal;word-break:normal;padding:6px}
+.comms-directory .comms-person-row{gap:8px}
+.comms-directory .comms-person-label{gap:2px}
+.comms-directory .comms-person-name{font-size:.95rem;text-align:start;min-inline-size:0}
+.comms-thread-toolbar h2{font-size:.95rem;line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-inline-size:0;text-align:start}
+.comms-broadcast-screen,.comms-notifications{min-inline-size:0}
+.comms-broadcast-navigation,.comms-notice-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.comms-broadcast-navigation button,.comms-notice-controls button{min-inline-size:0;min-block-size:44px;white-space:normal;word-break:normal;overflow-wrap:normal;font-size:.875rem;padding:8px 6px}
+.comms-broadcast-navigation button[aria-pressed=true],.comms-notice-controls button[aria-pressed=true]{color:var(--on-primary);background:var(--primary)}
+.comms-notice-controls>button:last-child{grid-column:1/-1}
+.comms-publish-menu-items{max-inline-size:calc(100vw - 40px)}
+@media(max-width:360px){.comms-hub .comms-calendar{padding:8px}.comms-calendar .comms-month-heading h2{font-size:.875rem}.comms-calendar .school-month-grid>.comms-weekday{font-size:.7rem}.comms-hub .comms-feed-filters button{font-size:.75rem}.comms-directory .comms-segments button{font-size:.8rem}.comms-thread-row .comms-avatar{flex-basis:36px;block-size:36px}}
+
+.comms-section-heading{display:flex;align-items:center;gap:6px;min-inline-size:0}
+.comms-section-heading>h1{flex:1;min-inline-size:0;margin:0}
+.comms-section-heading>h1,.comms-notifications>h1,.comms-publications>h1{font-size:clamp(1.2rem,5vw,1.6rem);line-height:1.3;overflow-wrap:normal;hyphens:auto}
+.comms-broadcast-navigation.comms-segments{display:flex;gap:3px}
+.comms-broadcast-navigation.comms-segments button{flex:1;min-inline-size:0;padding:5px 3px;font-size:.875rem;white-space:nowrap}
+.comms-broadcast-screen .comms-segments button{overflow-wrap:normal;word-break:normal}
+.comms-notice-controls>button:last-child{overflow-wrap:normal}
+.comms-publications fieldset,.comms-broadcast-screen fieldset{min-inline-size:0}
+.comms-publications .notice article,.comms-broadcast-screen .notice article{overflow-wrap:anywhere;min-inline-size:0}
+
+/* Keep message actions and report fields readable, including in a narrow dark thread. */
+.comms-message:has(.comms-message-actions[open]){inline-size:min(100%,24rem);max-inline-size:100%}
+.comms-message-actions[open]>.header-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;align-items:stretch}
+.comms-message-actions[open]>.header-actions>.plain-button{inline-size:100%;white-space:normal;overflow-wrap:normal;word-break:normal;text-align:center}
+.comms-message-actions[open]>.header-actions>form,.comms-report-form label{min-inline-size:0;max-inline-size:100%}
+.comms-message-actions details>summary{min-block-size:44px;cursor:pointer;display:flex;align-items:center}
+.comms-report-form textarea,.comms-publications textarea,.comms-broadcast-screen textarea{inline-size:100%;min-inline-size:0;max-inline-size:100%;background:var(--canvas);color:var(--ink);border:1px solid var(--rule);border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.comms-message-actions .comms-report-form .header-actions{display:flex;flex-wrap:wrap;gap:6px}
+.comms-message-actions .comms-report-form .header-actions>button{flex:1 1 auto;min-inline-size:0;white-space:normal;overflow-wrap:normal;word-break:normal}
+
+/* Native selects may size themselves from long options; constrain each grid track. */
+.comms-broadcast-screen,.comms-publications,.comms-notifications{grid-template-columns:minmax(0,1fr)}
+.comms-broadcast-screen .auth-form,.comms-publications .auth-form{min-inline-size:0;grid-template-columns:minmax(0,1fr)}
+.comms-broadcast-screen label,.comms-publications label{min-inline-size:0;max-inline-size:100%}
+.comms-broadcast-screen select,.comms-publications select,.comms-broadcast-screen input:not([type=checkbox]),.comms-publications input:not([type=checkbox]){inline-size:100%;max-inline-size:100%;min-inline-size:0;box-sizing:border-box}
+.comms-broadcast-screen .comms-segments,.comms-publications .comms-segments{max-inline-size:100%;min-inline-size:0}
+.comms-publications .comms-segments button{white-space:normal;overflow-wrap:normal;word-break:normal}
+@media(max-width:360px){.comms-broadcast-screen,.comms-publications:not(.comms-calendar),.comms-notifications{padding:12px}}
+
+/* Publication review must retain the primary action's foreground AND background. */
+.comms-publications .notice .primary-button,.comms-broadcast-screen .notice .primary-button,.comms-conversation .notice .primary-button{background:var(--primary);color:var(--on-primary)}
+.comms-publications .notice .plain-button,.comms-broadcast-screen .notice .plain-button{background:var(--card);color:var(--ink)}
+.comms-publications .notice p,.comms-broadcast-screen .notice p{display:block}
+.comms-publications .notice article h3,.comms-broadcast-screen .notice article h3{font-size:1rem;line-height:1.4;hyphens:auto;overflow-wrap:break-word;word-break:normal}
+@media(max-width:360px){.comms-publications .notice,.comms-broadcast-screen .notice{padding:12px}}
+
+.comms-person-name bdi{font-weight:650}
+.comms-directory .comms-composer{min-inline-size:0}
+.comms-directory .comms-first-contact h1{hyphens:auto;overflow-wrap:break-word}
+
+/* Two short message actions fit beside each other; the report remains full-width. */
+.comms-message-actions[open]>.header-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+.comms-message-actions[open]>.header-actions>.plain-button{padding-inline:8px;font-size:.875rem;min-block-size:44px}
+.comms-message-actions[open]>.header-actions>.plain-button:last-child,.comms-message-actions[open]>.header-actions>form,.comms-message-actions[open]>.header-actions>small{grid-column:1/-1}
+.comms-report-form .header-actions>button{font-size:.875rem;padding-inline:10px}

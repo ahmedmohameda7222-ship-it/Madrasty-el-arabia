@@ -44,7 +44,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   useEffect(()=>{
     const area=messageArea.current;if(!area)return;
     const track=()=>{followTail.current=area.scrollHeight-area.scrollTop-area.clientHeight<80;};
-    const update=()=>{if(followTail.current)area.scrollTop=area.scrollHeight;};
+    const update=()=>{if(followTail.current&&!area.querySelector(".comms-message-actions[open]"))area.scrollTop=area.scrollHeight;};
     area.addEventListener("scroll",track,{passive:true});
     const observer=new ResizeObserver(update);
     const timeline=area.querySelector(".comms-timeline");if(timeline)observer.observe(timeline);
@@ -78,6 +78,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   async function send(payload:Proposed){
     if(sending.current||lost||!thread.canReply)return;
     sending.current=true;
+    messageArea.current?.querySelectorAll<HTMLDetailsElement>(".comms-message-actions[open]").forEach((details)=>{details.open=false;});
     followTail.current=true;
     setAttempt({payload,pending:true,failed:false});
     try{
@@ -134,7 +135,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     </details>
     <div className="comms-message-area" ref={messageArea}>
     <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={(message)=>{if(!sending.current){setQuote(message);setAttempt(undefined);inputRef.current?.focus();}}} deny={deny}
-      recognize={recognize} updateArchive={setArchived}/>
+      recognize={recognize} updateArchive={setArchived} pauseFollow={()=>{followTail.current=false;}}/>
     {attempt&&<div className="comms-message comms-pending" data-own="true" role={attempt.failed?"alert":"status"}>
       <p dir="auto">{attempt.payload.body}</p>
       <small>{attempt.pending?text.sending:text.failed}</small>
@@ -159,8 +160,8 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   </section>;
 }
 
-function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{locale:Locale;thread:ThreadSummary;term:string;ack?:ChatMessage;
-  reply:(value:ChatMessage)=>void;deny:()=>void;recognize:(rows:ChatMessage[])=>void;updateArchive:(archived:boolean)=>void}){
+function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pauseFollow}:{locale:Locale;thread:ThreadSummary;term:string;ack?:ChatMessage;
+  reply:(value:ChatMessage)=>void;deny:()=>void;recognize:(rows:ChatMessage[])=>void;updateArchive:(archived:boolean)=>void;pauseFollow:()=>void}){
   const text=copy[locale],{persona}=useAccountScope(),headers={"X-School-Persona":persona};
   const [rows,setRows]=useState<ChatMessage[]>(),[cursor,setCursor]=useState<string>();
   const [failure,setFailure]=useState(""),[initialAttempt,setInitialAttempt]=useState(0),[highlight,setHighlight]=useState<string>();
@@ -178,7 +179,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
     cancelPress();
     const actions=event.currentTarget.closest(".comms-message")?.querySelector<HTMLDetailsElement>(".comms-message-actions");
     if(!actions)return;
-    const timer=window.setTimeout(()=>{if(actions.isConnected)actions.open=true;},500);
+    const timer=window.setTimeout(()=>{if(actions.isConnected){pauseFollow();actions.open=true;}},500);
     press.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY,timer};
   }
   function movePress(event:PointerEvent<HTMLParagraphElement>){
@@ -326,7 +327,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive}:{l
           onClick={()=>void react(message,entry.emoji)}>{entry.emoji} {entry.count}</button>)}
       </div>}
       <div className="comms-message-footer"><small className="comms-message-time"><bdi>{new Date(message.createdAt).toLocaleTimeString(locale==="ar"?"ar":"de-DE",{hour:"2-digit",minute:"2-digit"})}</bdi>{message.own&&<> · {message.counterpartRead?text.seen:text.sent}</>}</small>
-      <details className="comms-message-actions"><summary aria-label={locale==="ar"?"إجراءات الرسالة":"Nachrichtenoptionen"}>⋯</summary>
+      <details className="comms-message-actions" onToggle={(event)=>{const details=event.currentTarget;if(event.target!==details||!details.open)return;pauseFollow();requestAnimationFrame(()=>{if(details.isConnected&&details.open)details.scrollIntoView({block:"nearest",inline:"nearest"});});}}><summary onClick={pauseFollow} aria-label={locale==="ar"?"إجراءات الرسالة":"Nachrichtenoptionen"}>⋯</summary>
       <div className="header-actions">
         {thread.canReply&&message.replyable&&<button type="button" className="plain-button" onClick={()=>reply(message)}>{text.reply}</button>}
         {message.body&&<button type="button" className="plain-button" onClick={()=>void copyBody(message)}>{locale==="ar"?"نسخ النص":"Text kopieren"}</button>}
