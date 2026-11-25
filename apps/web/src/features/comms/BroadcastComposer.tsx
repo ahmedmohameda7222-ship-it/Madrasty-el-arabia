@@ -8,6 +8,7 @@ import {
 } from "@madrasty/contracts";
 import {ApiResponseError} from "@/api/client";
 import {useSchoolCommand} from "@/api/commands";
+import {Icon} from "@/ui/Icon";
 import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
@@ -54,18 +55,17 @@ export function BroadcastHub({locale,selected}:{locale:Locale;selected?:string})
     return ()=>{window.removeEventListener("focus",wake);window.removeEventListener("online",wake);};
   },[]);
   return <section className="auth-card auth-form comms-broadcast-screen">
-    <h1>{labels.title}</h1>
+    <header className="comms-section-heading"><h1>{labels.title}</h1>{!selected&&<button type="button" className="comms-icon-button" aria-label={labels.reload} onClick={()=>setRefresh((n)=>n+1)}><Icon name="retry"/></button>}</header>
     {selected?<><Link className="plain-button" href={base}>{labels.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(item)=><BroadcastText locale={locale} title={item.title} body={item.body}
         date={date(item.publishedAt)}/>}</TimetableRead>
     </>:<>
-      <div className="comms-broadcast-navigation">
-        <button type="button" className="plain-button" aria-pressed={mode==="inbox"} onClick={()=>setMode("inbox")}>{labels.inbox}</button>
+      <div className="comms-broadcast-navigation comms-segments">
+        <button type="button" aria-label={labels.inbox} aria-pressed={mode==="inbox"} onClick={()=>setMode("inbox")}>{locale==="ar"?"الواردة":"Eingang"}</button>
         {allowed&&<>
-          <button type="button" className="plain-button" aria-pressed={mode==="compose"} onClick={()=>setMode("compose")}>{labels.compose}</button>
-          <button type="button" className="plain-button" aria-pressed={mode==="history"} onClick={()=>{setMode("history");setRefresh((n)=>n+1);}}>{labels.history}</button>
+          <button type="button" aria-label={labels.compose} aria-pressed={mode==="compose"} onClick={()=>setMode("compose")}>{locale==="ar"?"جديد":"Neu"}</button>
+          <button type="button" aria-label={labels.history} aria-pressed={mode==="history"} onClick={()=>{setMode("history");setRefresh((n)=>n+1);}}>{locale==="ar"?"المرسلة":"Gesendet"}</button>
         </>}
-        <button type="button" className="plain-button" onClick={()=>setRefresh((n)=>n+1)}>{labels.reload}</button>
       </div>
       {mode==="inbox"&&<AcademicPageItems locale={locale} page={received}>{(entries)=><ul className="group-list">
         {entries.map((item)=><li className="timetable-day" key={item.id}>

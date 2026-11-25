@@ -124,7 +124,7 @@ export function NotificationCenter({locale,selected}:{locale:Locale;selected?:st
     {selected?<NoticeDetail key={selected} locale={locale} selected={selected}/>:
       <>
         <div className="comms-notice-controls">
-          <button type="button" className="plain-button" aria-pressed={!onlyUnread} onClick={()=>setOnlyUnread(false)}>{labels.all}</button>
+          <button type="button" className="plain-button" aria-label={labels.all} aria-pressed={!onlyUnread} onClick={()=>setOnlyUnread(false)}>{locale==="ar"?"الكل":"Alle"}</button>
           <button type="button" className="plain-button" aria-pressed={onlyUnread} onClick={()=>setOnlyUnread(true)}>{labels.unread}</button>
           <button type="button" className="plain-button" disabled={!!busy} onClick={()=>void markAll()}>{labels.markAll}</button>
         </div>

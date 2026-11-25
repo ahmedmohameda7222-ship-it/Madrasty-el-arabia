@@ -535,3 +535,13 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-notice-controls>button:last-child{grid-column:1/-1}
 .comms-publish-menu-items{max-inline-size:calc(100vw - 40px)}
 @media(max-width:360px){.comms-hub .comms-calendar{padding:8px}.comms-calendar .comms-month-heading h2{font-size:.875rem}.comms-calendar .school-month-grid>.comms-weekday{font-size:.7rem}.comms-hub .comms-feed-filters button{font-size:.75rem}.comms-directory .comms-segments button{font-size:.8rem}.comms-thread-row .comms-avatar{flex-basis:36px;block-size:36px}}
+
+.comms-section-heading{display:flex;align-items:center;gap:6px;min-inline-size:0}
+.comms-section-heading>h1{flex:1;min-inline-size:0;margin:0}
+.comms-section-heading>h1,.comms-notifications>h1,.comms-publications>h1{font-size:clamp(1.2rem,5vw,1.6rem);line-height:1.3;overflow-wrap:normal;hyphens:auto}
+.comms-broadcast-navigation.comms-segments{display:flex;gap:3px}
+.comms-broadcast-navigation.comms-segments button{flex:1;min-inline-size:0;padding:5px 3px;font-size:.875rem;white-space:nowrap}
+.comms-broadcast-screen .comms-segments button{overflow-wrap:normal;word-break:normal}
+.comms-notice-controls>button:last-child{overflow-wrap:normal}
+.comms-publications fieldset,.comms-broadcast-screen fieldset{min-inline-size:0}
+.comms-publications .notice article,.comms-broadcast-screen .notice article{overflow-wrap:anywhere;min-inline-size:0}
