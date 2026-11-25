@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { expect, test } from "@playwright/test";
-import { schoolFixtures } from "../fixtures/school";
+import { expect, test, type Page } from "@playwright/test";
+import { schoolFixtures, type FixtureSchool } from "../fixtures/school";
 import { setUpCalendar } from "../fixtures/calendar";
 import { fixtureApi } from "../support/api";
-import { localOrigin } from "../support/target";
+import { fixtureEmail, localOrigin } from "../support/target";
 
 test("direct chat presents sent and received bubbles and compact actions", async ({page,context})=>{
   const school=schoolFixtures();
@@ -186,14 +186,30 @@ test("mobile chat composer keeps media actions collapsed until requested",async(
 });
 
 
-test("saved news drafts reopen in management, publish and withdraw without leaking drafts to guardians",async({page,context})=>{
+// Exercise the same sign-in and administrator verification flow as actual users.
+async function signInForWrite(page:Page,school:FixtureSchool,principal:"admin"|"guardian-de"){
+  await page.goto("/de/account/sign-in");
+  await page.locator('input[name="email"]').fill(fixtureEmail(school.run,principal));
+  await page.locator('input[name="password"]').fill(school.password);
+  await page.getByRole("button",{name:"Anmelden",exact:true}).click();
+  if(principal==="admin"){
+    await expect(page).toHaveURL(/\/de\/account\/security$/, {timeout:20000});
+    const enrolled=await school.localMfa("admin");
+    await page.locator('input[name="code"]').fill(enrolled.code());
+    await page.getByRole("button",{name:"Bestätigen",exact:true}).click();
+  }
+  await expect(page).toHaveURL(/\/de\/school\/home(?:\?.*)?$/, {timeout:20000});
+}
+
+test("saved news drafts reopen in management, publish and withdraw without leaking drafts to guardians",async({page})=>{
+  test.setTimeout(90000);
   const school=schoolFixtures();
   try{
     await school.seed();
     const admin=await school.bearer("admin","admin");
     await setUpCalendar(school,admin);
     const guardian=await school.bearer("guardian-de","guardian");
-    await context.addCookies([{name:"madrasty-session",value:admin,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await signInForWrite(page,school,"admin");
     await page.setViewportSize({width:390,height:844});
     await page.goto("/de/school/messages?section=feed");
     await page.getByLabel("Veröffentlichen & verwalten").click();
@@ -203,7 +219,9 @@ test("saved news drafts reopen in management, publish and withdraw without leaki
     await page.getByLabel("Titel",{exact:true}).fill(title);
     await page.getByLabel("Text",{exact:true}).fill("Nur synthetische Testdaten.");
     await page.getByRole("button",{name:"Vorschau",exact:true}).click();
+    const saveResponse=page.waitForResponse(r=>r.url().endsWith("/api/v1/news")&&r.request().method()==="POST");
     await page.getByRole("button",{name:"Speichern",exact:true}).click();
+    expect((await saveResponse).status(),"draft creation must succeed").toBe(201);
     await expect(page.getByRole("status").filter({hasText:"Änderung gespeichert."})).toBeVisible();
     const feed=async()=> (await fixtureApi(school,"/comms/feed?limit=25&locale=de&filter=news",{token:guardian,persona:"guardian"})).payload.data;
     expect((await feed()).some((item:{title:string})=>item.title===title)).toBe(false);
@@ -226,7 +244,7 @@ test("saved news drafts reopen in management, publish and withdraw without leaki
   }finally{await school.close();}
 });
 
-test("message retry preserves the client identifier and a remote reply arrives without reloading",async({page,context})=>{
+test("message retry preserves the client identifier and a remote reply arrives without reloading",async({page})=>{
   test.setTimeout(90000);
   const school=schoolFixtures();
   try{
@@ -238,7 +256,7 @@ test("message retry preserves the client identifier and a remote reply arrives w
     const contacts=(await fixtureApi(school,"/directory",{token:guardian,persona:"guardian"})).payload.data;
     const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
     const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
-    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await signInForWrite(page,school,"guardian-de");
     await page.setViewportSize({width:390,height:844});
     await page.goto("/de/school/messages?thread="+thread);
     const body="Retry QA "+randomUUID().slice(0,8);
@@ -254,6 +272,7 @@ test("message retry preserves the client identifier and a remote reply arrives w
     const input=composer.locator("textarea");
     await input.fill(body);
     await composer.getByRole("button",{name:"Senden",exact:true}).click();
+    await expect.poll(()=>ids.length,{message:"browser POST reached the failure simulation"}).toBe(1);
     await expect(composer.getByRole("button",{name:"Erneut senden"})).toBeVisible();
     await expect(input).toHaveValue(body);
     await composer.getByRole("button",{name:"Erneut senden"}).click();
