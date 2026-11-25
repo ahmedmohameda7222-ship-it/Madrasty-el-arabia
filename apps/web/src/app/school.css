@@ -405,3 +405,5 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .calendar-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem}.calendar-legend span{display:flex;align-items:center;gap:5px}.calendar-legend i{width:12px;height:12px;border-radius:4px}.school-month-grid [data-teaching="yes"],.calendar-legend [data-teaching="yes"]{box-shadow:inset 0 -3px var(--primary)}.school-month-grid [data-teaching="no"],.calendar-legend [data-teaching="no"]{box-shadow:inset 0 -3px var(--muted)}
 
 .comms-month-heading{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}.comms-month-heading h2{text-align:center;font-size:1rem;margin:0}.comms-month-heading button{font-size:1.5rem;min-block-size:44px;padding:0}
+
+.comms-message-area{max-block-size:clamp(180px,50dvh,640px);min-block-size:140px;overflow:auto;overscroll-behavior:contain;align-content:start;scrollbar-width:thin;padding:4px}.comms-conversation:focus-within .comms-composer{scroll-margin-block-end:8px}.comms-legacy-details{border-color:var(--rule)}

@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -90,11 +91,11 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
     val revision=threadRefreshVersion()+changed
     val thread=academicRead("/threads/$id",revision){model.timetableObject(it)}
     BackHandler(onBack=close)
-    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
         TextButton(onClick=close){Text(stringResource(R.string.back))}
         AsyncSurface(thread){value->
-            Text(threadTitle(value),style=MaterialTheme.typography.headlineMedium)
+            Text(threadTitle(value),style=MaterialTheme.typography.titleLarge,maxLines=2)
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))
             }
@@ -102,13 +103,14 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
             if(value.getJSONArray("references").length()>0||officeCase!=null){
                 TextButton(onClick={showDetails=!showDetails}){Text(stringResource(R.string.conversation_references))}
                 if(showDetails){
+                    Column(Modifier.heightIn(max=180.dp).verticalScroll(rememberScrollState())){
                     value.string("caseStatus")?.let{caseLabels[it]}?.let{Text(stringResource(it))}
                     ReferencedRecords(value,openReference)
                     if(value.optBoolean("canManageCase")&&officeCase!=null)OfficeCaseEditor(model,officeCase,revision){changed++}
+                    }
                 }
             }
-            Conversation(model,value){changed++}
-            TextButton(onClick={changed++}){Text(stringResource(R.string.curriculum_refresh))}
+            Conversation(model,value,Modifier.weight(1f)){changed++}
         }
     }
 }

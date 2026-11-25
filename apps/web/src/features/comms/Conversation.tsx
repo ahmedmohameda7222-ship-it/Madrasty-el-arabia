@@ -37,6 +37,19 @@ function merge(older:ChatMessage[],incoming:ChatMessage[]){
 export function Conversation({locale,thread,changed}:{locale:Locale;thread:ThreadSummary;changed:()=>void}){
   const {persona}=useAccountScope(),text=copy[locale],root=`/threads/${thread.id}` as const;
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
+  const messageArea=useRef<HTMLDivElement>(null);
+  const followTail=useRef(true);
+  useEffect(()=>{
+    const area=messageArea.current;if(!area)return;
+    const track=()=>{followTail.current=area.scrollHeight-area.scrollTop-area.clientHeight<80;};
+    const update=()=>{if(followTail.current)area.scrollTop=area.scrollHeight;};
+    area.addEventListener("scroll",track,{passive:true});
+    const observer=new ResizeObserver(update);
+    const timeline=area.querySelector(".comms-timeline");if(timeline)observer.observe(timeline);
+    const mutations=new MutationObserver(()=>{const target=area.querySelector(".comms-timeline");if(target)observer.observe(target);update();});
+    mutations.observe(area,{childList:true,subtree:true});
+    return ()=>{area.removeEventListener("scroll",track);observer.disconnect();mutations.disconnect();};
+  },[]);
   const [body,setBody]=useState(""),[quote,setQuote]=useState<ChatMessage>();
   const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}>();
   const [ack,setAck]=useState<ChatMessage>(),[lost,setLost]=useState(false);
@@ -114,7 +127,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       </div>
     </form>
     </details>
-    <div className="comms-message-area">
+    <div className="comms-message-area" ref={messageArea}>
     <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={setQuote} deny={deny}
       recognize={recognize} updateArchive={setArchived}/>
     {attempt&&<div className="comms-message comms-pending" data-own="true" role={attempt.failed?"alert":"status"}>

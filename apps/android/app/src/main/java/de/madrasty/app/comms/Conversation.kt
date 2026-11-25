@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.FlowRow
@@ -54,7 +58,7 @@ import org.json.JSONObject
 private data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
 
 @Composable
-internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->Unit){
+internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Modifier=Modifier,changed:()->Unit){
     val id=thread.getString("id")
     val path="/threads/$id"
     var typed by remember(id){mutableStateOf("")}
@@ -82,7 +86,11 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
         AsyncSurface<Unit>(AsyncState.Forbidden()){}
         return
     }
-    HorizontalDivider()
+    var optionsOpen by remember(id){mutableStateOf(false)}
+    Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)){
+    TextButton(onClick={optionsOpen=!optionsOpen}){Text(stringResource(R.string.chat_search_thread)+" · ⋯")}
+    if(optionsOpen){
+    Column(Modifier.heightIn(max=150.dp).verticalScroll(rememberScrollState())){
     Submit(true,if(archived)R.string.chat_restore else R.string.chat_archive,success=null){
         try{
             val output=model.chatCommand("$path/state",JSONObject().put("archived",!archived),"PATCH")
@@ -97,6 +105,9 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
     Field(R.string.chat_search_thread,search){search=it.take(120)}
     TextButton(onClick={term=search.trim()}){Text(stringResource(R.string.staff_search))}
     if(term.isNotEmpty())TextButton(onClick={term="";search=""}){Text(stringResource(R.string.clear_filter))}
+    }
+    }
+    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
     key(id,term){
         MessageTimeline(model,thread,term,acknowledged,::deny,::recognize,{archived=it}){message->
             if(outgoing?.pending!=true){quote=message;outgoing=null}
@@ -104,13 +115,21 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
     }
     val failed=outgoing?.pending==false
     outgoing?.let{message->
-        if(message.body.isNotEmpty())Text(isolate(message.body))
-        Text(stringResource(if(message.pending)R.string.chat_sending else R.string.chat_failed))
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End){
+            Surface(shape=RoundedCornerShape(18.dp),color=MaterialTheme.colorScheme.primaryContainer){
+                Column(Modifier.padding(12.dp)){
+                    if(message.body.isNotEmpty())Text(isolate(message.body))
+                    Text(stringResource(if(message.pending)R.string.chat_sending else R.string.chat_failed),style=MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
     }
     if(!thread.optBoolean("canReply")){
         Text(stringResource(R.string.chat_read_only))
-        return
+        return@Column
     }
+    Column(Modifier.fillMaxWidth().heightIn(max=200.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(4.dp)){
     val quoted=quote
     if(quoted!=null){
         Text(stringResource(R.string.chat_reply)+" · "+chatAuthor(quoted))
@@ -144,6 +163,8 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,changed:()->
             catch(_:Exception){if(outgoing?.id==sending.id)outgoing=sending.copy(pending=false)}
         }
     }){Text(stringResource(if(failed)R.string.chat_retry else R.string.chat_send))}
+    }
+    }
 }
 
 @Composable
