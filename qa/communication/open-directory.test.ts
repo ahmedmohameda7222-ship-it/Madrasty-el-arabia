@@ -5,7 +5,7 @@ import { setUpCalendar } from "../fixtures/calendar";
 import { schoolFixtures, type Persona, type Principal } from "../fixtures/school";
 import { fixtureApi } from "../support/api";
 
-type Contact = { id: string; role: string; displayName: string | null; workEmail?: string | null; workPhone?: string | null; target: { kind: "person" | "office"; id: string } };
+type Contact = { id: string; role: string; displayName: string | null; contexts: {id:string}[]; workEmail?: string | null; workPhone?: string | null; target: { kind: "person" | "office"; id: string } };
 
 test("all three active school personas can discover and start direct conversations with every role", async () => {
   const school = schoolFixtures();
@@ -51,11 +51,14 @@ test("recommended contacts prioritize the assigned teacher, all people includes 
     const token = await school.bearer("guardian-ar", "guardian");
     const request = (path: string) => fixtureApi(school, path, { token, persona: "guardian" });
     const mine: Contact[] = (await request("/directory?view=mine&limit=100")).payload.data;
-    assert.equal(mine[0]?.displayName, "يوسف عبد الرحمن محمود", "assigned teacher first");
-    assert.ok(!mine.some(c => c.displayName === "Johannes Peter Schneider"));
+    assert.equal(mine[0]?.role, "teacher", "assigned teachers precede administration");
+    assert.ok(mine.some(c => c.displayName === "يوسف عبد الرحمن محمود"));
+    assert.ok(mine.filter(c=>c.role==="teacher").every(c=>c.contexts.length>0));
+    // School onboarding may assign an additional support teacher to this class.\n    // Assert against current class context, not a hard-coded unassigned name.
     assert.ok(mine.every(c => c.target.kind === "person"));
     const all: Contact[] = (await request("/directory?view=all&limit=100")).payload.data;
     assert.ok(all.some(c => c.displayName === "Johannes Peter Schneider"));
+    assert.deepEqual(mine.filter(c=>c.role==="teacher").map(c=>c.id),all.filter(c=>c.role==="teacher"&&c.contexts.length>0).map(c=>c.id));
     assert.ok(all.some(c => c.role === "guardian"));
     assert.ok(all.every(c => c.target.kind === "person"));
     assert.ok(!all.some(c => c.displayName === "سلمى عبد الرحمن محمد"), "no self contact");
