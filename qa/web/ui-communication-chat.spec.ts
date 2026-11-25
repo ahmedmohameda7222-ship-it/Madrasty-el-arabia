@@ -25,7 +25,16 @@ test("direct chat presents sent and received bubbles and compact actions", async
     }
     await signInForWrite(page,school,"guardian-de");
     await page.setViewportSize({width:390,height:844});
-    await page.goto("/de/school/messages?thread="+thread);
+    // Sign-in may still be finishing its client-side redirect. Use the actual
+    // inbox navigation after the authenticated shell has rendered.
+    await expect(page.locator(".school-content")).toBeVisible({timeout:20000});
+    const inbox=page.locator('a[href="/de/school/messages"]').first();
+    await expect(inbox).toBeVisible({timeout:20000});
+    await inbox.click();
+    const row=page.locator(".comms-thread-row").filter({has:page.locator('small', {hasText:"Guten Tag"})});
+    await expect(row).toBeVisible({timeout:20000});
+    await row.click();
+    await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).toBe(thread);
     await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible({timeout:20000});
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
