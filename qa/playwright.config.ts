@@ -12,6 +12,7 @@ export default defineConfig({
   outputDir: process.env.LOCALAPPDATA + "/MadrastyBuild/qa-supabase/playwright",
   use: { baseURL: localOrigin, trace: "off", screenshot: "off", video: "off" },
   projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
     { name: "edge", use: { browserName: "chromium", channel: "msedge" } },
     { name: "firefox", testIgnore: ["**/attendance-offline.spec.ts", "**/admin-mfa.spec.ts"], use: { browserName: "firefox" } },
     { name: "webkit", testIgnore: ["**/attendance-offline.spec.ts", "**/admin-mfa.spec.ts"], use: { browserName: "webkit" } },
