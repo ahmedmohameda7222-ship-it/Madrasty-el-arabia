@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -89,9 +90,11 @@ class CommunicationVisualTest {
         try{
             compose.setContent{
                 val context=LocalContext.current
+                // Preserve the real test Activity registry before overriding its Context for localization.
+                val registryOwner=requireNotNull(LocalActivityResultRegistryOwner.current)
                 val localized=remember(context){context.createConfigurationContext(Configuration(context.resources.configuration).apply{setLocale(Locale.GERMAN)})}
                 CompositionLocalProvider(LocalContext provides localized,LocalConfiguration provides localized.resources.configuration,
-                    LocalLayoutDirection provides LayoutDirection.Ltr){
+                    LocalActivityResultRegistryOwner provides registryOwner,LocalLayoutDirection provides LayoutDirection.Ltr){
                     SchoolTheme(darkMode=false){
                         Surface{
                             Column(Modifier.fillMaxSize().padding(16.dp)){

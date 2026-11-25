@@ -365,8 +365,8 @@ internal fun ChatMessageItem(
         if(copyFailed)Text(stringResource(R.string.generic_error))
     }
     if(hasContent)ReportChatMessage(model,threadId,message.getString("id"))
-    if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions)
     }
+    if(hasContent||message.getString("source")=="system")ChatReactions(model,threadId,message,deny,replaceReactions,showPicker=actions)
     }
     }
 }
@@ -382,8 +382,8 @@ internal fun CommunicationBubble(own:Boolean,content:@Composable ()->Unit){
 private val availableEmojis=listOf("👍","❤️","😂","😮","😢","🙏")
 
 @Composable
-private fun ChatReactions(model:IdentityViewModel,thread:String,message:JSONObject,deny:()->Unit,received:(JSONArray)->Unit){
-    var expanded by remember{mutableStateOf(false)}
+private fun ChatReactions(model:IdentityViewModel,thread:String,message:JSONObject,deny:()->Unit,received:(JSONArray)->Unit,showPicker:Boolean){
+    var expanded by remember(showPicker){mutableStateOf(false)}
     var busy by remember{mutableStateOf(false)}
     var error by remember{mutableStateOf(false)}
     val reactions=message.getJSONArray("reactions")
@@ -399,7 +399,7 @@ private fun ChatReactions(model:IdentityViewModel,thread:String,message:JSONObje
         }
     }
     val scope=rememberCoroutineScope()
-    TextButton(onClick={expanded=!expanded}){Text(stringResource(R.string.chat_reactions))}
+    if(showPicker)TextButton(onClick={expanded=!expanded}){Text(stringResource(R.string.chat_reactions))}
     if(error)Text(stringResource(R.string.generic_error))
     if(expanded||projected.isNotEmpty())FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
         val options=if(expanded)availableEmojis else availableEmojis.filter{projected.containsKey(it)}
