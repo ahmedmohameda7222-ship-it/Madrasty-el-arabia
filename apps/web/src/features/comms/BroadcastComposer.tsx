@@ -165,11 +165,11 @@ function BroadcastComposer({locale,options,published,savedDraft,saveDraft}:{loca
         <button type="button" className="plain-button" disabled={busy} onClick={()=>{setReview(undefined);setError("");}}>{labels.edit}</button>
       </div>
     </section>:<form className="auth-form" onSubmit={(event)=>void preview(event)}>
-      <label>{labels.audience}<select value={chosen??""} disabled={busy} onChange={(event)=>{setKind(event.target.value?event.target.value as BroadcastKind:undefined);setClassId("");}}>
+      <label>{labels.audience}<select aria-label={labels.audience} value={chosen??""} disabled={busy} onChange={(event)=>{setKind(event.target.value?event.target.value as BroadcastKind:undefined);setClassId("");}}>
         <option value="">{locale==="ar"?"اختر المستلمين":"Empfänger auswählen"}</option>
         {available.map((id)=><option key={id} value={id}>{labels[id]}</option>)}
       </select></label>
-      {chosen==="class_guardians"&&<label>{labels.class}<select value={classRef??""} disabled={busy} onChange={(event)=>setClassId(event.target.value)}>
+      {chosen==="class_guardians"&&<label>{labels.class}<select aria-label={labels.class} value={classRef??""} disabled={busy} onChange={(event)=>setClassId(event.target.value)}>
         <option value="">{locale==="ar"?"اختر الفصل":"Klasse auswählen"}</option>
         {options.classes.map((item)=><option key={item.id} value={item.id}>{item.code} · {locale==="ar"?item.nameAr:item.nameDe}</option>)}
       </select></label>}

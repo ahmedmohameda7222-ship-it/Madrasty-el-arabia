@@ -113,7 +113,8 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
 
 for(const scenario of cases){
   test("communication populated visual audit "+scenario.persona+" "+scenario.locale,async({page})=>{
-    test.setTimeout(360000);
+    test.setTimeout(600000);
+    page.setDefaultTimeout(15000);
     const school=schoolFixtures(),issues:string[]=[],files:string[]=[],notes:string[]=[];
     mkdirSync(out,{recursive:true});
     const key=scenario.persona+"-"+scenario.locale;

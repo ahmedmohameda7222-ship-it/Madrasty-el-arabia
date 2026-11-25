@@ -121,8 +121,8 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
         </div>
         <button className="comms-icon-button comms-calendar-add" type="button" aria-label={text.writeEvent} onClick={()=>setEditor("new")}><Icon name="plus"/></button>
       </div>:<><div className="comms-segments" role="group" aria-label={text.managed}>
-        <button type="button" aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{text.feed}</button>
-        <button type="button" aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{text.managed}</button>
+        <button type="button" aria-label={text.feed} aria-pressed={view==="feed"} onClick={()=>setView("feed")}>{locale==="ar"?"المنشورة":"Beiträge"}</button>
+        <button type="button" aria-label={text.managed} aria-pressed={view==="managed"} onClick={()=>setView("managed")}>{locale==="ar"?"إدارة":"Verwalten"}</button>
       </div><button className="primary-button" type="button" onClick={()=>setEditor("new")}>{text.write}</button></>)}
       {options.classes.length>0&&<label className={kind==="event"?"comms-calendar-class":undefined}>{text.class}<select value={classId} onChange={(event)=>setClass(event.target.value)}>
         <option value="">{text.allClasses}</option>
