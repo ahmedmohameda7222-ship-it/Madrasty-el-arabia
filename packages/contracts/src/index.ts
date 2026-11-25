@@ -56,3 +56,5 @@ export * from "./clientVersions";
 export * from "./finance/cashbook";
 
 export * from "./account-profile";
+
+export * from "./comms/feed";

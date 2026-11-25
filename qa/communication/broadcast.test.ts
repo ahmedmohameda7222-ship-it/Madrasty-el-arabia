@@ -34,6 +34,12 @@ test("a class announcement uses Arabic and German copy and stays inside the targ
     assert.equal(first.title, copy.ar.title);
     assert.equal(second.title, copy.de.title);
     await fixtureApi(school, path, { token: outsider, status: 404 });
+    for(const [token,locale,expected] of [[arabic,"ar",copy.ar.title],[german,"de",copy.de.title],[admin,"de",copy.de.title]] as const){
+      const feed=(await fixtureApi(school,`/comms/feed?locale=${locale}&filter=announcement`,{token})).payload.data;
+      assert.ok(feed.some((item:{id:string;title:string})=>item.id===receipt.publicationId&&item.title===expected));
+    }
+    const outsideFeed=(await fixtureApi(school,"/comms/feed?locale=de",{token:outsider})).payload.data;
+    assert.ok(!outsideFeed.some((item:{id:string})=>item.id===receipt.publicationId));
   } finally {
     await school.close();
   }
