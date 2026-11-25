@@ -52,7 +52,7 @@ async function capture(page:Page,prefix:string,state:string,issues:string[],file
     const frame=main.getBoundingClientRect();
     if(main.scrollWidth>main.clientWidth+2)problems.push("scrolling content overflows horizontally");
     if(document.documentElement.scrollWidth>innerWidth+2)problems.push("document overflows horizontally");
-    const isRendered=(e:Element)=>{const hidden=e.closest("details:not([open])");if(hidden&&!hidden.querySelector(":scope > summary")?.contains(e))return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=="hidden";};
+    const isRendered=(e:Element)=>{for(let parent:Element|null=e;parent;parent=parent.parentElement){if(parent.matches("details:not([open])")&&!parent.querySelector(":scope > summary")?.contains(e))return false;}const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=="hidden";};
     const splitLines=(rects:DOMRect[])=>rects.some(a=>rects.some(b=>Math.abs((a.top+a.bottom-b.top-b.bottom)/2)>Math.min(a.height,b.height)*.65));
     const selectors=".comms-weekday,.comms-feed-filters button,.comms-hub-tabs a,.comms-calendar-actions button,.comms-person-row,.comms-thread-toolbar,.comms-input-bar,.comms-publish-menu-items,.comms-attachment-menu";
     for(const e of main.querySelectorAll(selectors)){

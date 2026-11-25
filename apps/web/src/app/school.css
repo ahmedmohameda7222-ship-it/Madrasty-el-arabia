@@ -575,3 +575,9 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-person-name bdi{font-weight:650}
 .comms-directory .comms-composer{min-inline-size:0}
 .comms-directory .comms-first-contact h1{hyphens:auto;overflow-wrap:break-word}
+
+/* Two short message actions fit beside each other; the report remains full-width. */
+.comms-message-actions[open]>.header-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+.comms-message-actions[open]>.header-actions>.plain-button{padding-inline:8px;font-size:.875rem;min-block-size:44px}
+.comms-message-actions[open]>.header-actions>.plain-button:last-child,.comms-message-actions[open]>.header-actions>form,.comms-message-actions[open]>.header-actions>small{grid-column:1/-1}
+.comms-report-form .header-actions>button{font-size:.875rem;padding-inline:10px}

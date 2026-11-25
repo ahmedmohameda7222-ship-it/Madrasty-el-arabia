@@ -37,7 +37,7 @@ export function ReportMessage({locale,thread,message}:{locale:Locale;thread:stri
   const [open,setOpen]=useState(false),[reason,setReason]=useState(""),[error,setError]=useState("");
   const [key,setKey]=useState<string>(),[sent,setSent]=useState(false),[busy,setBusy]=useState(false);
   const reportForm=useRef<HTMLFormElement>(null);
-  useEffect(()=>{if(open)reportForm.current?.scrollIntoView({block:"nearest",inline:"nearest"});},[open]);
+  useEffect(()=>{if(open)reportForm.current?.scrollIntoView({block:"center",inline:"nearest"});},[open]);
   async function submit(event:FormEvent){
     event.preventDefault();
     if(busy||!reason.trim())return;

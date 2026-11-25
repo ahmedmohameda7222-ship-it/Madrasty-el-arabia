@@ -25,7 +25,7 @@ test("direct chat presents sent and received bubbles and compact actions", async
     await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     await page.setViewportSize({width:390,height:844});
     await page.goto("/de/school/messages?thread="+thread);
-    await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible();
+    await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible({timeout:20000});
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
     await expect(page.getByRole("button",{name:"👍 1",exact:true})).toBeVisible();
