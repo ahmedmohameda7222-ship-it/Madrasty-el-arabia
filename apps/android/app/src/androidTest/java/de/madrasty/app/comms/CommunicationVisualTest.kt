@@ -77,6 +77,37 @@ class CommunicationVisualTest {
             }
         }finally{instrumentation.runOnMainSync{store.clear()}}
     }
+    @Test fun nativeAttachmentActionsUseCompactMaterialMenu(){
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val app=instrumentation.targetContext.applicationContext as Application
+        val store=ViewModelStore()
+        lateinit var model:IdentityViewModel
+        instrumentation.runOnMainSync{
+            model=ViewModelProvider(store,ViewModelProvider.AndroidViewModelFactory.getInstance(app))[IdentityViewModel::class.java]
+        }
+        try{
+            compose.setContent{
+                val context=LocalContext.current
+                val localized=remember(context){context.createConfigurationContext(Configuration(context.resources.configuration).apply{setLocale(Locale.GERMAN)})}
+                CompositionLocalProvider(LocalContext provides localized,LocalConfiguration provides localized.resources.configuration,
+                    LocalLayoutDirection provides LayoutDirection.Ltr){
+                    SchoolTheme(darkMode=false){
+                        Surface{
+                            Column(Modifier.fillMaxSize().padding(16.dp)){
+                                MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={})
+                            }
+                        }
+                    }
+                }
+            }
+            val actions=listOf("Foto auswählen","Foto aufnehmen","Audio aufnehmen")
+            val attach=compose.onNodeWithContentDescription("Anhang hinzufügen")
+            attach.assertIsDisplayed()
+            actions.forEach{compose.onNodeWithText(it,exact=true).assertDoesNotExist()}
+            attach.performClick()
+            actions.forEach{compose.onNodeWithText(it,exact=true).assertIsDisplayed()}
+        }finally{instrumentation.runOnMainSync{store.clear()}}
+    }
     @OptIn(ExperimentalTestApi::class)
     private fun capture(language:String,dark:Boolean){
         val ar=language=="ar"
