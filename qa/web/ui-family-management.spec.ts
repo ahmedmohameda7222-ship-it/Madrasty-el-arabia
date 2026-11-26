@@ -39,11 +39,13 @@ for(const locale of ["de","ar"] as const)for(const width of [320,390,430])for(co
    await page.getByRole("button",{name:locale==="ar"?"رفع الملف":"Datei hochladen",exact:true}).click();
    await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مطابقة الأعمدة":"Spalten zuordnen",{timeout:30000});await noOverflow();await page.screenshot({path:prefix+"-import-mapping.png",animations:"disabled"});
    await page.getByRole("button",{name:locale==="ar"?"معاينة البيانات":"Vorschau anzeigen",exact:true}).click();
-   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});await noOverflow();await page.screenshot({path:prefix+"-import-review.png",animations:"disabled"});
+   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});await noOverflow();await expect(page.locator(".family-import-counts dd")).toHaveCount(6);
+   expect(await page.locator(".family-import-confirm").evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+   await page.screenshot({path:prefix+"-import-review.png",animations:"disabled"});
    await page.reload();await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});
    await page.getByRole("checkbox",{name:locale==="ar"?"راجعت روابط الطلاب وأولياء الأمور.":"Ich habe die Verknüpfungen geprüft."}).check();
    await page.getByRole("button",{name:locale==="ar"?"اعتماد الصفوف":"Zeilen übernehmen",exact:true}).click();
-   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});await noOverflow();await page.screenshot({path:prefix+"-import-receipt.png",animations:"disabled"});
+   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});await noOverflow();await expect(page.locator(".family-import-receipt dd")).toHaveText(["1","1","1"]);await page.screenshot({path:prefix+"-import-receipt.png",animations:"disabled"});
    await page.reload();await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});
   }finally{await school.close();}
  });

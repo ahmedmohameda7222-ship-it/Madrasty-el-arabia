@@ -656,3 +656,18 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .family-import .group-list{min-inline-size:0;overflow-wrap:anywhere}
 .family-import .primary-button,.family-import .plain-button{white-space:normal;overflow-wrap:break-word}
 @media(max-width:360px){.family-profile-header{grid-template-columns:36px minmax(0,1fr)}.family-import .header-actions{grid-template-columns:1fr}}
+
+/* Import audit: clear status numbers, 44px confirmation and independent action rows. */
+.family-import>h1{margin:0;font-size:clamp(1.35rem,5vw,1.85rem);line-height:1.25}
+.family-import>p[role=status]{margin:0;color:var(--muted);font-size:.83rem}
+.family-import>.auth-card{display:grid;gap:10px}
+.family-import>.auth-card>h2,.family-import>.auth-card>p{margin:0}
+.family-import-counts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0}
+.family-import-counts>div,.family-import-receipt>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-inline-size:0;padding:8px 10px;background:var(--inset);border-radius:10px}
+.family-import-counts dt,.family-import-receipt dt{font-size:.8rem;line-height:1.35;overflow-wrap:anywhere;min-inline-size:0}
+.family-import-counts dd,.family-import-receipt dd{margin:0;flex:none;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.family-import-receipt{display:grid;gap:6px;margin:0}
+.family-import-confirm{display:flex;align-items:center;gap:10px;min-block-size:44px;font-size:.875rem;line-height:1.4}
+.family-import-confirm input[type=checkbox]{appearance:auto;flex:none;inline-size:22px;block-size:22px;margin:0;accent-color:var(--primary)}
+.family-import-review-actions{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.family-import-review-actions button{margin:0!important;inline-size:100%;min-block-size:44px}

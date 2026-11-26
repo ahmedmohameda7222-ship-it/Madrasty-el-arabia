@@ -82,6 +82,7 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
   const [history,setHistory]=useState<z.infer<typeof importVersionSchema>[]>([]);
   const [filter,setFilter]=useState("all");
   const [stage,setStage]=useState(1);
+  useEffect(()=>{document.querySelector(".school-content")?.scrollTo(0,0);window.scrollTo(0,0);},[stage]);
   const [confirmed,setConfirmed]=useState(false);
   const fileInput=useRef<HTMLInputElement>(null);
   const ar=locale==="ar";
@@ -189,7 +190,7 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
 
   const rows=preview?.rows.filter(row=>filter==="all"||row.disposition===filter)??[];
   return <div className="family-workspace family-import">
-    <Link className="plain-button" href={`/${locale}/school/students`}>{tr("Zurück","رجوع")}</Link>
+    <Link className="plain-button family-back" href={`/${locale}/school/students`}>{tr("Zurück","رجوع")}</Link>
     <h1>{text.title}</h1>
     <p role="status">{tr("Schritt","الخطوة")} {stage}/4 · {[tr("Datei auswählen","اختيار الملف"),text.mapping,text.review,text.receipt][stage-1]}</p>
     {stage===1&&<section className="auth-card">
@@ -237,23 +238,23 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
     </section>}
     {stage===3&&preview && !receipt && <section className="auth-card">
       <h2>{text.review}</h2>
-      <p>{Object.entries(preview.counts).map(([key, value]) => `${text[key as keyof typeof preview.counts]} ${value}`).join(" · ")}</p>
+      <dl className="family-import-counts">{Object.entries(preview.counts).map(([key,value])=><div key={key}><dt>{text[key as keyof typeof preview.counts]}</dt><dd>{value}</dd></div>)}</dl>
       <label>{tr("Status filtern","تصفية الحالة")}<select value={filter} onChange={e=>{setFilter(e.target.value);setLimit(40);}}><option value="all">{tr("Alle","الكل")}</option>{Object.keys(preview.counts).map(key=><option key={key} value={key}>{text[key as keyof typeof preview.counts]}</option>)}</select></label>
       <ol className="group-list">
         {rows.slice(0, limit).map((row) => <ImportRow key={row.rowNo} locale={locale} row={row} busy={pending} save={decide} />)}
       </ol>
       {rows.length > limit && <button className="plain-button" onClick={() => setLimit(limit + 40)}>{text.next}</button>}
-      <label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>{tr("Ich habe die Verknüpfungen geprüft.","راجعت روابط الطلاب وأولياء الأمور.")}</label>
-      <button className="plain-button" disabled={pending} onClick={()=>setStage(2)}>{tr("Zuordnung bearbeiten","تعديل الأعمدة")}</button>
+      <label className="family-import-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>{tr("Ich habe die Verknüpfungen geprüft.","راجعت روابط الطلاب وأولياء الأمور.")}</label>
+      <div className="family-import-review-actions"><button className="plain-button" disabled={pending} onClick={()=>setStage(2)}>{tr("Zuordnung bearbeiten","تعديل الأعمدة")}</button>
       <button className="primary-button" disabled={!confirmed || pending || Boolean(preview.counts.conflict || preview.counts.revoked)
         || preview.counts.new + preview.counts.existing === 0}
-        onClick={() => void run(async () => {setReceipt(await command(`${base}/${preview.id}/commit`, "POST", { reviewedRevision: preview.revision }, importReceiptSchema));setStage(4);})}>{text.commit}</button>
+        onClick={() => void run(async () => {setReceipt(await command(`${base}/${preview.id}/commit`, "POST", { reviewedRevision: preview.revision }, importReceiptSchema));setStage(4);})}>{text.commit}</button></div>
     </section>}
     {stage===4&&receipt && <section className="auth-card">
       <h2>{text.receipt}</h2>
-      <dl><dt>{text.rows}</dt><dd>{receipt.rowsCommitted}</dd>
-        <dt>{text.links}</dt><dd>{receipt.linksCreated}</dd>
-        <dt>{text.eligible}</dt><dd>{receipt.eligibleGuardians}</dd></dl>
+      <dl className="family-import-receipt"><div><dt>{text.rows}</dt><dd>{receipt.rowsCommitted}</dd></div>
+        <div><dt>{text.links}</dt><dd>{receipt.linksCreated}</dd></div>
+        <div><dt>{text.eligible}</dt><dd>{receipt.eligibleGuardians}</dd></div></dl>
       <p>{text.sendNotice}</p>
       {receipt.eligibleGuardians > 0 && <Link className="plain-button" href={`/${locale}/school/students?batchId=${receipt.id}`}>{text.eligible}</Link>}
     </section>}
