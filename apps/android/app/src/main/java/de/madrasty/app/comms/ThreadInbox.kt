@@ -119,10 +119,16 @@ internal fun ThreadInbox(model:IdentityViewModel,state:ThreadInboxState,open:(St
         val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
         val path="/threads?limit=30&includeEmpty=false&archived=${state.filter=="archive"}&unread=${state.filter=="unread"}$term"
         var view by remember(path){mutableStateOf<AsyncState<WirePage<List<JSONObject>>>>(AsyncState.InitialLoading())}
+        var refreshError by remember(path){mutableStateOf(false)}
         suspend fun read(url:String)=decodeData(model.schoolRequest(url)){payload->(payload as JSONArray).let{items->List(items.length(),items::getJSONObject)}}
         LaunchedEffect(path,version,manual,model.attendanceNetworkRevision){
-            try{view=loadAccountSurface({manual++}){read(path)}}finally{refreshing=false}
+            try{
+                val next=loadAccountSurface({manual++}){read(path)}
+                if(view is AsyncState.Ready&&(next is AsyncState.Error||next is AsyncState.Offline)){refreshError=true}
+                else{view=next;refreshError=false}
+            }finally{refreshing=false}
         }
+        if(refreshError)Row(verticalAlignment=Alignment.CenterVertically){Text(stringResource(R.string.generic_error),Modifier.weight(1f));TextButton(onClick={manual++}){Text(stringResource(R.string.retry))}}
         if(actionError)Text(stringResource(R.string.generic_error),color=MaterialTheme.colorScheme.error)
         PullToRefreshBox(isRefreshing=refreshing,onRefresh={refreshing=true;manual++},modifier=Modifier.weight(1f).fillMaxWidth()){
             Column(Modifier.fillMaxSize()){

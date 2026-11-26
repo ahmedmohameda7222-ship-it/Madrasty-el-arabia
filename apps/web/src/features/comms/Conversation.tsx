@@ -196,6 +196,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
   const [paging,setPaging]=useState(false);
   const [optimistic,setOptimistic]=useState<Record<string,typeof reactionEmoji.options[number]|null>>({});
   const reactionBusy=useRef(new Set<string>());
+  const swipe=useRef<{pointerId:number;x:number;y:number}|null>(null);
   const press=useRef<{pointerId:number;x:number;y:number;timer:number}|null>(null);
   const [clipboardNotice,setClipboardNotice]=useState<{id:string;ok:boolean}>();
   function cancelPress(){
@@ -205,9 +206,10 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
   function beginPress(event:PointerEvent<HTMLParagraphElement>){
     if(!event.isPrimary||event.button!==0||(event.pointerType!=="touch"&&event.pointerType!=="pen"))return;
     cancelPress();
+    swipe.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY};
     const actions=event.currentTarget.closest(".comms-message")?.querySelector<HTMLDetailsElement>(".comms-message-actions");
     if(!actions)return;
-    const timer=window.setTimeout(()=>{if(actions.isConnected){pauseFollow();actions.open=true;}},500);
+    const timer=window.setTimeout(()=>{swipe.current=null;if(actions.isConnected){pauseFollow();actions.open=true;}},500);
     press.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY,timer};
   }
   function movePress(event:PointerEvent<HTMLParagraphElement>){
@@ -346,7 +348,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
         if(message.reply)void jump(message.reply);
       }}><bdi>{message.reply.authorName??text.school}</bdi>{message.reply.preview&&<> · <bdi>{message.reply.preview}</bdi></>}</button>}
       {message.body&&<p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}
-        onPointerDown={beginPress} onPointerMove={movePress} onPointerUp={cancelPress} onPointerCancel={cancelPress} onPointerLeave={cancelPress}
+        onPointerDown={beginPress} onPointerMove={movePress} onPointerUp={event=>{const origin=swipe.current;swipe.current=null;cancelPress();if(origin?.pointerId===event.pointerId&&thread.canReply&&message.replyable){const dx=event.clientX-origin.x,dy=event.clientY-origin.y;if(Math.abs(dx)>=64&&Math.abs(dx)>Math.abs(dy)*1.5)reply(message);}}} onPointerCancel={()=>{swipe.current=null;cancelPress();}} onPointerLeave={()=>{swipe.current=null;cancelPress();}}
         onContextMenu={(event)=>{if(press.current)event.preventDefault();}}>{message.body}</p>}
       {message.attachments.map((file)=><PrivateChatMedia key={file.id} locale={locale} kind={file.kind}
         path={`/api/v1/threads/${thread.id}/media/${file.id}`}/>)}

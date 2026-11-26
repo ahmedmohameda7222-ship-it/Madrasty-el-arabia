@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.os.PersistableBundle
 import android.os.Build
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -393,7 +395,10 @@ internal fun ChatMessageItem(
         }
     }
     message.string("body")?.let{body->
-        Text(isolate(body),modifier=Modifier.combinedClickable(onClick={},onLongClick={actions=true}))
+        Text(isolate(body),modifier=Modifier.then(if(message.optBoolean("replyable")&&thread.optBoolean("canReply"))Modifier.pointerInput(message.getString("id")){
+            var dx=0f
+            detectHorizontalDragGestures(onDragStart={dx=0f},onDragEnd={if(kotlin.math.abs(dx)>=64.dp.toPx())reply(message)},onHorizontalDrag={change,amount->change.consume();dx+=amount})
+        }else Modifier).combinedClickable(onClick={},onLongClick={actions=true}))
     }
     val media=message.getJSONArray("attachments")
     val threadId=thread.getString("id")

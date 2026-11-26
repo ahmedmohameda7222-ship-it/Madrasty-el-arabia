@@ -64,7 +64,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     return ()=>{if(timer!==undefined)window.clearInterval(timer);document.removeEventListener("visibilitychange",focus);window.removeEventListener("focus",focus);window.removeEventListener("online",focus);window.removeEventListener("madrasty-communication-wake",focus);};
   },[thread,wide]);
   const query=selected==="unread"?"&unread=true":"";
-  const list=useAcademicPage(thread&&!wide?null:`/threads?limit=30&includeEmpty=false${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version);
+  const list=useAcademicPage(thread&&!wide?null:`/threads?limit=30&includeEmpty=false${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version,true);
   const detail=useTimetableRead(thread?`/threads/${thread}`:null,threadDetail,version);
   const root=`/${locale}/school/messages`;
   const backParams=withInboxThread(routeParams).toString();
