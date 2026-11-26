@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
 import {receiptState,type Locale} from "@madrasty/contracts";
@@ -12,7 +13,7 @@ import {webSchoolSession} from "@/server/identity/web-session";
 export default async function ReceiptsPage({params,searchParams}:{
   params:Promise<{locale:Locale}>;searchParams:Promise<{receipt?:string;state?:string;view?:string}>;
 }){
-  const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   const id=z.uuid().safeParse(query.receipt).data;
   if(session.activePersona==="guardian"&&id)return <ReceiptDetails locale={locale} id={id} staff={false}/>;

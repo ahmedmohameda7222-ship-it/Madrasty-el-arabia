@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import { SchoolLink as Link } from "@/ui/SchoolLink";
 import { notFound, redirect } from "next/navigation";
 import { schoolDateSchema, type Locale } from "@madrasty/contracts";
@@ -22,7 +23,7 @@ export default async function SchoolPage({ params, searchParams }: {
   params: Promise<{ locale: Locale; tab: string }>;
   searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; section?:string; batchId?:string; invite?:string }>;
 }) {
-  const [{ locale, tab }, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
+  const [{ locale, tab }, search, session] = await Promise.all([presentationParams(params), searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
   if (!session) redirect(`/${locale}/account/sign-in?next=${encodeURIComponent(`/${locale}/school/${tab}`)}`);
 
@@ -96,7 +97,7 @@ export default async function SchoolPage({ params, searchParams }: {
           <summary>{locale === "ar" ? "الحساب والجهاز" : "Konto und Gerät"}</summary>
           <div className="more-rows">
             <Link className="more-row" href={`/${locale}/account/profile`}>{locale==="ar"?"الملف الشخصي":"Profil"}</Link>
-            <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "تفضيلات الحساب والإشعارات" : "Konto und Benachrichtigungen"}</Link>
+            <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "إعدادات التطبيق والإشعارات" : "App-Einstellungen und Benachrichtigungen"}</Link>
             <Link className="more-row" href={`/${locale}/account/security`}>{locale === "ar" ? "الأمان والاسترجاع" : "Sicherheit und Wiederherstellung"}</Link>
           </div>
           <SessionControls locale={locale} session={session} />

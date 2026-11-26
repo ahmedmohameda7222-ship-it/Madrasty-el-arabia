@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
 import {billingMonth,type Locale} from "@madrasty/contracts";
@@ -8,7 +9,7 @@ import {webSchoolSession} from "@/server/identity/web-session";
 export default async function InvoicesPage({params,searchParams}:{
   params:Promise<{locale:Locale}>;searchParams:Promise<{invoice?:string;student?:string;period?:string}>;
 }){
-  const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   const [canPost,canIssue]=await Promise.all([mayUse(session,"finance.post"),mayUse(session,"finance.issue")]);
   if(session.activePersona!=="guardian"){

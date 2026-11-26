@@ -31,6 +31,7 @@ import de.madrasty.app.comms.DeviceNotificationSettings
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
+import de.madrasty.app.ui.LocalChangeInterfaceLanguage
 import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import kotlinx.coroutines.CancellationException
@@ -66,39 +67,51 @@ fun AccountScreen(model: IdentityViewModel, close: () -> Unit, security: () -> U
     val fallback = if (LocalConfiguration.current.locales[0].language == "de") "de" else "ar"
     var reload by remember { mutableStateOf(0) }
     var state by remember { mutableStateOf<AsyncState<AccountPreference>>(AsyncState.InitialLoading()) }
-    val context = LocalContext.current
     BackHandler(onBack = close)
     LaunchedEffect(reload) {
         state = AsyncState.InitialLoading()
-        state = loadAccountSurface({ reload++ }) { model.readPreferences(fallback) }
+        state = loadAccountSurface({ reload++ }) { model.readPreferences(fallback).copy(uiLocale=fallback) }
     }
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TextButton(onClick = close) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.account_preferences), style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.app_settings), style = MaterialTheme.typography.headlineMedium)
         AsyncSurface(state) { preferences ->
             key(preferences.revision,reload) {
                 PreferencesEditor(model, preferences, save = { state = AsyncState.Ready(it) }, reload = { reload++ })
             }
         }
-        DeviceNotificationSettings(model,fallback)
-        TextButton(onClick = {
-            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-            context.startActivity(intent)
-        }) { Text(stringResource(R.string.account_device_settings)) }
+        AppDeviceNotificationPreferences(model,fallback)
         TextButton(onClick = security) { Text(stringResource(R.string.security)) }
     }
+}
+
+@Composable
+internal fun AppDeviceNotificationPreferences(model:IdentityViewModel,locale:String){
+    val context=LocalContext.current
+    DeviceNotificationSettings(model,locale)
+    TextButton(onClick={
+        val intent=Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName)
+        context.startActivity(intent)
+    }){Text(stringResource(R.string.account_device_settings))}
 }
 
 @Composable
 private fun PreferencesEditor(model: IdentityViewModel, initial: AccountPreference, save: (AccountPreference) -> Unit, reload: () -> Unit) {
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
     var value by remember { mutableStateOf(initial) }
+    val interfaceLanguage=LocalConfiguration.current.locales[0].language
+    val changeInterfaceLanguage=LocalChangeInterfaceLanguage.current
+    var previousLanguage by remember{mutableStateOf(interfaceLanguage)}
+    LaunchedEffect(interfaceLanguage){
+        val before=previousLanguage;previousLanguage=interfaceLanguage
+        if(value.uiLocale==before)value=value.copy(uiLocale=interfaceLanguage)
+    }
     var conflict by remember { mutableStateOf(false) }
     Text(stringResource(R.string.account_ui_language))
-    LanguageChoice(value.uiLocale) { value = value.copy(uiLocale = it) }
+    LanguageChoice(interfaceLanguage) { changeInterfaceLanguage?.invoke(it) }
     Text(stringResource(R.string.account_mail_language))
     LanguageChoice(value.correspondenceLocale) { value = value.copy(correspondenceLocale = it) }
     Text(stringResource(R.string.account_appearance))
@@ -108,9 +121,10 @@ private fun PreferencesEditor(model: IdentityViewModel, initial: AccountPreferen
     Submit(!conflict && value != initial,R.string.account_save) {
         val account = model.session?.actor?.accountId
         try {
-            val updated = AccountPreference.read(model.schoolCommand(attempts,"/account/preferences","PATCH",value.body()))
+            val updated = AccountPreference.read(model.schoolCommand(attempts,"/account/preferences","PATCH",value.copy(uiLocale=interfaceLanguage).body()))
             if (account != null && account == model.session?.actor?.accountId) {
                 model.applyPreferences(account,updated)
+                changeInterfaceLanguage?.invoke(updated.uiLocale)
                 save(updated)
             }
         } catch (error: HttpFailure) {

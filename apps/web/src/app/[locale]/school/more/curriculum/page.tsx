@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import { notFound,redirect } from "next/navigation";
 import type { Locale } from "@madrasty/contracts";
 import { z } from "zod";
@@ -8,7 +9,7 @@ import { webSchoolSession } from "@/server/identity/web-session";
 export default async function CurriculumPage({params,searchParams}:{
   params:Promise<{locale:Locale}>;searchParams:Promise<{child?:string;lesson?:string}>;
 }){
-  const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   if(session.activePersona==="admin"){
     if(!await mayUse(session,"academics.supervise")||!await mayUse(session,"attendance.supervise"))notFound();

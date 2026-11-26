@@ -27,6 +27,7 @@ export function FamilyExcuse({locale,child,initialDate}:{locale:Locale;child:str
   const [drafts,setDrafts]=useState<Record<string,string>>({});
   const [storageUnavailable,setStorageUnavailable]=useState(false);
   const records=useRef(new Map<string,CachedExcuse>());
+  const presentationLocale=useRef(locale);presentationLocale.current=locale;
   const saveTail=useRef(Promise.resolve(true));
   const [busy,setBusy]=useState(false);
   const [refresh,setRefresh]=useState(0);
@@ -63,7 +64,7 @@ export function FamilyExcuse({locale,child,initialDate}:{locale:Locale;child:str
     if(!confirmed)return;
     let active=true;
     const date=confirmed.schoolDate;
-    void activateAttendanceDrafts(actor,locale).then(async()=>{
+    void activateAttendanceDrafts(actor,presentationLocale.current).then(async()=>{
       const old=records.current.get(date)??await readPrivateDraft<CachedExcuse>(actor,excuseSlot(child,date));
       if(!active)return;
       const already=old?.inFlight&&confirmed.receipts.some((receipt)=>receipt.reason===old.inFlight?.reason&&receipt.state==="pending");
@@ -71,7 +72,7 @@ export function FamilyExcuse({locale,child,initialDate}:{locale:Locale;child:str
         teachingDay:confirmed.teachingDay,validUntil:Date.parse(actor.expiresAt??""),reason:already?"":old?.reason??"",inFlight:already?undefined:old?.inFlight});
     });
     return ()=>{active=false;};
-  },[actor,child,locale,view.value?.data]);
+  },[actor,child,view.value?.data]);
 
   async function change(action:()=>Promise<void>){
     setBusy(true);

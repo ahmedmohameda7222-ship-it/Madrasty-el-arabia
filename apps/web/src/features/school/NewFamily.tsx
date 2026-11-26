@@ -53,7 +53,7 @@ export function useClasses(locale: Locale) {
     requestApi("/school/years", yearList, { signal: ctrl.signal }).then(({data}) => setYears(data))
       .catch((error) => { if (!ctrl.signal.aborted) setProblem(message(locale, error)); });
     return () => ctrl.abort();
-  }, [locale]);
+  }, []);
   useEffect(() => {
     if (!yearId) return;
     const ctrl = new AbortController();
@@ -61,7 +61,7 @@ export function useClasses(locale: Locale) {
       .then(({data}) => setClasses(data))
       .catch((error) => { if (!ctrl.signal.aborted) setProblem(message(locale, error)); });
     return () => ctrl.abort();
-  }, [yearId, locale]);
+  }, [yearId]);
   const chooseYear = (id: string) => { setYearId(id); setClasses([]); };
   return {years, yearId, classes, problem, chooseYear};
 }
@@ -123,7 +123,7 @@ export function NewFamilyForm({locale,saved,cancel,financeIssue=false}:{locale:L
  return <section className="family-wizard auth-card" aria-labelledby="family-wizard-title">
   <h1 id="family-wizard-title">{t.newFamily}</h1>
   <p className="family-step-caption">{w.count} {step+1} / 5 · {w.steps[step]}</p>
-  <ol className="family-step-track" aria-label={w.count}>{w.steps.map((label,i)=><li key={label} data-current={i===step} data-done={i<step} aria-current={i===step?"step":undefined}><span>{i+1}</span><small>{label}</small></li>)}</ol>
+  <ol className="family-step-track" aria-label={w.count}>{w.steps.map((label,i)=><li key={i} data-current={i===step} data-done={i<step} aria-current={i===step?"step":undefined}><span>{i+1}</span><small>{label}</small></li>)}</ol>
   <form className="auth-form" onSubmit={submit} aria-busy={busy}>
   {step===0&&<>
    <label>{w.family}<input autoComplete="off" value={familyName} required maxLength={200} onChange={e=>setFamilyName(e.target.value)}/></label>

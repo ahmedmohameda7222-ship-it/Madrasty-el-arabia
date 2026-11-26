@@ -1,3 +1,5 @@
+import { resolveUiLocale } from "@/server/identity/ui-locale";
+import { PresentationDocument } from "@/ui/PresentationLanguage";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
@@ -31,9 +33,10 @@ export default async function LocaleLayout({
   const result = localeSchema.safeParse((await params).locale);
   if (!result.success) notFound();
 
+  const locale=await resolveUiLocale(result.data);
   return (
-    <html lang={result.data} dir={result.data === "ar" ? "rtl" : "ltr"}>
-      <body>{children}</body>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
+      <body><PresentationDocument locale={locale}/>{children}</body>
     </html>
   );
 }

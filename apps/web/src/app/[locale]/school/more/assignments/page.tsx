@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import { notFound, redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
 import { z } from "zod";
@@ -10,7 +11,7 @@ import { StaffProvisionOnly } from "@/features/school/StaffProvisionOnly";
 export default async function AssignmentPage({ params, searchParams }: {
   params: Promise<{ locale: string }>; searchParams: Promise<{ year?:string; class?:string; advanced?:string }>;
 }) {
-  const [route, query, session] = await Promise.all([params, searchParams, webSchoolSession()]);
+  const [route, query, session] = await Promise.all([presentationParams(params), searchParams, webSchoolSession()]);
   const locale = localeSchema.safeParse(route.locale);
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);

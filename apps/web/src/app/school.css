@@ -671,3 +671,14 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .family-import-confirm input[type=checkbox]{appearance:auto;flex:none;inline-size:22px;block-size:22px;margin:0;accent-color:var(--primary)}
 .family-import-review-actions{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .family-import-review-actions button{margin:0!important;inline-size:100%;min-block-size:44px}
+
+/* Application settings stay above the current live workspace. */
+.app-settings-trigger{display:inline-flex;align-items:center;justify-content:center;inline-size:44px;min-block-size:44px;padding:0;flex:none}
+.app-settings-sheet{overflow:auto;overscroll-behavior:contain}
+.app-settings-sheet .sheet-header h2{margin:0;font-size:1.15rem;line-height:1.35;min-inline-size:0}
+.app-settings-sheet .sheet-header button{flex:none;min-block-size:44px}
+.app-language-settings{display:grid;gap:8px;margin-block:8px 16px}
+.app-language-settings h3{margin:0;font-size:1rem}
+.app-language-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.app-language-options button{min-block-size:44px;inline-size:100%;margin:0}
+.app-language-options button[aria-pressed=true]{color:var(--primary);border:1px solid currentColor;font-weight:700}

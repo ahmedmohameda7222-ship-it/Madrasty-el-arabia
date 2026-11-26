@@ -90,6 +90,7 @@ import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.SchoolShell
 import de.madrasty.app.ui.SchoolTab
+import de.madrasty.app.ui.InterfaceLanguageWorkspace
 import kotlinx.coroutines.CancellationException
 import org.json.JSONObject
 
@@ -277,7 +278,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         }
     }
     if (session.actor.persona == Persona.Admin && session.assurance != "aal2") {
-        SecurityScreen(model,session) { if(state.page==WorkspacePage.Security)state.back() }
+        InterfaceLanguageWorkspace { SecurityScreen(model,session) { if(state.page==WorkspacePage.Security)state.back() } }
         return
     }
     val rights=SchoolRights(session.actor.persona,capabilities,moderation,stopManager)
@@ -327,6 +328,8 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         }
         return
     }
+    if(page==WorkspacePage.Tabs){SchoolTabs(model,session,state,rights);return}
+    InterfaceLanguageWorkspace {
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)
         WorkspacePage.Profile -> ProfileScreen(model,state::back)
@@ -397,6 +400,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         is WorkspacePage.Family -> FamilyWorkspace(model,page,state::back,rights,state)
         WorkspacePage.AdminTasks -> AdminTasksScreen(model,{state.open(WorkspacePage.Queue(it))},state::back)
         is WorkspacePage.Queue -> SchoolWorkQueueScreen(model,page.selection,state::openWork,state::back)
+    }
     }
 }
 
@@ -479,7 +483,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     SettingsGroup(R.string.settings_group_account) {
         OpenPage(state,WorkspacePage.Profile,R.string.profile_title)
         OpenPage(state,WorkspacePage.Security,R.string.security)
-        OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
+        OpenPage(state,WorkspacePage.Account,R.string.app_settings)
         OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
         AccountActions(model,session)
     }

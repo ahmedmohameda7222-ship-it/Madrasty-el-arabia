@@ -621,4 +621,5 @@
     <string name="finance_no_invoices">Noch keine Rechnungen</string>
     <string name="finance_no_invoices_hint">Hier erscheinen die Gebühren und Zahlungen Ihrer Kinder nach Ausstellung der Rechnungen.</string>
     <string name="finance_fees_total">Gebühren</string>
+    <string name="app_settings">App-Einstellungen</string>
 </resources>

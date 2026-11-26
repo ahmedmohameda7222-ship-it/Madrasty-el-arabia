@@ -57,8 +57,11 @@ test("first-run administration exposes school setup and keeps the route while sw
     await page.goto("/ar/school/home");
     await page.getByRole("link",{name:"إعداد المدرسة",exact:true}).click();
     await expect(page).toHaveURL(/\/ar\/school\/more\/calendar$/);
-    await page.getByRole("link",{name:"Deutsch",exact:true}).click();
-    await expect(page).toHaveURL(/\/de\/school\/more\/calendar$/);
+    await page.getByRole("button",{name:"إعدادات التطبيق",exact:true}).click();
+    await page.locator(".app-settings-sheet").getByRole("button",{name:"Deutsch",exact:true}).click();
+    await expect(page.locator("html")).toHaveAttribute("lang","de");
+    await page.locator(".app-settings-sheet").getByRole("button",{name:"Schließen",exact:true}).click();
+    await expect(page).toHaveURL(/\/ar\/school\/more\/calendar$/);
   } finally {
     await school.close();
   }
