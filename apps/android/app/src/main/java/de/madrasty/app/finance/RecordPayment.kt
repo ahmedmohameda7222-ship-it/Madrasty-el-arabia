@@ -122,6 +122,7 @@ internal fun ReceiptInvoicePicker(
         for (row in rows.filter { it.getString("currency") == currency && it.getLong("balanceMinor") > 0L && it.getString("id") !in excluded }) {
             HorizontalDivider()
             Text(receiptInvoiceLabel(row))
+            Text(isolate(row.getString("payerName")))
             Text(financeMoney(row.getLong("balanceMinor"), currency))
             TextButton(onClick = { pick(row) }) { Text(stringResource(R.string.receipt_choose_invoice)) }
         }
