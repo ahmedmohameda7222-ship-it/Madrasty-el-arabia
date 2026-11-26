@@ -32,21 +32,32 @@ for(const locale of ["de","ar"] as const)for(const width of [320,390,430])for(co
    await page.getByRole("textbox",{name:locale==="ar"?"الاسم":"Name",exact:true}).last().fill("QA Student");await noOverflow();await page.screenshot({path:prefix+"-child.png",animations:"disabled"});await next.click();
    await page.getByRole("combobox",{name:locale==="ar"?"الوصول إلى بيانات الطفل":"Zugang zum Kind",exact:true}).selectOption("approved");
    await page.getByRole("combobox",{name:locale==="ar"?"العلاقة بالطفل":"Beziehung zum Kind",exact:true}).selectOption("father");await noOverflow();await page.screenshot({path:prefix+"-links.png",animations:"disabled"});await next.click();await noOverflow();await page.screenshot({path:prefix+"-review.png",animations:"disabled"});
-   await page.goto(`/${locale}/school/students/import`);await expect(page.locator(".family-import")).toBeVisible();await noOverflow();await page.screenshot({path:prefix+"-import.png",animations:"disabled"});
+   await expect(page.locator(".family-step-track li[aria-current=step] span")).toHaveText("5");
+   await expect(page.locator(".family-review-card")).toContainText("QA Student");
+   await expect(page.locator(".family-wizard .family-wizard-actions .primary-button")).toBeDisabled();
+   // Registration review above and import below are independent admin workflows.
+   // Do not force a hard navigation away from an unsaved form while WebKit is
+   // completing its final form event. The guided-workflows test exercises save.
+   const importPage=await context.newPage();
+   try{
+   await importPage.setViewportSize({width,height:844});await importPage.emulateMedia({colorScheme});
+   const importNoOverflow=async()=>expect(await importPage.locator(".family-workspace").evaluate(el=>el.scrollWidth<=el.clientWidth+2)).toBeTruthy();
+   await importPage.goto(`/${locale}/school/students/import`);await expect(importPage.locator(".family-import")).toBeVisible();await importNoOverflow();await importPage.screenshot({path:prefix+"-import.png",animations:"disabled"});
    const id=crypto.randomUUID();
    const csv="familyKey,familyName,childKey,childName,guardianKey,guardianName,email,communicationLocale\n"+[id,"QA Import "+id.slice(0,6),id+"-c","QA Imported Child",id+"-g","QA Imported Parent",id+"@madrasty.invalid",locale].join(",");
-   await page.locator('input[type="file"]').setInputFiles({name:"family.csv",mimeType:"text/csv",buffer:Buffer.from(csv)});
-   await page.getByRole("button",{name:locale==="ar"?"رفع الملف":"Datei hochladen",exact:true}).click();
-   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مطابقة الأعمدة":"Spalten zuordnen",{timeout:30000});await noOverflow();await page.screenshot({path:prefix+"-import-mapping.png",animations:"disabled"});
-   await page.getByRole("button",{name:locale==="ar"?"معاينة البيانات":"Vorschau anzeigen",exact:true}).click();
-   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});await noOverflow();await expect(page.locator(".family-import-counts dd")).toHaveCount(6);
-   expect(await page.locator(".family-import-confirm").evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
-   await page.screenshot({path:prefix+"-import-review.png",animations:"disabled"});
-   await page.reload();await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});
-   await page.getByRole("checkbox",{name:locale==="ar"?"راجعت روابط الطلاب وأولياء الأمور.":"Ich habe die Verknüpfungen geprüft."}).check();
-   await page.getByRole("button",{name:locale==="ar"?"اعتماد الصفوف":"Zeilen übernehmen",exact:true}).click();
-   await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});await noOverflow();await expect(page.locator(".family-import-receipt dd")).toHaveText(["1","1","1"]);await page.screenshot({path:prefix+"-import-receipt.png",animations:"disabled"});
-   await page.reload();await expect(page.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});
+   await importPage.locator('input[type="file"]').setInputFiles({name:"family.csv",mimeType:"text/csv",buffer:Buffer.from(csv)});
+   await importPage.getByRole("button",{name:locale==="ar"?"رفع الملف":"Datei hochladen",exact:true}).click();
+   await expect(importPage.locator(".family-import h2")).toHaveText(locale==="ar"?"مطابقة الأعمدة":"Spalten zuordnen",{timeout:30000});await importNoOverflow();await importPage.screenshot({path:prefix+"-import-mapping.png",animations:"disabled"});
+   await importPage.getByRole("button",{name:locale==="ar"?"معاينة البيانات":"Vorschau anzeigen",exact:true}).click();
+   await expect(importPage.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});await importNoOverflow();await expect(importPage.locator(".family-import-counts dd")).toHaveCount(6);
+   expect(await importPage.locator(".family-import-confirm").evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+   await importPage.screenshot({path:prefix+"-import-review.png",animations:"disabled"});
+   await importPage.reload();await expect(importPage.locator(".family-import h2")).toHaveText(locale==="ar"?"مراجعة الصفوف":"Zeilen prüfen",{timeout:30000});
+   await importPage.getByRole("checkbox",{name:locale==="ar"?"راجعت روابط الطلاب وأولياء الأمور.":"Ich habe die Verknüpfungen geprüft."}).check();
+   await importPage.getByRole("button",{name:locale==="ar"?"اعتماد الصفوف":"Zeilen übernehmen",exact:true}).click();
+   await expect(importPage.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});await importNoOverflow();await expect(importPage.locator(".family-import-receipt dd")).toHaveText(["1","1","1"]);await importPage.screenshot({path:prefix+"-import-receipt.png",animations:"disabled"});
+   await importPage.reload();await expect(importPage.locator(".family-import h2")).toHaveText(locale==="ar"?"نتيجة الاستيراد":"Importergebnis",{timeout:30000});
+   }finally{await importPage.close();}
   }finally{await school.close();}
  });
 }
