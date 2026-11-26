@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { appearanceSchema, preferencesSchema, type Locale, type Preferences } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
@@ -29,6 +29,11 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
   const labels = words[locale], text = dictionary(locale), actor = useAccountScope();
   const {select:selectLanguage}=usePresentationLanguage();
   const [value, setValue] = useState(initial);
+  const previousLocale=useRef(locale);
+  useEffect(()=>{
+    const before=previousLocale.current;previousLocale.current=locale;
+    if(before!==locale)setValue(current=>current.uiLocale===before?{...current,uiLocale:locale}:current);
+  },[locale]);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ failed: boolean; message: string }>();
   const [stale, setStale] = useState(false);

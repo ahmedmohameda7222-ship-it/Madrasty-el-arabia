@@ -12,6 +12,7 @@ import {
 
 export function useAttendanceDrafts(actor:AccountPartition,locale:Locale,slot:string) {
   const loaded=useRef<CachedSheet|null>(null);
+  const presentationLocale=useRef(locale);presentationLocale.current=locale;
   const queue=useRef(Promise.resolve(true));
   const [local,setLocal]=useState<CachedSheet|null>(null);
   const [drafts,setDrafts]=useState<SheetEdits>({});
@@ -21,7 +22,7 @@ export function useAttendanceDrafts(actor:AccountPartition,locale:Locale,slot:st
 
   useEffect(()=>{
     let active=true;
-    void activateAttendanceDrafts(actor,locale).then(()=>readPrivateDraft<CachedSheet>(actor,slot)).then((value)=>{
+    void activateAttendanceDrafts(actor,presentationLocale.current).then(()=>readPrivateDraft<CachedSheet>(actor,slot)).then((value)=>{
       if(!active)return;
       const entry=value?.kind==="sheet"?value:null;
       loaded.current=entry;
@@ -30,7 +31,7 @@ export function useAttendanceDrafts(actor:AccountPartition,locale:Locale,slot:st
       setReady(true);
     });
     return ()=>{active=false;};
-  },[actor,locale,slot]);
+  },[actor,slot]);
 
   const persist=useCallback((record:CachedSheet)=>{
     loaded.current=record;

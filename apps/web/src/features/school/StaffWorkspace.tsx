@@ -37,7 +37,7 @@ export function StaffWorkspace({locale,canCreateAdmin}:{locale:Locale;canCreateA
    .then(({data,meta})=>{setPeople(data);setCursor(meta?.nextCursor);setSelected(current=>current??data[0]?.id??null);})
    .catch(e=>{if(!ctrl.signal.aborted)setProblem(err(locale,e));});
   return()=>ctrl.abort();
- },[locale,reload]);
+ },[reload]);
  const visible=useMemo(()=>people.filter(person=>person.displayName.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())||person.workEmail?.toLowerCase().includes(query.trim().toLowerCase())),[people,query]);
  const chosen=people.find(person=>person.id===selected);
  const onSave=(event:FormEvent<HTMLFormElement>)=>{

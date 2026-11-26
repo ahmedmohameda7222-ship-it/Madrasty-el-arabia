@@ -254,7 +254,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
       abort.abort();window.clearInterval(timer);window.removeEventListener("online",poll);
       window.removeEventListener("focus",poll);document.removeEventListener("visibilitychange",poll);
     };
-  },[path,locale,persona,thread.id,term,initialAttempt]);
+  },[path,persona,thread.id,term,initialAttempt]);
 
   async function older(){
     if(paging||!cursor)return;

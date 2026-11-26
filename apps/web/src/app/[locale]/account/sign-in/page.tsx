@@ -1,3 +1,4 @@
+import { displayPath } from "@/i18n/presentation";
 import { presentationParams } from "@/server/identity/ui-locale";
 import { cookies } from "next/headers";
 import type { Locale } from "@madrasty/contracts";
@@ -14,7 +15,7 @@ export default async function SignIn({ params, searchParams }: {
   const [{ locale }, { next, android }, jar] = await Promise.all([presentationParams(params), searchParams, cookies()]);
   const home = `/${locale}/school/home`;
   const safePaths = ["home", "students", "attendance", "children", "messages", "more"];
-  const candidate = typeof next === "string" ? next : undefined;
+  const candidate = typeof next === "string" ? displayPath(next,locale) : undefined;
   const noticeInbox = `/${locale}/school/more/notifications`;
   const noticePrefix = noticeInbox + "?notice=";
   const noticeLink = candidate?.startsWith(noticePrefix) && z.uuid().safeParse(candidate.slice(noticePrefix.length)).success;

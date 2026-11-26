@@ -90,7 +90,7 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     }
     void refresh();
     return ()=>abort.abort();
-  },[selected,revision,term,mode,locale,actor.persona,text.unavailable]);
+  },[selected,revision,term,mode,actor.persona]);
 
   function back(){
     const url=new URL(window.location.href);url.searchParams.delete("contact");
