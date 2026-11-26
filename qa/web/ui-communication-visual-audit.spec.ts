@@ -273,7 +273,7 @@ for(const scenario of cases){
         await shot("18-news-detail");
         });
         await section("calendar",async()=>{
-        await open(hub+"?section=calendar&month="+month,".school-month-grid>button");
+        await open(base+"/school/calendar?month="+month,".school-month-grid>button");
         await expect(page.locator(".comms-weekday")).toHaveCount(7);
         await expect(page.locator(".school-month-grid[data-calendar-ready=true] button[data-teaching=yes]").first()).toBeVisible();
         await expect(page.locator(".school-month-dot").first()).toBeVisible();
@@ -282,12 +282,12 @@ for(const scenario of cases){
         await expect.poll(()=>new URL(page.url()).searchParams.get("month")).toBe(nextMonth);
         await expect(page.locator(".school-month-grid[data-month=\""+nextMonth+"\"][data-calendar-ready=true] button[data-teaching=yes]").first()).toBeVisible();
         await shot("19a-calendar-next-month");
-        await open(hub+"?section=calendar&month="+nextMonth+"&classId="+apple.id,".school-month-grid[data-calendar-ready=true] button[data-teaching=no]");
+        await open(base+"/school/calendar?month="+nextMonth+"&classId="+apple.id,".school-month-grid[data-calendar-ready=true] button[data-teaching=no]");
         await shot("19b-calendar-class-holiday");
-        await open(hub+"?section=calendar&month="+month+"&day="+day,".school-month-grid>button[aria-pressed=true]");
+        await open(base+"/school/calendar?month="+month+"&day="+day,".school-month-grid>button[aria-pressed=true]");
         await expect(page.locator(".comms-publication-card").filter({hasText:title[scenario.locale]}).first()).toBeVisible();
         await shot("20-calendar-selected-day");
-        await open(base+"/school/more/events?item="+event+"&from=hub",".comms-publication-card");
+        await open(base+"/school/calendar?item="+event,".comms-publication-card");
         await shot("21-event-detail");
         });
         await section("notifications",async()=>{
@@ -327,7 +327,7 @@ for(const scenario of cases){
           await page.getByRole("button",{name:ar?"معاينة":"Vorschau",exact:true}).click();
           await expect(page.locator(".comms-publications .notice article")).toBeVisible();
           await shot("26a-news-preview");
-          await open(hub+"?section=calendar&month="+month,".comms-calendar-actions");
+          await open(base+"/school/calendar?month="+month,".comms-calendar-actions");
           await page.getByRole("button",{name:words.newEvent,exact:true}).click();
           await expect(page.locator(".comms-publications input[type=date]")).toBeVisible();
           await shot("27-event-editor");

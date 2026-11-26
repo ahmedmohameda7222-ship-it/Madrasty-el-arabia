@@ -110,12 +110,14 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     await fixtureApi(school,"/events/"+event.id,{token:admin,persona:"admin",method:"PATCH",key:randomUUID(),body:{action:"publish",revision:event.revision}});
     await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     await page.setViewportSize({width:390,height:844});
-    const params=new URLSearchParams({section:"calendar",month:day.slice(0,7),day,classId:apple.id});
-    await page.goto("/de/school/messages?"+params);
+    const params=new URLSearchParams({month:day.slice(0,7),day,classId:apple.id});
+    await page.goto("/de/school/messages?section=calendar&"+params);
+    await expect(page).toHaveURL(/\/school\/calendar\?/);
+    await expect(page.locator(".school-nav [aria-current=page]")).toHaveText("Kalender");
     await page.getByRole("link",{name:"Details öffnen"}).first().click();
     await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
-    await page.getByRole("link",{name:"Zurück zu Kontakt"}).click();
-    await expect(page).toHaveURL(/section=calendar/);
+    await page.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
+    await expect(page).toHaveURL(/\/school\/calendar\?/);
     const returned=new URL(page.url()).searchParams;
     assertContext(returned,"month",day.slice(0,7));
     assertContext(returned,"day",day);
@@ -339,12 +341,19 @@ for(const scenario of [
       for(const section of ["chat","feed","calendar"] as const){
         const endpoint=section==="chat"?"/api/v1/threads?":section==="feed"?"/api/v1/comms/feed?":"/api/v1/comms/calendar?";
         const read=page.waitForResponse(r=>r.url().includes(endpoint)&&r.request().method()==="GET",{timeout:25000});
-        await page.goto("/"+scenario.locale+"/school/messages?section="+section);
+        await page.goto("/"+scenario.locale+"/school/"+(section==="calendar"?"calendar":"messages?section="+section));
         expect((await read).ok(),section+" data request must succeed").toBe(true);
-        const content=page.locator(".comms-hub");
+        const content=page.locator(section==="calendar"?".school-content":".comms-hub");
         const result=section==="chat"?".comms-thread-row, [data-async-state=empty]":section==="feed"?".comms-feed-card, [data-async-state=empty]":".school-month-grid";
         await expect(content.locator(result).first()).toBeVisible({timeout:25000});
-        await expect(content.locator(".comms-hub-tabs a[aria-current=page]")).toHaveText(section==="chat"?(ar?"المحادثات":"Chats"):section==="feed"?(ar?"المستجدات":"Aktuelles"):(ar?"التقويم":"Kalender"));
+        if(section==="calendar"){
+          await expect(page.locator(".school-nav [aria-current=page]")).toHaveText(ar?"التقويم":"Kalender");
+          await expect(page.locator(".comms-hub-tabs")).toHaveCount(0);
+        }else{
+          await expect(content.locator(".comms-hub-tabs a")).toHaveCount(2);
+          await expect(content.locator(".comms-hub-tabs a[aria-current=page]")).toHaveText(section==="chat"?(ar?"المحادثات":"Chats"):(ar?"المستجدات":"Aktuelles"));
+          await expect(page.locator(".school-nav").getByRole("link",{name:ar?"التقويم":"Kalender",exact:true})).toBeVisible();
+        }
         if(scenario.persona==="guardian"&&section==="feed")await expect(content.locator(".comms-publish-menu")).toHaveCount(0);
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
         mkdirSync("qa-artifacts/ui-after",{recursive:true});
