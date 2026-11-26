@@ -64,6 +64,19 @@ internal fun AutomaticBillingPanel(model:IdentityViewModel){
             FilterChip(enabled,{enabled=!enabled},label={Text(stringResource(R.string.finance_auto_enabled))})
             Field(R.string.finance_auto_start,start){start=financeDigits(it).take(7)}
             if(data.getInt("missingPayers")>0)Text(stringResource(R.string.finance_auto_missing,data.getInt("missingPayers")))
+            val issues=data.optJSONArray("payerIssues")
+            if(issues!=null&&issues.length()>0){
+                var showIssues by remember { mutableStateOf(false) }
+                TextButton(onClick={showIssues=!showIssues}) {Text(stringResource(R.string.finance_payer_issues,issues.length()))}
+                if(showIssues){
+                    Text(stringResource(R.string.finance_payer_issue_hint))
+                    for(index in 0 until issues.length()){
+                        val issue=issues.getJSONObject(index)
+                        Text(isolate(issue.getString("studentName"))+" · "+isolate(issue.getString("studentNumber")))
+                        Text(stringResource(if(issue.getString("reason")=="payer_missing") R.string.finance_payer_missing else R.string.finance_payer_unreachable))
+                    }
+                }
+            }
             Submit(validBillingMonth(start)&&start>=current&&(enabled!=data.getBoolean("enabled")||start!=data.getString("startMonth"))){
                 model.schoolCommand(attempts,"/finance/automatic-billing","PUT",JSONObject().put("enabled",enabled).put("startMonth",start).put("revision",data.getInt("revision")))
                 refresh++
