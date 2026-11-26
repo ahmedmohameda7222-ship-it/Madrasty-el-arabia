@@ -196,6 +196,22 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(cashAfter.expenseMinor-cashBefore.expenseMinor,1000);
     assert.equal(cashAfter.depositsMinor-cashBefore.depositsMinor,1500);
     await fixtureApi(school,"/finance/cashbook",{token:payer,status:403});
+    const correctionInput={movementId:movement.id,reason:"Synthetic donation correction"};
+    await fixtureApi(school,"/finance/cashbook/reversals",{method:"POST",token:payer,persona:"guardian",key:school.run+".forbidden-correction",body:correctionInput,status:403});
+    const correction=await send("/finance/cashbook/reversals","correct-donation",correctionInput);
+    assert.deepEqual(await send("/finance/cashbook/reversals","correct-donation",correctionInput),correction);
+    await fixtureApi(school,"/finance/cashbook/reversals",{method:"POST",token:finance,persona:"admin",key:school.run+".duplicate-correction",body:correctionInput,status:409});
+    const correctedBook=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    assert.equal(correctedBook.balanceMinor,cashAfter.balanceMinor-5000);
+    assert.equal(correctedBook.correctionsMinor,cashAfter.correctionsMinor+5000);
+    const original=correctedBook.entries.find((row:{id:string})=>row.id===movement.id);
+    assert.ok(original,"the original cash movement must remain in the journal");
+    assert.equal(original.canReverse,false);
+    const reversedMovement=correctedBook.entries.find((row:{id:string})=>row.id===correction.id);
+    assert.equal(reversedMovement.reversalOf,movement.id);
+    assert.equal(reversedMovement.signedMinor,-5000);
+    // Keep a positive cash reserve for the existing subsequent family payment assertions.
+    await send("/finance/cashbook","replacement-donation",{...donation,description:"Synthetic replacement donation"});
 
     const stop = enrollmentStop.parse((await fixtureApi(school, "/enrollment-stops", {
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
