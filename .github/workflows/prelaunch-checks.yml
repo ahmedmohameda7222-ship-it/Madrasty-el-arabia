@@ -1,7 +1,7 @@
 name: Prelaunch web and contracts
 on:
   push:
-    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24","remove/audit-and-delivery-status-2026-11-24","feat/admin-start-redesign-2026-11-24","feat/communication-center-2026-11-25","feat/family-management-2026-11-25"]
+    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24","remove/audit-and-delivery-status-2026-11-24","feat/admin-start-redesign-2026-11-24","feat/communication-center-2026-11-25","feat/family-management-2026-11-25","fix/locale-preserve-workspace-2026-11-26"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -317,7 +317,7 @@ jobs:
 
 
   family-browser:
-    if: github.ref == 'refs/heads/feat/family-management-2026-11-25'
+    if: github.ref == 'refs/heads/feat/family-management-2026-11-25' || github.ref == 'refs/heads/fix/locale-preserve-workspace-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -354,7 +354,7 @@ jobs:
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
-          pnpm qa:web --project=${{ matrix.browser }} ui-guided-workflows.spec.ts ui-family-management.spec.ts
+          pnpm qa:web --project=${{ matrix.browser }} ui-guided-workflows.spec.ts ui-family-management.spec.ts ${{ github.ref == 'refs/heads/fix/locale-preserve-workspace-2026-11-26' && 'ui-locale-preservation.spec.ts' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
