@@ -31,6 +31,8 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
   const [method,setMethod]=useState<"bank"|"cash">(options.cashEnabled?"cash":"bank"),[date,setDate]=useState(options.schoolDate);
   const [reference,setReference]=useState(""),[amount,setAmount]=useState(initial&&initial.balanceMinor>0?amountText(initial.balanceMinor):""),[verified,setVerified]=useState(false);
   const [cashReference,setCashReference]=useState("");
+  // Suggested amounts may follow the selected invoices until the operator enters actual cash received.
+  const [amountEdited,setAmountEdited]=useState(false);
   const [rows,setRows]=useState<{invoice:InvoiceCandidate;amount:string}[]>(initial&&initial.balanceMinor>0?[{invoice:initial,amount:amountText(initial.balanceMinor)}]:[]);
   const [picker,setPicker]=useState(false),[preview,setPreview]=useState<ReturnType<typeof recordReceiptInput.parse>>();
   const [receipt,setReceipt]=useState<ReturnType<typeof receiptMutation.parse>>(),[busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -47,13 +49,15 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
     setBusy(true);setError("");
     try{
       setReceipt(await command("/finance/receipts","POST",preview,receiptMutation));
-      setPreview(undefined);setReference("");setCashReference("");setAmount("");setVerified(false);setRows([]);
+      setPreview(undefined);setReference("");setCashReference("");setAmount("");setAmountEdited(false);setVerified(false);setRows([]);
     }catch(problem){setError(timetableError(locale,problem));}
     finally{setBusy(false);}
   }
   function pick(invoice:InvoiceCandidate){
     const next=[...rows,{invoice,amount:amountText(invoice.balanceMinor)}];
-    setRows(next);setAmount(amountText(next.reduce((sum,r)=>sum+(inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)??0),0)));setPicker(false);
+    setRows(next);
+    if(!amountEdited)setAmount(amountText(next.reduce((sum,r)=>sum+(inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)??0),0)));
+    setPicker(false);
   }
   return <>
     {error&&<p role="alert">{error}</p>}
@@ -67,7 +71,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
       <div className={css.formAction}><button type="button" className="primary-button" disabled={busy} onClick={()=>void confirm()}>{text.confirm}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>setPreview(undefined)}>{text.edit}</button></div>
     </div>:<>
       <form className="auth-form" onSubmit={prepare}>
-        <label className={css.amountInput}><span className={css.amountLabel}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi></span><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>setAmount(event.target.value)} required/></label>
+        <label className={css.amountInput}><span className={css.amountLabel}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi></span><input value={amount} dir="ltr" inputMode="decimal" maxLength={22} onChange={event=>{setAmountEdited(true);setAmount(event.target.value);}} required/></label>
         <div className={css.fieldPair}>
         {options.cashEnabled&&<label>{ar?"طريقة الدفع":"Zahlungsart"}<select value={method} onChange={event=>setMethod(event.target.value==="cash"?"cash":"bank")}><option value="cash">{text.cash}</option><option value="bank">{text.bank}</option></select></label>}
         {!options.cashEnabled&&<p>{text.bank}</p>}
@@ -83,6 +87,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
         </div>)}
         <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)"}</button>
         {rows.length>0&&<p className={css.secondary}>{text.applied} · <bdi>{financeAmount(assigned,currency,locale)}</bdi></p>}
+        {received!==null&&assigned>received&&<p role="alert">{ar?"المبلغ المخصص للفواتير أكبر من المبلغ المستلم. عدّل مبالغ الفواتير أو صحّح المبلغ المستلم.":"Die Rechnungsbeträge übersteigen den erhaltenen Betrag. Bitte die Zuordnung oder den erhaltenen Betrag korrigieren."}</p>}
         {received!==null&&received>assigned&&<p className={css.secondary}>{text.remainder} · <bdi>{financeAmount(received-assigned,currency,locale)}</bdi></p>}
         <label className={css.checkRow}><input type="checkbox" checked={verified} onChange={event=>setVerified(event.target.checked)}/>{text.verification}</label>
         <div className={css.formAction}><button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button></div>
