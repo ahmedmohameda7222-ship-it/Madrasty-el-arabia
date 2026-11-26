@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -179,7 +180,7 @@ internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Mo
                         }
                         if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}
                         if(actions!=null)Box{
-                            val actionLabel=stringResource(R.string.chat_reactions)
+                            val actionLabel=stringResource(R.string.chat_actions)
                             IconButton(onClick={menu=true},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
                             DropdownMenu(expanded=menu,onDismissRequest={menu=false}){
                                 for((field,label) in listOf("pinned" to (if(thread.optBoolean("pinned"))R.string.chat_unpin else R.string.chat_pin),"muted" to (if(thread.optBoolean("muted"))R.string.chat_unmute else R.string.chat_mute),"archived" to (if(thread.optBoolean("archived"))R.string.chat_restore else R.string.chat_archive))){
@@ -204,6 +205,7 @@ private fun ThreadBack(close:()->Unit){
 internal fun ThreadScreen(model:IdentityViewModel,id:String,drafts:NativeChatDrafts,openReference:(ReportTarget)->Unit,close:()->Unit){
     var changed by remember{mutableStateOf(0)}
     var showDetails by remember(id){mutableStateOf(false)}
+    var showContact by remember(id){mutableStateOf(false)}
     val revision=threadRefreshVersion()+changed
     val thread=academicRead("/threads/$id",revision){model.timetableObject(it)}
     BackHandler(onBack=close)
@@ -214,12 +216,13 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,drafts:NativeChatDra
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
                 ThreadBack(close)
                 ThreadAvatar(value)
-                Text(threadTitle(value),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+                TextButton(onClick={showContact=true},modifier=Modifier.weight(1f)){Column{Text(threadTitle(value),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis);Text(stringResource(R.string.chat_contact_view),style=MaterialTheme.typography.labelSmall)}}
                 InterfaceSettingsAction()
             }
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))
             }
+            if(showContact)ContactProfileDialog(value){showContact=false}
             val officeCase=value.string("caseId")
             if(value.getJSONArray("references").length()>0||officeCase!=null){
                 TextButton(onClick={showDetails=!showDetails}){Text(stringResource(R.string.conversation_references))}
@@ -234,6 +237,23 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,drafts:NativeChatDra
             Conversation(model,value,Modifier.weight(1f),drafts){changed++}
         }
     }
+}
+
+@Composable
+private fun ContactProfileDialog(thread:JSONObject,close:()->Unit){
+    val contact=thread.optJSONObject("contact")
+    val german=androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language=="de"
+    AlertDialog(onDismissRequest=close,title={Text(stringResource(R.string.chat_contact_information))},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+        ThreadAvatar(thread)
+        Text(threadTitle(thread),style=MaterialTheme.typography.titleLarge)
+        if(contact==null)Text(stringResource(R.string.chat_contact_unavailable)) else {
+            Text(contact.getString(if(german)"titleDe" else "titleAr"))
+            val contexts=contact.getJSONArray("contexts")
+            if(contexts.length()>0){Text(stringResource(R.string.chat_contact_classes),style=MaterialTheme.typography.titleMedium);for(i in 0 until contexts.length())Text(isolate(contexts.getJSONObject(i).getString(if(german)"nameDe" else "nameAr")))}
+            contact.string("workEmail")?.let{Text(stringResource(R.string.chat_contact_email));Text(isolate(it))}
+            contact.string("workPhone")?.let{Text(stringResource(R.string.chat_contact_phone));Text(isolate(it))}
+        }
+    }},confirmButton={TextButton(onClick=close){Text(stringResource(R.string.close))}})
 }
 
 @Composable

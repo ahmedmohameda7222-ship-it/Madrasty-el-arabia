@@ -21,6 +21,11 @@ test("a guardian and teacher exchange one private message, read and react withou
       token: guardian, persona: "guardian", method: "POST", key: `${school.run}.teacher-chat`, body: { target: staff.target },
     });
     assert.equal(thread.payload.data.kind, "direct");
+    const contactBefore=(await fixtureApi(school,`/threads/${thread.payload.data.threadId}`,{token:guardian})).payload.data.contact;
+    assert.equal(contactBefore.displayName,staff.displayName);
+    assert.equal(contactBefore.workEmail,staff.workEmail);
+    assert.deepEqual(contactBefore.contexts,staff.contexts);
+    await fixtureApi(school,`/threads/${thread.payload.data.threadId}`,{token:admin,status:404});
     const path = `/threads/${thread.payload.data.threadId}`;
     const id = randomUUID();
     const body = `رسالة اختبار ${id}`;

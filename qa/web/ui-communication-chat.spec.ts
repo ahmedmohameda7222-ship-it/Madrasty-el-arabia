@@ -61,6 +61,11 @@ test("direct chat presents sent and received bubbles and compact actions", async
     }
     await page.setViewportSize({width:390,height:844});
     await composer.locator("textarea").fill("QA gallery retains draft");
+    await page.getByRole("button",{name:"Kontaktinformationen",exact:true}).click();
+    const profile=page.getByRole("dialog",{name:"Kontaktinformationen"});
+    await expect(profile.getByText("يوسف عبد الرحمن محمود",{exact:true})).toBeVisible();
+    await profile.getByRole("button",{name:"Schließen",exact:true}).click();
+    await expect(composer.locator("textarea")).toHaveValue("QA gallery retains draft");
     await page.locator(".comms-chat-options > summary").click();
     await page.getByRole("button",{name:"Geteilte Medien",exact:true}).click();
     const gallery=page.getByRole("dialog",{name:"Geteilte Medien"});

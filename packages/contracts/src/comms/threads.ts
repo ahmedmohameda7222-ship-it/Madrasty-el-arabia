@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { directoryTargetSchema } from "../account";
+import { directoryEntrySchema,directoryTargetSchema } from "../account";
 import { inboxSchema } from "../capabilities";
 import { pageQuerySchema,revisionSchema } from "../http";
 import { messageSource,sequenceSchema } from "./messages";
@@ -25,7 +25,9 @@ export const threadSummary=z.object({
   unread:z.int().nonnegative(),archived:z.boolean(),pinned:z.boolean(),muted:z.boolean(),readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,
 });
 export const threadReferenceView=threadReference.extend({childId:id.nullable()});
-export const threadDetail=threadSummary.extend({references:threadReferenceView.array()});
+export const threadContact=directoryEntrySchema.pick({displayName:true,titleAr:true,titleDe:true,workEmail:true,workPhone:true,contexts:true});
+export const threadDetail=threadSummary.extend({references:threadReferenceView.array(),contact:threadContact.nullable().optional()});
+export type ThreadContact=z.infer<typeof threadContact>;
 export const officeCaseInput=z.object({
   assigneeId:id.nullable().optional(),status:caseStatus.optional(),revision:revisionSchema,
 }).refine((value)=>value.assigneeId!==undefined||value.status!==undefined,{path:["status"],message:"error.validation"});

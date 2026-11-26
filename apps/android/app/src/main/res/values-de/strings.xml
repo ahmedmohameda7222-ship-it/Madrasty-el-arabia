@@ -635,4 +635,11 @@
     <string name="chat_shared_media">Geteilte Medien</string>
     <string name="chat_shared_media_empty">Keine geteilten Medien in dieser Unterhaltung.</string>
     <string name="comms_unread_badge">%1$d ungelesene Nachrichten</string>
+    <string name="chat_contact_information">Kontaktinformationen</string>
+    <string name="chat_contact_view">Kontakt ansehen</string>
+    <string name="chat_contact_unavailable">Keine weiteren Kontaktdaten verfügbar.</string>
+    <string name="chat_contact_classes">Zugehörige Klassen</string>
+    <string name="chat_contact_email">Dienstliche E-Mail</string>
+    <string name="chat_contact_phone">Dienstliche Telefonnummer</string>
+    <string name="chat_actions">Chat-Aktionen</string>
 </resources>

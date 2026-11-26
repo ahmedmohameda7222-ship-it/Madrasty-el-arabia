@@ -95,7 +95,9 @@ export function readThread(actor:ActorContext,id:string){
       cross join lateral app.thread_preferences(t.id) p`;
     if(!row)throw new ApiError("not_found");
     const references=threadReferenceView.array().parse(await tx`select reference_kind as kind,reference_id as id,child_id as "childId" from app.thread_references(${id})`);
-    return threadDetail.parse({...row,references});
+    const [contact]=await tx`select d.display_name as "displayName",d.title_ar as "titleAr",d.title_de as "titleDe",d.work_email as "workEmail",d.work_phone as "workPhone",d.contexts
+      from app.directory_contacts() d where d.id=app.contact_for_thread(${id}) limit 1`;
+    return threadDetail.parse({...row,references,contact:contact??null});
   });
 }
 export function homeworkContacts(actor:ActorContext,id:string){

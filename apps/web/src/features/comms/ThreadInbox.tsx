@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect,useRef,useState,type FormEvent,type TouchEvent } from "react";
 import {
-  caseStatus,officeCase,officeCaseInput,threadDetail,threadSummary,threadReaderState,type Locale,type ThreadReferenceView,type ThreadSummary,
+  caseStatus,officeCase,officeCaseInput,threadDetail,threadSummary,threadReaderState,type Locale,type ThreadReferenceView,type ThreadSummary,type ThreadContact,
 } from "@madrasty/contracts";
 import { ApiResponseError,requestApi } from "@/api/client";
 import { webHeaders } from "@/features/identity/SessionControls";
@@ -80,7 +80,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       <header className="comms-thread-toolbar">
         <Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>
         <span className="comms-avatar" aria-hidden="true">{title(locale,value).trim().slice(0,1).toUpperCase()}</span>
-        <h2 title={title(locale,value)}><bdi>{title(locale,value)}</bdi></h2>
+        <ContactProfile key={value.id} locale={locale} name={title(locale,value)} contact={value.contact}/>
       </header>
       {value.inbox&&value.contactName&&<p>{text[value.inbox]}</p>}
       {(value.caseStatus||value.references.length>0||value.canManageCase)&&<details className="comms-legacy-details"><summary>{text.references}</summary>
@@ -126,6 +126,22 @@ function ThreadRow({locale,item,current,href,changed}:{locale:Locale;item:Thread
       <button type="button" className="plain-button" disabled={busy} onClick={()=>void change("archived",!item.archived)}>{item.archived?(ar?"إرجاع":"Zurückholen"):(ar?"أرشفة":"Archivieren")}</button>
     </div>}{error&&<p role="alert">{error}</p>}
   </li>;
+}
+
+function ContactProfile({locale,name,contact}:{locale:Locale;name:string;contact?:ThreadContact|null}){
+  const ar=locale==="ar",dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null);
+  const label=ar?"بيانات جهة الاتصال":"Kontaktinformationen";
+  return <div className="comms-contact-title">
+    <h2><button ref={trigger} type="button" className="comms-contact-trigger" aria-label={label} aria-haspopup="dialog" onClick={()=>dialog.current?.showModal()}><bdi>{name}</bdi><span>{ar?"عرض البيانات":"Kontakt ansehen"}</span></button></h2>
+    <dialog ref={dialog} className="scope-sheet comms-contact-sheet" aria-label={label} onClose={()=>trigger.current?.focus({preventScroll:true})}>
+      <div className="sheet-header"><h2>{label}</h2><button type="button" className="plain-button" onClick={()=>dialog.current?.close()}>{ar?"إغلاق":"Schließen"}</button></div>
+      <div className="comms-contact-identity"><span className="comms-avatar" aria-hidden="true">{name.trim().slice(0,1).toUpperCase()}</span><strong><bdi>{name}</bdi></strong>{contact&&<small>{ar?contact.titleAr:contact.titleDe}</small>}</div>
+      {contact?.contexts.length? <section><h3>{ar?"الفصول المرتبطة":"Zugehörige Klassen"}</h3><ul>{contact.contexts.map(context=><li key={context.id}>{ar?context.nameAr:context.nameDe}</li>)}</ul></section>:null}
+      {contact?.workEmail&&<p><strong>{ar?"البريد المهني":"Dienstliche E-Mail"}</strong><br/><bdi>{contact.workEmail}</bdi></p>}
+      {contact?.workPhone&&<p><strong>{ar?"هاتف العمل":"Dienstliche Telefonnummer"}</strong><br/><bdi>{contact.workPhone}</bdi></p>}
+      {!contact&&<p>{ar?"مفيش بيانات إضافية متاحة.":"Keine weiteren Kontaktdaten verfügbar."}</p>}
+    </dialog>
+  </div>;
 }
 
 function ReferenceLink({locale,reference}:{locale:Locale;reference:ThreadReferenceView}){

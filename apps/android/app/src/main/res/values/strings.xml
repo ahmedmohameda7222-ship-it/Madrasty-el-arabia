@@ -635,4 +635,11 @@
     <string name="chat_shared_media">الصور والرسائل الصوتية</string>
     <string name="chat_shared_media_empty">مفيش مرفقات في المحادثة دي.</string>
     <string name="comms_unread_badge">%1$d رسائل غير مقروءة</string>
+    <string name="chat_contact_information">بيانات جهة الاتصال</string>
+    <string name="chat_contact_view">عرض البيانات</string>
+    <string name="chat_contact_unavailable">مفيش بيانات إضافية متاحة.</string>
+    <string name="chat_contact_classes">الفصول المرتبطة</string>
+    <string name="chat_contact_email">البريد المهني</string>
+    <string name="chat_contact_phone">هاتف العمل</string>
+    <string name="chat_actions">خيارات المحادثة</string>
 </resources>
