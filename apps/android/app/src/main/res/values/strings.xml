@@ -647,4 +647,5 @@
     <string name="chat_contact_phone">هاتف العمل</string>
     <string name="chat_actions">خيارات المحادثة</string>
     <string name="chat_voice_action">تسجيل رسالة صوتية</string>
+    <string name="receipt_same_payer">فواتير نفس مسؤول السداد</string>
 </resources>
