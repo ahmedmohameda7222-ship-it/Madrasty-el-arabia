@@ -167,7 +167,16 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     assertContext(returned,"day",day);
     assertContext(returned,"classId",apple.id);
     // A Next streaming redirect may interrupt the original WebKit navigation.
-    try{await page.goto("/de/school/more/events?item="+event.id+"&"+params,{waitUntil:"commit"});}
+    try{const legacy="/de/school/more/events?item="+event.id+"&"+params;
+    const redirect=await page.request.get(legacy,{maxRedirects:0});
+    expect(redirect.status()).toBe(307);
+    const destination=new URL(redirect.headers().location!,localOrigin);
+    expect(destination.pathname).toBe("/de/school/calendar");
+    assertContext(destination.searchParams,"item",event.id);
+    assertContext(destination.searchParams,"month",day.slice(0,7));
+    assertContext(destination.searchParams,"day",day);
+    assertContext(destination.searchParams,"classId",apple.id);
+    await page.goto(legacy);}
     catch(error){if(!/interrupted by another navigation to .*\/de\/school\/calendar\?/.test(String(error)))throw error;}
     await expect.poll(()=>new URL(page.url()).searchParams.get("item")).toBe(event.id);
     await expect(page).toHaveURL(/\/school\/calendar\?/);
