@@ -108,7 +108,10 @@ private fun TariffEditor(model: IdentityViewModel, options: JSONObject) {
 @Composable
 private fun PayerEditor(model: IdentityViewModel, profile: JSONObject, firstMonth: String, changed: () -> Unit) {
     val choices = profile.financeRows("choices")
-    var guardian by remember { mutableStateOf(choices.firstOrNull()?.getString("id")) }
+    val current = profile.financeRows("designations").filter { it.getString("effectiveFromMonth") <= firstMonth }
+        .maxWithOrNull(compareBy<JSONObject> { it.getString("effectiveFromMonth") }.thenBy { it.getInt("revision") })
+        ?.getString("guardianId")
+    var guardian by remember { mutableStateOf(current?.takeIf { id -> choices.any { it.getString("id") == id } }) }
     var month by remember(firstMonth) { mutableStateOf(firstMonth) }
     var review by remember { mutableStateOf(false) }
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
