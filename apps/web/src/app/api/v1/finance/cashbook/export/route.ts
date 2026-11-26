@@ -7,6 +7,6 @@ const quote=(value:unknown)=>{let text=String(value??"");if(/^[\s]*[=+@-]/.test(
 export const GET=api(async(request,context)=>{
   const book=await readCashbook(await requireActor(request,context),academicQuery(request,cashbookQuery).month);
   if(book.entryCount>book.entries.length)throw new ApiError("validation");
-  const rows=[["Datum","Art","Beschreibung","Betrag (kleinste Währungseinheit)","Währung","Erfasst von","Beleg-ID"],...book.entries.map(e=>[e.date,e.kind,e.description,e.signedMinor,book.currency,e.actorId,e.receiptId])];
-  return new Response("\ufeff"+rows.map(row=>row.map(quote).join(";")).join("\r\n"),{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":'attachment; filename="Kassenbuch-'+book.month+'.csv"',"X-Content-Type-Options":"nosniff"}});
+  const rows=[["Datum","Art","Beschreibung","Betrag (kleinste Währungseinheit)","Währung","Erfasst von","Beleg-ID","Buchungs-ID","Korrigierte Buchung"],...book.entries.map(e=>[e.date,e.reversalOf?"movement_correction":e.kind,e.description,e.signedMinor,book.currency,e.actorId,e.receiptId,e.id,e.reversalOf])];
+  return new Response("\ufeff"+rows.map(row=>row.map(quote).join(";")).join("\r\n"),{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":'attachment; filename="Kassenbuch-'+book.month+'.csv"',"X-Content-Type-Options":"nosniff","Cache-Control":"private, no-store"}});
 });
