@@ -211,6 +211,11 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const reversedMovement=correctedBook.entries.find((row:{id:string})=>row.id===correction.id);
     assert.equal(reversedMovement.reversalOf,expense.id);
     assert.equal(reversedMovement.signedMinor,1000);
+    const cashExport=await fixtureApi(school,`/finance/cashbook/export?month=${clock.month}`,{token:finance,persona:"admin"});
+    assert.match(cashExport.response.headers.get("content-type")??"",/text\/csv/);
+    const csv=await cashExport.response.text();
+    assert.ok(csv.includes(correction.id)&&csv.includes(expense.id),"export must preserve correction and original identifiers");
+    await fixtureApi(school,`/finance/cashbook/export?month=${clock.month}`,{token:payer,persona:"guardian",status:403});
     // Restore the same net cash balance for the subsequent family payment assertions.
     await send("/finance/cashbook","replacement-expense",{...expenseInput,description:"Synthetic replacement expense"});
 
