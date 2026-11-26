@@ -86,7 +86,8 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
 }
 function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnType<typeof payerProfile.parse>;month:string;refresh:()=>void}){
   const text=billingCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
-  const [guardian,setGuardian]=useState(profile.choices[0]?.id??""),[effective,setEffective]=useState(month);
+  const current=[...profile.designations].filter(item=>item.effectiveFromMonth<=month).sort((a,b)=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth)||b.revision-a.revision)[0];
+  const [guardian,setGuardian]=useState(profile.choices.some(item=>item.id===current?.guardianId)?current.guardianId:""),[effective,setEffective]=useState(month);
   const [review,setReview]=useState(false),[pending,setPending]=useState(false),[error,setError]=useState("");
   const chosen=profile.choices.find((item)=>item.id===guardian);
   const input=payerEdit.safeParse({guardianId:guardian,effectiveFromMonth:effective,revision:profile.revision});
@@ -104,6 +105,7 @@ function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnT
     {!profile.choices.length?<p>{text.emptyPayer}</p>:<form className="auth-form" onSubmit={(event)=>void save(event)}>
       {review?<p className="notice"><bdi>{chosen?.displayName}</bdi> · <bdi>{effective}</bdi></p>:<>
         <label>{text.guardian}<select value={guardian} onChange={(event)=>setGuardian(event.target.value)}>
+          <option value="" disabled>{locale==="ar"?"اختر مسؤول السداد":"Zahler auswählen"}</option>
           {profile.choices.map((item)=><option key={item.id} value={item.id}>{item.displayName}{!item.activeAccount?" · "+text.activeLater:""}</option>)}
         </select></label>
         <FinanceDateField locale={locale} label={text.effective} type="month" min={month} value={effective} onChange={(event)=>setEffective(event.target.value)} required/>
