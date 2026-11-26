@@ -4365,6 +4365,26 @@ paths:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptMutation"}}}
         default:
           $ref: '#/components/responses/AuthError'
+  /finance/cashbook/reversals:
+    post:
+      operationId: reverseCashbookMovement
+      summary: Append a dated offset to a manually posted cash movement without deleting the original
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","additionalProperties":false,"required":["movementId","reason"],"properties":{"movementId":{"type":"string","format":"uuid"},"reason":{"type":"string","minLength":3,"maxLength":500}}}
+      responses:
+        '201':
+          description: The correction journal entry identifier
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["id"],"properties":{"id":{"type":"string","format":"uuid"}}}}}
+        default:
+          $ref: '#/components/responses/AuthError'
   /finance/reports/summary:
     get:
       operationId: readFinanceReport
