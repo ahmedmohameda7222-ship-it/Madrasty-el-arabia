@@ -162,6 +162,10 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.ok(byPayer.some((row:{id:string})=>row.id===omar.id),"staff can find open invoices using the named payer");
     const foreignSearch=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&q=${payerSearch}&limit=100`,{token:nonpayer,persona:"guardian"})).payload.data;
     assert.ok(!foreignSearch.some((row:{id:string})=>row.id===omar.id),"payer search must not bypass invoice visibility");
+    const related=(await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${ahmed.id}&limit=100`,{token:finance,persona:"admin"})).payload.data;
+    assert.ok(related.some((row:{id:string})=>row.id===omar.id),"same named payer's sibling invoice must be available");
+    assert.ok(!related.some((row:{id:string})=>row.id===ahmed.id),"settled invoice is not payable");
+    await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${ahmed.id}`,{token:nonpayer,persona:"guardian",status:403});
     const partial = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(partial.state, "partial");
     assert.equal(partial.balanceMinor, 1600);
@@ -241,6 +245,9 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       assert.ok(typeof dispatch.payload.data.automaticBilling.issued==="number");
       const first=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
       assert.equal(first.filter((row:{kind:string})=>row.kind==="monthly").length,1);
+      const samePayer=(await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${omar.id}&limit=100`,{token:finance,persona:"admin"})).payload.data;
+      assert.ok(samePayer.some((row:{id:string})=>row.id===omar.id));
+      assert.ok(!samePayer.some((row:{id:string})=>row.id===first[0].id),"unrelated payer must not appear in the scoped selection");
       await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
       const again=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
       assert.deepEqual(again.map((row:{id:string})=>row.id),first.map((row:{id:string})=>row.id));
