@@ -31,6 +31,7 @@ import de.madrasty.app.comms.DeviceNotificationSettings
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
+import de.madrasty.app.ui.LocalChangeInterfaceLanguage
 import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import kotlinx.coroutines.CancellationException
@@ -70,7 +71,7 @@ fun AccountScreen(model: IdentityViewModel, close: () -> Unit, security: () -> U
     BackHandler(onBack = close)
     LaunchedEffect(reload) {
         state = AsyncState.InitialLoading()
-        state = loadAccountSurface({ reload++ }) { model.readPreferences(fallback) }
+        state = loadAccountSurface({ reload++ }) { model.readPreferences(fallback).copy(uiLocale=fallback) }
     }
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -96,6 +97,13 @@ fun AccountScreen(model: IdentityViewModel, close: () -> Unit, security: () -> U
 private fun PreferencesEditor(model: IdentityViewModel, initial: AccountPreference, save: (AccountPreference) -> Unit, reload: () -> Unit) {
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
     var value by remember { mutableStateOf(initial) }
+    val interfaceLanguage=LocalConfiguration.current.locales[0].language
+    val changeInterfaceLanguage=LocalChangeInterfaceLanguage.current
+    var previousLanguage by remember{mutableStateOf(interfaceLanguage)}
+    LaunchedEffect(interfaceLanguage){
+        val before=previousLanguage;previousLanguage=interfaceLanguage
+        if(value.uiLocale==before)value=value.copy(uiLocale=interfaceLanguage)
+    }
     var conflict by remember { mutableStateOf(false) }
     Text(stringResource(R.string.account_ui_language))
     LanguageChoice(value.uiLocale) { value = value.copy(uiLocale = it) }
@@ -111,6 +119,7 @@ private fun PreferencesEditor(model: IdentityViewModel, initial: AccountPreferen
             val updated = AccountPreference.read(model.schoolCommand(attempts,"/account/preferences","PATCH",value.body()))
             if (account != null && account == model.session?.actor?.accountId) {
                 model.applyPreferences(account,updated)
+                changeInterfaceLanguage?.invoke(updated.uiLocale)
                 save(updated)
             }
         } catch (error: HttpFailure) {

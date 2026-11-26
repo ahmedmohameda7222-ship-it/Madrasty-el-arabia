@@ -257,7 +257,7 @@ private fun CurriculumLessonDetail(model:IdentityViewModel,value:JSONObject,cont
     val revision=value.getInt("revision")
     var editing by remember{mutableStateOf(false)}
     var preview by remember{mutableStateOf<Int?>(null)}
-    var previewLanguage by remember(language){mutableStateOf(language)}
+    var previewLanguage by remember{mutableStateOf(language)}
     var notice by remember{mutableStateOf<Int?>(null)}
     val attempts=remember{mutableMapOf<String,Pair<String,String>>()}
     if(context!=null)Text(offeringLabel(context,language))

@@ -95,6 +95,7 @@ fun SchoolShell(
                     },
                     actions = {
                         notificationAction()
+                        InterfaceLanguageAction()
                         if (choices.isNotEmpty()) {
                             TextButton(onClick = { pickerVisible = true }) { Text(stringResource(R.string.choose_scope)) }
                         }
