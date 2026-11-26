@@ -3,6 +3,17 @@ package de.madrasty.app.comms
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.rememberCoroutineScope
+import de.madrasty.app.ui.InterfaceSettingsAction
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
@@ -68,34 +79,66 @@ private val caseLabels=mapOf(
     "in_progress" to R.string.conversation_case_in_progress,
     "closed" to R.string.conversation_case_closed,
 )
+// SchoolNavigation is recreated for each account/session/persona.
+internal class ThreadInboxState {
+    var filter by mutableStateOf("all")
+    var search by mutableStateOf("")
+    val list=LazyListState()
+}
 @Composable
-internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String)->Unit){
+internal fun ThreadInbox(model:IdentityViewModel,state:ThreadInboxState,open:(String)->Unit){
     val version=threadRefreshVersion(poll=true)
-    var filter by remember{mutableStateOf("all")}
-    var search by remember{mutableStateOf("")}
-    var queryTerm by remember{mutableStateOf("")}
-    LaunchedEffect(search){delay(250);queryTerm=search.trim()}
-    Button(onClick=directory,modifier=Modifier.fillMaxWidth()){Text(stringResource(R.string.comms_new_message))}
-    Field(R.string.chat_search_inbox,search){search=it.take(120)}
-    FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        FilterChip(filter=="all",onClick={filter="all"},label={Text(stringResource(R.string.directory_all))})
-        FilterChip(filter=="unread",onClick={filter="unread"},label={Text(stringResource(R.string.comms_unread))})
-        FilterChip(filter=="archive",onClick={filter="archive"},label={Text(stringResource(R.string.chat_archive_filter))})
+    val scope=rememberCoroutineScope()
+    var queryTerm by remember{mutableStateOf(state.search.trim())}
+    LaunchedEffect(state.search){delay(250);val next=state.search.trim();if(next!=queryTerm){queryTerm=next;state.list.scrollToItem(0)}}
+    Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)){
+        OutlinedTextField(value=state.search,onValueChange={state.search=it.take(120)},modifier=Modifier.fillMaxWidth(),
+            singleLine=true,placeholder={Text(stringResource(R.string.chat_search_inbox))},
+            leadingIcon={Icon(painterResource(R.drawable.ic_comms_search),contentDescription=null)})
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            for((filter,label) in listOf("all" to R.string.directory_all,"unread" to R.string.comms_unread,"archive" to R.string.chat_archive_filter)){
+                FilterChip(state.filter==filter,onClick={if(state.filter!=filter){state.filter=filter;scope.launch{state.list.scrollToItem(0)}}},label={Text(stringResource(label))})
+            }
+        }
+        val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
+        academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${state.filter=="archive"}&unread=${state.filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
+            ThreadRows(threads,state.list,Modifier.weight(1f),open)
+        }
     }
-    val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
-    academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${filter=="archive"}&unread=${filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
-        for(thread in threads){
+}
+
+@Composable
+internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Modifier=Modifier,open:(String)->Unit){
+    LazyColumn(modifier.fillMaxWidth(),state=state,contentPadding=PaddingValues(bottom=84.dp)){
+        items(threads.distinctBy{it.getString("id")},key={it.getString("id")}){thread->
             ListItem(modifier=Modifier.fillMaxWidth().clickable{open(thread.getString("id"))},
                 headlineContent={Text(threadTitle(thread),maxLines=2,overflow=TextOverflow.Ellipsis)},
                 supportingContent={thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2,overflow=TextOverflow.Ellipsis)}},
                 leadingContent={ThreadAvatar(thread)},
-                trailingContent={if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}})
-
+                trailingContent={
+                    Column(horizontalAlignment=Alignment.End,verticalArrangement=Arrangement.spacedBy(4.dp)){
+                        thread.string("activityAt")?.let{stamp->
+                            val locale=java.util.Locale.forLanguageTag(androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language)
+                            val date=runCatching{java.time.Instant.parse(stamp).atZone(java.time.ZoneId.systemDefault())}.getOrNull()
+                            if(date!=null){
+                                val format=if(date.toLocalDate()==java.time.LocalDate.now())java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT) else java.time.format.DateTimeFormatter.ofPattern("d MMM",locale)
+                                Text(date.format(format.withLocale(locale)),style=MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}
+                    }
+                })
             HorizontalDivider()
         }
     }
 }
 
+@Composable
+private fun ThreadBack(close:()->Unit){
+    IconButton(onClick=close,modifier=Modifier.size(48.dp)){
+        Icon(painterResource(R.drawable.ic_comms_back),contentDescription=stringResource(R.string.back))
+    }
+}
 @Composable
 internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(ReportTarget)->Unit,close:()->Unit){
     var changed by remember{mutableStateOf(0)}
@@ -105,12 +148,13 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
-        if(thread is AsyncState.InitialLoading||thread is AsyncState.Error||thread is AsyncState.Offline||thread is AsyncState.Forbidden)TextButton(onClick=close){Text(stringResource(R.string.back))}
+        if(thread is AsyncState.InitialLoading||thread is AsyncState.Error||thread is AsyncState.Offline||thread is AsyncState.Forbidden)Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){ThreadBack(close);InterfaceSettingsAction()}
         AsyncSurface(thread){value->
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                TextButton(onClick=close){Text(stringResource(R.string.back))}
+                ThreadBack(close)
                 ThreadAvatar(value)
                 Text(threadTitle(value),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+                InterfaceSettingsAction()
             }
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))

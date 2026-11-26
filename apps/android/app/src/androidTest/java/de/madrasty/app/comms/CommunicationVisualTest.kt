@@ -34,6 +34,12 @@ import de.madrasty.app.ui.SchoolPartition
 import de.madrasty.app.ui.SchoolTab
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.InterfaceLanguageProvider
+import androidx.compose.foundation.lazy.rememberLazyListState
+import de.madrasty.app.ui.SchoolShell
+import de.madrasty.app.ui.SchoolPartition
+import de.madrasty.app.ui.SchoolTab
+import de.madrasty.app.ui.Persona
+import de.madrasty.app.ui.InterfaceLanguageProvider
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -62,6 +68,35 @@ class CommunicationVisualTest {
             compose.onNodeWithText("Kontakt",substring=false).performClick()
             compose.onNodeWithText("QA destination Messages").assertIsDisplayed()
         }
+    }
+    @Test fun calendarIsIndependentPrimaryDestination(){
+        compose.setContent{
+            var active by remember{mutableStateOf(SchoolTab.Messages)}
+            InterfaceLanguageProvider("de",{}){
+                SchoolTheme(darkMode=false){
+                    SchoolShell(SchoolPartition("qa-account","qa-session",Persona.Guardian),active,{active=it}){
+                        Text("QA destination: "+it.name)
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("QA destination: Messages").assertIsDisplayed()
+        compose.onNode(hasText("Kalender",substring=false) and hasClickAction()).performClick()
+        compose.onNodeWithText("QA destination: Calendar").assertIsDisplayed()
+        compose.onNode(hasText("Kontakt",substring=false) and hasClickAction()).performClick()
+        compose.onNodeWithText("QA destination: Messages").assertIsDisplayed()
+    }
+    @Test fun inboxRowsAreLazyAndOpenTheCorrectThread(){
+        val rows=(1..100).map{JSONObject().put("id","qa-$it").put("contactName","QA Person $it").put("latestPreview","QA Preview $it").put("unread",if(it==1)2 else 0)}
+        var selected=""
+        compose.setContent{
+            SchoolTheme(darkMode=false){
+                ThreadRows(rows,rememberLazyListState(),Modifier.fillMaxSize()){selected=it}
+            }
+        }
+        compose.onNodeWithText("QA Person 1",substring=false).assertIsDisplayed().performClick()
+        compose.runOnIdle{assertTrue(selected=="qa-1")}
+        compose.onNodeWithText("QA Person 100",substring=false).assertDoesNotExist()
     }
     @Test fun germanLight()=capture("de",false)
     @Test fun arabicDark()=capture("ar",true)

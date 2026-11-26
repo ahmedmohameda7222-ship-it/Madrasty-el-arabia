@@ -72,6 +72,12 @@ import de.madrasty.app.comms.ThreadInbox
 import de.madrasty.app.comms.CommunicationFeed
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import de.madrasty.app.comms.ThreadInboxState
 import de.madrasty.app.comms.ThreadScreen
 import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.school.ChildrenScreen
@@ -141,6 +147,7 @@ internal sealed interface WorkspacePage {
 @Stable
 internal class SchoolNavigation {
     var communicationSection by mutableStateOf("chat")
+    val inbox=ThreadInboxState()
     var page by mutableStateOf<WorkspacePage>(WorkspacePage.Tabs)
         private set
     private val previous = mutableListOf<WorkspacePage>()
@@ -329,6 +336,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         return
     }
     if(page==WorkspacePage.Tabs){SchoolTabs(model,session,state,rights);return}
+    if(page is WorkspacePage.Thread){ThreadScreen(model,page.id,state::openReportSource,state::back);return}
     InterfaceLanguageWorkspace {
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)
@@ -406,10 +414,14 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
 
 @Composable
 private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:SchoolNavigation,rights:SchoolRights){
-    SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,notificationAction={
+    val inboxActive=state.tab==SchoolTab.Messages&&state.communicationSection=="chat"
+    SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,scrollContent=!inboxActive,
+        floatingAction={if(inboxActive)FloatingActionButton(onClick={state.open(WorkspacePage.Directory)}){
+            Icon(painterResource(R.drawable.ic_comms_compose),contentDescription=stringResource(R.string.comms_new_message))
+        }},notificationAction={
         NotificationAction(model){state.open(WorkspacePage.Notifications())}
     }){tab->
-        if(tab!=SchoolTab.Home)Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
+        if(tab!=SchoolTab.Home&&tab!=SchoolTab.Messages&&tab!=SchoolTab.Calendar)Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
         when(tab){
             SchoolTab.Home -> SchoolHomeScreen(
                 model,session.actor.persona,state.workDate,{state.workDate=it},
@@ -453,14 +465,14 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
             SchoolTab.Calendar -> SchoolPublicationScreen(model,PublicationSection.Events,null,{state.choose(SchoolTab.Home)},embedded=true)
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
             SchoolTab.Messages -> {
-                FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+                TabRow(selectedTabIndex=if(state.communicationSection=="feed")1 else 0){
                     for((section,label) in listOf("chat" to R.string.comms_chats,"feed" to R.string.comms_feed)){
-                        FilterChip(state.communicationSection==section,onClick={state.communicationSection=section},label={Text(stringResource(label))})
+                        Tab(selected=state.communicationSection==section,onClick={state.communicationSection=section},text={Text(stringResource(label))})
                     }
                 }
                 when(state.communicationSection){
                     "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News,managed=true))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))})
-                    else->ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
+                    else->ThreadInbox(model,state.inbox,state::openThread)
                 }
             }
         }

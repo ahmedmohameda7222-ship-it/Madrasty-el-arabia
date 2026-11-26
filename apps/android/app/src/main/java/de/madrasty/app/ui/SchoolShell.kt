@@ -74,6 +74,8 @@ fun SchoolShell(
     selectScope: (String) -> Unit = {},
     notificationAction: @Composable () -> Unit = {},
     mayManageStudents: Boolean = true,
+    scrollContent: Boolean = true,
+    floatingAction: @Composable () -> Unit = {},
     content: @Composable (SchoolTab) -> Unit,
 ) {
     key(actor.accountId, actor.sessionId, actor.persona) {
@@ -86,10 +88,13 @@ fun SchoolShell(
         Scaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
             containerColor = MaterialTheme.colorScheme.background,
+            floatingActionButton = floatingAction,
             topBar = {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if(active==SchoolTab.Messages||active==SchoolTab.Calendar){
+                            Text(stringResource(active.label),Modifier.semantics{heading()})
+                        }else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Image(painterResource(R.drawable.school_seal), null, Modifier.size(36.dp))
                             Text(stringResource(R.string.app_name), Modifier.semantics { heading() })
                         }
@@ -118,7 +123,8 @@ fun SchoolShell(
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets).imePadding()) {
                 states.SaveableStateProvider(active.name) {
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                    val scroll=rememberScrollState()
+                    Column(Modifier.fillMaxSize().then(if(scrollContent)Modifier.verticalScroll(scroll) else Modifier).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         selectedScope?.let { Text(isolate(it.label), style = MaterialTheme.typography.bodySmall) }
                         content(active)
