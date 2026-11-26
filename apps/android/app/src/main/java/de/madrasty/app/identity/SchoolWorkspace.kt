@@ -483,7 +483,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
     SettingsGroup(R.string.settings_group_account) {
         OpenPage(state,WorkspacePage.Profile,R.string.profile_title)
         OpenPage(state,WorkspacePage.Security,R.string.security)
-        OpenPage(state,WorkspacePage.Account,R.string.account_preferences)
+        OpenPage(state,WorkspacePage.Account,R.string.app_settings)
         OpenPage(state,WorkspacePage.OfflineAttendance,R.string.drafts_on_device)
         AccountActions(model,session)
     }

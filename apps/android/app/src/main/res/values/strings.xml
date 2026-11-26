@@ -621,4 +621,5 @@
     <string name="finance_no_invoices">لا توجد فواتير بعد</string>
     <string name="finance_no_invoices_hint">هنا هتلاقي رسوم أطفالك ومدفوعاتك بعد إصدار الفواتير.</string>
     <string name="finance_fees_total">المطلوب</string>
+    <string name="app_settings">إعدادات التطبيق</string>
 </resources>

@@ -45,7 +45,7 @@ import androidx.lifecycle.viewModelScope
 import de.madrasty.app.attendance.AttendanceDraftStore
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.R
-import de.madrasty.app.ui.InterfaceLanguageAction
+import de.madrasty.app.ui.InterfaceSettingsAction
 import de.madrasty.app.ui.InterfaceLanguageWorkspace
 import de.madrasty.app.navigation.PendingSchoolResource
 import de.madrasty.app.navigation.SchoolResourceLink
@@ -335,7 +335,7 @@ private fun SignInScreen(model: IdentityViewModel) {
         Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        InterfaceLanguageAction()
+        InterfaceSettingsAction()
         Image(painterResource(R.drawable.school_seal), null, Modifier.size(64.dp))
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.sign_in), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)

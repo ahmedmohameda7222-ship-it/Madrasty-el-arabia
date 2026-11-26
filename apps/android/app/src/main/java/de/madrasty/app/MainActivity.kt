@@ -19,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider
 import de.madrasty.app.comms.expireChatCameraFiles
 import de.madrasty.app.comms.isSchoolPushIntent
 import de.madrasty.app.comms.verifiedPushNotice
+import de.madrasty.app.identity.AppDeviceNotificationPreferences
 import de.madrasty.app.identity.IdentityScreen
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.identity.readPreferences
@@ -69,6 +70,11 @@ class MainActivity : ComponentActivity() {
                 if(selected=="ar"||selected=="de"){
                     deviceLanguage=selected
                     presentationSettings.edit().putString("interface_language",selected).apply()
+                }
+            },notificationSettings={
+                val active=model.session
+                if(active!=null&&!active.offlineOnly&&(active.actor.persona!=Persona.Admin||active.assurance=="aal2")){
+                    AppDeviceNotificationPreferences(model,LocalConfiguration.current.locales[0].language)
                 }
             }){
                 SchoolTheme(darkMode = darkMode) {
