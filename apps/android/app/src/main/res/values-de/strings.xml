@@ -495,7 +495,7 @@
     <string name="receipt_choose_invoice">Rechnung auswählen</string>
     <string name="receipt_without_invoice">Ohne Rechnung</string>
     <string name="receipt_suggested_invoice">Vorgeschlagene Rechnung</string>
-    <string name="receipt_invoice_search">Name, Schüler- oder Rechnungsnummer</string>
+    <string name="receipt_invoice_search">Name des Zahlers, Schülers oder Rechnungsnummer</string>
     <string name="receipt_total">Ursprünglicher Betrag</string>
     <string name="receipt_active">Erfasster Betrag</string>
     <string name="receipt_remainder">Verfügbar für Zuordnung</string>
