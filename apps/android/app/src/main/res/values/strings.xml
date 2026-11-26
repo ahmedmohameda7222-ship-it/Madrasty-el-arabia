@@ -648,4 +648,10 @@
     <string name="chat_actions">خيارات المحادثة</string>
     <string name="chat_voice_action">تسجيل رسالة صوتية</string>
     <string name="receipt_same_payer">فواتير نفس مسؤول السداد</string>
+    <string name="cashbook_correction">تصحيح حركة</string>
+    <string name="cashbook_correct">تصحيح الحركة</string>
+    <string name="cashbook_correction_hint">سيتم تسجيل حركة عكسية بتاريخ اليوم مع الاحتفاظ بالحركة الأصلية.</string>
+    <string name="cashbook_correction_reason">سبب التصحيح</string>
+    <string name="cashbook_correction_confirm">تأكيد التصحيح</string>
+    <string name="cashbook_cancel_correction">إلغاء</string>
 </resources>
