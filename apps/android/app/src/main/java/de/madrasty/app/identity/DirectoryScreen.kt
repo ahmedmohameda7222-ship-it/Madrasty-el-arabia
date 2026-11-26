@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -83,15 +85,16 @@ fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, open
         onDispose { lifecycle.removeObserver(observe) }
     }
     LaunchedEffect(search) { delay(250); query = search.trim() }
+    val listScroll=rememberScrollState()
+    val current=draft
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().safeDrawingPadding().imePadding().then(if(current==null)Modifier.verticalScroll(listScroll) else Modifier).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = { if(draft!=null) draft=null else close() }) { Text(stringResource(R.string.back)) }
-        val current=draft
         if(current!=null) {
-            FirstContactMessage(model,current,language,openThread,openMediaThread)
+            FirstContactMessage(model,current,language,openThread,openMediaThread){draft=null}
         } else {
+        TextButton(onClick=close){Text(stringResource(R.string.back))}
         Text(stringResource(R.string.comms_new_message), style = MaterialTheme.typography.headlineMedium)
         Field(R.string.directory_query, search) { search = it.take(120) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -188,7 +191,7 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
     }
 }
 @Composable
-private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit,openMedia:(String,String)->Unit) {
+internal fun ColumnScope.FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit,openMedia:(String,String)->Unit,close:()->Unit) {
     var body by remember(row.getString("id")) { mutableStateOf("") }
     var firstId by remember(row.getString("id")) { mutableStateOf(java.util.UUID.randomUUID().toString()) }
     var sending by remember { mutableStateOf(false) }
@@ -209,13 +212,18 @@ private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:
               finally{sending=false}
         }
     }
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        IconButton(onClick=close,enabled=!sending,modifier=Modifier.size(48.dp)){
+            Icon(painterResource(R.drawable.ic_comms_back),contentDescription=stringResource(R.string.back))
+        }
         ContactAvatar(row,language)
         Column(Modifier.weight(1f)){
-            Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.titleLarge,maxLines=2,overflow=TextOverflow.Ellipsis)
-            Text(isolate(title(row,language)),style=MaterialTheme.typography.bodyMedium)
+            Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+            Text(isolate(title(row,language)),style=MaterialTheme.typography.bodyMedium,maxLines=1,overflow=TextOverflow.Ellipsis)
         }
     }
+    Spacer(Modifier.weight(1f))
+    if(failed)Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
         IconButton(enabled=!sending,onClick={send(true)},modifier=Modifier.size(48.dp)){
             Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_first_media))
@@ -223,7 +231,6 @@ private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:
         ChatInputField(body,!sending){body=it;firstId=java.util.UUID.randomUUID().toString();failed=false}
         ChatSendAction(!sending&&body.isNotBlank(),failed){send(false)}
     }
-    if(failed)Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
 }
 @Composable
 private fun ContactAvatar(row:JSONObject,language:String){

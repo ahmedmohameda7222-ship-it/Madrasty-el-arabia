@@ -25,6 +25,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import de.madrasty.app.identity.IdentityViewModel
+import de.madrasty.app.identity.FirstContactMessage
+import androidx.compose.ui.platform.testTag
 import org.json.JSONArray
 import org.json.JSONObject
 import de.madrasty.app.R
@@ -117,6 +119,37 @@ class CommunicationVisualTest {
         assertTrue(drafts.read("two")?.openMedia==true)
         drafts.remove("one")
         assertTrue(drafts.read("one")==null)
+    }
+    @Test fun firstContactComposerStaysAtBottomInNormalAndReducedViewport(){
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val app=instrumentation.targetContext.applicationContext as Application
+        val store=ViewModelStore()
+        lateinit var model:IdentityViewModel
+        instrumentation.runOnMainSync{
+            model=ViewModelProvider(store,ViewModelProvider.AndroidViewModelFactory.getInstance(app))[IdentityViewModel::class.java]
+        }
+        val contact=JSONObject().put("id","qa-first-contact").put("displayName","QA Teacher")
+            .put("titleDe","Lehrkraft").put("titleAr","مدرس")
+        var reduced by mutableStateOf(false)
+        lateinit var attachLabel:String
+        try{
+            compose.setContent{
+                attachLabel=stringResource(R.string.comms_first_media)
+                SchoolTheme(darkMode=false){
+                    Surface(Modifier.fillMaxSize()){
+                        Column(Modifier.fillMaxWidth().then(if(reduced)Modifier.height(260.dp) else Modifier.fillMaxHeight()).testTag("first-contact-viewport")){
+                            FirstContactMessage(model,contact,"de",{},{_,_->},{})
+                        }
+                    }
+                }
+            }
+            for(short in listOf(false,true)){
+                compose.runOnIdle{reduced=short}
+                val viewport=compose.onNodeWithTag("first-contact-viewport").fetchSemanticsNode().boundsInRoot
+                val attach=compose.onNodeWithContentDescription(attachLabel).assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+                assertTrue("First-message attachment control must remain at the bottom",viewport.bottom-attach.bottom in 0f..(viewport.height*.2f))
+            }
+        }finally{instrumentation.runOnMainSync{store.clear()}}
     }
     @Test fun germanLight()=capture("de",false)
     @Test fun arabicDark()=capture("ar",true)
