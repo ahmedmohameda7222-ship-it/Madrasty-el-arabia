@@ -39,7 +39,12 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
 
     const send = async (path: string, name: string, body: unknown, method: "POST" | "PUT" = "POST", status = 201) =>
       (await fixtureApi(school, path, { method, token: finance, persona: "admin", key: `${school.run}.${name}`, body, status })).payload.data;
-    const automatic=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    const historicalStart=await school.seedHistoricalBillingStart();
+    const historicalSettings=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    assert.equal(historicalSettings.startMonth,historicalStart);
+    const automatic=await send("/finance/automatic-billing","keep-historical-start",{enabled:true,startMonth:historicalStart,revision:historicalSettings.revision},"PUT",200);
+    assert.equal(automatic.enabled,true);
+    assert.equal(automatic.startMonth,historicalStart,"enabling billing must not silently change its historical start");
     assert.equal(typeof automatic.enabled,"boolean");
     assert.ok(Array.isArray(automatic.payerIssues),"finance must surface payer activation and notification eligibility issues");
     for(const entry of automatic.payerIssues){
