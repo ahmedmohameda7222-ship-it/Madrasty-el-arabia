@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { preferencesSchema, sessionSchema, type Locale, type SchoolSession, type Persona } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
@@ -53,6 +53,7 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
   const [hydrated, setHydrated] = useState(false);
   const [pending, setPending] = useState(refreshable);
   const [failure, setFailure] = useState("");
+  const presentation=useRef({locale,destination});presentation.current={locale,destination};
 
   useEffect(() => {
     let active = true;
@@ -63,10 +64,10 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
         setPending(true);
         void revokeWebSession(revoke)
           .then(() => { if (active) { setPending(false); setFailure(""); } })
-          .catch(() => { if (active) setFailure(text.revoked); });
+          .catch(() => { if (active) setFailure(labels[presentation.current.locale].revoked); });
       } else if (refreshable) {
         requestApi("/auth/session", sessionSchema, { method: "POST", headers: webHeaders() })
-          .then(() => preferredDestination(locale, destination))
+          .then(() => preferredDestination(presentation.current.locale, presentation.current.destination))
           .then((next) => { if (active) router.replace(next); })
           .catch(() => { if (active) setPending(false); });
       }
@@ -74,7 +75,7 @@ export function SignInForm({ locale, destination, refreshable }: { locale: Local
     connect();
     window.addEventListener("online", connect);
     return () => { active = false; window.removeEventListener("online", connect); };
-  }, [destination, locale, refreshable, router, text.revoked]);
+  }, [refreshable, router]);
 
 
   async function submit(event: FormEvent<HTMLFormElement>) {

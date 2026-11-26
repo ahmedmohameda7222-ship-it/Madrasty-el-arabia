@@ -446,3 +446,45 @@ jobs:
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
           pnpm qa:web --project=${{ matrix.browser }} ui-language-state.spec.ts
+
+  language-native-regression:
+    if: github.ref == 'refs/heads/fix/preserve-state-language-2026-11-26'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Install Android SDK
+        run: |
+          sdkmanager --install "platforms;android-37" "build-tools;37.0.0" || sdkmanager --install "platforms;android-37.0" "build-tools;37.0.0"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify native in-place language switch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb shell wm size 780x1688
+            adb shell wm density 320
+            chmod +x apps/android/gradlew
+            ./apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=de.madrasty.app.school.LanguageStateTest --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: language-native-results
+          path: apps/android/app/build/outputs/androidTest-results/
+          if-no-files-found: warn

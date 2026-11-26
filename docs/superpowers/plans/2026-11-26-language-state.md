@@ -1,2 +1,4 @@
 # In-place UI language
 Keep stable route and session. No storing draft text or credentials in browser persistence. Regression first using actual fixture sign-in; preserve wizard step, text, choice, URL, document identity and navigation. Use same-route rendering with a separate presentation locale. Audit shared async loaders and Android composition. Run exact-head checks before merge.
+
+Implementation: same-route rendering using device presentation cookie across rendered locale routes, preserve query and current document, keep account provider identity stable, do not reload draft-bearing data solely for locale changes; Android composition-local localization and device-only override, no Activity recreation. Added actual sign-in, unsaved registration/import/chat and Android Compose regression. Initial RED runner failed at local Supabase startup before browser test; do not claim RED reproduced in execution. No auth or production database modifications.
