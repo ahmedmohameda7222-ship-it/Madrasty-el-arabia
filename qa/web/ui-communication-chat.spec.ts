@@ -155,7 +155,9 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     assertContext(returned,"month",day.slice(0,7));
     assertContext(returned,"day",day);
     assertContext(returned,"classId",apple.id);
-    await page.goto("/de/school/more/events?item="+event.id+"&"+params,{waitUntil:"commit"});
+    // A Next streaming redirect may interrupt the original WebKit navigation.
+    try{await page.goto("/de/school/more/events?item="+event.id+"&"+params,{waitUntil:"commit"});}
+    catch(error){if(!/interrupted by another navigation to .*\/de\/school\/calendar\?/.test(String(error)))throw error;}
     await expect.poll(()=>new URL(page.url()).searchParams.get("item")).toBe(event.id);
     await expect(page).toHaveURL(/\/school\/calendar\?/);
     await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
