@@ -613,6 +613,10 @@
     <string name="finance_auto_start">Startmonat</string>
     <string name="finance_auto_enabled">Automatisch ausstellen</string>
     <string name="finance_auto_missing">Schüler ohne Zahlungspflichtige: %1$d</string>
+    <string name="finance_payer_issues">Handlungsbedarf: %1$d Schüler</string>
+    <string name="finance_payer_unreachable">Konto nicht für Benachrichtigungen bereit</string>
+    <string name="finance_payer_missing">Zahler fehlt oder ist nicht verfügbar</string>
+    <string name="finance_payer_issue_hint">Zahler und Kontofreischaltung prüfen, bevor Sie sich auf Benachrichtigungen verlassen.</string>
     <string name="finance_filters">Filter</string>
     <string name="finance_more_details">Weitere Kennzahlen</string>
     <string name="finance_new_movement">Neue Buchung</string>
