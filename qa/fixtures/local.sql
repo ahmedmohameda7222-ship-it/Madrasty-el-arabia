@@ -158,3 +158,22 @@ revoke all on all functions in schema qa from public;
 grant usage on schema qa to madrasty_qa_fixture;
 grant execute on function qa.seed_actor(text,text,uuid), qa.seed_family(text), qa.purge_unused_run(text), qa.read_run(text) to madrasty_qa_fixture;
 grant execute on function qa.expire_session(text,uuid) to madrasty_qa_fixture;
+
+-- Disposable local fixture only: model a billing configuration that has already
+-- been active for one month. The app must preserve that date on toggle.
+create or replace function qa.seed_historical_billing_start(run text)
+returns text language plpgsql security definer set search_path=pg_catalog
+as $$
+declare previous date;
+begin
+  if run !~ '^qa-[0-9a-f]{32}$' or not exists(select 1 from qa.actor f join app.account a on a.id=f.account_id
+    join auth.users u on u.id=a.provider_subject where f.run_id=run and f.principal='finance'
+    and u.email=run||'.finance@madrasty.invalid' and u.email_confirmed_at is not null)
+  then raise exception 'Expected a confirmed local QA finance identity'; end if;
+  previous:=(app.billing_school_month()-interval '1 month')::date;
+  update app.automatic_billing set start_month=previous,enabled=false,revision=revision+1 where singleton;
+  return to_char(previous,'YYYY-MM');
+end
+$$;
+revoke all on function qa.seed_historical_billing_start(text) from public;
+grant execute on function qa.seed_historical_billing_start(text) to madrasty_qa_fixture;
