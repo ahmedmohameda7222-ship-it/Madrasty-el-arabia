@@ -648,4 +648,10 @@
     <string name="chat_actions">Chat-Aktionen</string>
     <string name="chat_voice_action">Sprachnachricht aufnehmen</string>
     <string name="receipt_same_payer">Weitere Rechnungen desselben Zahlers</string>
+    <string name="cashbook_correction">Buchungskorrektur</string>
+    <string name="cashbook_correct">Buchung korrigieren</string>
+    <string name="cashbook_correction_hint">Eine Gegenbuchung mit heutigem Datum wird erfasst. Die ursprüngliche Buchung bleibt erhalten.</string>
+    <string name="cashbook_correction_reason">Grund der Korrektur</string>
+    <string name="cashbook_correction_confirm">Korrektur bestätigen</string>
+    <string name="cashbook_cancel_correction">Abbrechen</string>
 </resources>
