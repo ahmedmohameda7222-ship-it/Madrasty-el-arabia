@@ -17,3 +17,21 @@ for(const locale of ["de","ar"] as const){
   assert.equal(pdf.subarray(0,8).toString(),"%PDF-1.4");
  });
 }
+
+function actualText(value:string){
+  return "<FEFF"+Buffer.from(value,"utf16le").swap16().toString("hex").toUpperCase()+">";
+}
+for(const locale of ["de","ar"] as const){
+  test("invoice has a Unicode text layer and correct document language "+locale,async()=>{
+    const source=(await invoicePdf(invoice,locale)).toString("latin1");
+    assert.ok(source.includes("/Lang ("+locale+")"));
+    assert.ok(source.includes("/ActualText "+actualText(invoice.studentName)));
+    assert.ok(source.includes("/ActualText "+actualText(locale==="ar"?"اشتراك شهري":"Monatsbeitrag")));
+    assert.match(source,/3 Tr/);
+  });
+  test("receipt has an extractable number and language "+locale,async()=>{
+    const source=(await receiptPdf(receipt,locale)).toString("latin1");
+    assert.ok(source.includes("/Lang ("+locale+")"));
+    assert.ok(source.includes("/ActualText "+actualText((locale==="ar"?"الرقم":"Nummer")+": "+receipt.receiptNumber)));
+  });
+}
