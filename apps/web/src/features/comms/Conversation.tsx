@@ -177,12 +177,13 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       </div>}
       <div className="comms-input-bar">
         <MediaComposer locale={locale} persona={persona} thread={thread.id} initialExpanded={restored?.openMedia===true} locked={attempt?.pending===true} consumed={consumed}
-          onReady={setAttachment} onBusy={setPreparing}/>
-        <label className="comms-input-field"><textarea ref={inputRef} aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={1} disabled={attempt?.pending}
-          onChange={(event)=>{editDraft(event.target.value);setAttempt(undefined);}}/></label>
-        <button className="comms-icon-button comms-send-button" type="submit" aria-label={attempt?.failed?text.retry:text.send} disabled={(!body.trim()&&!attachment)||preparing||attempt?.pending}>
-          <Icon name={attempt?.failed?"retry":"sendUp"}/>
-        </button>
+          onReady={setAttachment} onBusy={setPreparing}
+          showVoiceAction={!body.trim()&&!attachment&&!attempt&&!preparing}
+          inputField={<label className="comms-input-field"><textarea ref={inputRef} aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={1} disabled={attempt?.pending}
+            onChange={(event)=>{editDraft(event.target.value);setAttempt(undefined);}}/></label>}
+          primaryAction={<button className="comms-icon-button comms-send-button" type="submit" aria-label={attempt?.failed?text.retry:text.send} disabled={(!body.trim()&&!attachment)||preparing||attempt?.pending}>
+            <Icon name={attempt?.failed?"retry":"sendUp"}/>
+          </button>}/>
       </div>
     </form>:<p>{text.closed}</p>}
   </section>;

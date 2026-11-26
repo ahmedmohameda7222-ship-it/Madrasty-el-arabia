@@ -798,3 +798,6 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
  .school-shell[data-platform="android"] .comms-directory[data-compose="true"] .comms-icon-button {min-inline-size:48px;min-block-size:48px}
  .school-shell[data-platform="android"] .comms-directory[data-compose="true"] .comms-input-bar {grid-template-columns:48px minmax(0,1fr) 48px}
 }
+
+/* Permission errors keep the three composer controls in their normal positions. */
+.comms-media-error{grid-column:1/-1;margin:0;overflow-wrap:anywhere;font-size:.85rem}

@@ -1,16 +1,16 @@
 name: Communication Playwright visual audit
 on:
   push:
-    branches: ["fix/communication-playwright-visual-audit-2026-11-25", "feat/communication-native-redesign-2026-11-26"]
+    branches: ["fix/communication-playwright-visual-audit-2026-11-25", "feat/communication-native-redesign-2026-11-26","feat/chat-direct-microphone-2026-11-26"]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: communication-visual-audit-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26' }}
 jobs:
   visual-audit:
-    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
+    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   regression:
-    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
+    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

@@ -259,14 +259,34 @@ test("mobile chat composer keeps media actions collapsed until requested",async(
     const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
     await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     for(const scenario of [
-      {locale:"de",width:390,attach:"Anhang hinzufügen",actions:["Foto auswählen","Foto aufnehmen","Audio aufnehmen"]},
-      {locale:"ar",width:320,attach:"إضافة مرفق",actions:["اختيار صورة","تصوير","سجّل صوت"]},
+      {locale:"de",width:390,attach:"Anhang hinzufügen",voice:"Sprachnachricht aufnehmen",send:"Senden",permission:"Erlaube den Zugriff auf das Mikrofon",actions:["Foto auswählen","Foto aufnehmen","Audio aufnehmen"]},
+      {locale:"ar",width:320,attach:"إضافة مرفق",voice:"تسجيل رسالة صوتية",send:"إرسال",permission:"اسمح بالميكروفون",actions:["اختيار صورة","تصوير","سجّل صوت"]},
     ] as const){
       await page.setViewportSize({width:scenario.width,height:844});
       await page.goto("/"+scenario.locale+"/school/messages?thread="+thread);
       const composer=page.locator(".comms-composer");
       const input=composer.locator("textarea");
       await expect(input).toBeVisible();
+      const mic=composer.getByRole("button",{name:scenario.voice,exact:true});
+      const send=composer.getByRole("button",{name:scenario.send,exact:true});
+      await expect(mic).toBeEnabled();
+      await expect(send).toHaveCount(0);
+      // Exercise the real record entry point without accessing a physical microphone.
+      await page.evaluate(()=>{
+        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>{
+          document.documentElement.dataset.qaMicrophone="requested";
+          throw new DOMException("QA permission denied","NotAllowedError");
+        }});
+      });
+      await mic.click();
+      await expect(page.locator("html")).toHaveAttribute("data-qa-microphone","requested");
+      await expect(composer.getByRole("alert")).toContainText(scenario.permission);
+      await expect(mic).toBeEnabled();
+      await input.fill("QA unsent draft");
+      await expect(send).toBeEnabled();
+      await expect(mic).toHaveCount(0);
+      await input.fill("   ");
+      await expect(mic).toBeEnabled();
       await input.fill("QA unsent draft");
       const toggle=composer.getByRole("button",{name:scenario.attach});
       await expect(toggle).toHaveAttribute("aria-expanded","false");
@@ -496,7 +516,12 @@ test("first-contact attachment preserves typed text and opens the actual compose
     }
     await page.setViewportSize({width:390,height:844});
     const body="QA first message with attachment";
+    const firstMic=page.getByRole("button",{name:"Sprachnachricht aufnehmen",exact:true});
+    await expect(firstMic).toBeEnabled();
+    await expect(page.getByRole("button",{name:"Senden",exact:true})).toHaveCount(0);
     await page.locator(".comms-composer textarea").fill(body);
+    await expect(firstMic).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Senden",exact:true})).toBeEnabled();
     await page.getByRole("button",{name:"Anhang hinzufügen",exact:true}).click();
     await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).not.toBeNull();
     await expect(page.locator(".comms-conversation textarea")).toHaveValue(body);

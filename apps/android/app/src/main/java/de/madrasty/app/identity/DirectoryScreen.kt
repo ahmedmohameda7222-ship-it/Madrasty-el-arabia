@@ -70,7 +70,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 @Composable
-fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, openMediaThread:(String,String)->Unit, close: () -> Unit) {
+fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, openMediaThread:(String,String,Boolean)->Unit, close: () -> Unit) {
     var search by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var view by remember { mutableStateOf("mine") }
@@ -191,14 +191,14 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
     }
 }
 @Composable
-internal fun ColumnScope.FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit,openMedia:(String,String)->Unit,close:()->Unit) {
+internal fun ColumnScope.FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit,openMedia:(String,String,Boolean)->Unit,close:()->Unit) {
     var body by remember(row.getString("id")) { mutableStateOf("") }
     var firstId by remember(row.getString("id")) { mutableStateOf(java.util.UUID.randomUUID().toString()) }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
     val scope=rememberCoroutineScope()
     val attempts=remember { mutableMapOf<String,Pair<String,String>>() }
-    fun send(media:Boolean) {
+    fun send(media:Boolean,voice:Boolean=false) {
         if(sending||(!media&&body.isBlank())) return
         sending=true;failed=false
         scope.launch {
@@ -206,7 +206,7 @@ internal fun ColumnScope.FirstContactMessage(model:IdentityViewModel,row:JSONObj
                 val payload=JSONObject().put("target",row.getJSONObject("target"))
                 if(!media)payload.put("firstMessage",JSONObject().put("clientMessageId",firstId).put("body",body.trim()))
                 val thread=model.schoolCommand(attempts,"/threads","POST",payload).getString("threadId")
-                if(media)openMedia(thread,body) else open(thread)
+                if(media)openMedia(thread,body,voice) else open(thread)
             } catch(cancel:CancellationException){throw cancel}
               catch(_:Exception){failed=true}
               finally{sending=false}
@@ -229,7 +229,8 @@ internal fun ColumnScope.FirstContactMessage(model:IdentityViewModel,row:JSONObj
             Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_first_media))
         }
         ChatInputField(body,!sending){body=it;firstId=java.util.UUID.randomUUID().toString();failed=false}
-        ChatSendAction(!sending&&body.isNotBlank(),failed){send(false)}
+        ChatSendAction(!sending&&body.isNotBlank(),failed&&body.isNotBlank(),
+            onRecord=if(!sending&&body.isBlank()) ({send(true,voice=true)}) else null){send(false)}
     }
 }
 @Composable

@@ -191,7 +191,7 @@ internal class SchoolNavigation {
     }
     fun openThread(id:String)=open(WorkspacePage.Thread(id))
     fun selectSplitThread(id:String){if(page is WorkspacePage.Thread)page=WorkspacePage.Thread(id)else openThread(id)}
-    fun openThreadWithDraft(id:String,body:String){chatDrafts.write(id,NativeChatDraft(body,openMedia=true));openThread(id)}
+    fun openThreadWithDraft(id:String,body:String,voice:Boolean){chatDrafts.write(id,NativeChatDraft(body,openMedia=!voice));openThread(id)}
     fun openNoticeTarget(target:JSONObject):Boolean{
         val id=target.getString("id")
         val childId=target.optString("childId").takeIf{it.isNotBlank()}

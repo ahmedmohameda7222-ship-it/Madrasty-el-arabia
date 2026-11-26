@@ -84,7 +84,7 @@ internal fun expireChatCameraFiles(context:Context){
 internal fun MediaComposer(
     model:IdentityViewModel,thread:String,locked:Boolean,consumed:String?,onReady:(String?)->Unit,onBusy:(Boolean)->Unit,
     initialMenuOpen:Boolean=false,
-    rowContent:@Composable RowScope.()->Unit={},
+    rowContent:@Composable RowScope.((()->Unit)?)->Unit={},
 ){
     val context=LocalContext.current
     val lifecycle=LocalLifecycleOwner.current.lifecycle
@@ -95,6 +95,7 @@ internal fun MediaComposer(
     var ready by remember(thread){mutableStateOf<String?>(null)}
     var capturing by remember(thread){mutableStateOf(false)}
     var recording by remember(thread){mutableStateOf(false)}
+    var permissionPending by remember(thread){mutableStateOf(false)}
     var uploading by remember(thread){mutableStateOf(false)}
     var error by remember(thread){mutableStateOf<Int?>(null)}
     var elapsed by remember(thread){mutableIntStateOf(0)}
@@ -102,8 +103,8 @@ internal fun MediaComposer(
     var menuOpen by remember(thread){mutableStateOf(initialMenuOpen)}
     LaunchedEffect(locked,capturing,recording,draft){if(locked||capturing||recording||draft!=null)menuOpen=false}
 
-    LaunchedEffect(capturing,recording,uploading,draft,ready){
-        onBusy(capturing||recording||uploading||(draft!=null&&ready==null))
+    LaunchedEffect(capturing,recording,permissionPending,uploading,draft,ready){
+        onBusy(capturing||recording||permissionPending||uploading||(draft!=null&&ready==null))
     }
     LaunchedEffect(consumed){
         if(consumed!=null&&ready==consumed){draft=null;ready=null;progress=0;error=null}
@@ -148,7 +149,18 @@ internal fun MediaComposer(
         }
     }
     val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->
+        permissionPending=false
         if(granted)startVoice()else error=R.string.chat_media_permission
+    }
+    fun requestVoice(){
+        if(locked||capturing||recording||permissionPending||draft!=null||uploading)return
+        menuOpen=false
+        if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)startVoice()
+        else{
+            permissionPending=true
+            try{permission.launch(Manifest.permission.RECORD_AUDIO)}
+            catch(_:Exception){permissionPending=false;error=R.string.chat_media_permission}
+        }
     }
     val gallery=rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()){uri->if(uri!=null)photo(uri)}
     val camera=rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()){saved->
@@ -182,14 +194,10 @@ internal fun MediaComposer(
                         resources.camera?.delete();resources.camera=null;error=R.string.chat_media_unsupported
                     }
                 })
-                DropdownMenuItem(text={Text(stringResource(R.string.chat_media_record))},enabled=!locked&&!capturing,onClick={
-                    menuOpen=false
-                    if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)startVoice()
-                    else permission.launch(Manifest.permission.RECORD_AUDIO)
-                })
+                DropdownMenuItem(text={Text(stringResource(R.string.chat_media_record))},enabled=!locked&&!capturing&&!permissionPending,onClick={requestVoice()})
             }
         }
-        rowContent()
+        rowContent(if(!locked&&!capturing&&!recording&&!permissionPending&&draft==null&&!uploading) ::requestVoice else null)
     }
     if(recording){
         Text(stringResource(R.string.chat_media_recording)+" · "+isolate("%d:%02d".format(elapsed/60,elapsed%60)))

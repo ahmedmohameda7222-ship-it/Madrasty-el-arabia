@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useRef,useState,type ReactNode} from "react";
 import {
   mediaUploadGrant,mediaUploadState,voiceMaxMilliseconds,type Locale,type Persona,
 } from "@madrasty/contracts";
@@ -51,15 +51,18 @@ function uploadFile(url:string,file:Blob,signal:AbortSignal,progress:(percent:nu
   });
 }
 
-export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onBusy,initialExpanded=false}:{
+export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onBusy,initialExpanded=false,showVoiceAction=false,inputField,primaryAction}:{
   locale:Locale;persona:Persona;thread:string;locked:boolean;consumed:string|undefined;
   onReady:(id?:string)=>void;onBusy:(busy:boolean)=>void;initialExpanded?:boolean;
+  showVoiceAction?:boolean;inputField?:ReactNode;primaryAction?:ReactNode;
 }){
   const labels=copy[locale],root=`/threads/${thread}/uploads` as const;
   const [draft,setDraft]=useState<Draft>(),[percent,setPercent]=useState(0),[working,setWorking]=useState(false);
   const [mic,setMic]=useState<"idle"|"starting"|"recording"|"finishing">("idle"),[elapsed,setElapsed]=useState(0);
   const [error,setError]=useState<ErrorKey>();
   const [expanded,setExpanded]=useState(initialExpanded);
+  // SSR can paint the composer before its recording handlers and lifecycle are ready.
+  const [interactive,setInteractive]=useState(false);
   const current=useRef<Draft>(undefined),capture=useRef<ReturnType<typeof voiceCapture>>(undefined);
   const token=useRef<Token>(undefined),upload=useRef<AbortController>(undefined),generation=useRef(0);
   const finishing=useRef(false),alive=useRef(false),captureStarts=useRef(0),photoInput=useRef<HTMLInputElement>(null),cameraInput=useRef<HTMLInputElement>(null);
@@ -68,6 +71,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
 
   useEffect(()=>{
     alive.current=true;
+    setInteractive(true);
     const release=()=>{
       generation.current++;
       upload.current?.abort();capture.current?.close();capture.current=undefined;finishing.current=false;
@@ -120,6 +124,8 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     }
   }
   async function record(){
+    if(!alive.current||!interactive||locked||working||current.current||capture.current||mic!=="idle")return;
+    setExpanded(false);
     const version=++generation.current;
     setError(undefined);setElapsed(0);setMic("starting");onBusy(true);
     try{
@@ -227,17 +233,17 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     }
   }
 
-  const idle=!draft&&mic==="idle"&&!working&&!error;
-  return <div className="comms-media" data-idle={idle} data-expanded={expanded}>
+  const idle=!draft&&mic==="idle"&&!working;
+  return <><div className="comms-media" data-idle={idle} data-expanded={expanded}>
     {!draft&&mic==="idle"&&<>
       <button type="button" className="comms-icon-button comms-attach-button" aria-label={locale==="ar"?"إضافة مرفق":"Anhang hinzufügen"} aria-expanded={expanded}
-        disabled={locked||working} onClick={()=>setExpanded(value=>!value)}><Icon name={expanded?"close":"plus"}/></button>
+        disabled={!interactive||locked||working} onClick={()=>setExpanded(value=>!value)}><Icon name={expanded?"close":"plus"}/></button>
       <input ref={photoInput} type="file" hidden accept="image/*" onChange={(event)=>{void pick(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
       <input ref={cameraInput} type="file" hidden accept="image/*" capture="environment" onChange={(event)=>{void pick(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
       {expanded&&<div className="comms-attachment-menu" role="group" aria-label={locale==="ar"?"المرفقات":"Anhänge"}>
-        <button type="button" disabled={locked||working} onClick={()=>{setExpanded(false);photoInput.current?.click();}}><Icon name="photo"/>{labels.gallery}</button>
-        <button type="button" disabled={locked||working} onClick={()=>{setExpanded(false);cameraInput.current?.click();}}><Icon name="camera"/>{labels.camera}</button>
-        <button type="button" disabled={locked||working} onClick={()=>{setExpanded(false);void record();}}><Icon name="mic"/>{labels.record}</button>
+        <button type="button" disabled={!interactive||locked||working} onClick={()=>{setExpanded(false);photoInput.current?.click();}}><Icon name="photo"/>{labels.gallery}</button>
+        <button type="button" disabled={!interactive||locked||working} onClick={()=>{setExpanded(false);cameraInput.current?.click();}}><Icon name="camera"/>{labels.camera}</button>
+        <button type="button" disabled={!interactive||locked||working} onClick={()=>{setExpanded(false);void record();}}><Icon name="mic"/>{labels.record}</button>
       </div>}
     </>}
     {mic!=="idle"&&<div className="header-actions" role="group">
@@ -257,6 +263,13 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     </div>}
     {working&&<div role="status">{labels.working}{draft&&<progress aria-label={labels.working} value={percent} max={100}/>}</div>}
     {draft?.readyId&&<p role="status">{labels.ready}</p>}
-    {error&&<p role="alert">{labels[error]}</p>}
-  </div>;
+    {error&&!idle&&<p role="alert">{labels[error]}</p>}
+  </div>
+    {inputField}
+    {showVoiceAction&&!draft&&mic==="idle"&&!working?
+      <button className="comms-icon-button comms-send-button" type="button" disabled={!interactive||locked}
+        aria-label={locale==="ar"?"تسجيل رسالة صوتية":"Sprachnachricht aufnehmen"} onClick={()=>void record()}><Icon name="mic"/></button>:
+      primaryAction}
+    {error&&idle&&<p className="comms-media-error" role="alert">{labels[error]}</p>}
+  </>;
 }
