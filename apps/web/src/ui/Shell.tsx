@@ -6,6 +6,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { z } from "zod";
 import { dictionary } from "@/i18n";
+import { displayPath } from "@/i18n/presentation";
+import { LanguageButton } from "./PresentationLanguage";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
@@ -17,7 +19,7 @@ type Destination = "home" | "students" | "attendance" | "children" | "messages" 
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 const childScope = z.uuid();
 
-export function SchoolHeader({ locale, children, alternateHref, brandHref }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string }) {
+export function SchoolHeader({ locale, children, brandHref }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string }) {
   const text = dictionary(locale);
   return (
     <header className="school-header">
@@ -27,9 +29,7 @@ export function SchoolHeader({ locale, children, alternateHref, brandHref }: { l
       </Link>
       <div className="header-actions">
         {children}
-        <Link className="plain-button" href={alternateHref ?? (locale === "ar" ? "/de" : "/ar")} lang={locale === "ar" ? "de" : "ar"}>
-          {locale === "ar" ? "Deutsch" : "العربية"}
-        </Link>
+        <LanguageButton locale={locale}/>
       </div>
     </header>
   );
@@ -54,7 +54,8 @@ export function SchoolShell(props: {
 
 function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary, mayManageStudents }: Parameters<typeof SchoolShell>[0]) {
   const text = dictionary(locale);
-  const pathname = usePathname();
+  const routePathname = usePathname();
+  const pathname = displayPath(routePathname,locale);
   const routeParams = useSearchParams();
   const search = routeParams.toString();
   const main = useRef<HTMLElement>(null);
@@ -81,7 +82,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   useLayoutEffect(() => {
     const area = main.current;
     if (!area) return;
-    const route = search ? pathname + "?" + search : pathname;
+    const route = search ? routePathname + "?" + search : routePathname;
     if(!commSection)tabs.current.set(active, route);
     const previous = positions.current.get(route);
     area.scrollTop = previous?.top ?? 0;
@@ -99,12 +100,12 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
       area.removeEventListener("scroll", save);
       area.removeEventListener("focusin", save);
     };
-  }, [pathname, search, active]);
+  }, [routePathname, search, active, commSection]);
 
   return (
     <div className="school-shell">
       <a className="skip-link" href="#school-content">{text.skip}</a>
-      <SchoolHeader locale={locale} brandHref={`${root}/home`} alternateHref={pathname.replace(/^\/(ar|de)(?=\/|$)/, locale === "ar" ? "/de" : "/ar") + (search ? "?" + search : "")}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
+      <SchoolHeader locale={locale} brandHref={`${root}/home`} >{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation} data-columns={destinations.length}>
           {destinations.map((tab) => (

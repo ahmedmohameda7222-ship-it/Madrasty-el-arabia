@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import { cookies } from "next/headers";
 import type { Locale } from "@madrasty/contracts";
 import { z } from "zod";
@@ -10,7 +11,7 @@ export default async function SignIn({ params, searchParams }: {
   params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ next?: string; android?: string }>;
 }) {
-  const [{ locale }, { next, android }, jar] = await Promise.all([params, searchParams, cookies()]);
+  const [{ locale }, { next, android }, jar] = await Promise.all([presentationParams(params), searchParams, cookies()]);
   const home = `/${locale}/school/home`;
   const safePaths = ["home", "students", "attendance", "children", "messages", "more"];
   const candidate = typeof next === "string" ? next : undefined;

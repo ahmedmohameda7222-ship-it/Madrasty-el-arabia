@@ -7,6 +7,7 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
+import { usePresentationLanguage } from "@/ui/PresentationLanguage";
 import { PushPreferences } from "@/features/comms/NotificationCenter";
 
 const words = {
@@ -26,6 +27,7 @@ const words = {
 
 export function AccountPreferences({ locale, initial }: { locale: Locale; initial: Preferences }) {
   const labels = words[locale], text = dictionary(locale), actor = useAccountScope();
+  const {select:selectLanguage}=usePresentationLanguage();
   const [value, setValue] = useState(initial);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ failed: boolean; message: string }>();
@@ -46,10 +48,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
     event.preventDefault();
     void operation(async () => {
       const next = await command("/account/preferences","PATCH",value,preferencesSchema);
-      if (next.uiLocale !== locale) {
-        window.location.replace(`/${next.uiLocale}/account/preferences`);
-        return;
-      }
+      if (next.uiLocale !== locale) selectLanguage(next.uiLocale);
       document.documentElement.dataset.theme = next.theme;
       setValue(next);
       setFeedback({ failed: false, message: text.saved });

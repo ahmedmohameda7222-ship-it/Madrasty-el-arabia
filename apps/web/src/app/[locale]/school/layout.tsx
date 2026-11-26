@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import type { ReactNode } from "react";
 import { notFound, redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
@@ -10,7 +11,7 @@ export default async function SchoolLayout({ children, params }: {
   children: ReactNode;
   params: Promise<{ locale: string }>;
 }) {
-  const [route, session] = await Promise.all([params, webSchoolSession()]);
+  const [route, session] = await Promise.all([presentationParams(params), webSchoolSession()]);
   const parsed = localeSchema.safeParse(route.locale);
   if (!parsed.success) notFound();
   const locale = parsed.data;
