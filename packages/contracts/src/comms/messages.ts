@@ -30,7 +30,7 @@ export const postMessageInput=z.object({
   if(value.attachmentIds&&value.attachmentIds.length!==new Set(value.attachmentIds).size)
     context.addIssue({code:"custom",path:["attachmentIds"],message:"error.validation"});
 });
-export const threadReaderState=z.object({readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,archived:z.boolean()});
-export const threadReaderInput=threadReaderState.pick({readThroughSeq:true,archived:true}).partial()
-  .refine((value)=>value.readThroughSeq!==undefined||value.archived!==undefined,{path:["readThroughSeq"],message:"error.validation"});
+export const threadReaderState=z.object({readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,archived:z.boolean(),pinned:z.boolean(),muted:z.boolean()});
+export const threadReaderInput=threadReaderState.pick({readThroughSeq:true,archived:true,pinned:true,muted:true}).partial()
+  .refine((value)=>value.readThroughSeq!==undefined||value.archived!==undefined||value.pinned!==undefined||value.muted!==undefined,{path:["readThroughSeq"],message:"error.validation"});
 export type ChatMessage=z.infer<typeof chatMessage>;

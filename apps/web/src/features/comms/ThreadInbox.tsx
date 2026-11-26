@@ -99,7 +99,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       <Link className="comms-person-row comms-thread-row" href={`${root}?${withInboxThread(routeParams,item.id).toString()}`}>
         <span className="comms-avatar" aria-hidden="true">{title(locale,item).trim().slice(0,1).toUpperCase()}</span>
         <span className="comms-thread-copy"><strong><bdi>{title(locale,item)}</bdi></strong><small dir="auto">{item.latestPreview??(locale==="ar"?"محادثة":"Unterhaltung")}</small></span>
-        <span className="comms-thread-meta"><small>{new Date(item.activityAt).toLocaleDateString(locale==="ar"?"ar":"de-DE",{day:"numeric",month:"short"})}</small>{item.unread>0&&<span className="notice-count" aria-label={text.unread}>{new Intl.NumberFormat(locale).format(item.unread)}</span>}</span>
+        <span className="comms-thread-meta">{(item.pinned||item.muted)&&<span className="comms-thread-indicators">{item.pinned&&<span role="img" aria-label={locale==="ar"?"مثبتة":"Angeheftet"}><Icon name="pin"/></span>}{item.muted&&<span role="img" aria-label={locale==="ar"?"مكتومة":"Stumm"}><Icon name="mute"/></span>}</span>}<small>{new Date(item.activityAt).toLocaleDateString(locale==="ar"?"ar":"de-DE",{day:"numeric",month:"short"})}</small>{item.unread>0&&<span className="notice-count" aria-label={text.unread}>{new Intl.NumberFormat(locale).format(item.unread)}</span>}</span>
       </Link>
     </li>)}</ul>}</AcademicPageItems>
   </section>;

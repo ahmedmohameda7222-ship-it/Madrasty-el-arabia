@@ -10,7 +10,7 @@ import { appendAudit,appendEvent } from "@/server/db/outbox";
 import { withActor,type ActorContext,type Transaction } from "@/server/db/scoped";
 import { ApiError } from "@/server/http";
 
-const cursorPosition=z.object({id:z.uuid(),activityAt:z.iso.datetime()});
+const cursorPosition=z.object({id:z.uuid(),activityAt:z.iso.datetime(),pinned:z.boolean().default(false)});
 function readCursor(value?:string){
   if(!value)return null;
   try{
@@ -61,7 +61,7 @@ const fields=(tx:Transaction)=>tx`id,kind,contact_name as "contactName",inbox,ca
   can_reply as "canReply",can_manage_case as "canManageCase",
   to_char(activity_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "activityAt",
   to_char(last_message_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "lastMessageAt",
-  latest_preview as "latestPreview",latest_source as "latestSource",unread,archived,
+  latest_preview as "latestPreview",latest_source as "latestSource",unread,archived,p.pinned,p.muted,
   read_through::text as "readThroughSeq",last_sequence::text as "lastSequence"`;
 export function threads(actor:ActorContext,input:z.infer<typeof threadQuery>){
   return withActor(actor,async(tx)=>{
@@ -69,20 +69,22 @@ export function threads(actor:ActorContext,input:z.infer<typeof threadQuery>){
     const rows=threadSummary.array().parse(await tx`select ${fields(tx)} from app.thread_projection(null,${input.inbox??null}::text) t
       cross join lateral app.chat_recent_activity(t.id,case when strpos(lower(coalesce(t.contact_name,'')),lower(${input.q??""}))>0
         then null else ${input.q||null}::text end) a
+      cross join lateral app.thread_preferences(t.id) p
       where (${input.kind??null}::text is null or t.kind=${input.kind??null}) and a.archived=${input.archived??false}
         and (${input.includeEmpty??true} or t.kind<>'direct' or a.last_sequence>0)
         and (not ${input.unread??false} or a.unread>0)
-        and (${cursor?.id??null}::uuid is null or (a.activity_at,t.id)<(${cursor?.activityAt??null}::timestamptz,${cursor?.id??null}::uuid))
-      order by a.activity_at desc,t.id desc limit ${input.limit+1}`);
+        and (${cursor?.id??null}::uuid is null or (p.pinned,a.activity_at,t.id)<(${cursor?.pinned??false}::boolean,${cursor?.activityAt??null}::timestamptz,${cursor?.id??null}::uuid))
+      order by p.pinned desc,a.activity_at desc,t.id desc limit ${input.limit+1}`);
     const items=rows.slice(0,input.limit),last=items.at(-1);
     return {items,nextCursor:rows.length>input.limit&&last
-      ?Buffer.from(JSON.stringify({id:last.id,activityAt:last.activityAt})).toString("base64url"):undefined};
+      ?Buffer.from(JSON.stringify({id:last.id,activityAt:last.activityAt,pinned:last.pinned})).toString("base64url"):undefined};
   });
 }
 export function readThread(actor:ActorContext,id:string){
   return withActor(actor,async(tx)=>{
     const [row]=await tx`select ${fields(tx)} from app.thread_projection(${id},null) t
-      cross join lateral app.chat_recent_activity(t.id,null) a`;
+      cross join lateral app.chat_recent_activity(t.id,null) a
+      cross join lateral app.thread_preferences(t.id) p`;
     if(!row)throw new ApiError("not_found");
     const references=threadReferenceView.array().parse(await tx`select reference_kind as kind,reference_id as id,child_id as "childId" from app.thread_references(${id})`);
     return threadDetail.parse({...row,references});

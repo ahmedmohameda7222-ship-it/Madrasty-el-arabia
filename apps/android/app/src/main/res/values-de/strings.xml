@@ -626,4 +626,10 @@
     <string name="finance_fees_total">Gebühren</string>
     <string name="app_settings">App-Einstellungen</string>
     <string name="comms_offices">Schulbüros</string>
+    <string name="chat_pin">Chat anheften</string>
+    <string name="chat_unpin">Nicht mehr anheften</string>
+    <string name="chat_mute">Chat stummschalten</string>
+    <string name="chat_unmute">Stummschaltung aufheben</string>
+    <string name="chat_pinned">Angeheftet</string>
+    <string name="chat_muted">Stumm</string>
 </resources>

@@ -108,6 +108,8 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     var preparing by remember(id){mutableStateOf(false)}
     var forbidden by remember(id){mutableStateOf(false)}
     var archived by remember(id,thread.optBoolean("archived")){mutableStateOf(thread.optBoolean("archived"))}
+    var pinned by remember(id,thread.optBoolean("pinned")){mutableStateOf(thread.optBoolean("pinned"))}
+    var muted by remember(id,thread.optBoolean("muted")){mutableStateOf(thread.optBoolean("muted"))}
     val scope=rememberCoroutineScope()
     fun deny(){drafts.remove(id);forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;attachment=null;changed()}
     fun clearSent(message:Outgoing){
@@ -138,6 +140,18 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
             if(error.denied)deny()
             throw error
         }
+    }
+    Submit(true,if(pinned)R.string.chat_unpin else R.string.chat_pin,success=null){
+        try{
+            val result=model.chatCommand("$path/state",JSONObject().put("pinned",!pinned),"PATCH")
+            pinned=result.getBoolean("pinned");muted=result.getBoolean("muted");changed()
+        }catch(error:HttpFailure){if(error.denied)deny();throw error}
+    }
+    Submit(true,if(muted)R.string.chat_unmute else R.string.chat_mute,success=null){
+        try{
+            val result=model.chatCommand("$path/state",JSONObject().put("muted",!muted),"PATCH")
+            pinned=result.getBoolean("pinned");muted=result.getBoolean("muted");changed()
+        }catch(error:HttpFailure){if(error.denied)deny();throw error}
     }
     if(archived)Text(stringResource(R.string.chat_archived))
     Field(R.string.chat_search_thread,search){search=it.take(120)}

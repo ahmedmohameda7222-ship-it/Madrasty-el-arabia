@@ -67,6 +67,8 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   const [attachment,setAttachment]=useState<string>(),[consumed,setConsumed]=useState<string>(),[preparing,setPreparing]=useState(false);
   const [archived,setArchived]=useState(thread.archived),[notice,setNotice]=useState("");
   const archiveBusy=useRef(false);
+  const [pinned,setPinned]=useState(thread.pinned),[muted,setMuted]=useState(thread.muted),[preferenceBusy,setPreferenceBusy]=useState(false);
+  useEffect(()=>{setPinned(thread.pinned);setMuted(thread.muted);},[thread.pinned,thread.muted]);
   const live=useRef(false),sending=useRef(false),confirmed=useRef<string|undefined>(undefined);
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   useEffect(()=>setArchived(thread.archived),[thread.archived]);
@@ -129,12 +131,23 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       else {setArchived(!next);setNotice(timetableError(locale,problem));}
     }finally{archiveBusy.current=false;}
   }
+  async function changePreference(key:"pinned"|"muted",next:boolean){
+    if(preferenceBusy||archiveBusy.current)return;
+    setPreferenceBusy(true);setNotice("");
+    try{
+      const state=await requestApi(`${root}/state`,threadReaderState,{method:"PATCH",headers:webHeaders(persona),body:JSON.stringify({[key]:next})});
+      setPinned(state.data.pinned);setMuted(state.data.muted);changed();
+    }catch(error){if(unavailable(error))deny();else setNotice(timetableError(locale,error));}
+    finally{setPreferenceBusy(false);}
+  }
   if(lost)return <AsyncSurface locale={locale} state={{kind:"forbidden"}}/>;
   return <section className="comms-conversation auth-form" aria-label={text.search}>
     <details className="comms-chat-options"><summary>{locale==="ar"?"خيارات المحادثة":"Chat-Optionen"}</summary>
     <div className="header-actions">
       <button type="button" className="plain-button" onClick={changed}><Icon name="retry"/>{locale==="ar"?"تحديث":"Aktualisieren"}</button>
-      <button type="button" className="plain-button" onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
+      <button type="button" className="plain-button" disabled={preferenceBusy} aria-pressed={pinned} onClick={()=>void changePreference("pinned",!pinned)}><Icon name="pin"/>{pinned?(locale==="ar"?"إلغاء التثبيت":"Nicht mehr anheften"):(locale==="ar"?"تثبيت المحادثة":"Chat anheften")}</button>
+      <button type="button" className="plain-button" disabled={preferenceBusy} aria-pressed={muted} onClick={()=>void changePreference("muted",!muted)}><Icon name="mute"/>{muted?(locale==="ar"?"إلغاء الكتم":"Stummschaltung aufheben"):(locale==="ar"?"كتم المحادثة":"Chat stummschalten")}</button>
+      <button type="button" className="plain-button" disabled={preferenceBusy} onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
       {archived&&<p>{text.archived}</p>}{notice&&<p role="alert">{notice}</p>}
     </div>
     <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setTerm(query.trim());}}>

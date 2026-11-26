@@ -626,4 +626,10 @@
     <string name="finance_fees_total">المطلوب</string>
     <string name="app_settings">إعدادات التطبيق</string>
     <string name="comms_offices">مكاتب المدرسة</string>
+    <string name="chat_pin">تثبيت المحادثة</string>
+    <string name="chat_unpin">إلغاء التثبيت</string>
+    <string name="chat_mute">كتم المحادثة</string>
+    <string name="chat_unmute">إلغاء الكتم</string>
+    <string name="chat_pinned">مثبتة</string>
+    <string name="chat_muted">مكتومة</string>
 </resources>

@@ -22,7 +22,7 @@ export const threadSummary=z.object({
   caseStatus:caseStatus.nullable(),caseRevision:revisionSchema.nullable(),createdAt:z.iso.datetime(),
   canReply:z.boolean(),canManageCase:z.boolean(),
   activityAt:z.iso.datetime(),lastMessageAt:z.iso.datetime().nullable(),latestPreview:z.string().nullable(),latestSource:messageSource.nullable(),
-  unread:z.int().nonnegative(),archived:z.boolean(),readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,
+  unread:z.int().nonnegative(),archived:z.boolean(),pinned:z.boolean(),muted:z.boolean(),readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,
 });
 export const threadReferenceView=threadReference.extend({childId:id.nullable()});
 export const threadDetail=threadSummary.extend({references:threadReferenceView.array()});

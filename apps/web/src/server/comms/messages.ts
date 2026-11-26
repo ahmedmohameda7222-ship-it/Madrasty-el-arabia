@@ -57,7 +57,10 @@ export function updateThreadState(actor:ActorContext,thread:string,input:z.infer
     await requireThread(tx,thread);
     const [row]=await tx`select read_through::text as "readThroughSeq",last_sequence::text as "lastSequence",archived
       from app.change_thread_reader(${thread},${input.readThroughSeq??null}::bigint,${input.archived??null}::boolean)`;
-    return threadReaderState.parse(row);
+    const [prefs]=input.pinned!==undefined||input.muted!==undefined
+      ? await tx`select * from app.change_thread_preferences(${thread},${input.pinned??null}::boolean,${input.muted??null}::boolean)`
+      : await tx`select * from app.thread_preferences(${thread})`;
+    return threadReaderState.parse({...row,...prefs});
   });
 }
 export function reactToMessage(actor:ActorContext,thread:string,id:string,input:z.infer<typeof reactionInput>){

@@ -125,6 +125,10 @@ internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Mo
                                 Text(date.format(format.withLocale(locale)),style=MaterialTheme.typography.labelSmall)
                             }
                         }
+                        if(thread.optBoolean("pinned")||thread.optBoolean("muted"))Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+                            if(thread.optBoolean("pinned"))Icon(painterResource(R.drawable.ic_comms_pin),contentDescription=stringResource(R.string.chat_pinned),modifier=Modifier.size(16.dp))
+                            if(thread.optBoolean("muted"))Icon(painterResource(R.drawable.ic_comms_mute),contentDescription=stringResource(R.string.chat_muted),modifier=Modifier.size(16.dp))
+                        }
                         if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}
                     }
                 })

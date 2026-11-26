@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms-audit.log" 2>&1 &
+          QA_SCREENSHOTS_ONLY=1 pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms-audit.log" 2>&1 &
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
@@ -73,7 +73,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms-regression.log" 2>&1 &
+          QA_SCREENSHOTS_ONLY=1 pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-comms-regression.log" 2>&1 &
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
