@@ -138,7 +138,7 @@ class CommunicationVisualTest {
                 SchoolTheme(darkMode=false){
                     Surface(Modifier.fillMaxSize()){
                         Column(Modifier.fillMaxWidth().then(if(reduced)Modifier.height(260.dp) else Modifier.fillMaxHeight()).testTag("first-contact-viewport")){
-                            FirstContactMessage(model,contact,"de",{},{_,_->},{})
+                            FirstContactMessage(model,contact,"de",{},{_,_,_->},{})
                         }
                     }
                 }
@@ -267,9 +267,9 @@ class CommunicationVisualTest {
                             ChatMessageItem(model,thread,message("qa-outgoing",true,outgoing),false,{},{},{},{})
                             Spacer(Modifier.weight(1f))
                             var typed by remember{mutableStateOf("")}
-                            MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={}){
+                            MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={}){recordVoice->
                                 ChatInputField(typed,true){typed=it}
-                                ChatSendAction(typed.isNotBlank(),false){}
+                                ChatSendAction(typed.isNotBlank(),false,onRecord=recordVoice.takeIf{typed.isBlank()}){}
                             }
                         }
                     }

@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useRef,useState,type ReactNode} from "react";
 import {
   mediaUploadGrant,mediaUploadState,voiceMaxMilliseconds,type Locale,type Persona,
 } from "@madrasty/contracts";
@@ -51,9 +51,10 @@ function uploadFile(url:string,file:Blob,signal:AbortSignal,progress:(percent:nu
   });
 }
 
-export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onBusy,initialExpanded=false}:{
+export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onBusy,initialExpanded=false,showVoiceAction=false,primaryAction}:{
   locale:Locale;persona:Persona;thread:string;locked:boolean;consumed:string|undefined;
   onReady:(id?:string)=>void;onBusy:(busy:boolean)=>void;initialExpanded?:boolean;
+  showVoiceAction?:boolean;primaryAction?:ReactNode;
 }){
   const labels=copy[locale],root=`/threads/${thread}/uploads` as const;
   const [draft,setDraft]=useState<Draft>(),[percent,setPercent]=useState(0),[working,setWorking]=useState(false);
@@ -120,6 +121,8 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     }
   }
   async function record(){
+    if(locked||working||current.current||capture.current||mic!=="idle")return;
+    setExpanded(false);
     const version=++generation.current;
     setError(undefined);setElapsed(0);setMic("starting");onBusy(true);
     try{
@@ -228,7 +231,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
   }
 
   const idle=!draft&&mic==="idle"&&!working&&!error;
-  return <div className="comms-media" data-idle={idle} data-expanded={expanded}>
+  return <><div className="comms-media" data-idle={idle} data-expanded={expanded}>
     {!draft&&mic==="idle"&&<>
       <button type="button" className="comms-icon-button comms-attach-button" aria-label={locale==="ar"?"إضافة مرفق":"Anhang hinzufügen"} aria-expanded={expanded}
         disabled={locked||working} onClick={()=>setExpanded(value=>!value)}><Icon name={expanded?"close":"plus"}/></button>
@@ -258,5 +261,10 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     {working&&<div role="status">{labels.working}{draft&&<progress aria-label={labels.working} value={percent} max={100}/>}</div>}
     {draft?.readyId&&<p role="status">{labels.ready}</p>}
     {error&&<p role="alert">{labels[error]}</p>}
-  </div>;
+  </div>
+    {showVoiceAction&&!draft&&mic==="idle"&&!working?
+      <button className="comms-icon-button comms-send-button" type="button" disabled={locked}
+        aria-label={locale==="ar"?"تسجيل رسالة صوتية":"Sprachnachricht aufnehmen"} onClick={()=>void record()}><Icon name="mic"/></button>:
+      primaryAction}
+  </>;
 }

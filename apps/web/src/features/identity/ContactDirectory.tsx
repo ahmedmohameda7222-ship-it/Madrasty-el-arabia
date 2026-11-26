@@ -121,13 +121,13 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     }catch(error){setOpenError(message(locale,error));}
     finally{openingRef.current=false;setOpening(undefined);}
   }
-  async function sendFirst(media=false){
+  async function sendFirst(media:false|"attachments"|"voice"=false){
     if(!draft||openingRef.current||(!media&&!body.trim()))return;
     openingRef.current=true;setOpening(draft.id);setOpenError("");
     try{
       const value=await command("/threads","POST",{target:draft.target,
         ...(media?{}:{firstMessage:{clientMessageId:firstId,body:body.trim()}})},threadReceipt);
-      if(media)chatDrafts.write(actor,value.threadId,{body,openMedia:true});
+      if(media)chatDrafts.write(actor,value.threadId,{body,openMedia:media==="attachments"});
       router.push(`/${locale}/school/messages?thread=${value.threadId}`);
     }catch(error){setOpenError(message(locale,error));}
     finally{openingRef.current=false;setOpening(undefined);}
@@ -182,9 +182,10 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     <form className="comms-composer auth-form" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
       {openError&&<p role="alert" className="comms-first-error">{openError}</p>}
       <div className="comms-input-bar">
-        <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening} onClick={()=>void sendFirst(true)}><Icon name="plus"/></button>
+        <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening} onClick={()=>void sendFirst("attachments")}><Icon name="plus"/></button>
         <label className="comms-input-field"><textarea ref={draftInput} aria-label={text.start} placeholder={text.start} dir="auto" rows={2} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());setOpenError("");}}/></label>
-        <button className="comms-icon-button comms-send-button" type="submit" aria-label={text.send} disabled={!!opening||!body.trim()}><Icon name={openError?"retry":"sendUp"}/></button>
+        {body.trim()?<button className="comms-icon-button comms-send-button" type="submit" aria-label={text.send} disabled={!!opening}><Icon name={openError?"retry":"sendUp"}/></button>:
+          <button className="comms-icon-button comms-send-button" type="button" aria-label={locale==="ar"?"تسجيل رسالة صوتية":"Sprachnachricht aufnehmen"} disabled={!!opening} onClick={()=>void sendFirst("voice")}><Icon name="mic"/></button>}
       </div>
     </form>
   </section>;

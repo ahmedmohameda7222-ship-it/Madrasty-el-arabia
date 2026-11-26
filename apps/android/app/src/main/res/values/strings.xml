@@ -642,4 +642,5 @@
     <string name="chat_contact_email">البريد المهني</string>
     <string name="chat_contact_phone">هاتف العمل</string>
     <string name="chat_actions">خيارات المحادثة</string>
+    <string name="chat_voice_action">تسجيل رسالة صوتية</string>
 </resources>

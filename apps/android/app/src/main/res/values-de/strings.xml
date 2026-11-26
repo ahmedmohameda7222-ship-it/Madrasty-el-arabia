@@ -642,4 +642,5 @@
     <string name="chat_contact_email">Dienstliche E-Mail</string>
     <string name="chat_contact_phone">Dienstliche Telefonnummer</string>
     <string name="chat_actions">Chat-Aktionen</string>
+    <string name="chat_voice_action">Sprachnachricht aufnehmen</string>
 </resources>

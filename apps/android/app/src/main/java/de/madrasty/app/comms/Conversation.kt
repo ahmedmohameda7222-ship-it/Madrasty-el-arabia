@@ -52,6 +52,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -211,9 +212,10 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,initialMenuOpen=restored?.openMedia==true,onReady={
         if(attachment!=it&&outgoing?.pending!=true)outgoing=null
         attachment=it
-    },onBusy={preparing=it}){
+    },onBusy={preparing=it}){recordVoice->
     ChatInputField(typed,outgoing?.pending!=true){editDraft(it);outgoing=null}
-    ChatSendAction(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,failed=failed,onClick={
+    ChatSendAction(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,failed=failed,
+        onRecord=recordVoice.takeIf{typed.isBlank()&&attachment==null&&outgoing==null&&!preparing},onClick={
         val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),attachment,true)
         outgoing=sending
         drafts.write(id,NativeChatDraft(typed,quote,sending.id,sending.takeIf{it.media==null}))
@@ -250,10 +252,12 @@ internal fun RowScope.ChatInputField(value:String,enabled:Boolean,change:(String
 }
 
 @Composable
-internal fun ChatSendAction(enabled:Boolean,failed:Boolean,onClick:()->Unit){
-    FilledIconButton(enabled=enabled,onClick=onClick,modifier=Modifier.size(48.dp)){
-        Icon(painterResource(if(failed)R.drawable.ic_comms_retry else R.drawable.ic_comms_send),
-            contentDescription=stringResource(if(failed)R.string.chat_retry else R.string.chat_send))
+internal fun ChatSendAction(enabled:Boolean,failed:Boolean,onRecord:(()->Unit)?=null,onClick:()->Unit){
+    val voice=onRecord!=null&&!failed
+    FilledIconButton(enabled=enabled||voice,onClick=if(voice)requireNotNull(onRecord) else onClick,
+        modifier=Modifier.size(48.dp).testTag(if(voice)"chat-voice-action" else "chat-send-action")){
+        Icon(painterResource(if(voice)R.drawable.ic_comms_mic else if(failed)R.drawable.ic_comms_retry else R.drawable.ic_comms_send),
+            contentDescription=stringResource(if(voice)R.string.chat_voice_action else if(failed)R.string.chat_retry else R.string.chat_send))
     }
 }
 
