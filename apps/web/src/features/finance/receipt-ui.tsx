@@ -42,17 +42,15 @@ export function InvoicePicker({locale,currency,exclude=[],refresh=0,onPick}:{
   locale:Locale;currency:string;exclude?:string[];refresh?:number;onPick:(invoice:InvoiceCandidate)=>void;
 }){
   const text=receiptCopy[locale];
-  const [month,setMonth]=useState(""),[search,setSearch]=useState(""),[query,setQuery]=useState(""),[state,setState]=useState<"unpaid"|"partial">("unpaid");
+  const [month,setMonth]=useState(""),[search,setSearch]=useState(""),[query,setQuery]=useState("");
   const period=billingMonth.safeParse(month);
-  const page=useAcademicPage(`/finance/invoices?limit=20&q=${encodeURIComponent(query)}&state=${state}${period.success?"&period="+month:""}`,choices,refresh);
+  const page=useAcademicPage(`/finance/invoices?limit=20&q=${encodeURIComponent(query)}&state=open${period.success?"&period="+month:""}`,choices,refresh);
   function searchInvoices(event:FormEvent){event.preventDefault();setQuery(search.trim());}
   return <div className="auth-form">
     <form className="auth-form" onSubmit={searchInvoices}>
       <label>{text.search}<input type="search" value={search} maxLength={100} onChange={(event)=>setSearch(event.target.value)}/></label>
       <FinanceDateField locale={locale} label={billingCopy[locale].period} type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/>
-      <label>{billingCopy[locale].status}<select value={state} onChange={(event)=>setState(event.target.value==="partial"?"partial":"unpaid")}>
-        <option value="unpaid">{billingCopy[locale].unpaid}</option><option value="partial">{billingCopy[locale].partial}</option>
-      </select></label>
+      <p>{locale==="ar"?"الفواتير المفتوحة":"Offene Rechnungen"}</p>
       <button type="submit" className="plain-button">{billingCopy[locale].find}</button>
     </form>
     <AcademicPageItems locale={locale} page={page}>{(items)=><ul className="group-list">{items
