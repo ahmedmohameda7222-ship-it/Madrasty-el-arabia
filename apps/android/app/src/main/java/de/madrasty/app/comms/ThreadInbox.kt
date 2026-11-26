@@ -3,6 +3,24 @@ package de.madrasty.app.comms
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.rememberCoroutineScope
+import de.madrasty.app.ui.InterfaceSettingsAction
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
@@ -32,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -49,7 +68,12 @@ import de.madrasty.app.academics.ReportTarget
 import de.madrasty.app.academics.academicPages
 import de.madrasty.app.academics.academicRead
 import de.madrasty.app.academics.string
+import de.madrasty.app.api.WirePage
+import de.madrasty.app.api.decodeData
+import de.madrasty.app.identity.loadAccountSurface
 import de.madrasty.app.identity.HttpFailure
+import kotlinx.coroutines.CancellationException
+import org.json.JSONArray
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
@@ -68,53 +92,137 @@ private val caseLabels=mapOf(
     "in_progress" to R.string.conversation_case_in_progress,
     "closed" to R.string.conversation_case_closed,
 )
+// SchoolNavigation is recreated for each account/session/persona.
+internal class ThreadInboxState {
+    var filter by mutableStateOf("all")
+    var search by mutableStateOf("")
+    val list=LazyListState()
+}
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun ThreadInbox(model:IdentityViewModel,directory:()->Unit,open:(String)->Unit){
+internal fun ThreadInbox(model:IdentityViewModel,state:ThreadInboxState,open:(String)->Unit){
     val version=threadRefreshVersion(poll=true)
-    var filter by remember{mutableStateOf("all")}
-    var search by remember{mutableStateOf("")}
-    var queryTerm by remember{mutableStateOf("")}
-    LaunchedEffect(search){delay(250);queryTerm=search.trim()}
-    Button(onClick=directory,modifier=Modifier.fillMaxWidth()){Text(stringResource(R.string.comms_new_message))}
-    Field(R.string.chat_search_inbox,search){search=it.take(120)}
-    FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        FilterChip(filter=="all",onClick={filter="all"},label={Text(stringResource(R.string.directory_all))})
-        FilterChip(filter=="unread",onClick={filter="unread"},label={Text(stringResource(R.string.comms_unread))})
-        FilterChip(filter=="archive",onClick={filter="archive"},label={Text(stringResource(R.string.chat_archive_filter))})
+    val scope=rememberCoroutineScope()
+    var manual by remember{mutableStateOf(0)}
+    var refreshing by remember{mutableStateOf(false)}
+    var actionError by remember{mutableStateOf(false)}
+    var queryTerm by remember{mutableStateOf(state.search.trim())}
+    LaunchedEffect(state.search){delay(250);val next=state.search.trim();if(next!=queryTerm){queryTerm=next;state.list.scrollToItem(0)}}
+    Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)){
+        OutlinedTextField(value=state.search,onValueChange={state.search=it.take(120)},modifier=Modifier.fillMaxWidth(),
+            singleLine=true,placeholder={Text(stringResource(R.string.chat_search_inbox))},
+            leadingIcon={Icon(painterResource(R.drawable.ic_comms_search),contentDescription=null)})
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            for((filter,label) in listOf("all" to R.string.directory_all,"unread" to R.string.comms_unread,"archive" to R.string.chat_archive_filter)){
+                FilterChip(state.filter==filter,onClick={if(state.filter!=filter){state.filter=filter;scope.launch{state.list.scrollToItem(0)}}},label={Text(stringResource(label))})
+            }
+        }
+        val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
+        val path="/threads?limit=30&includeEmpty=false&archived=${state.filter=="archive"}&unread=${state.filter=="unread"}$term"
+        var view by remember(path){mutableStateOf<AsyncState<WirePage<List<JSONObject>>>>(AsyncState.InitialLoading())}
+        var refreshError by remember(path){mutableStateOf(false)}
+        suspend fun read(url:String)=decodeData(model.schoolRequest(url)){payload->(payload as JSONArray).let{items->List(items.length(),items::getJSONObject)}}
+        LaunchedEffect(path,version,manual,model.attendanceNetworkRevision){
+            try{
+                val next=loadAccountSurface({manual++}){read(path)}
+                if(view is AsyncState.Ready&&(next is AsyncState.Error||next is AsyncState.Offline)){refreshError=true}
+                else{view=next;refreshError=false}
+            }finally{refreshing=false}
+        }
+        if(refreshError)Row(verticalAlignment=Alignment.CenterVertically){Text(stringResource(R.string.generic_error),Modifier.weight(1f));TextButton(onClick={manual++}){Text(stringResource(R.string.retry))}}
+        if(actionError)Text(stringResource(R.string.generic_error),color=MaterialTheme.colorScheme.error)
+        PullToRefreshBox(isRefreshing=refreshing,onRefresh={refreshing=true;manual++},modifier=Modifier.weight(1f).fillMaxWidth()){
+            Column(Modifier.fillMaxSize()){
+                AsyncSurface(view){page->
+                    if(page.data.isEmpty())Text(stringResource(R.string.empty))
+                    ThreadRows(page.data,state.list,Modifier.weight(1f),actions={thread,field,next->
+                        scope.launch{
+                            actionError=false
+                            try{model.schoolRequest("/threads/${thread.getString("id")}/state",JSONObject().put(field,next),"PATCH");manual++}
+                            catch(cancelled:CancellationException){throw cancelled}
+                            catch(error:HttpFailure){if(error.status in listOf(401,403,404))manual++;actionError=true}
+                            catch(_:Exception){actionError=true}
+                        }
+                    },open=open)
+                    page.nextCursor?.let{cursor->Submit(true,R.string.staff_more,success=null){
+                        try{val next=read("$path&cursor=${Uri.encode(cursor)}");if((view as? AsyncState.Ready)?.content==page)view=AsyncState.Ready(WirePage((page.data+next.data).distinctBy{it.getString("id")},next.nextCursor))}
+                        catch(error:HttpFailure){if(error.status in listOf(401,403,404))view=AsyncState.Forbidden();throw error}
+                    }}
+                }
+            }
+        }
     }
-    val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
-    academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${filter=="archive"}&unread=${filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
-        for(thread in threads){
-            ListItem(modifier=Modifier.fillMaxWidth().clickable{open(thread.getString("id"))},
+}
+
+@Composable
+internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Modifier=Modifier,actions:((JSONObject,String,Boolean)->Unit)?=null,open:(String)->Unit){
+    LazyColumn(modifier.fillMaxWidth(),state=state,contentPadding=PaddingValues(bottom=84.dp)){
+        items(threads.distinctBy{it.getString("id")},key={it.getString("id")}){thread->
+            var menu by remember{mutableStateOf(false)}
+            val swipe=if(actions==null)Modifier else Modifier.pointerInput(thread.getString("id")){var distance=0f;detectHorizontalDragGestures(onDragStart={distance=0f},onDragEnd={if(kotlin.math.abs(distance)>64.dp.toPx())menu=true},onHorizontalDrag={change,amount->change.consume();distance+=amount})}
+            ListItem(modifier=Modifier.fillMaxWidth().then(swipe).clickable{open(thread.getString("id"))},
                 headlineContent={Text(threadTitle(thread),maxLines=2,overflow=TextOverflow.Ellipsis)},
                 supportingContent={thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2,overflow=TextOverflow.Ellipsis)}},
                 leadingContent={ThreadAvatar(thread)},
-                trailingContent={if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}})
-
+                trailingContent={
+                    Column(horizontalAlignment=Alignment.End,verticalArrangement=Arrangement.spacedBy(4.dp)){
+                        thread.string("activityAt")?.let{stamp->
+                            val locale=java.util.Locale.forLanguageTag(androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language)
+                            val date=runCatching{java.time.Instant.parse(stamp).atZone(java.time.ZoneId.systemDefault())}.getOrNull()
+                            if(date!=null){
+                                val format=if(date.toLocalDate()==java.time.LocalDate.now())java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT) else java.time.format.DateTimeFormatter.ofPattern("d MMM",locale)
+                                Text(date.format(format.withLocale(locale)),style=MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        if(thread.optBoolean("pinned")||thread.optBoolean("muted"))Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+                            if(thread.optBoolean("pinned"))Icon(painterResource(R.drawable.ic_comms_pin),contentDescription=stringResource(R.string.chat_pinned),modifier=Modifier.size(16.dp))
+                            if(thread.optBoolean("muted"))Icon(painterResource(R.drawable.ic_comms_mute),contentDescription=stringResource(R.string.chat_muted),modifier=Modifier.size(16.dp))
+                        }
+                        if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}
+                        if(actions!=null)Box{
+                            val actionLabel=stringResource(R.string.chat_actions)
+                            IconButton(onClick={menu=true},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
+                            DropdownMenu(expanded=menu,onDismissRequest={menu=false}){
+                                for((field,label) in listOf("pinned" to (if(thread.optBoolean("pinned"))R.string.chat_unpin else R.string.chat_pin),"muted" to (if(thread.optBoolean("muted"))R.string.chat_unmute else R.string.chat_mute),"archived" to (if(thread.optBoolean("archived"))R.string.chat_restore else R.string.chat_archive))){
+                                    DropdownMenuItem(text={Text(stringResource(label))},onClick={menu=false;actions(thread,field,!thread.optBoolean(field))})
+                                }
+                            }
+                        }
+                    }
+                })
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(ReportTarget)->Unit,close:()->Unit){
+private fun ThreadBack(close:()->Unit){
+    IconButton(onClick=close,modifier=Modifier.size(48.dp)){
+        Icon(painterResource(R.drawable.ic_comms_back),contentDescription=stringResource(R.string.back))
+    }
+}
+@Composable
+internal fun ThreadScreen(model:IdentityViewModel,id:String,drafts:NativeChatDrafts,openReference:(ReportTarget)->Unit,close:()->Unit){
     var changed by remember{mutableStateOf(0)}
     var showDetails by remember(id){mutableStateOf(false)}
+    var showContact by remember(id){mutableStateOf(false)}
     val revision=threadRefreshVersion()+changed
     val thread=academicRead("/threads/$id",revision){model.timetableObject(it)}
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(8.dp)){
-        if(thread is AsyncState.InitialLoading||thread is AsyncState.Error||thread is AsyncState.Offline||thread is AsyncState.Forbidden)TextButton(onClick=close){Text(stringResource(R.string.back))}
+        if(thread is AsyncState.InitialLoading||thread is AsyncState.Error||thread is AsyncState.Offline||thread is AsyncState.Forbidden)Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){ThreadBack(close);InterfaceSettingsAction()}
         AsyncSurface(thread){value->
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                TextButton(onClick=close){Text(stringResource(R.string.back))}
+                ThreadBack(close)
                 ThreadAvatar(value)
-                Text(threadTitle(value),modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+                TextButton(onClick={showContact=true},modifier=Modifier.weight(1f)){Column{Text(threadTitle(value),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis);Text(stringResource(R.string.chat_contact_view),style=MaterialTheme.typography.labelSmall)}}
+                InterfaceSettingsAction()
             }
             value.string("inbox")?.let{officeTitles[it]}?.let{
                 if(value.string("contactName")!=null)Text(stringResource(it))
             }
+            if(showContact)ContactProfileDialog(value){showContact=false}
             val officeCase=value.string("caseId")
             if(value.getJSONArray("references").length()>0||officeCase!=null){
                 TextButton(onClick={showDetails=!showDetails}){Text(stringResource(R.string.conversation_references))}
@@ -126,9 +234,26 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
                     }
                 }
             }
-            Conversation(model,value,Modifier.weight(1f)){changed++}
+            Conversation(model,value,Modifier.weight(1f),drafts){changed++}
         }
     }
+}
+
+@Composable
+private fun ContactProfileDialog(thread:JSONObject,close:()->Unit){
+    val contact=thread.optJSONObject("contact")
+    val german=androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language=="de"
+    AlertDialog(onDismissRequest=close,title={Text(stringResource(R.string.chat_contact_information))},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+        ThreadAvatar(thread)
+        Text(threadTitle(thread),style=MaterialTheme.typography.titleLarge)
+        if(contact==null)Text(stringResource(R.string.chat_contact_unavailable)) else {
+            Text(contact.getString(if(german)"titleDe" else "titleAr"))
+            val contexts=contact.getJSONArray("contexts")
+            if(contexts.length()>0){Text(stringResource(R.string.chat_contact_classes),style=MaterialTheme.typography.titleMedium);for(i in 0 until contexts.length())Text(isolate(contexts.getJSONObject(i).getString(if(german)"nameDe" else "nameAr")))}
+            contact.string("workEmail")?.let{Text(stringResource(R.string.chat_contact_email));Text(isolate(it))}
+            contact.string("workPhone")?.let{Text(stringResource(R.string.chat_contact_phone));Text(isolate(it))}
+        }
+    }},confirmButton={TextButton(onClick=close){Text(stringResource(R.string.close))}})
 }
 
 @Composable
@@ -207,6 +332,7 @@ private fun ThreadAvatar(thread:JSONObject){
 @Composable
 private fun threadRefreshVersion(poll:Boolean=false):Int{
     var version by remember{mutableStateOf(0)}
+    val push by schoolPushRevision.collectAsState()
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle,poll){if(poll)while(true){delay(15000);if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))version++}}
     DisposableEffect(lifecycle){
@@ -214,5 +340,5 @@ private fun threadRefreshVersion(poll:Boolean=false):Int{
         lifecycle.addObserver(observer)
         onDispose{lifecycle.removeObserver(observer)}
     }
-    return version
+    return version+push
 }

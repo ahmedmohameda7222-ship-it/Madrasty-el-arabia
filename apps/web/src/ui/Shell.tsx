@@ -13,9 +13,10 @@ import { AccountScope, type AccountPartition, type ScopeChoice } from "./Account
 import { Icon } from "./Icon";
 import { MoreBackLink } from "./MoreBackLink";
 import { SchoolLink } from "./SchoolLink";
+import { useChatUnreadCount } from "@/features/comms/useChatUnreadCount";
 import { NotificationLink, PushPreferences } from "@/features/comms/NotificationCenter";
 
-type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
+type Destination = "home" | "students" | "attendance" | "children" | "messages" | "calendar" | "more";
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 const childScope = z.uuid();
 
@@ -54,14 +55,30 @@ export function SchoolShell(props: {
 
 function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary, mayManageStudents }: Parameters<typeof SchoolShell>[0]) {
   const text = dictionary(locale);
+  const unreadMessages=useChatUnreadCount();
   const routePathname = usePathname();
   const pathname = displayPath(routePathname,locale);
   const routeParams = useSearchParams();
   const search = routeParams.toString();
   const main = useRef<HTMLElement>(null);
+  const shell = useRef<HTMLDivElement>(null);
+  useLayoutEffect(()=>{
+    const node=shell.current;if(!node)return;
+    const ua=navigator.userAgent;
+    node.dataset.platform=/Android/i.test(ua)?"android":/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1)?"ios":"web";
+  },[]);
   const positions = useRef(new Map<string, { top: number; focus: string | null }>());
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
+  const threadScreen=pathname===`${root}/messages`&&childScope.safeParse(routeParams.get("thread")).success;
+  const chatViewport=threadScreen||pathname===`/${locale}/directory`;
+  useLayoutEffect(()=>{
+    const node=shell.current,viewport=window.visualViewport;
+    if(!chatViewport||!node||!viewport)return;
+    const resize=()=>{if(viewport.scale===1)node.style.setProperty("--chat-viewport-height",`${Math.round(viewport.height)}px`);else node.style.removeProperty("--chat-viewport-height");};
+    resize();viewport.addEventListener("resize",resize);
+    return ()=>{viewport.removeEventListener("resize",resize);node.style.removeProperty("--chat-viewport-height");};
+  },[chatViewport]);
   const showMoreBack = pathname.startsWith(`${root}/more/`) ||
     pathname === `/${locale}/directory` || pathname === `/${locale}/account/preferences`;
   const returnChild = actor.persona === "guardian" ? childScope.safeParse(routeParams.get("returnChild")).data : undefined;
@@ -69,9 +86,9 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   const classId = childScope.safeParse(routeParams.get("class")).data;
   const returnClass = actor.persona === "admin" && routeParams.get("returnToClass")==="1" && year && classId
     ? {year,id:classId} : undefined;
-  const destinations: Destination[] = ["home", "messages", "more"];
+  const destinations: Destination[] = ["home", "messages", "calendar", "more"];
   if (actor.persona !== "admin" || mayManageStudents) destinations.splice(1,0,roleTab[actor.persona]);
-  const commSection=pathname===`/${locale}/directory`?"chat":pathname===`${root}/more/events`?"calendar":[`${root}/more/news`,`${root}/more/broadcasts`].includes(pathname)?"feed":undefined;
+  const commSection=pathname===`/${locale}/directory`?"chat":[`${root}/more/news`,`${root}/more/broadcasts`].includes(pathname)?"feed":undefined;
   const active = commSection?"messages":destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
 
   useLayoutEffect(() => {
@@ -103,7 +120,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   }, [routePathname, search, active, commSection]);
 
   return (
-    <div className="school-shell">
+    <div ref={shell} className="school-shell" data-view={threadScreen?"thread":active==="messages"?"contact":active==="calendar"?"calendar":undefined}>
       <a className="skip-link" href="#school-content">{text.skip}</a>
       <SchoolHeader locale={locale} brandHref={`${root}/home`} notificationSettings={<PushPreferences locale={locale}/>}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
@@ -111,12 +128,13 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           {destinations.map((tab) => (
             <SchoolLink key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
               aria-current={active === tab ? "page" : undefined}
-              aria-label={tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):locale==="de"&&tab==="attendance"?text[tab]:undefined}>
-              <Icon name={tab} />
+              aria-describedby={tab==="messages"&&unreadMessages>0?"chat-nav-unread":undefined}
+              aria-label={tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):tab==="calendar"?(locale==="ar"?"التقويم":"Kalender"):locale==="de"&&tab==="attendance"?text[tab]:undefined}>
+              {tab==="messages"?<span className="chat-nav-icon"><Icon name={tab}/>{unreadMessages>0&&<span className="chat-nav-count" aria-hidden="true">{unreadMessages>99?"99+":unreadMessages}</span>}</span>:<Icon name={tab}/>}
               {locale === "de" && (tab === "attendance" || tab === "messages") ? <>
                 <span className="nav-label-mobile" aria-hidden="true">{tab === "attendance" ? "Anwes." : "Kontakt"}</span>
                 <span className="nav-label-desktop" aria-hidden="true">{tab==="messages"?"Kontakt":text[tab]}</span>
-              </> : <span>{tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):text[tab]}</span>}
+              </> : <span>{tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):tab==="calendar"?(locale==="ar"?"التقويم":"Kalender"):text[tab]}</span>}
             </SchoolLink>
           ))}
           {secondary && (
@@ -125,6 +143,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
             </div>
           )}
         </nav>
+        <span id="chat-nav-unread" className="chat-nav-screenreader">{unreadMessages>0?(locale==="ar"?`${unreadMessages} رسائل غير مقروءة`:`${unreadMessages} ungelesene Nachrichten`):""}</span>
         <main id="school-content" ref={main} className="school-content" tabIndex={-1}>
           {(showMoreBack || returnChild && pathname.startsWith(`${root}/children/`)) && <MoreBackLink locale={locale} child={returnChild} schoolClass={returnClass} communication={commSection} />}
           {selectedScope && <p className="scope-label"><bdi>{selectedScope.label}</bdi>{selectedScope.detail && <> · <bdi>{selectedScope.detail}</bdi></>}</p>}

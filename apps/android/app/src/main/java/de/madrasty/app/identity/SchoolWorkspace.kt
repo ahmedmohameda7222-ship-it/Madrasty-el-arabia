@@ -3,6 +3,11 @@ package de.madrasty.app.identity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.key
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ListItem
@@ -46,6 +51,7 @@ import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
 import de.madrasty.app.comms.BroadcastHub
+import de.madrasty.app.comms.ChatUnreadCount
 import de.madrasty.app.comms.NotificationAction
 import de.madrasty.app.comms.NotificationCenter
 import de.madrasty.app.comms.PushSessionBinding
@@ -72,6 +78,14 @@ import de.madrasty.app.comms.ThreadInbox
 import de.madrasty.app.comms.CommunicationFeed
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import de.madrasty.app.comms.ThreadInboxState
+import de.madrasty.app.comms.NativeChatDrafts
+import de.madrasty.app.comms.NativeChatDraft
 import de.madrasty.app.comms.ThreadScreen
 import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.school.ChildrenScreen
@@ -141,6 +155,8 @@ internal sealed interface WorkspacePage {
 @Stable
 internal class SchoolNavigation {
     var communicationSection by mutableStateOf("chat")
+    val inbox=ThreadInboxState()
+    val chatDrafts=NativeChatDrafts()
     var page by mutableStateOf<WorkspacePage>(WorkspacePage.Tabs)
         private set
     private val previous = mutableListOf<WorkspacePage>()
@@ -174,6 +190,8 @@ internal class SchoolNavigation {
         })
     }
     fun openThread(id:String)=open(WorkspacePage.Thread(id))
+    fun selectSplitThread(id:String){if(page is WorkspacePage.Thread)page=WorkspacePage.Thread(id)else openThread(id)}
+    fun openThreadWithDraft(id:String,body:String){chatDrafts.write(id,NativeChatDraft(body,openMedia=true));openThread(id)}
     fun openNoticeTarget(target:JSONObject):Boolean{
         val id=target.getString("id")
         val childId=target.optString("childId").takeIf{it.isNotBlank()}
@@ -329,14 +347,27 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         return
     }
     if(page==WorkspacePage.Tabs){SchoolTabs(model,session,state,rights);return}
+    if(page is WorkspacePage.Thread){
+        if(LocalConfiguration.current.screenWidthDp>=840&&state.tab==SchoolTab.Messages){
+            Row(Modifier.fillMaxSize().safeDrawingPadding()){
+                Column(Modifier.weight(.35f).fillMaxSize().padding(12.dp)){
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(stringResource(R.string.comms_chats),style=MaterialTheme.typography.titleLarge);TextButton(onClick={state.open(WorkspacePage.Directory)}){Text("+")}}
+                    ThreadInbox(model,state.inbox,state::selectSplitThread)
+                }
+                VerticalDivider()
+                Box(Modifier.weight(.65f).fillMaxSize()){key(page.id){ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back)}}
+            }
+        }else key(page.id){ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back)}
+        return
+    }
     InterfaceLanguageWorkspace {
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)
         WorkspacePage.Profile -> ProfileScreen(model,state::back)
         WorkspacePage.Account -> AccountScreen(model,state::back) { state.open(WorkspacePage.Security) }
         WorkspacePage.Security -> SecurityScreen(model,session,state::back)
-        WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
-        is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
+        WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::openThreadWithDraft,state::back)
+        is WorkspacePage.Thread -> ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back)
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         WorkspacePage.Bank -> BankSettings(model,state::back)
         is WorkspacePage.FeeSettings -> FeeSettings(model,page.student,state::back,if(rights.bank)({state.open(WorkspacePage.Bank)})else null)
@@ -406,10 +437,14 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
 
 @Composable
 private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:SchoolNavigation,rights:SchoolRights){
-    SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,notificationAction={
+    val inboxActive=state.tab==SchoolTab.Messages&&state.communicationSection=="chat"
+    SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,scrollContent=!inboxActive,unreadMessages=ChatUnreadCount(model),
+        floatingAction={if(inboxActive)FloatingActionButton(onClick={state.open(WorkspacePage.Directory)}){
+            Icon(painterResource(R.drawable.ic_comms_compose),contentDescription=stringResource(R.string.comms_new_message))
+        }},notificationAction={
         NotificationAction(model){state.open(WorkspacePage.Notifications())}
     }){tab->
-        if(tab!=SchoolTab.Home)Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
+        if(tab!=SchoolTab.Home&&tab!=SchoolTab.Messages&&tab!=SchoolTab.Calendar)Text(stringResource(tab.label),Modifier.semantics{heading()},style=MaterialTheme.typography.headlineMedium)
         when(tab){
             SchoolTab.Home -> SchoolHomeScreen(
                 model,session.actor.persona,state.workDate,{state.workDate=it},
@@ -424,7 +459,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openDirectory={state.open(WorkspacePage.Directory)},openSetup={state.open(WorkspacePage.Calendar)},
                 openMore={state.choose(SchoolTab.More)},
                 addGuardian={state.open(WorkspacePage.Family(addGuardian=true))},
-                openEvents={state.open(WorkspacePage.Publication(PublicationSection.Events))},
+                openEvents={state.choose(SchoolTab.Calendar)},
                 openNews={state.open(WorkspacePage.Publication(PublicationSection.News))},
                 openIssue={state.open(WorkspacePage.IssueInvoices())},
                 openAnnouncement={state.open(WorkspacePage.Broadcasts())},
@@ -446,21 +481,21 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openFinance={state.open(WorkspacePage.FinanceReport(it))},
                 openStop={state.open(WorkspacePage.Stops(student=it))},
                 openNews={state.open(WorkspacePage.Publication(PublicationSection.News))},
-                openEvents={state.open(WorkspacePage.Publication(PublicationSection.Events))})
+                openEvents={state.choose(SchoolTab.Calendar)})
             SchoolTab.Students -> if(rights.students){
                 FamiliesScreen(model,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null,openInvoices=if(rights.invoiceViewer)({state.open(WorkspacePage.Invoices(student=it))})else null,openStops=if(rights.stopManager)({state.open(WorkspacePage.Stops(student=it))})else null)
             }
+            SchoolTab.Calendar -> SchoolPublicationScreen(model,PublicationSection.Events,null,{state.choose(SchoolTab.Home)},embedded=true)
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
             SchoolTab.Messages -> {
-                FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-                    for((section,label) in listOf("chat" to R.string.comms_chats,"feed" to R.string.comms_feed,"calendar" to R.string.comms_calendar)){
-                        FilterChip(state.communicationSection==section,onClick={state.communicationSection=section},label={Text(stringResource(label))})
+                TabRow(selectedTabIndex=if(state.communicationSection=="feed")1 else 0){
+                    for((section,label) in listOf("chat" to R.string.comms_chats,"feed" to R.string.comms_feed)){
+                        Tab(selected=state.communicationSection==section,onClick={state.communicationSection=section},text={Text(stringResource(label))})
                     }
                 }
                 when(state.communicationSection){
-                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News,managed=true))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))},{state.communicationSection="calendar"})
-                    "calendar"->SchoolPublicationScreen(model,PublicationSection.Events,null,{state.communicationSection="chat"},embedded=true)
-                    else->ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
+                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News,managed=true))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))})
+                    else->ThreadInbox(model,state.inbox,state::openThread)
                 }
             }
         }

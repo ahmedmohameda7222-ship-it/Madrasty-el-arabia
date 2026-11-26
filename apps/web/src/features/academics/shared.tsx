@@ -10,7 +10,7 @@ import { AsyncSurface } from "@/ui/AsyncSurface";
 
 const denied=(error:unknown)=>error instanceof ApiResponseError&&[401,403,404].includes(error.status);
 
-export function useAcademicPage<T>(path:`/${string}`|null,schema:z.ZodType<T[]>,refresh:number){
+export function useAcademicPage<T>(path:`/${string}`|null,schema:z.ZodType<T[]>,refresh:number,retainOnRefreshError=false){
   const {accountId,sessionId,persona}=useAccountScope();
   const scope=JSON.stringify([accountId,sessionId,persona,path]);
   const [read,setRead]=useState<{scope:string;refresh:number;items?:T[];cursor?:string;error?:unknown}>();
@@ -22,11 +22,11 @@ export function useAcademicPage<T>(path:`/${string}`|null,schema:z.ZodType<T[]>,
     if(!path)return;
     const abort=new AbortController();
     requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}}).then(
-      ({data,meta})=>{if(!abort.signal.aborted)setRead({scope,refresh,items:data,cursor:meta?.nextCursor});},
-      (error)=>{if(!abort.signal.aborted)setRead({scope,refresh,error});},
+      ({data,meta})=>{if(!abort.signal.aborted){setRead({scope,refresh,items:data,cursor:meta?.nextCursor});if(retainOnRefreshError)setNotice(undefined);}},
+      (error)=>{if(!abort.signal.aborted){if(retainOnRefreshError&&!denied(error)){setRead(old=>old?.scope===scope&&old.items?old:{scope,refresh,error});setNotice({scope,error});}else setRead({scope,refresh,error});}},
     );
     return ()=>abort.abort();
-  },[path,persona,refresh,retry,schema,scope]);
+  },[path,persona,refresh,retry,schema,scope,retainOnRefreshError]);
   async function more(){
     if(!path||!visible?.cursor||busy===scope)return;
     setBusy(scope);setNotice(undefined);

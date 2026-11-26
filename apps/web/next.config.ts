@@ -7,7 +7,11 @@ const config: NextConfig = {
   transpilePackages: ["@madrasty/contracts"],
   outputFileTracingIncludes: {"/api/v1/finance/**/pdf": ["./public/school-192.png", "./node_modules/@fontsource/ibm-plex-sans-arabic/package.json", "./node_modules/@fontsource/ibm-plex-sans-arabic/files/*400-normal.woff2"]},
   async redirects() {
-    return [{ source: "/", destination: "/ar", permanent: false }];
+    return [
+      { source: "/", destination: "/ar", permanent: false },
+      // Redirect old event bookmarks before rendering the streamed school layout.
+      { source: "/:locale(ar|de)/school/more/events", destination: "/:locale/school/calendar", permanent: false },
+    ];
   },
 };
 

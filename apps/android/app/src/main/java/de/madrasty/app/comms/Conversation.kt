@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.os.PersistableBundle
 import android.os.Build
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -33,12 +35,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -65,32 +69,55 @@ import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.isolate
 import java.util.UUID
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
-private data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
+internal data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
 
+internal data class NativeChatDraft(val body:String,val quote:JSONObject?=null,val requestId:String?=null,val retry:Outgoing?=null,val openMedia:Boolean=false)
+// In-memory only; the owning SchoolNavigation is keyed by account/session/persona.
+internal class NativeChatDrafts {
+    private val drafts=mutableMapOf<String,NativeChatDraft>()
+    fun read(id:String)=drafts[id]
+    fun write(id:String,value:NativeChatDraft){
+        if(value.body.isEmpty()&&value.quote==null&&value.requestId==null&&!value.openMedia)drafts.remove(id)
+        else drafts[id]=value
+    }
+    fun remove(id:String){drafts.remove(id)}
+    fun acknowledge(id:String,requestId:String){if(drafts[id]?.requestId==requestId)drafts.remove(id)}
+}
 @Composable
-internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Modifier=Modifier,changed:()->Unit){
+internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Modifier=Modifier,drafts:NativeChatDrafts,changed:()->Unit){
     val id=thread.getString("id")
     val path="/threads/$id"
-    var typed by remember(id){mutableStateOf("")}
-    var quote by remember(id){mutableStateOf<JSONObject?>(null)}
+    val restored=remember(id){drafts.read(id)}
+    LaunchedEffect(id){drafts.read(id)?.takeIf{it.openMedia}?.let{drafts.write(id,it.copy(openMedia=false))}}
+    var typed by remember(id){mutableStateOf(restored?.body.orEmpty())}
+    var quote by remember(id){mutableStateOf(restored?.quote)}
+    fun editDraft(value:String,reply:JSONObject?=quote){typed=value;quote=reply;drafts.write(id,NativeChatDraft(value,reply))}
     var term by remember(id){mutableStateOf("")}
     var search by remember(id){mutableStateOf("")}
-    var outgoing by remember(id){mutableStateOf<Outgoing?>(null)}
+    var outgoing by remember(id){mutableStateOf(restored?.retry?.copy(pending=false))}
     var acknowledged by remember(id){mutableStateOf<JSONObject?>(null)}
     var attachment by remember(id){mutableStateOf<String?>(null)}
     var consumed by remember(id){mutableStateOf<String?>(null)}
     var preparing by remember(id){mutableStateOf(false)}
     var forbidden by remember(id){mutableStateOf(false)}
     var archived by remember(id,thread.optBoolean("archived")){mutableStateOf(thread.optBoolean("archived"))}
+    var pinned by remember(id,thread.optBoolean("pinned")){mutableStateOf(thread.optBoolean("pinned"))}
+    var muted by remember(id,thread.optBoolean("muted")){mutableStateOf(thread.optBoolean("muted"))}
     val scope=rememberCoroutineScope()
-    fun deny(){forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;attachment=null;changed()}
+    fun deny(){drafts.remove(id);forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;attachment=null;changed()}
     fun clearSent(message:Outgoing){
+        drafts.acknowledge(id,message.id)
         outgoing=null;typed="";quote=null
         if(message.media!=null){consumed=message.media;attachment=null}
     }
@@ -104,6 +131,8 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     }
     val failed=outgoing?.pending==false
     var optionsOpen by remember(id){mutableStateOf(false)}
+    var mediaOpen by remember(id){mutableStateOf(false)}
+    if(mediaOpen)SharedChatMediaDialog(model,id,{mediaOpen=false},{mediaOpen=false;deny()})
     Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)){
     TextButton(onClick={optionsOpen=!optionsOpen}){Text(stringResource(R.string.chat_search_thread)+" · ⋯")}
     if(optionsOpen){
@@ -118,6 +147,19 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
             throw error
         }
     }
+    Submit(true,if(pinned)R.string.chat_unpin else R.string.chat_pin,success=null){
+        try{
+            val result=model.chatCommand("$path/state",JSONObject().put("pinned",!pinned),"PATCH")
+            pinned=result.getBoolean("pinned");muted=result.getBoolean("muted");changed()
+        }catch(error:HttpFailure){if(error.denied)deny();throw error}
+    }
+    Submit(true,if(muted)R.string.chat_unmute else R.string.chat_mute,success=null){
+        try{
+            val result=model.chatCommand("$path/state",JSONObject().put("muted",!muted),"PATCH")
+            pinned=result.getBoolean("pinned");muted=result.getBoolean("muted");changed()
+        }catch(error:HttpFailure){if(error.denied)deny();throw error}
+    }
+    TextButton(onClick={mediaOpen=true;optionsOpen=false}){Text(stringResource(R.string.chat_shared_media))}
     if(archived)Text(stringResource(R.string.chat_archived))
     Field(R.string.chat_search_thread,search){search=it.take(120)}
     TextButton(onClick={term=search.trim()}){Text(stringResource(R.string.staff_search))}
@@ -138,7 +180,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(timelineScroll),verticalArrangement=Arrangement.spacedBy(8.dp)){
     key(id,term){
         MessageTimeline(model,thread,term,acknowledged,::deny,::recognize,{archived=it}){message->
-            if(outgoing?.pending!=true){quote=message;outgoing=null}
+            if(outgoing?.pending!=true){editDraft(typed,message);outgoing=null}
         }
     }
     outgoing?.let{message->
@@ -152,6 +194,9 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
         }
     }
     }
+    if(term.isEmpty()&&timelineScroll.maxValue!=Int.MAX_VALUE&&timelineScroll.maxValue-timelineScroll.value>followThreshold){
+        TextButton(onClick={scope.launch{timelineScroll.scrollTo(timelineScroll.maxValue)}},modifier=Modifier.align(Alignment.End).heightIn(min=48.dp)){Text(stringResource(R.string.chat_latest)+" ↓")}
+    }
     if(!thread.optBoolean("canReply")){
         Text(stringResource(R.string.chat_read_only))
         return@Column
@@ -161,16 +206,17 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     if(quoted!=null){
         Text(stringResource(R.string.chat_reply)+" · "+chatAuthor(quoted))
         quoted.string("body")?.let{Text(isolate(it.take(140)))}
-        TextButton(enabled=outgoing?.pending!=true,onClick={quote=null;outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
+        TextButton(enabled=outgoing?.pending!=true,onClick={editDraft(typed,null);outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
     }
-    MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,onReady={
+    MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,initialMenuOpen=restored?.openMedia==true,onReady={
         if(attachment!=it&&outgoing?.pending!=true)outgoing=null
         attachment=it
     },onBusy={preparing=it}){
-    ChatInputField(typed,outgoing?.pending!=true){typed=it;outgoing=null}
+    ChatInputField(typed,outgoing?.pending!=true){editDraft(it);outgoing=null}
     ChatSendAction(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,failed=failed,onClick={
         val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),attachment,true)
         outgoing=sending
+        drafts.write(id,NativeChatDraft(typed,quote,sending.id,sending.takeIf{it.media==null}))
         scope.launch{
             try{
                 val body=JSONObject().put("clientMessageId",sending.id)
@@ -178,6 +224,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
                 sending.media?.let{body.put("attachmentIds",JSONArray(listOf(it)))}
                 sending.replyTo?.let{body.put("replyToId",it)}
                 val result=model.chatCommand("$path/messages",body,"POST",sending.id)
+                drafts.acknowledge(id,sending.id)
                 if(!forbidden){
                     acknowledged=result
                     if(outgoing?.id==sending.id)clearSent(sending)
@@ -234,7 +281,8 @@ private fun MessageTimeline(
     LaunchedEffect(ack){
         if(ack!=null&&term.isEmpty())records=mergeChat(records.orEmpty(),listOf(ack))
     }
-    LaunchedEffect(path,retry,model.attendanceNetworkRevision){
+    val push by schoolPushRevision.collectAsState()
+    LaunchedEffect(path,retry,model.attendanceNetworkRevision,push){
         do{
             if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)){
                 try{
@@ -292,7 +340,15 @@ private fun MessageTimeline(
         }
     }
     if(rows.isEmpty())Text(stringResource(R.string.empty))
+    val dateLocale=LocalConfiguration.current.locales[0]
+    val zone=ZoneId.systemDefault()
+    var previousDay:java.time.LocalDate?=null
     for(message in rows){
+        val day=Instant.parse(message.getString("createdAt")).atZone(zone).toLocalDate()
+        if(day!=previousDay){
+            Text(day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(dateLocale)),modifier=Modifier.fillMaxWidth().padding(vertical=8.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center,style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            previousDay=day
+        }
         val messageId=message.getString("id")
         key(messageId){
             ChatMessageItem(model,thread,message,messageId==focus,reply,{target->
@@ -339,7 +395,10 @@ internal fun ChatMessageItem(
         }
     }
     message.string("body")?.let{body->
-        Text(isolate(body),modifier=Modifier.combinedClickable(onClick={},onLongClick={actions=true}))
+        Text(isolate(body),modifier=Modifier.then(if(message.optBoolean("replyable")&&thread.optBoolean("canReply"))Modifier.pointerInput(message.getString("id")){
+            var dx=0f
+            detectHorizontalDragGestures(onDragStart={dx=0f},onDragEnd={if(kotlin.math.abs(dx)>=64.dp.toPx())reply(message)},onHorizontalDrag={change,amount->change.consume();dx+=amount})
+        }else Modifier).combinedClickable(onClick={},onLongClick={actions=true}))
     }
     val media=message.getJSONArray("attachments")
     val threadId=thread.getString("id")
@@ -352,7 +411,7 @@ internal fun ChatMessageItem(
     if(!hasContent&&message.getString("source")=="human")Text(stringResource(R.string.chat_message_redacted))
     val actionLabel=stringResource(R.string.chat_reactions)
     Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        Text(isolate(message.getString("createdAt").replace("T"," ").take(16))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),modifier=Modifier.weight(1f,fill=false),style=MaterialTheme.typography.labelSmall)
+        Text(isolate(Instant.parse(message.getString("createdAt")).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(LocalConfiguration.current.locales[0])))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),modifier=Modifier.weight(1f,fill=false),style=MaterialTheme.typography.labelSmall)
         IconButton(onClick={actions=!actions},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
     }
     if(actions){
@@ -441,3 +500,52 @@ private suspend fun IdentityViewModel.chatPage(path:String):WirePage<List<JSONOb
     decodeData(schoolRequest(path)){payload->(payload as JSONArray).let{records->List(records.length(),records::getJSONObject)}}
 private fun mergeChat(existing:List<JSONObject>,fresh:List<JSONObject>)=
     (existing+fresh).associateBy{it.getString("id")}.values.sortedBy{it.getString("sequence").toLong()}
+
+@Composable
+private fun SharedChatMediaDialog(model:IdentityViewModel,thread:String,close:()->Unit,denied:()->Unit){
+    var rows by remember(thread){mutableStateOf<List<JSONObject>?>(null)}
+    var cursor by remember(thread){mutableStateOf<String?>(null)}
+    var failed by remember(thread){mutableStateOf(false)}
+    var retry by remember(thread){mutableStateOf(0)}
+    LaunchedEffect(thread,retry){
+        failed=false
+        try{
+            val page=model.chatPage("/threads/$thread/messages?mediaOnly=true&limit=20")
+            rows=page.data;cursor=page.nextCursor
+        }catch(error:CancellationException){throw error}
+        catch(error:HttpFailure){rows=null;if(error.denied)denied()else failed=true}
+        catch(_:Exception){rows=null;failed=true}
+    }
+    AlertDialog(onDismissRequest=close,title={Text(stringResource(R.string.chat_shared_media))},
+        text={
+            Column(Modifier.fillMaxWidth().heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+                val current=rows
+                if(failed){
+                    Text(stringResource(R.string.generic_error))
+                    TextButton(onClick={retry++}){Text(stringResource(R.string.broadcast_refresh))}
+                }else if(current==null){AsyncSurface<Unit>(AsyncState.InitialLoading()){}}
+                else if(current.isEmpty()){Text(stringResource(R.string.chat_shared_media_empty))}
+                else{
+                    for(message in current){
+                        key(message.getString("id")){
+                            Text(chatAuthor(message),style=MaterialTheme.typography.labelMedium)
+                            val media=message.getJSONArray("attachments")
+                            for(index in 0 until media.length()){
+                                val attachment=media.getJSONObject(index)
+                                val mediaId=attachment.getString("id")
+                                key(mediaId){PrivateChatMedia(model,"/threads/$thread/media/$mediaId",ChatMediaKind.read(attachment.getString("kind")))}
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                    val before=cursor
+                    if(before!=null)Submit(true,R.string.chat_older,success=null){
+                        try{
+                            val page=model.chatPage("/threads/$thread/messages?mediaOnly=true&limit=20&before=$before")
+                            rows=(rows.orEmpty()+page.data).distinctBy{it.getString("id")};cursor=page.nextCursor
+                        }catch(error:HttpFailure){if(error.denied)denied();throw error}
+                    }
+                }
+            }
+        },confirmButton={TextButton(onClick=close){Text(stringResource(R.string.close))}})
+}

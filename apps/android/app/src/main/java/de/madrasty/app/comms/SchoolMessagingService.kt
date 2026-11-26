@@ -13,6 +13,9 @@ import com.google.firebase.messaging.RemoteMessage
 import de.madrasty.app.MainActivity
 import de.madrasty.app.R
 import java.util.Locale
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 private const val CHANNEL="school-notices"
 private const val PUSH_ACTION="de.madrasty.app.action.OPEN_SCHOOL_NOTICE"
@@ -28,6 +31,10 @@ internal fun verifiedPushNotice(context:Context,intent:Intent?):String?{
     return intent.getStringExtra(NOTICE)?.takeIf(uuid::matches)
 }
 
+// Process-local opaque signal only; the foreground UI always rechecks account/persona APIs.
+private val pushRevision=MutableStateFlow(0)
+internal val schoolPushRevision=pushRevision.asStateFlow()
+
 class SchoolMessagingService:FirebaseMessagingService(){
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token:String){requireAndroidPushRefresh(applicationContext)}
@@ -38,6 +45,7 @@ class SchoolMessagingService:FirebaseMessagingService(){
         val locale=message.data["locale"]?.takeIf{it in listOf("ar","de")}?:return
         val context=applicationContext
         if(guard!=currentAndroidDeliveryGuard(context)||!androidPushAllowed(context))return
+        pushRevision.update{it+1}
         val configuration=Configuration(resources.configuration).apply{setLocale(Locale.forLanguageTag(locale))}
         val localized=createConfigurationContext(configuration)
         val manager=getSystemService(NotificationManager::class.java)

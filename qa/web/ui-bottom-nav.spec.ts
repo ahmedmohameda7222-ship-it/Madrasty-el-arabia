@@ -13,7 +13,7 @@ test("German attendance bottom tab remains readable while exposing its full acce
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/de/school/attendance");
       const links = page.locator(".school-nav > a");
-      await expect(links).toHaveCount(4);
+      await expect(links).toHaveCount(5);
       const attendance = links.nth(1);
       await expect(attendance).toHaveAttribute("aria-current", "page");
       await expect(attendance).toHaveAttribute("aria-label", "Anwesenheit");

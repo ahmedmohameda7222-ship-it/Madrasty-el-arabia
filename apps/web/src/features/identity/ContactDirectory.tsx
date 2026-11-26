@@ -6,6 +6,8 @@ import { directoryEntrySchema, threadReceipt, type DirectoryEntry, type Locale }
 import { ApiResponseError, requestApi } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
+import { chatDrafts } from "@/features/comms/chat-drafts";
+import { useTimetableRead } from "@/features/school/timetable/shared";
 import { StartConversation } from "@/features/comms/StartConversation";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface, type AsyncState } from "@/ui/AsyncSurface";
@@ -43,9 +45,13 @@ function initials(entry:DirectoryEntry,locale:Locale) {
 export function ContactDirectory({ locale, contact }: { locale: Locale; contact?: string }) {
   const text=words[locale], actor=useAccountScope(), router=useRouter(), command=useSchoolCommand(actor.persona);
   const [query,setQuery]=useState(""), [term,setTerm]=useState("");
+  const [interactive,setInteractive]=useState(false);
+  useEffect(()=>setInteractive(true),[]);
   const [mode,setMode]=useState<Mode>("mine"),[selected,setSelected]=useState(contact);
   const [revision,setRevision]=useState(0),[view,setView]=useState<AsyncState>({kind:"initialLoading"});
   const [entry,setEntry]=useState<DirectoryEntry>(),[rows,setRows]=useState<Page>();
+  const confirmed=useRef<string|undefined>(undefined);
+  const offices=useTimetableRead(`/directory?role=office&limit=10${term?`&query=${encodeURIComponent(term)}`:""}`,directoryList,revision);
   const [gettingMore,setGettingMore]=useState(false),[moreError,setMoreError]=useState("");
   const [opening,setOpening]=useState<string>(),[openError,setOpenError]=useState("");
   const openingRef=useRef(false);
@@ -71,7 +77,11 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     const abort=new AbortController();
     const options={signal:abort.signal,headers:{"X-School-Persona":actor.persona}};
     const retry=()=>setRevision(count=>count+1);
-    setView({kind:"initialLoading"});setEntry(undefined);setRows(undefined);setMoreError("");
+    const key=JSON.stringify([actor.accountId,actor.sessionId,actor.persona,selected??null,term,mode]);
+    // Keep confirmed results visible only while refreshing the identical scope and query.
+    if(confirmed.current===key)setView({kind:"refreshing",content:null});
+    else{confirmed.current=undefined;setView({kind:"initialLoading"});setEntry(undefined);setRows(undefined);}
+    setMoreError("");
     async function refresh(){
       try{
         if(selected){
@@ -81,25 +91,30 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
           const result=await requestApi(`/directory?${filter(term,mode)}`,directoryList,options);
           if(!abort.signal.aborted)setRows(result);
         }
-        if(!abort.signal.aborted)setView({kind:"ready",content:null});
+        if(!abort.signal.aborted){confirmed.current=key;setView({kind:"ready",content:null});}
       }catch(error){
         if(abort.signal.aborted)return;
+        confirmed.current=undefined;setEntry(undefined);setRows(undefined);
         if(error instanceof ApiResponseError&&[401,403,404].includes(error.status))setView({kind:"forbidden",action:<p>{text.unavailable}</p>});
         else setView({kind:"error",message:message(locale,error),retry});
       }
     }
     void refresh();
     return ()=>abort.abort();
-  },[selected,revision,term,mode,actor.persona]);
+  },[selected,revision,term,mode,actor.accountId,actor.sessionId,actor.persona]);
 
   function back(){
     const url=new URL(window.location.href);url.searchParams.delete("contact");
     window.history.replaceState(null,"",url);setSelected(undefined);
   }
   async function openPerson(row:DirectoryEntry){
-    if(openingRef.current||row.target.kind!=="person")return;
+    if(openingRef.current)return;
     openingRef.current=true;setOpening(row.id);setOpenError("");
     try{
+      if(row.target.kind==="office"){
+        const value=await command("/threads","POST",{target:row.target},threadReceipt);
+        router.push(`/${locale}/school/messages?thread=${value.threadId}`);return;
+      }
       const detail=(await requestApi(`/directory/${row.id}`,directoryEntrySchema,{headers:{"X-School-Persona":actor.persona}})).data;
       if(detail.directThreadId)router.push(`/${locale}/school/messages?thread=${detail.directThreadId}`);
       else {setDraft(detail);setBody("");setFirstId(crypto.randomUUID());}
@@ -112,6 +127,7 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     try{
       const value=await command("/threads","POST",{target:draft.target,
         ...(media?{}:{firstMessage:{clientMessageId:firstId,body:body.trim()}})},threadReceipt);
+      if(media)chatDrafts.write(actor,value.threadId,{body,openMedia:true});
       router.push(`/${locale}/school/messages?thread=${value.threadId}`);
     }catch(error){setOpenError(message(locale,error));}
     finally{openingRef.current=false;setOpening(undefined);}
@@ -128,7 +144,7 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     finally{setGettingMore(false);}
   }
   const content=selected&&entry?<DirectoryCard entry={entry} locale={locale}/>:rows&&<section className="comms-people">
-    {rows.data.length===0&&<p>{text.empty}</p>}
+    {rows.data.length===0&&!offices.value?.data?.length&&<p>{text.empty}</p>}
     {groups.map(key=>{
       const people=rows.data.filter(row=>group(row)===key&&row.target.kind==="person");
       if(!people.length)return null;
@@ -145,30 +161,42 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
         </li>)}</ul>
       </div>;
     })}
+    {offices.value?.data&&offices.value.data.length>0&&<div className="comms-people-group comms-office-group">
+      <h2>{locale==="ar"?"مكاتب المدرسة":"Schulbüros"}</h2>
+      <ul className="group-list">{offices.value.data.filter(row=>row.target.kind==="office").map(row=><li key={row.id}>
+        <button className="comms-person-row" type="button" disabled={!!opening} onClick={()=>void openPerson(row)}>
+          <span className="comms-avatar" aria-hidden="true"><Icon name={row.target.id==="accounts"?"receipt":"school"}/></span>
+          <span className="comms-person-label"><span className="comms-person-name">{label(row,locale)}</span></span><Icon name="chevron"/>
+        </button>
+      </li>)}</ul>
+    </div>}
     {rows.meta?.nextCursor&&<button className="plain-button" type="button" onClick={()=>void more()} disabled={gettingMore}>{text.more}</button>}
     {moreError&&<p role="alert">{moreError}</p>}
     {openError&&<p role="alert">{openError}</p>}
   </section>;
-  if(draft)return <section className="comms-directory">
-    <button className="plain-button" type="button" disabled={!!opening} onClick={()=>{setDraft(undefined);setOpenError("");}}>{text.back}</button>
-    <div className="comms-first-contact"><span className="comms-avatar" aria-hidden="true">{initials(draft,locale)}</span><div><h1><bdi>{draft.displayName??label(draft,locale)}</bdi></h1><p>{label(draft,locale)}</p></div></div>
+  if(draft)return <section className="comms-directory" data-compose="true">
+    <header className="comms-first-contact-toolbar">
+      <button className="comms-icon-button" type="button" aria-label={text.back} disabled={!!opening} onClick={()=>{setDraft(undefined);setOpenError("");}}><Icon name="back"/></button>
+      <div className="comms-first-contact"><span className="comms-avatar" aria-hidden="true">{initials(draft,locale)}</span><div><h1><bdi>{draft.displayName??label(draft,locale)}</bdi></h1><p>{label(draft,locale)}</p></div></div>
+    </header>
     <form className="comms-composer auth-form" onSubmit={event=>{event.preventDefault();void sendFirst();}}>
+      {openError&&<p role="alert" className="comms-first-error">{openError}</p>}
       <div className="comms-input-bar">
-        <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening||!!body.trim()} onClick={()=>void sendFirst(true)}><Icon name="plus"/></button>
+        <button className="comms-icon-button comms-attach-button" type="button" aria-label={text.media} disabled={!!opening} onClick={()=>void sendFirst(true)}><Icon name="plus"/></button>
         <label className="comms-input-field"><textarea ref={draftInput} aria-label={text.start} placeholder={text.start} dir="auto" rows={2} value={body} maxLength={4000} disabled={!!opening} onChange={event=>{setBody(event.target.value);setFirstId(crypto.randomUUID());setOpenError("");}}/></label>
         <button className="comms-icon-button comms-send-button" type="submit" aria-label={text.send} disabled={!!opening||!body.trim()}><Icon name={openError?"retry":"sendUp"}/></button>
       </div>
-    </form>{openError&&<p role="alert">{openError}</p>}
+    </form>
   </section>;
   return <section className="comms-directory">
     <h1>{text.title}</h1>
     {selected?<button type="button" className="plain-button" onClick={back}>{text.back}</button>:<>
-      <input className="comms-search" type="search" aria-label={text.query} placeholder={text.query} maxLength={120} value={query} onChange={event=>setQuery(event.target.value)}/>
+      <input className="comms-search" type="search" aria-label={text.query} placeholder={text.query} maxLength={120} disabled={!interactive} value={query} onChange={event=>setQuery(event.target.value)}/>
       <div className="comms-segments" role="group" aria-label={text.title}>
-        {(["mine","all"] as const).map(key=><button key={key} type="button" aria-pressed={mode===key} onClick={()=>setMode(key)}>{text[key]}</button>)}
+        {(["mine","all"] as const).map(key=><button key={key} type="button" disabled={!interactive} aria-pressed={mode===key} onClick={()=>setMode(key)}>{text[key]}</button>)}
       </div>
     </>}
-    <AsyncSurface locale={locale} state={view.kind==="ready"?{...view,content}:view}/>
+    <AsyncSurface locale={locale} state={view.kind==="ready"||view.kind==="refreshing"?{...view,content}:view}/>
   </section>;
 }
 export function DirectoryCard({entry,locale}:{entry:DirectoryEntry;locale:Locale}) {

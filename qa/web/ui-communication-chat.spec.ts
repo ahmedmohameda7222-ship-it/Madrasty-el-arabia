@@ -31,12 +31,17 @@ test("direct chat presents sent and received bubbles and compact actions", async
     const inbox=page.locator('a[href="/de/school/messages"]').first();
     await expect(inbox).toBeVisible({timeout:20000});
     await inbox.click();
+    await expect(page.getByRole("heading",{name:"Kontakt",exact:true})).toHaveCount(1);
+    await expect(page.locator(".comms-inbox-heading h2")).toHaveCount(0);
+    await expect(page.getByRole("link",{name:"Neue Nachricht",exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Suchen",exact:true})).toHaveCount(0);
     const row=page.locator(".comms-thread-row").filter({has:page.locator('small', {hasText:"Guten Tag"})});
     await expect(row).toBeVisible({timeout:20000});
     await row.click();
     await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).toBe(thread);
     await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible({timeout:20000});
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
+    await expect(page.locator(".comms-day-divider")).toHaveCount(1);
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
     await expect(page.getByRole("button",{name:"👍 1",exact:true})).toBeVisible();
     const footer=page.locator(".comms-message-footer").first();
@@ -44,6 +49,38 @@ test("direct chat presents sent and received bubbles and compact actions", async
     expect(layout.gap,"timestamp and actions share the same compact row").toBeLessThanOrEqual(8);
     expect(layout.target).toBeGreaterThanOrEqual(44);
     await expect(page.locator(".comms-composer textarea")).toBeVisible();
+    await expect(page.locator(".school-nav")).toBeHidden();
+    await expect(page.locator(".school-header").getByRole("button",{name:"App-Einstellungen"})).toBeVisible();
+    const area=page.locator(".comms-message-area");
+    const composer=page.locator(".comms-composer");
+    expect((await area.boundingBox())!.height,"timeline uses remaining screen").toBeGreaterThan(460);
+    for(const height of [844,480]){
+      await page.setViewportSize({width:390,height});
+      await expect.poll(async()=>{const a=await area.boundingBox(),c=await composer.boundingBox();return !!a&&!!c&&a.height>=80&&c.y+c.height<=height+1;}).toBe(true);
+      expect(await page.locator(".school-content").evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);
+    }
+    await page.setViewportSize({width:390,height:844});
+    await composer.locator("textarea").fill("QA gallery retains draft");
+    await page.getByRole("button",{name:"Kontaktinformationen",exact:true}).click();
+    const profile=page.getByRole("dialog",{name:"Kontaktinformationen"});
+    await expect(profile.getByText("يوسف عبد الرحمن محمود",{exact:true})).toBeVisible();
+    await profile.getByRole("button",{name:"Schließen",exact:true}).click();
+    await expect(composer.locator("textarea")).toHaveValue("QA gallery retains draft");
+    await page.locator(".comms-chat-options > summary").click();
+    await page.getByRole("button",{name:"Geteilte Medien",exact:true}).click();
+    const gallery=page.getByRole("dialog",{name:"Geteilte Medien"});
+    await expect(gallery).toBeVisible();
+    await expect(gallery.getByText("Keine geteilten Medien in dieser Unterhaltung.")).toBeVisible();
+    await gallery.getByRole("button",{name:"Schließen",exact:true}).click();
+    await expect(composer.locator("textarea")).toHaveValue("QA gallery retains draft");
+    await composer.locator("textarea").fill("");
+    await page.locator(".comms-chat-options > summary").click();
+    await page.setViewportSize({width:1280,height:840});
+    await expect(page.locator(".comms-split-sidebar")).toBeVisible();
+    await expect(page.locator(".comms-split-sidebar .comms-thread-row[aria-current=page]")).toBeVisible();
+    await expect(composer.locator("textarea")).toBeVisible();
+    await page.setViewportSize({width:390,height:844});
+    await expect(page.locator(".comms-split-sidebar")).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-chat-de-390.png",animations:"disabled"});
@@ -68,6 +105,30 @@ test("guardian contact picker exposes responsible teacher first, then the full s
     await page.getByRole("searchbox",{name:"Person suchen"}).fill("Johannes Peter Schneider");
     await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible();
     await expect(page.locator(".comms-person-row")).toHaveCount(1);
+    // Same-query foreground refresh must not replace the visible directory with a skeleton.
+    // Hold only the real matching fetch at the page boundary. This also works
+    // when a browser service worker makes Playwright network routes invisible.
+    await page.bringToFront();
+    await page.evaluate(()=>{
+      const original=window.fetch;
+      let release!:()=>void;
+      const gate=new Promise<void>(resolve=>{release=resolve;});
+      const state={started:false,restore:()=>{window.fetch=original;release();}};
+      (window as typeof window & {__qaDirectoryRefresh?:typeof state}).__qaDirectoryRefresh=state;
+      window.fetch=async(input,init)=>{
+        const url=new URL(typeof input==="string"?input:input instanceof URL?input.href:input.url,location.origin);
+        if(url.pathname==="/api/v1/directory"&&url.searchParams.get("view")==="all"&&url.searchParams.get("query")==="Johannes Peter Schneider"){
+          state.started=true;await gate;
+        }
+        return original.call(window,input,init);
+      };
+      window.dispatchEvent(new Event("focus"));
+    });
+    try{
+      await expect.poll(()=>page.evaluate(()=>(window as typeof window & {__qaDirectoryRefresh?:{started:boolean}}).__qaDirectoryRefresh?.started)).toBe(true);
+      await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible({timeout:1500});
+      await expect(page.locator(".comms-directory [data-async-state=loading]")).toHaveCount(0);
+    }finally{await page.evaluate(()=>(window as typeof window & {__qaDirectoryRefresh?:{restore:()=>void}}).__qaDirectoryRefresh?.restore());}
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-directory-de-320.png",animations:"disabled"});
@@ -106,16 +167,44 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     await fixtureApi(school,"/events/"+event.id,{token:admin,persona:"admin",method:"PATCH",key:randomUUID(),body:{action:"publish",revision:event.revision}});
     await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
     await page.setViewportSize({width:390,height:844});
-    const params=new URLSearchParams({section:"calendar",month:day.slice(0,7),day,classId:apple.id});
-    await page.goto("/de/school/messages?"+params);
+    const params=new URLSearchParams({month:day.slice(0,7),day,classId:apple.id});
+    await page.goto("/de/school/messages?section=calendar&"+params);
+    await expect(page).toHaveURL(/\/school\/calendar\?/);
+    await expect(page.locator(".school-nav [aria-current=page]")).toHaveText("Kalender");
     await page.getByRole("link",{name:"Details öffnen"}).first().click();
     await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
-    await page.getByRole("link",{name:"Zurück zu Kontakt"}).click();
-    await expect(page).toHaveURL(/section=calendar/);
-    const returned=new URL(page.url()).searchParams;
-    assertContext(returned,"month",day.slice(0,7));
-    assertContext(returned,"day",day);
-    assertContext(returned,"classId",apple.id);
+    // The detail and list share the same pathname. Wait for the list navigation
+    // itself to finish, not merely a URL regex that already matches the detail.
+    async function expectReturn(target:Page){
+      await expect.poll(()=>new URL(target.url()).searchParams.has("item")).toBe(false);
+      await expect(target.locator(".school-month-grid[data-calendar-ready=true]")).toBeVisible();
+      await expect(target.getByRole("link",{name:"Zurück zum Kalender",exact:true})).toHaveCount(0);
+      const returned=new URL(target.url());
+      expect(returned.pathname).toBe("/de/school/calendar");
+      for(const [key,value] of params)assertContext(returned.searchParams,key,value);
+    }
+    await page.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
+    await expectReturn(page);
+    const legacy="/de/school/more/events?item="+event.id+"&"+params;
+    const redirect=await page.request.get(legacy,{maxRedirects:0});
+    expect(redirect.status()).toBe(307);
+    const destination=new URL(redirect.headers().location!,localOrigin);
+    expect(destination.pathname).toBe("/de/school/calendar");
+    assertContext(destination.searchParams,"item",event.id);
+    for(const [key,value] of params)assertContext(destination.searchParams,key,value);
+    // Exercise a real external bookmark in an independent browser document,
+    // so it cannot race with the preceding client-side calendar return.
+    const bookmark=await context.newPage();
+    try{
+      await bookmark.setViewportSize({width:390,height:844});
+      await bookmark.goto(legacy);
+      await expect.poll(()=>new URL(bookmark.url()).searchParams.get("item")).toBe(event.id);
+      await expect(bookmark).toHaveURL(/\/school\/calendar\?/);
+      for(const [key,value] of params)assertContext(new URL(bookmark.url()).searchParams,key,value);
+      await expect(bookmark.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
+      await bookmark.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
+      await expectReturn(bookmark);
+    }finally{await bookmark.close();}
   }finally{await school.close();}
 });
 function assertContext(params:URLSearchParams,key:string,value:string){expect(params.get(key)).toBe(value);}
@@ -308,6 +397,10 @@ test("message retry preserves the client identifier and a remote reply arrives w
     expect(actual.filter((item:{body:string})=>item.body===body)).toHaveLength(1);
     const reply="QA reply "+randomUUID().slice(0,8),id=randomUUID();
     await fixtureApi(school,"/threads/"+thread+"/messages",{token:teacher,persona:"teacher",method:"POST",key:id,status:201,body:{clientMessageId:id,body:reply}});
+    // Simulate the opaque, verified service-worker refresh hint; the response is still the actual scoped API.
+    const wake=page.waitForResponse(response=>response.url().includes("/api/v1/threads/"+thread+"/messages?")&&response.request().method()==="GET");
+    await page.evaluate(()=>window.dispatchEvent(new Event("madrasty-communication-wake")));
+    expect((await wake).ok()).toBe(true);
     await expect(page.locator(".comms-timeline .comms-message[data-own=false]").filter({hasText:reply})).toBeVisible({timeout:20000});
   }finally{await school.close();}
 });
@@ -335,12 +428,19 @@ for(const scenario of [
       for(const section of ["chat","feed","calendar"] as const){
         const endpoint=section==="chat"?"/api/v1/threads?":section==="feed"?"/api/v1/comms/feed?":"/api/v1/comms/calendar?";
         const read=page.waitForResponse(r=>r.url().includes(endpoint)&&r.request().method()==="GET",{timeout:25000});
-        await page.goto("/"+scenario.locale+"/school/messages?section="+section);
+        await page.goto("/"+scenario.locale+"/school/"+(section==="calendar"?"calendar":"messages?section="+section));
         expect((await read).ok(),section+" data request must succeed").toBe(true);
-        const content=page.locator(".comms-hub");
+        const content=page.locator(section==="calendar"?".school-content":".comms-hub");
         const result=section==="chat"?".comms-thread-row, [data-async-state=empty]":section==="feed"?".comms-feed-card, [data-async-state=empty]":".school-month-grid";
         await expect(content.locator(result).first()).toBeVisible({timeout:25000});
-        await expect(content.locator(".comms-hub-tabs a[aria-current=page]")).toHaveText(section==="chat"?(ar?"المحادثات":"Chats"):section==="feed"?(ar?"المستجدات":"Aktuelles"):(ar?"التقويم":"Kalender"));
+        if(section==="calendar"){
+          await expect(page.locator(".school-nav [aria-current=page]")).toHaveText(ar?"التقويم":"Kalender");
+          await expect(page.locator(".comms-hub-tabs")).toHaveCount(0);
+        }else{
+          await expect(content.locator(".comms-hub-tabs a")).toHaveCount(2);
+          await expect(content.locator(".comms-hub-tabs a[aria-current=page]")).toHaveText(section==="chat"?(ar?"المحادثات":"Chats"):(ar?"المستجدات":"Aktuelles"));
+          await expect(page.locator(".school-nav").getByRole("link",{name:ar?"التقويم":"Kalender",exact:true})).toBeVisible();
+        }
         if(scenario.persona==="guardian"&&section==="feed")await expect(content.locator(".comms-publish-menu")).toHaveCount(0);
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
         mkdirSync("qa-artifacts/ui-after",{recursive:true});
@@ -349,3 +449,79 @@ for(const scenario of [
     }finally{await school.close();}
   });
 }
+
+
+test("first-contact attachment preserves typed text and opens the actual composer",async({page})=>{
+  test.setTimeout(90000);
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    // The synthetic run is shared across this suite. Select an actually unused person
+    // instead of the teacher whom earlier tests have already messaged.
+    const rows=(await fixtureApi(school,"/directory?view=all&limit=100",{token:guardian,persona:"guardian"})).payload.data as {id:string;displayName:string;target:{kind:string}}[];
+    let target:typeof rows[number]|undefined;
+    for(const row of rows.filter(row=>row.target.kind==="person"&&row.displayName)){
+      const detail=(await fixtureApi(school,"/directory/"+row.id,{token:guardian,persona:"guardian"})).payload.data;
+      if(!detail.directThreadId){target=row;break;}
+    }
+    expect(target,"fixture must include an unmessaged person").toBeTruthy();
+    if(!target)throw Error("No unused contact in synthetic directory");
+    await signInForWrite(page,school,"guardian-de");
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('.school-nav a[href*="/school/messages"]').click();
+    await page.getByRole("link",{name:"Neue Nachricht",exact:true}).click();
+    await expect(page.locator(".comms-person-row").first()).toBeVisible({timeout:20000});
+    const all=page.getByRole("button",{name:"Alle Personen",exact:true});
+    await all.click();
+    await expect(all).toHaveAttribute("aria-pressed","true");
+    const search=page.getByRole("searchbox",{name:"Person suchen"});
+    const searched=page.waitForResponse(r=>{const url=new URL(r.url());return url.pathname==="/api/v1/directory"&&url.searchParams.get("view")==="all"&&url.searchParams.get("query")===target!.displayName&&r.request().method()==="GET";});
+    await search.fill(target.displayName);
+    await expect(search).toHaveValue(target.displayName);
+    expect((await searched).ok()).toBe(true);
+    const row=page.locator(".comms-person-row").filter({hasText:target.displayName});
+    await expect(row).toHaveCount(1);
+    await row.click();
+    await expect(page.locator(".comms-first-contact")).toBeVisible();
+    const firstComposer=page.locator(".comms-directory[data-compose=true] .comms-composer");
+    await expect(page.locator(".school-nav")).toBeHidden();
+    await expect(page.locator(".school-header").getByRole("button",{name:"App-Einstellungen"})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Zurück zu Personen",exact:true})).toBeVisible();
+    for(const height of [844,480]){
+      await page.setViewportSize({width:390,height});
+      await expect.poll(async()=>{const c=await firstComposer.boundingBox();return !!c&&c.y+c.height>=height-16&&c.y+c.height<=height+1;}).toBe(true);
+      expect(await page.locator(".school-content").evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);
+    }
+    await page.setViewportSize({width:390,height:844});
+    const body="QA first message with attachment";
+    await page.locator(".comms-composer textarea").fill(body);
+    await page.getByRole("button",{name:"Anhang hinzufügen",exact:true}).click();
+    await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).not.toBeNull();
+    await expect(page.locator(".comms-conversation textarea")).toHaveValue(body);
+    await expect(page.getByRole("button",{name:"Foto auswählen",exact:true})).toBeVisible();
+    const thread=new URL(page.url()).searchParams.get("thread")!;
+    expect((await fixtureApi(school,"/threads/"+thread+"/messages",{token:guardian,persona:"guardian"})).payload.data).toHaveLength(0);
+    expect(await page.evaluate(text=>JSON.stringify(localStorage).includes(text)||JSON.stringify(sessionStorage).includes(text),body)).toBe(false);
+  }finally{await school.close();}
+});
+
+test("unsent chat text survives leaving and returning to the thread in the same document",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();const admin=await school.bearer("admin","admin");await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const contacts=(await fixtureApi(school,"/directory",{token:guardian})).payload.data;
+    const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
+    const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
+    const id=randomUUID();await fixtureApi(school,"/threads/"+thread+"/messages",{token:guardian,persona:"guardian",method:"POST",key:id,status:201,body:{clientMessageId:id,body:"QA previous message"}});
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});await page.goto("/de/school/messages?thread="+thread);
+    const body="QA private unsent message";
+    await page.locator(".comms-conversation textarea").fill(body);
+    await page.getByRole("link",{name:"Zurück zu den Unterhaltungen"}).click();
+    await page.locator('.comms-thread-row[href*="'+thread+'"]').click();
+    await expect(page.locator(".comms-conversation textarea")).toHaveValue(body);
+  }finally{await school.close();}
+});

@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -35,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.R
@@ -50,6 +53,7 @@ enum class SchoolTab(val label: Int, val icon: Int) {
     Attendance(R.string.nav_attendance, R.drawable.ic_attendance),
     Children(R.string.nav_children, R.drawable.ic_people),
     Messages(R.string.nav_messages, R.drawable.ic_messages),
+    Calendar(R.string.comms_calendar, R.drawable.ic_calendar),
     More(R.string.nav_more, R.drawable.ic_more),
 }
 
@@ -59,7 +63,7 @@ private fun tabsFor(persona: Persona): List<SchoolTab> {
         Persona.Teacher -> SchoolTab.Attendance
         Persona.Guardian -> SchoolTab.Children
     }
-    return listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.More)
+    return listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.Calendar, SchoolTab.More)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +77,9 @@ fun SchoolShell(
     selectScope: (String) -> Unit = {},
     notificationAction: @Composable () -> Unit = {},
     mayManageStudents: Boolean = true,
+    scrollContent: Boolean = true,
+    floatingAction: @Composable () -> Unit = {},
+    unreadMessages: Int = 0,
     content: @Composable (SchoolTab) -> Unit,
 ) {
     key(actor.accountId, actor.sessionId, actor.persona) {
@@ -85,10 +92,13 @@ fun SchoolShell(
         Scaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
             containerColor = MaterialTheme.colorScheme.background,
+            floatingActionButton = floatingAction,
             topBar = {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if(active==SchoolTab.Messages||active==SchoolTab.Calendar){
+                            Text(stringResource(active.label),Modifier.semantics{heading()})
+                        }else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Image(painterResource(R.drawable.school_seal), null, Modifier.size(36.dp))
                             Text(stringResource(R.string.app_name), Modifier.semantics { heading() })
                         }
@@ -108,7 +118,12 @@ fun SchoolShell(
                         NavigationBarItem(
                             selected = active == tab,
                             onClick = { changeTab(tab) },
-                            icon = { SchoolIcon(tab.icon) },
+                            icon = {
+                                if(tab==SchoolTab.Messages&&unreadMessages>0){
+                                    val unreadLabel=stringResource(R.string.comms_unread_badge,unreadMessages)
+                                    BadgedBox(badge={Badge(Modifier.semantics{contentDescription=unreadLabel}){Text(if(unreadMessages>99)"99+" else unreadMessages.toString())}}){SchoolIcon(tab.icon)}
+                                }else SchoolIcon(tab.icon)
+                            },
                             label = { Text(stringResource(tab.label), softWrap = true) },
                         )
                     }
@@ -117,7 +132,8 @@ fun SchoolShell(
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets).imePadding()) {
                 states.SaveableStateProvider(active.name) {
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                    val scroll=rememberScrollState()
+                    Column(Modifier.fillMaxSize().then(if(scrollContent)Modifier.verticalScroll(scroll) else Modifier).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         selectedScope?.let { Text(isolate(it.label), style = MaterialTheme.typography.bodySmall) }
                         content(active)

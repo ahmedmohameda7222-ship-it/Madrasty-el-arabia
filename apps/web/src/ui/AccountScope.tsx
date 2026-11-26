@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { chatDrafts } from "@/features/comms/chat-drafts";
 import { activateAttendanceDrafts } from "@/features/attendance/draft-store";
 import type { Locale, Persona } from "@madrasty/contracts";
 
@@ -20,6 +21,11 @@ export function AccountScope({ actor, locale, children }: { actor: AccountPartit
   const {accountId,sessionId,persona,expiresAt}=actor;
   const stable=useMemo(()=>({accountId,sessionId,persona,expiresAt}),[accountId,sessionId,persona,expiresAt]);
   useEffect(()=>{void activateAttendanceDrafts(stable,locale);},[stable,locale]);
+  useEffect(()=>{
+    const bind=()=>chatDrafts.activate(stable),clear=()=>chatDrafts.clear();
+    bind();window.addEventListener("pagehide",clear);window.addEventListener("pageshow",bind);
+    return ()=>{window.removeEventListener("pagehide",clear);window.removeEventListener("pageshow",bind);};
+  },[stable.accountId,stable.sessionId,stable.persona]);
   return (
     <Scope.Provider key={JSON.stringify([actor.accountId, actor.sessionId, actor.persona])} value={stable}>
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useRef,useState,type FormEvent,type PointerEvent } from "react";
+import { Fragment,useEffect,useRef,useState,type FormEvent,type PointerEvent } from "react";
 import {
   chatMessage,messageReaction,postMessageInput,reactionEmoji,threadReaderState,
   type ChatMessage,type Locale,type ThreadSummary,
@@ -12,7 +12,9 @@ import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { MediaComposer } from "./MediaComposer";
 import { Icon } from "@/ui/Icon";
+import { SharedChatMedia } from "./SharedChatMedia";
 import { projectReaction } from "./chat-state";
+import { chatDrafts } from "./chat-drafts";
 import { PrivateChatMedia,ReportMessage,reportCopy } from "./ReportQueue";
 
 const copy={
@@ -37,14 +39,19 @@ function merge(older:ChatMessage[],incoming:ChatMessage[]){
 }
 
 export function Conversation({locale,thread,changed}:{locale:Locale;thread:ThreadSummary;changed:()=>void}){
-  const {persona}=useAccountScope(),text=copy[locale],root=`/threads/${thread.id}` as const;
+  const actor=useAccountScope(),{persona}=actor,text=copy[locale],root=`/threads/${thread.id}` as const;
+  const [restored]=useState(()=>chatDrafts.read(actor,thread.id));
+  const consumedMediaTransfer=useRef(false);
+  useEffect(()=>{if(!consumedMediaTransfer.current&&restored?.openMedia){consumedMediaTransfer.current=true;const current=chatDrafts.read(actor,thread.id);if(current?.openMedia)chatDrafts.write(actor,thread.id,{...current,openMedia:false});}},[restored,actor,thread.id]);
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
   const messageArea=useRef<HTMLDivElement>(null);
   const followTail=useRef(true);
+  const [away,setAway]=useState(false);
+  function jumpToLatest(){const area=messageArea.current;if(!area)return;followTail.current=true;area.scrollTop=area.scrollHeight;setAway(false);}
   useEffect(()=>{
     const area=messageArea.current;if(!area)return;
-    const track=()=>{followTail.current=area.scrollHeight-area.scrollTop-area.clientHeight<80;};
-    const update=()=>{if(followTail.current&&!area.querySelector(".comms-message-actions[open]"))area.scrollTop=area.scrollHeight;};
+    const track=()=>{followTail.current=area.scrollHeight-area.scrollTop-area.clientHeight<80;setAway(!followTail.current);};
+    const update=()=>{if(followTail.current&&!area.querySelector(".comms-message-actions[open]"))area.scrollTop=area.scrollHeight;setAway(area.scrollHeight-area.scrollTop-area.clientHeight>=80);};
     area.addEventListener("scroll",track,{passive:true});
     const observer=new ResizeObserver(update);
     const timeline=area.querySelector(".comms-timeline");if(timeline)observer.observe(timeline);
@@ -52,20 +59,24 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     mutations.observe(area,{childList:true,subtree:true});
     return ()=>{area.removeEventListener("scroll",track);observer.disconnect();mutations.disconnect();};
   },[]);
-  const [body,setBody]=useState(""),[quote,setQuote]=useState<ChatMessage>();
+  const [body,setBody]=useState(restored?.body??""),[quote,setQuote]=useState<ChatMessage|undefined>(restored?.quote);
+  function editDraft(next:string,nextQuote:ChatMessage|undefined=quote){setBody(next);setQuote(nextQuote);chatDrafts.write(actor,thread.id,{body:next,quote:nextQuote});}
   const inputRef=useRef<HTMLTextAreaElement>(null);
   useEffect(()=>{const field=inputRef.current;if(!field)return;field.style.height="auto";field.style.height=`${Math.min(140,Math.max(44,field.scrollHeight))}px`;},[body]);
-  const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}>();
+  const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}|undefined>(restored?.retry?{payload:restored.retry,pending:false,failed:true}:undefined);
   const [ack,setAck]=useState<ChatMessage>(),[lost,setLost]=useState(false);
   const [attachment,setAttachment]=useState<string>(),[consumed,setConsumed]=useState<string>(),[preparing,setPreparing]=useState(false);
   const [archived,setArchived]=useState(thread.archived),[notice,setNotice]=useState("");
   const archiveBusy=useRef(false);
+  const [pinned,setPinned]=useState(thread.pinned),[muted,setMuted]=useState(thread.muted),[preferenceBusy,setPreferenceBusy]=useState(false);
+  useEffect(()=>{setPinned(thread.pinned);setMuted(thread.muted);},[thread.pinned,thread.muted]);
   const live=useRef(false),sending=useRef(false),confirmed=useRef<string|undefined>(undefined);
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   useEffect(()=>setArchived(thread.archived),[thread.archived]);
-  function deny(){setLost(true);setBody("");setQuote(undefined);setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
+  function deny(){chatDrafts.remove(actor,thread.id);setLost(true);setBody("");setQuote(undefined);setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
   function clearSent(payload:Proposed){
     confirmed.current=payload.clientMessageId;
+    chatDrafts.acknowledge(actor,thread.id,payload.clientMessageId);
     setAttempt(undefined);setBody("");setQuote(undefined);
     if(payload.attachmentIds?.[0]){
       setConsumed(payload.attachmentIds[0]);setAttachment(undefined);
@@ -81,16 +92,19 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     messageArea.current?.querySelectorAll<HTMLDetailsElement>(".comms-message-actions[open]").forEach((details)=>{details.open=false;});
     followTail.current=true;
     setAttempt({payload,pending:true,failed:false});
+    chatDrafts.write(actor,thread.id,{body,quote,requestId:payload.clientMessageId,retry:payload.attachmentIds?.length?undefined:payload});
     try{
       const result=await requestApi(`${root}/messages`,chatMessage,{
         method:"POST",headers:{...webHeaders(persona),"Idempotency-Key":payload.clientMessageId},body:JSON.stringify(payload),
       });
+      chatDrafts.acknowledge(actor,thread.id,payload.clientMessageId);
       if(!live.current)return;
       setAck(result.data);
       if(confirmed.current!==payload.clientMessageId){
         clearSent(payload);
       }
     }catch(problem){
+      if(unavailable(problem))chatDrafts.remove(actor,thread.id);
       if(!live.current||confirmed.current===payload.clientMessageId)return;
       if(unavailable(problem))deny();
       else {setAttempt({payload,pending:false,failed:true});if(problem instanceof ApiResponseError&&problem.status===409)changed();}
@@ -118,11 +132,24 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       else {setArchived(!next);setNotice(timetableError(locale,problem));}
     }finally{archiveBusy.current=false;}
   }
+  async function changePreference(key:"pinned"|"muted",next:boolean){
+    if(preferenceBusy||archiveBusy.current)return;
+    setPreferenceBusy(true);setNotice("");
+    try{
+      const state=await requestApi(`${root}/state`,threadReaderState,{method:"PATCH",headers:webHeaders(persona),body:JSON.stringify({[key]:next})});
+      setPinned(state.data.pinned);setMuted(state.data.muted);changed();
+    }catch(error){if(unavailable(error))deny();else setNotice(timetableError(locale,error));}
+    finally{setPreferenceBusy(false);}
+  }
   if(lost)return <AsyncSurface locale={locale} state={{kind:"forbidden"}}/>;
   return <section className="comms-conversation auth-form" aria-label={text.search}>
     <details className="comms-chat-options"><summary>{locale==="ar"?"خيارات المحادثة":"Chat-Optionen"}</summary>
     <div className="header-actions">
-      <button type="button" className="plain-button" onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
+      <button type="button" className="plain-button" onClick={changed}><Icon name="retry"/>{locale==="ar"?"تحديث":"Aktualisieren"}</button>
+      <button type="button" className="plain-button" disabled={preferenceBusy} aria-pressed={pinned} onClick={()=>void changePreference("pinned",!pinned)}><Icon name="pin"/>{pinned?(locale==="ar"?"إلغاء التثبيت":"Nicht mehr anheften"):(locale==="ar"?"تثبيت المحادثة":"Chat anheften")}</button>
+      <button type="button" className="plain-button" disabled={preferenceBusy} aria-pressed={muted} onClick={()=>void changePreference("muted",!muted)}><Icon name="mute"/>{muted?(locale==="ar"?"إلغاء الكتم":"Stummschaltung aufheben"):(locale==="ar"?"كتم المحادثة":"Chat stummschalten")}</button>
+      <button type="button" className="plain-button" disabled={preferenceBusy} onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
+      <SharedChatMedia locale={locale} thread={thread.id} denied={deny}/>
       {archived&&<p>{text.archived}</p>}{notice&&<p role="alert">{notice}</p>}
     </div>
     <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setTerm(query.trim());}}>
@@ -134,24 +161,25 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     </form>
     </details>
     <div className="comms-message-area" ref={messageArea}>
-    <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={(message)=>{if(!sending.current){setQuote(message);setAttempt(undefined);inputRef.current?.focus();}}} deny={deny}
+    <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={(message)=>{if(!sending.current){editDraft(body,message);setAttempt(undefined);inputRef.current?.focus();}}} deny={deny}
       recognize={recognize} updateArchive={setArchived} pauseFollow={()=>{followTail.current=false;}}/>
     {attempt&&<div className="comms-message comms-pending" data-own="true" role={attempt.failed?"alert":"status"}>
       <p dir="auto">{attempt.payload.body}</p>
       <small>{attempt.pending?text.sending:text.failed}</small>
     </div>}
     </div>
+    {away&&!term&&<button type="button" className="comms-tail-action" onClick={jumpToLatest}>{locale==="ar"?"أحدث الرسائل ↓":"Neueste Nachrichten ↓"}</button>}
     {thread.canReply?<form className="comms-composer auth-form" onSubmit={compose}>
       {quote&&<div className="notice">
         <span>{text.reply} · <bdi>{quote.authorName??text.school}</bdi></span>
         {quote.body&&<p dir="auto">{quote.body.slice(0,140)}</p>}
-        <button className="plain-button" type="button" disabled={attempt?.pending} onClick={()=>{setQuote(undefined);setAttempt(undefined);}}>{text.cancelReply}</button>
+        <button className="plain-button" type="button" disabled={attempt?.pending} onClick={()=>{setQuote(undefined);chatDrafts.write(actor,thread.id,{body});setAttempt(undefined);}}>{text.cancelReply}</button>
       </div>}
       <div className="comms-input-bar">
-        <MediaComposer locale={locale} persona={persona} thread={thread.id} locked={attempt?.pending===true} consumed={consumed}
+        <MediaComposer locale={locale} persona={persona} thread={thread.id} initialExpanded={restored?.openMedia===true} locked={attempt?.pending===true} consumed={consumed}
           onReady={setAttachment} onBusy={setPreparing}/>
         <label className="comms-input-field"><textarea ref={inputRef} aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={1} disabled={attempt?.pending}
-          onChange={(event)=>{setBody(event.target.value);setAttempt(undefined);}}/></label>
+          onChange={(event)=>{editDraft(event.target.value);setAttempt(undefined);}}/></label>
         <button className="comms-icon-button comms-send-button" type="submit" aria-label={attempt?.failed?text.retry:text.send} disabled={(!body.trim()&&!attachment)||preparing||attempt?.pending}>
           <Icon name={attempt?.failed?"retry":"sendUp"}/>
         </button>
@@ -168,6 +196,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
   const [paging,setPaging]=useState(false);
   const [optimistic,setOptimistic]=useState<Record<string,typeof reactionEmoji.options[number]|null>>({});
   const reactionBusy=useRef(new Set<string>());
+  const swipe=useRef<{pointerId:number;x:number;y:number}|null>(null);
   const press=useRef<{pointerId:number;x:number;y:number;timer:number}|null>(null);
   const [clipboardNotice,setClipboardNotice]=useState<{id:string;ok:boolean}>();
   function cancelPress(){
@@ -177,9 +206,10 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
   function beginPress(event:PointerEvent<HTMLParagraphElement>){
     if(!event.isPrimary||event.button!==0||(event.pointerType!=="touch"&&event.pointerType!=="pen"))return;
     cancelPress();
+    swipe.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY};
     const actions=event.currentTarget.closest(".comms-message")?.querySelector<HTMLDetailsElement>(".comms-message-actions");
     if(!actions)return;
-    const timer=window.setTimeout(()=>{if(actions.isConnected){pauseFollow();actions.open=true;}},500);
+    const timer=window.setTimeout(()=>{swipe.current=null;if(actions.isConnected){pauseFollow();actions.open=true;}},500);
     press.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY,timer};
   }
   function movePress(event:PointerEvent<HTMLParagraphElement>){
@@ -203,7 +233,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
   },[ack,term]);
   useEffect(()=>{
     const abort=new AbortController();
-    let working=false,failures=0,nextPoll=0;
+    let working=false,dirty=false,failures=0,nextPoll=0;
     async function poll(){
       if(working||abort.signal.aborted||document.hidden||!navigator.onLine)return;
       working=true;
@@ -243,16 +273,17 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
           if(unavailable(problem)){setRows(undefined);liveActions.current.deny();}
           else {failures++;nextPoll=Date.now()+Math.min(60000,5000*2**Math.min(failures,4));setFailure(timetableError(locale,problem));}
         }
-      }finally{working=false;}
+      }finally{working=false;if(dirty&&!abort.signal.aborted){dirty=false;void poll();}}
     }
+    const wake=()=>{if(working)dirty=true;else void poll();};
     const timer=window.setInterval(()=>{if(Date.now()>=nextPoll)void poll();},5000);
     window.addEventListener("online",poll);
-    window.addEventListener("focus",poll);
+    window.addEventListener("focus",poll);window.addEventListener("madrasty-communication-wake",wake);
     document.addEventListener("visibilitychange",poll);
     void poll();
     return ()=>{
       abort.abort();window.clearInterval(timer);window.removeEventListener("online",poll);
-      window.removeEventListener("focus",poll);document.removeEventListener("visibilitychange",poll);
+      window.removeEventListener("focus",poll);window.removeEventListener("madrasty-communication-wake",wake);document.removeEventListener("visibilitychange",poll);
     };
   },[path,persona,thread.id,term,initialAttempt]);
 
@@ -311,13 +342,13 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
     {cursor&&<button type="button" className="plain-button" onClick={()=>void older()} disabled={paging}>{text.older}</button>}
     {failure&&<p role="alert">{failure}</p>}
     {!rows.length&&<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
-    <ol className="comms-timeline">{rows.map((original)=>{const pending=Object.prototype.hasOwnProperty.call(optimistic,original.id);const message=pending?{...original,reactions:projectReaction(original.reactions,optimistic[original.id]??null)}:original;return <li key={message.id} id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
+    <ol className="comms-timeline">{rows.map((original,index)=>{const pending=Object.prototype.hasOwnProperty.call(optimistic,original.id);const message=pending?{...original,reactions:projectReaction(original.reactions,optimistic[original.id]??null)}:original;const date=new Date(message.createdAt);const newDay=index===0||new Date(rows[index-1]!.createdAt).toDateString()!==date.toDateString();return <Fragment key={message.id}>{newDay&&<li className="comms-day-divider">{date.toLocaleDateString(locale==="ar"?"ar":"de-DE",{day:"numeric",month:"long",year:"numeric"})}</li>}<li id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
       {!message.own&&<strong className="comms-message-author"><bdi>{message.authorName??text.school}</bdi></strong>}
       {message.reply&&<button type="button" className="plain-button" aria-label={text.target} onClick={()=>{
         if(message.reply)void jump(message.reply);
       }}><bdi>{message.reply.authorName??text.school}</bdi>{message.reply.preview&&<> · <bdi>{message.reply.preview}</bdi></>}</button>}
       {message.body&&<p dir="auto" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}
-        onPointerDown={beginPress} onPointerMove={movePress} onPointerUp={cancelPress} onPointerCancel={cancelPress} onPointerLeave={cancelPress}
+        onPointerDown={beginPress} onPointerMove={movePress} onPointerUp={event=>{const origin=swipe.current;swipe.current=null;cancelPress();if(origin?.pointerId===event.pointerId&&thread.canReply&&message.replyable){const dx=event.clientX-origin.x,dy=event.clientY-origin.y;if(Math.abs(dx)>=64&&Math.abs(dx)>Math.abs(dy)*1.5)reply(message);}}} onPointerCancel={()=>{swipe.current=null;cancelPress();}} onPointerLeave={()=>{swipe.current=null;cancelPress();}}
         onContextMenu={(event)=>{if(press.current)event.preventDefault();}}>{message.body}</p>}
       {message.attachments.map((file)=><PrivateChatMedia key={file.id} locale={locale} kind={file.kind}
         path={`/api/v1/threads/${thread.id}/media/${file.id}`}/>)}
@@ -341,6 +372,6 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
           onClick={()=>void react(message,emoji)}>{emoji}</button>)}</div>
       </details>}
       </details></div>
-    </li>})}</ol>
+    </li></Fragment>})}</ol>
   </>;
 }

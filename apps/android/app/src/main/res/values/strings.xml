@@ -270,6 +270,9 @@
     <string name="conversation_invoice">فاتورة</string>
     <string name="chat_search_thread">ابحث في المحادثة</string>
     <string name="chat_search_inbox">ابحث في الرسائل</string>
+    <string name="chat_latest">أحدث الرسائل</string>
+    <string name="comms_read_more">اقرأ المنشور بالكامل</string>
+    <string name="comms_read_less">عرض أقل</string>
     <string name="chat_older">رسائل أقدم</string>
     <string name="chat_body">رسالتك</string>
     <string name="chat_send">إرسال</string>
@@ -622,4 +625,21 @@
     <string name="finance_no_invoices_hint">هنا هتلاقي رسوم أطفالك ومدفوعاتك بعد إصدار الفواتير.</string>
     <string name="finance_fees_total">المطلوب</string>
     <string name="app_settings">إعدادات التطبيق</string>
+    <string name="comms_offices">مكاتب المدرسة</string>
+    <string name="chat_pin">تثبيت المحادثة</string>
+    <string name="chat_unpin">إلغاء التثبيت</string>
+    <string name="chat_mute">كتم المحادثة</string>
+    <string name="chat_unmute">إلغاء الكتم</string>
+    <string name="chat_pinned">مثبتة</string>
+    <string name="chat_muted">مكتومة</string>
+    <string name="chat_shared_media">الصور والرسائل الصوتية</string>
+    <string name="chat_shared_media_empty">مفيش مرفقات في المحادثة دي.</string>
+    <string name="comms_unread_badge">%1$d رسائل غير مقروءة</string>
+    <string name="chat_contact_information">بيانات جهة الاتصال</string>
+    <string name="chat_contact_view">عرض البيانات</string>
+    <string name="chat_contact_unavailable">مفيش بيانات إضافية متاحة.</string>
+    <string name="chat_contact_classes">الفصول المرتبطة</string>
+    <string name="chat_contact_email">البريد المهني</string>
+    <string name="chat_contact_phone">هاتف العمل</string>
+    <string name="chat_actions">خيارات المحادثة</string>
 </resources>

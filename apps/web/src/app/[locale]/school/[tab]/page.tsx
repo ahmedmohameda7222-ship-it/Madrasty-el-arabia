@@ -13,22 +13,28 @@ import { Children, Families } from "@/features/school/Families";
 import { InviteWorkspace } from "@/features/identity/Invitations";
 import { dictionary } from "@/i18n";
 import { CommunicationHub } from "@/features/comms/CommunicationHub";
+import { SchoolPublishing } from "@/features/comms/SchoolPublishing";
 import { SessionControls } from "@/features/identity/SessionControls";
 import { MoreGroup } from "@/ui/MoreGroup";
 
-const tabs = ["home", "students", "attendance", "children", "messages", "more"] as const;
+const tabs = ["home", "students", "attendance", "children", "messages", "calendar", "more"] as const;
 type Tab = typeof tabs[number];
 
 export default async function SchoolPage({ params, searchParams }: {
   params: Promise<{ locale: Locale; tab: string }>;
-  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; section?:string; batchId?:string; invite?:string }>;
+  searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; section?:string; month?:string; day?:string; classId?:string; view?:string; item?:string; add?:string; batchId?:string; invite?:string }>;
 }) {
   const [{ locale, tab }, search, session] = await Promise.all([presentationParams(params), searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
   if (!session) redirect(`/${locale}/account/sign-in?next=${encodeURIComponent(`/${locale}/school/${tab}`)}`);
 
   const specific = { admin: "students", teacher: "attendance", guardian: "children" } as const;
-  if (!["home", "messages", "more", specific[session.activePersona]].includes(tab)) notFound();
+  if (!["home", "messages", "calendar", "more", specific[session.activePersona]].includes(tab)) notFound();
+  if (tab==="messages" && search.section==="calendar" && !search.thread) {
+    const query=new URLSearchParams();
+    for (const key of ["month","day","classId","view","item","add"] as const) { const value=search[key]; if(typeof value==="string"&&value)query.set(key,value); }
+    redirect(`/${locale}/school/calendar${query.size?"?"+query:""}`);
+  }
   const text = dictionary(locale);
   const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
   const { capabilities, moderation, stopManager } = tab === "more"
@@ -42,8 +48,9 @@ export default async function SchoolPage({ params, searchParams }: {
   const welcome=tab==="home"?await schoolProfile(session).catch(()=>null):null;
   return (
     <>
-      {tab!=="messages"&&tab!=="students"&&<h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : text[tab as Tab]}</h1>}
+      {tab!=="messages"&&tab!=="students"&&<h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="calendar" ? (locale==="ar"?"التقويم":"Kalender") : text[tab as Exclude<Tab,"calendar">]}</h1>}
       {tab==="messages"&&<CommunicationHub locale={locale} thread={z.uuid().safeParse(search.thread).data} section={search.section}/>}
+      {tab==="calendar"&&<SchoolPublishing locale={locale} kind="event" embedded selected={z.uuid().safeParse(search.item).data} create={search.add==="1"}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
       {families && <><Families locale={locale} access={{financeIssue:familyAccess[0],financeRead:familyAccess[0]||familyAccess[1]||familyAccess[2],oversight:familyAccess[3]&&familyAccess[4],stops:familyAccess[5]}}/>
         {(search.batchId || search.invite) && <InviteWorkspace locale={locale} guardians={true}

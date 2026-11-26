@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { preferencesSchema, sessionSchema, type Locale, type SchoolSession, type Persona } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
 import { dictionary, localizedError } from "@/i18n";
+import { chatDrafts } from "@/features/comms/chat-drafts";
 import { discardAttendanceDrafts } from "@/features/attendance/draft-store";
 import { detachBrowserPush } from "@/features/comms/push-device";
 import { webHeaders } from "@/api/client-headers";
@@ -132,6 +133,7 @@ export function SessionControls({ locale, session }: { locale: Locale; session: 
       await requestApi("/auth/persona", sessionSchema, {
         method: "POST", headers: webHeaders(session.activePersona), body: JSON.stringify({ persona }),
       });
+      chatDrafts.clear();
       await Promise.allSettled([discardAttendanceDrafts(),detachBrowserPush(false)]);
       window.location.replace(`/${locale}/school/home`);
     } catch (cause) {
@@ -160,6 +162,7 @@ export function SessionControls({ locale, session }: { locale: Locale; session: 
     if (!window.confirm(text.unsent)) return;
     const secure = window.location.protocol === "https:";
     document.cookie = `${secure ? "__Host-" : ""}madrasty-locked=${allDevices ? "all" : "current"}; Path=/; SameSite=Strict; Max-Age=2592000${secure ? "; Secure" : ""}`;
+    chatDrafts.clear();
     setSigningOut(true);
     setRevocation(allDevices);
     void detachBrowserPush().catch(()=>undefined);

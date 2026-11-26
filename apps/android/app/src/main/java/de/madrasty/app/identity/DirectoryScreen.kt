@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -54,6 +56,7 @@ import de.madrasty.app.R
 import de.madrasty.app.api.WirePage
 import de.madrasty.app.api.decodeData
 import de.madrasty.app.comms.StartConversation
+import de.madrasty.app.academics.academicRead
 import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
 import de.madrasty.app.school.schoolCommand
@@ -67,7 +70,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 @Composable
-fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, close: () -> Unit) {
+fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, openMediaThread:(String,String)->Unit, close: () -> Unit) {
     var search by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var view by remember { mutableStateOf("mine") }
@@ -82,15 +85,16 @@ fun DirectoryScreen(model: IdentityViewModel, openThread: (String) -> Unit, clos
         onDispose { lifecycle.removeObserver(observe) }
     }
     LaunchedEffect(search) { delay(250); query = search.trim() }
+    val listScroll=rememberScrollState()
+    val current=draft
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().safeDrawingPadding().imePadding().then(if(current==null)Modifier.verticalScroll(listScroll) else Modifier).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = { if(draft!=null) draft=null else close() }) { Text(stringResource(R.string.back)) }
-        val current=draft
         if(current!=null) {
-            FirstContactMessage(model,current,language,openThread)
+            FirstContactMessage(model,current,language,openThread,openMediaThread){draft=null}
         } else {
+        TextButton(onClick=close){Text(stringResource(R.string.back))}
         Text(stringResource(R.string.comms_new_message), style = MaterialTheme.typography.headlineMedium)
         Field(R.string.directory_query, search) { search = it.take(120) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -113,6 +117,9 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
     LaunchedEffect(query,view,refresh,retry) {
         state = AsyncState.InitialLoading()
         state = loadAccountSurface({ retry++ }) { directoryPage(model,query,view,null) }
+    }
+    val offices=academicRead("/directory?role=office&limit=10&query=${Uri.encode(query)}",refresh){path->
+        decodeData(model.schoolRequest(path)){value->val rows=value as JSONArray;List(rows.length(),rows::getJSONObject)}.data
     }
     AsyncSurface(state) { page ->
         val people = page.data.filter { it.getJSONObject("target").getString("kind") == "person" }
@@ -156,6 +163,21 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
                 HorizontalDivider()
             }
         }
+        AsyncSurface(offices){rows->
+            val allowed=rows.filter{it.getJSONObject("target").getString("kind")=="office"}
+            if(allowed.isNotEmpty()){
+                Text(stringResource(R.string.comms_offices),style=MaterialTheme.typography.labelLarge)
+                for(row in allowed){
+                    ListItem(modifier=Modifier.fillMaxWidth().clickable(enabled=!opening){
+                        if(!opening){opening=true;failed=false;scope.launch{
+                            try{open(model.schoolCommand(attempts,"/threads","POST",JSONObject().put("target",row.getJSONObject("target"))).getString("threadId"))}
+                            catch(cancel:CancellationException){throw cancel}catch(_:Exception){failed=true}finally{opening=false}
+                        }}
+                    },leadingContent={ContactAvatar(row,language)},headlineContent={Text(isolate(title(row,language)))})
+                    HorizontalDivider()
+                }
+            }
+        }
         if(failed) Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
         page.nextCursor?.let { cursor ->
             Submit(true,R.string.staff_more) {
@@ -169,7 +191,7 @@ private fun DirectoryResults(model: IdentityViewModel, query: String, view: Stri
     }
 }
 @Composable
-private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit) {
+internal fun ColumnScope.FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:String,open:(String)->Unit,openMedia:(String,String)->Unit,close:()->Unit) {
     var body by remember(row.getString("id")) { mutableStateOf("") }
     var firstId by remember(row.getString("id")) { mutableStateOf(java.util.UUID.randomUUID().toString()) }
     var sending by remember { mutableStateOf(false) }
@@ -183,27 +205,32 @@ private fun FirstContactMessage(model:IdentityViewModel,row:JSONObject,language:
             try {
                 val payload=JSONObject().put("target",row.getJSONObject("target"))
                 if(!media)payload.put("firstMessage",JSONObject().put("clientMessageId",firstId).put("body",body.trim()))
-                open(model.schoolCommand(attempts,"/threads","POST",payload).getString("threadId"))
+                val thread=model.schoolCommand(attempts,"/threads","POST",payload).getString("threadId")
+                if(media)openMedia(thread,body) else open(thread)
             } catch(cancel:CancellationException){throw cancel}
               catch(_:Exception){failed=true}
               finally{sending=false}
         }
     }
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        IconButton(onClick=close,enabled=!sending,modifier=Modifier.size(48.dp)){
+            Icon(painterResource(R.drawable.ic_comms_back),contentDescription=stringResource(R.string.back))
+        }
         ContactAvatar(row,language)
         Column(Modifier.weight(1f)){
-            Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.titleLarge,maxLines=2,overflow=TextOverflow.Ellipsis)
-            Text(isolate(title(row,language)),style=MaterialTheme.typography.bodyMedium)
+            Text(isolate(row.optional("displayName")?:title(row,language)),style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+            Text(isolate(title(row,language)),style=MaterialTheme.typography.bodyMedium,maxLines=1,overflow=TextOverflow.Ellipsis)
         }
     }
+    Spacer(Modifier.weight(1f))
+    if(failed)Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        IconButton(enabled=!sending&&body.isBlank(),onClick={send(true)},modifier=Modifier.size(48.dp)){
+        IconButton(enabled=!sending,onClick={send(true)},modifier=Modifier.size(48.dp)){
             Icon(painterResource(R.drawable.ic_comms_add),contentDescription=stringResource(R.string.comms_first_media))
         }
         ChatInputField(body,!sending){body=it;firstId=java.util.UUID.randomUUID().toString();failed=false}
         ChatSendAction(!sending&&body.isNotBlank(),failed){send(false)}
     }
-    if(failed)Text(stringResource(R.string.comms_open_failed),color=MaterialTheme.colorScheme.error)
 }
 @Composable
 private fun ContactAvatar(row:JSONObject,language:String){

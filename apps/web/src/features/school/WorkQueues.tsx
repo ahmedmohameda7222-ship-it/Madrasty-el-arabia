@@ -56,12 +56,12 @@ function SchoolUpdates({locale,today,version}:{locale:Locale;today:string;versio
       {loading?<p className="admin-start-muted">{dictionary(locale).pending}</p>:null}
       {news.value?.error||events.value?.error?<p className="admin-start-muted">{t.unknown}</p>:null}
       {!loading&&!news.value?.error&&!events.value?.error&&!recent.length&&!upcoming.length?<p className="admin-start-muted">{t.noNews}</p>:null}
-      {[...recent,...upcoming].map(item=><Link key={item.id} className="admin-start-row" href={`${base}/${item.kind==="news"?"news":"events"}?item=${item.id}`}>
+      {[...recent,...upcoming].map(item=><Link key={item.id} className="admin-start-row" href={item.kind==="news"?`${base}/news?item=${item.id}`:`/${locale}/school/calendar?item=${item.id}&month=${item.timing.start.date.slice(0,7)}&day=${item.timing.start.date}`}>
         <span className="admin-start-icon"><Icon name={item.kind==="news"?"messages":"attendance"}/></span>
         <span><strong>{(item.copy[locale]??item.copy[item.sourceLocale])?.title}</strong><small>{item.kind==="event"?dateLabel(item.timing.start.date,locale):t.newsType}</small></span>
         <Icon name="chevron"/>
       </Link>)}
-      <div className="admin-start-links"><Link href={`${base}/news`}>{t.allNews}</Link><Link href={`${base}/events`}>{t.allEvents}</Link></div>
+      <div className="admin-start-links"><Link href={`${base}/news`}>{t.allNews}</Link><Link href={`/${locale}/school/calendar`}>{t.allEvents}</Link></div>
     </div>
   </section>;
 }
@@ -156,7 +156,7 @@ export function AdminWork({locale,initialDay,tasksOnly=false}:{locale:Locale;ini
       {overview&&(overview.students!=null||overview.mayIssue||overview.mayPublish)&&<section className="admin-start-section"><h2>{labels.quick}</h2>
         <div className="admin-start-actions">
           {overview.students!=null&&<Link href={`${base}/students?add=family`}><span><Icon name="students"/></span>{t.family}</Link>}
-          {overview.mayPublish&&<><Link href={`${base}/more/events?add=1`}><span><Icon name="attendance"/></span>{t.event}</Link><Link href={`${base}/more/broadcasts`}><span><Icon name="messages"/></span>{t.announce}</Link></>}
+          {overview.mayPublish&&<><Link href={`${base}/calendar?add=1`}><span><Icon name="attendance"/></span>{t.event}</Link><Link href={`${base}/more/broadcasts`}><span><Icon name="messages"/></span>{t.announce}</Link></>}
           {overview.mayIssue&&<Link href={`${base}/more/issue-invoices`}><span><Icon name="receipt"/></span>{t.invoice}</Link>}
         </div>
       </section>}

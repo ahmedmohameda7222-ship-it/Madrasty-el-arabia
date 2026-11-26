@@ -38,7 +38,7 @@ const records=schoolPublishingEntry.array();
 const calendarDays=communicationCalendarDay.array();
 const originalLocales=["ar","de"] as const;
 const endpoint=(kind:Kind)=>kind==="news"?"/news" as const:"/events" as const;
-const href=(locale:Locale,kind:Kind)=>`/${locale}/school/more${endpoint(kind)}`;
+const href=(locale:Locale,kind:Kind)=>kind==="event"?`/${locale}/school/calendar`:`/${locale}/school/more/news`;
 const intl=(locale:Locale)=>locale==="de"?"de-DE":"ar";
 const shortDate=(locale:Locale,day:string)=>new Intl.DateTimeFormat(intl(locale),{
   dateStyle:"medium",timeZone:"UTC",calendar:"gregory",
@@ -93,18 +93,17 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   if(kind==="event"){context.set("month",month);if(day)context.set("day",day);}
   if(classId)context.set("classId",classId);
   if(view==="managed")context.set("view",view);
-  const fromHub=embedded||params.get("from")==="hub";
+  const fromHub=kind==="news"&&params.get("from")==="hub";
   const returnParams=new URLSearchParams(context);
-  if(fromHub&&kind==="event")returnParams.set("section","calendar");
-  else if(fromHub)returnParams.set("from","hub");
-  const returnBase=fromHub&&kind==="event"?`/${locale}/school/messages`:base;
+  if(fromHub)returnParams.set("from","hub");
+  const returnBase=base;
   const returnHref=returnParams.size?`${returnBase}?${returnParams}`:returnBase;
   function detailHref(id:string){const next=new URLSearchParams(context);next.set("item",id);if(fromHub)next.set("from","hub");return `${base}?${next}`;}
   return <section className={`auth-card auth-form comms-publications${kind==="event"?" comms-calendar":""}`}>
     {!embedded&&<h1>{kind==="event"&&locale==="de"?"Kalender":text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
-      dismiss={()=>{setEditor(undefined);patch({view:"managed",create:undefined});setRefresh((value)=>value+1);}}/>}
-    {selected&&<><Link className="plain-button" href={returnHref}>{text.back}</Link>
+      dismiss={()=>{setEditor(undefined);patch({view:"managed",add:undefined,create:undefined});setRefresh((value)=>value+1);}}/>}
+    {selected&&<><Link className="plain-button" href={returnHref}>{kind==="event"?(locale==="ar"?"رجوع للتقويم":"Zurück zum Kalender"):text.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(record)=>editor==="edit"?
         <PublishingEditor locale={locale} kind={kind} options={options} record={record} dismiss={()=>{setEditor(undefined);setRefresh((value)=>value+1);}}/>:
         <>

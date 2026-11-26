@@ -39,7 +39,7 @@ for(const scene of [
       const shell=page.locator(".school-shell");
       const nav=page.locator(".school-nav > a");
       await expect(shell).toBeVisible({timeout:30000});
-      await expect(nav).toHaveCount(4);
+      await expect(nav).toHaveCount(5);
       const meta=await page.locator('meta[name="viewport"]').getAttribute("content");
       expect(meta).toContain("viewport-fit=cover");
       expect(meta).not.toMatch(/user-scalable=no|maximum-scale=1/);

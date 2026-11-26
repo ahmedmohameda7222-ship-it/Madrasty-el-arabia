@@ -270,6 +270,9 @@
     <string name="conversation_invoice">Rechnung</string>
     <string name="chat_search_thread">Unterhaltung durchsuchen</string>
     <string name="chat_search_inbox">Nachrichten durchsuchen</string>
+    <string name="chat_latest">Neueste Nachrichten</string>
+    <string name="comms_read_more">Ganzen Beitrag lesen</string>
+    <string name="comms_read_less">Weniger anzeigen</string>
     <string name="chat_older">Ältere Nachrichten</string>
     <string name="chat_body">Nachricht</string>
     <string name="chat_send">Senden</string>
@@ -622,4 +625,21 @@
     <string name="finance_no_invoices_hint">Hier erscheinen die Gebühren und Zahlungen Ihrer Kinder nach Ausstellung der Rechnungen.</string>
     <string name="finance_fees_total">Gebühren</string>
     <string name="app_settings">App-Einstellungen</string>
+    <string name="comms_offices">Schulbüros</string>
+    <string name="chat_pin">Chat anheften</string>
+    <string name="chat_unpin">Nicht mehr anheften</string>
+    <string name="chat_mute">Chat stummschalten</string>
+    <string name="chat_unmute">Stummschaltung aufheben</string>
+    <string name="chat_pinned">Angeheftet</string>
+    <string name="chat_muted">Stumm</string>
+    <string name="chat_shared_media">Geteilte Medien</string>
+    <string name="chat_shared_media_empty">Keine geteilten Medien in dieser Unterhaltung.</string>
+    <string name="comms_unread_badge">%1$d ungelesene Nachrichten</string>
+    <string name="chat_contact_information">Kontaktinformationen</string>
+    <string name="chat_contact_view">Kontakt ansehen</string>
+    <string name="chat_contact_unavailable">Keine weiteren Kontaktdaten verfügbar.</string>
+    <string name="chat_contact_classes">Zugehörige Klassen</string>
+    <string name="chat_contact_email">Dienstliche E-Mail</string>
+    <string name="chat_contact_phone">Dienstliche Telefonnummer</string>
+    <string name="chat_actions">Chat-Aktionen</string>
 </resources>

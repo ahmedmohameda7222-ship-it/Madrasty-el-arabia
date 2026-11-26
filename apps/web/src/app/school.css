@@ -142,6 +142,8 @@ button, a, [role="button"], .more-group summary { touch-action: manipulation; }
   padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
 }
 .school-nav[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.school-nav[data-columns="5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 390px) { .school-nav[data-columns="5"] a { font-size: .72rem; padding-inline: 1px; } }
 .school-nav a {
   display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px;
   min-block-size: 52px; padding: 4px; color: var(--muted); text-decoration: none;
@@ -682,3 +684,117 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .app-language-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .app-language-options button{min-block-size:44px;inline-size:100%;margin:0}
 .app-language-options button[aria-pressed=true]{color:var(--primary);border:1px solid currentColor;font-weight:700}
+
+/* Dedicated contact workspace: no redundant inbox title or card frame. */
+.comms-hub-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-inline-size:0; }
+.comms-hub-heading h1 { margin:0; }
+.comms-compose-action { text-decoration:none; }
+.comms-hub .inbox-panel { padding:0; border:0; background:transparent; box-shadow:none; gap:10px; }
+.comms-hub .inbox-search { position:relative; display:block; }
+.comms-hub .inbox-search input { inline-size:100%; padding-inline-start:42px; border:0; background:var(--inset); border-radius:14px; }
+.comms-hub .inbox-search > svg { position:absolute; inset-inline-start:12px; inset-block-start:50%; transform:translateY(-50%); pointer-events:none; color:var(--muted); inline-size:20px; block-size:20px; }
+.comms-hub .inbox-panel > .group-list { gap:0; }
+.comms-hub .inbox-panel .group-list > li { border:0; border-block-end:1px solid var(--rule); border-radius:0; background:transparent; padding:0; }
+.comms-hub .comms-thread-row { min-block-size:64px; padding:10px 0; }
+.comms-calendar { max-inline-size:58rem; }
+
+/* Conversation is a screen, not a form in a scrolling card. The account settings
+   trigger remains accessible without remounting its sheet or the active thread. */
+.school-shell[data-view="thread"] { position:relative; block-size:min(100dvh,var(--chat-viewport-height,100dvh)); }
+.school-shell[data-view="thread"] .school-content { display:flex; flex-direction:column; min-block-size:0; overflow:hidden; padding:0; }
+.comms-hub[data-chat-open="true"] { flex:1 1 0; min-block-size:0; display:flex; flex-direction:column; gap:0; background:var(--card); }
+.comms-hub[data-chat-open="true"] > .comms-icon-button { margin-inline:12px; }
+.comms-hub[data-chat-open="true"] .comms-thread-screen { flex:1 1 0; min-block-size:0; display:flex; flex-direction:column; gap:0; padding:0; margin:0; border:0; border-radius:0; box-shadow:none; }
+.comms-thread-screen > .comms-thread-toolbar { flex:none; grid-template-columns:44px 40px minmax(0,1fr); min-block-size:56px; padding:6px 12px; border-block-end:1px solid var(--rule); }
+.comms-thread-toolbar h2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.comms-thread-screen > p { margin:4px 12px; font-size:.875rem; color:var(--muted); }
+.comms-thread-screen > .comms-legacy-details { flex:none; margin:4px 12px; padding:0 10px; max-block-size:min(28dvh,200px); overflow:auto; }
+.comms-thread-screen .comms-conversation { display:flex; flex:1 1 0; min-block-size:0; margin:0; gap:0; }
+.comms-thread-screen .comms-chat-options { flex:none; padding-inline:12px; max-block-size:min(28dvh,200px); overflow:auto; }
+.comms-thread-screen .comms-chat-options>summary { min-block-size:44px; font-size:.875rem; justify-content:flex-end; }
+.comms-thread-screen .comms-message-area { flex:1 1 0; min-block-size:0; max-block-size:none; overflow:auto; padding:10px 12px; background:var(--canvas); }
+.comms-thread-screen .comms-composer { flex:none; position:relative; bottom:auto; margin:0; padding:8px 12px; padding-block-end:max(8px,env(safe-area-inset-bottom)); }
+.comms-thread-screen .comms-composer > .notice { max-block-size:min(18dvh,100px); overflow:auto; }
+.comms-thread-screen .comms-media[data-idle="false"] { max-block-size:min(28dvh,210px); overflow:auto; }
+@media(max-width:959px) {
+  .school-shell[data-view="thread"] > .school-header { position:absolute; inset-block-start:env(safe-area-inset-top); inset-inline-end:0; z-index:4; border:0; padding:6px 8px; }
+  .school-shell[data-view="thread"] > .school-header .brand,
+  .school-shell[data-view="thread"] > .school-header .notice-link,
+  .school-shell[data-view="thread"] .school-nav { display:none; }
+  .school-shell[data-view="thread"] > .school-header .app-settings-trigger { background:transparent; color:var(--primary); }
+  .comms-thread-screen > .comms-thread-toolbar { padding-inline-end:60px; grid-template-columns:44px 36px minmax(0,1fr); }
+}
+
+/* Directory is a contact picker; a first-message screen owns its own back action. */
+.school-content:has(.comms-directory[data-compose="true"]) > .more-back-link { display:none; }
+.comms-directory .comms-people-group .group-list { gap:0; }
+.comms-directory .comms-people-group .group-list>li { border:0; border-block-end:1px solid var(--rule); border-radius:0; background:transparent; padding:0; }
+.comms-directory .comms-person-row { min-block-size:64px; padding:10px 0; }
+
+/* Communication surfaces adapt to the platform without changing permissions or routes. */
+.comms-day-divider{align-self:center;list-style:none;padding:6px 12px;border-radius:20px;background:var(--inset);color:var(--muted);font-size:.75rem;font-weight:600;text-align:center;margin:8px 0}
+.comms-feed-card{border:0;border-block-end:1px solid var(--rule);border-radius:0;box-shadow:none;padding:14px 0;margin:0;background:transparent}
+.comms-feed-card>small{font-size:.78rem;color:var(--muted)}
+.comms-feed-card[data-kind="announcement"]>small{font-weight:700;color:var(--primary)}
+.comms-feed-card h3{margin:6px 0;font-size:1.04rem;line-height:1.4}
+.comms-feed-card p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+.comms-feed-card details>summary{cursor:pointer;min-block-size:44px;display:flex;align-items:center;color:var(--primary);font-weight:600}
+.school-shell[data-view="calendar"] .comms-calendar{padding:10px 0;background:transparent;border:0;box-shadow:none;margin:0}
+.comms-thread-screen .comms-conversation{position:relative}
+.comms-tail-action{flex:none;align-self:flex-end;margin:4px 12px;min-block-size:44px;background:var(--card);border:1px solid var(--rule);border-radius:24px;padding:8px 14px;color:var(--primary);font-weight:600}
+@media(max-width:959px){
+ .school-shell[data-platform="ios"][data-view="contact"] .comms-hub-heading h1{font-size:clamp(1.7rem,7vw,2.1rem);letter-spacing:-.025em}
+ .school-shell[data-platform="android"][data-view="contact"] .comms-hub-tabs{border:0;background:transparent;border-radius:0;border-block-end:1px solid var(--rule);padding:0;gap:0}
+ .school-shell[data-platform="android"][data-view="contact"] .comms-hub-tabs>a{background:transparent;color:var(--muted);border:0;border-radius:0;border-block-end:3px solid transparent;min-block-size:48px}
+ .school-shell[data-platform="android"][data-view="contact"] .comms-hub-tabs>a[aria-current="page"]{color:var(--primary);border-block-end-color:var(--primary);font-weight:700}
+ .school-shell[data-platform="android"][data-view="contact"] .comms-compose-action{min-inline-size:48px;min-block-size:48px;background:var(--primary);color:var(--on-primary);border-radius:16px}
+ .school-shell[data-platform="android"][data-view="contact"] .inbox-search input{border-radius:28px;min-block-size:48px}
+ .school-shell[data-platform="android"][data-view="thread"] .comms-icon-button{min-inline-size:48px;min-block-size:48px}
+}
+
+/* Scoped media history: opened on demand; no browser storage or public URLs. */
+.comms-gallery-sheet{max-inline-size:min(100%,560px);max-block-size:85dvh;overflow:auto;padding:16px}
+.comms-gallery-sheet .sheet-header{position:sticky;inset-block-start:0;background:var(--card);z-index:1;padding-block:6px 12px}
+.comms-gallery-sheet .sheet-header h2{font-size:1.1rem;margin:0}
+.comms-gallery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(136px,100%),1fr));gap:12px;list-style:none;padding:0;margin:0}
+.comms-gallery-item{min-inline-size:0;background:var(--inset);padding:10px;border-radius:12px;display:grid;align-content:start;gap:6px}
+.comms-gallery-item small{color:var(--muted);overflow-wrap:anywhere}
+.comms-gallery-item img{display:block;width:100%;aspect-ratio:1;object-fit:contain!important;background:var(--card);border-radius:8px}
+.comms-gallery-item audio{width:100%;min-width:0}
+
+/* Account-scoped unread chat badge, independent of school notices. */
+.chat-nav-icon{position:relative;display:inline-flex;flex-shrink:0;align-items:center;justify-content:center}
+.chat-nav-count{position:absolute;inset-block-start:-7px;inset-inline-end:-11px;min-width:17px;height:17px;padding-inline:4px;border-radius:20px;display:grid;place-items:center;background:#b42318;color:#fff;font-size:10px;font-weight:700;line-height:1;box-sizing:border-box;pointer-events:none}
+.chat-nav-screenreader{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+
+.chat-voice-preview{display:grid;gap:6px;min-width:0}.chat-voice-wave{height:40px;display:flex;align-items:center;gap:2px;overflow:hidden;padding:0 4px;color:var(--text-secondary,#64748b)}.chat-voice-wave span{flex:1;min-width:1px;max-width:5px;border-radius:4px;background:currentColor;opacity:.5}.chat-voice-wave span[data-played=true]{color:var(--accent,#2563eb);opacity:1}.chat-voice-time{font-size:.75rem;font-variant-numeric:tabular-nums}
+
+.comms-inbox-searchbar{display:flex;align-items:center;gap:6px;min-inline-size:0}.comms-inbox-searchbar .inbox-search{flex:1;min-inline-size:0;margin:0}.comms-inbox-searchbar>.comms-icon-button{flex:none}.comms-row-main{display:flex;align-items:center;gap:2px;min-inline-size:0}.comms-row-main>.comms-thread-row{flex:1;min-inline-size:0}.comms-row-menu{flex:none;color:var(--muted);background:transparent}.comms-row-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;padding-block:4px 8px}.comms-row-actions>button{min-block-size:44px;font-size:.82rem}.comms-swipe-row[data-current=true]{background:var(--inset)!important}.comms-split,.comms-split-thread{display:flex;flex:1 1 0;flex-direction:column;min-block-size:0;min-inline-size:0}
+@media(min-width:1024px){.comms-split[data-wide=true]{display:grid;grid-template-columns:minmax(245px,35%) minmax(0,1fr);overflow:hidden}.comms-split-sidebar{overflow:auto;min-block-size:0;min-inline-size:0;border-inline-end:1px solid var(--rule);padding:12px;overscroll-behavior:contain}.comms-split-sidebar .comms-hub-heading h2{margin:0;font-size:1.15rem}.comms-split-sidebar .inbox-panel{margin-block-start:12px}.comms-split-thread{overflow:hidden}}
+
+.comms-message>p{touch-action:pan-y}
+
+.comms-contact-title{min-inline-size:0}.comms-contact-trigger{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:start;border:0;background:transparent;color:inherit;padding:0;min-block-size:44px;max-inline-size:100%;font:inherit;cursor:pointer}.comms-contact-trigger bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-inline-size:100%}.comms-contact-trigger span{font-size:.72rem;color:var(--primary);font-weight:500}.comms-contact-sheet{max-inline-size:min(100%,480px)}.comms-contact-sheet .comms-contact-identity{display:grid;justify-items:center;gap:8px;text-align:center;padding:16px}.comms-contact-sheet .comms-avatar{inline-size:72px;block-size:72px;font-size:1.75rem}.comms-contact-sheet p{overflow-wrap:anywhere}.comms-contact-sheet h2{display:block}
+
+/* First-message compose shares the conversation viewport without opening an empty thread. */
+.school-content:has(> .comms-directory[data-compose="true"]) {display:flex;flex-direction:column;min-block-size:0;overflow:hidden;padding:0}
+.comms-directory[data-compose="true"] {display:flex;flex-direction:column;flex:1 1 0;min-block-size:0;inline-size:100%;max-inline-size:none;margin:0;gap:0;background:var(--canvas)}
+.comms-first-contact-toolbar {display:flex;flex:none;align-items:center;gap:8px;min-block-size:56px;padding:6px 12px;border-block-end:1px solid var(--rule);background:var(--card)}
+.comms-first-contact-toolbar .comms-first-contact {flex:1;min-inline-size:0}
+.comms-first-contact-toolbar .comms-avatar {flex:none;inline-size:40px;block-size:40px}
+.comms-first-contact-toolbar h1 {font-size:1rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.comms-first-contact-toolbar p {font-size:.8rem;margin-block-start:2px}
+.comms-directory[data-compose="true"] .comms-composer {position:relative;bottom:auto;flex:none;margin: auto 0 0;padding:8px 12px;padding-block-end:max(8px,env(safe-area-inset-bottom))}
+.comms-first-error {margin:0;max-block-size:18dvh;overflow:auto}
+@media(max-width:959px){
+ .school-shell:has(.comms-directory[data-compose="true"]) {position:relative;block-size:min(100dvh,var(--chat-viewport-height,100dvh))}
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header {position:absolute;inset-block-start:env(safe-area-inset-top);inset-inline-end:0;z-index:4;border:0;padding:6px 8px}
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header .brand,
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header .notice-link,
+ .school-shell:has(.comms-directory[data-compose="true"]) .school-nav {display:none}
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header .app-settings-trigger {background:transparent;color:var(--primary)}
+ .comms-first-contact-toolbar {padding-inline-end:60px}
+ .comms-first-contact-toolbar .comms-avatar {inline-size:36px;block-size:36px}
+ .school-shell[data-platform="android"] .comms-directory[data-compose="true"] .comms-icon-button {min-inline-size:48px;min-block-size:48px}
+ .school-shell[data-platform="android"] .comms-directory[data-compose="true"] .comms-input-bar {grid-template-columns:48px minmax(0,1fr) 48px}
+}

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { directoryTargetSchema } from "../account";
+import { directoryEntrySchema,directoryTargetSchema } from "../account";
 import { inboxSchema } from "../capabilities";
 import { pageQuerySchema,revisionSchema } from "../http";
 import { messageSource,sequenceSchema } from "./messages";
@@ -22,10 +22,12 @@ export const threadSummary=z.object({
   caseStatus:caseStatus.nullable(),caseRevision:revisionSchema.nullable(),createdAt:z.iso.datetime(),
   canReply:z.boolean(),canManageCase:z.boolean(),
   activityAt:z.iso.datetime(),lastMessageAt:z.iso.datetime().nullable(),latestPreview:z.string().nullable(),latestSource:messageSource.nullable(),
-  unread:z.int().nonnegative(),archived:z.boolean(),readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,
+  unread:z.int().nonnegative(),archived:z.boolean(),pinned:z.boolean(),muted:z.boolean(),readThroughSeq:sequenceSchema,lastSequence:sequenceSchema,
 });
 export const threadReferenceView=threadReference.extend({childId:id.nullable()});
-export const threadDetail=threadSummary.extend({references:threadReferenceView.array()});
+export const threadContact=directoryEntrySchema.pick({displayName:true,titleAr:true,titleDe:true,workEmail:true,workPhone:true,contexts:true});
+export const threadDetail=threadSummary.extend({references:threadReferenceView.array(),contact:threadContact.nullable().optional()});
+export type ThreadContact=z.infer<typeof threadContact>;
 export const officeCaseInput=z.object({
   assigneeId:id.nullable().optional(),status:caseStatus.optional(),revision:revisionSchema,
 }).refine((value)=>value.assigneeId!==undefined||value.status!==undefined,{path:["status"],message:"error.validation"});

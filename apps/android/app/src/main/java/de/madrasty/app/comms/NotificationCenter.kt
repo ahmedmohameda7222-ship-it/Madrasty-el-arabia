@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,7 +89,8 @@ internal fun NotificationAction(model:IdentityViewModel,open:()->Unit){
     val actor=model.session?.actor
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     var count by remember(actor){mutableIntStateOf(0)}
-    LaunchedEffect(actor,model.attendanceNetworkRevision){
+    val push by schoolPushRevision.collectAsState()
+    LaunchedEffect(actor,model.attendanceNetworkRevision,push){
         if(actor==null)return@LaunchedEffect
         while(true){
             if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)){
@@ -106,6 +108,27 @@ internal fun NotificationAction(model:IdentityViewModel,open:()->Unit){
             Icon(painterResource(R.drawable.ic_bell),contentDescription=label)
         }
     }
+}
+
+@Composable
+internal fun ChatUnreadCount(model:IdentityViewModel):Int{
+    val actor=model.session?.actor
+    val lifecycle=LocalLifecycleOwner.current.lifecycle
+    var count by remember(actor){mutableIntStateOf(0)}
+    val push by schoolPushRevision.collectAsState()
+    LaunchedEffect(actor,model.attendanceNetworkRevision,push){
+        if(actor==null)return@LaunchedEffect
+        while(true){
+            if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)){
+                try{count=model.noticeObject("/threads/count").getInt("unread")}
+                catch(cancelled:CancellationException){throw cancelled}
+                catch(problem:HttpFailure){if(problem.status in listOf(401,403))count=0}
+                catch(_:Exception){ /* Retain the last authorized value while offline. */ }
+            }
+            delay(12000)
+        }
+    }
+    return count
 }
 
 @Composable
