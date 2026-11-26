@@ -32,3 +32,5 @@ Long names and mixed direction text; deep-link/back restoration; keyboard and ne
 
 ## Progress
 Baseline main e7d820c0392f5cd19ad501c91f3b3a43ab6ec713. Existing prior communication and language CI evidence; no current-branch results yet. Remote isolated branch used because no local checkout is attached. Designer preflight connector unavailable; do not claim independent visual review until actual artifacts inspected.
+
+2026-11-26 checkpoint: implemented initial web inbox simplification and standalone calendar routing on web/Compose at a7a1b7f; web build passed, remaining CI pending. Updated obsolete search-button regression to verify debounced API/query behavior. Chat viewport regression added before dedicated layout change. No task marked complete until exact-head CI.

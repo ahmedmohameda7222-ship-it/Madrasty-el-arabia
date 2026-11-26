@@ -48,6 +48,17 @@ test("direct chat presents sent and received bubbles and compact actions", async
     expect(layout.gap,"timestamp and actions share the same compact row").toBeLessThanOrEqual(8);
     expect(layout.target).toBeGreaterThanOrEqual(44);
     await expect(page.locator(".comms-composer textarea")).toBeVisible();
+    await expect(page.locator(".school-nav")).toBeHidden();
+    await expect(page.locator(".school-header").getByRole("button",{name:"App-Einstellungen"})).toBeVisible();
+    const area=page.locator(".comms-message-area");
+    const composer=page.locator(".comms-composer");
+    expect((await area.boundingBox())!.height,"timeline uses remaining screen").toBeGreaterThan(460);
+    for(const height of [844,480]){
+      await page.setViewportSize({width:390,height});
+      await expect.poll(async()=>{const a=await area.boundingBox(),c=await composer.boundingBox();return !!a&&!!c&&a.height>=80&&c.y+c.height<=height+1;}).toBe(true);
+      expect(await page.locator(".school-content").evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);
+    }
+    await page.setViewportSize({width:390,height:844});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-chat-de-390.png",animations:"disabled"});
