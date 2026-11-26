@@ -70,6 +70,12 @@ test("direct chat presents sent and received bubbles and compact actions", async
     await expect(composer.locator("textarea")).toHaveValue("QA gallery retains draft");
     await composer.locator("textarea").fill("");
     await page.locator(".comms-chat-options > summary").click();
+    await page.setViewportSize({width:1280,height:840});
+    await expect(page.locator(".comms-split-sidebar")).toBeVisible();
+    await expect(page.locator(".comms-split-sidebar .comms-thread-row[aria-current=page]")).toBeVisible();
+    await expect(composer.locator("textarea")).toBeVisible();
+    await page.setViewportSize({width:390,height:844});
+    await expect(page.locator(".comms-split-sidebar")).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-chat-de-390.png",animations:"disabled"});

@@ -29,6 +29,9 @@ for(const scenario of [
       await input.fill("");
       expect((await cleared).ok()).toBe(true);
       await expect.poll(()=>new URL(page.url()).searchParams.has("q")).toBe(false);
+      const refresh=page.waitForResponse(r=>r.url().includes("/api/v1/threads?")&&r.request().method()==="GET");
+      await page.getByRole("button",{name:scenario.locale==="ar"?"تحديث":"Aktualisieren",exact:true}).click();
+      expect((await refresh).ok()).toBe(true);
       const filters=page.locator(".inbox-filter-strip");
       await expect(filters).toBeVisible();
       await expect(filters.locator('button[aria-pressed="true"]')).toHaveCount(1);

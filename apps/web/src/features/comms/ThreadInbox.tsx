@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect,useState,type FormEvent } from "react";
+import { useEffect,useRef,useState,type FormEvent,type TouchEvent } from "react";
 import {
-  caseStatus,officeCase,officeCaseInput,threadDetail,threadSummary,type Locale,type ThreadReferenceView,type ThreadSummary,
+  caseStatus,officeCase,officeCaseInput,threadDetail,threadSummary,threadReaderState,type Locale,type ThreadReferenceView,type ThreadSummary,
 } from "@madrasty/contracts";
-import { ApiResponseError } from "@/api/client";
+import { ApiResponseError,requestApi } from "@/api/client";
+import { webHeaders } from "@/features/identity/SessionControls";
+import { useAccountScope } from "@/ui/AccountScope";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary } from "@/i18n";
 import { AcademicPageItems,useAcademicPage } from "@/features/academics/shared";
@@ -36,28 +38,33 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   const routeParams=useSearchParams();
   const {filter:selected,search:term,archived}=readInboxContext(routeParams,filters);
   const [version,setVersion]=useState(0);
+  const [wide,setWide]=useState(false);
+  useEffect(()=>{const media=window.matchMedia("(min-width:1024px)"),sync=()=>setWide(media.matches);sync();media.addEventListener("change",sync);return()=>media.removeEventListener("change",sync);},[]);
+  const pull=useRef<{x:number;y:number}|null>(null);
+  function pullStart(event:TouchEvent<HTMLElement>){const area=event.currentTarget.closest(".comms-split-sidebar")??event.currentTarget.closest(".school-content");const point=event.touches[0];pull.current=point&&event.touches.length===1&&(!area||area.scrollTop<=0)?{x:point.clientX,y:point.clientY}:null;}
+  function pullEnd(event:TouchEvent<HTMLElement>){const start=pull.current,point=event.changedTouches[0];pull.current=null;if(start&&point&&point.clientY-start.y>80&&Math.abs(point.clientX-start.x)<45)reload();}
   const [search,setSearch]=useState(term);
   useEffect(()=>setSearch(term),[term]);
   useEffect(()=>{
-    if(thread||search.trim()===term)return;
+    if((thread&&!wide)||search.trim()===term)return;
     const timer=window.setTimeout(()=>{
       const url=new URL(window.location.href);
       url.search=writeInboxContext(url.searchParams,{search:search.trim()}).toString();
       window.history.replaceState(null,"",url);
     },250);
     return ()=>window.clearTimeout(timer);
-  },[search,term,thread]);
+  },[search,term,thread,wide]);
   const reload=()=>setVersion((n)=>n+1);
   useEffect(()=>{
     const focus=()=>{if(!document.hidden&&navigator.onLine)setVersion((n)=>n+1);};
-    const timer=thread?undefined:window.setInterval(focus,15000);
+    const timer=thread&&!wide?undefined:window.setInterval(focus,15000);
     document.addEventListener("visibilitychange",focus);
     window.addEventListener("focus",focus);
     window.addEventListener("online",focus);
     return ()=>{if(timer!==undefined)window.clearInterval(timer);document.removeEventListener("visibilitychange",focus);window.removeEventListener("focus",focus);window.removeEventListener("online",focus);};
-  },[thread]);
+  },[thread,wide]);
   const query=selected==="unread"?"&unread=true":"";
-  const list=useAcademicPage(thread?null:`/threads?limit=30&includeEmpty=false${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version);
+  const list=useAcademicPage(thread&&!wide?null:`/threads?limit=30&includeEmpty=false${query}&archived=${archived}${term?`&q=${encodeURIComponent(term)}`:""}`,options,version);
   const detail=useTimetableRead(thread?`/threads/${thread}`:null,threadDetail,version);
   const root=`/${locale}/school/messages`;
   const backParams=withInboxThread(routeParams).toString();
@@ -67,7 +74,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     url.search=writeInboxContext(url.searchParams,changes).toString();
     window.history.replaceState(null,"",url);
   };
-  if(thread)return <>
+  const screen=thread?<>
     {!detail.value?.data&&<Link className="comms-icon-button" href={backHref} aria-label={text.back}><Icon name="back"/></Link>}
     <TimetableRead locale={locale} result={detail}>{(value)=><section className="auth-card auth-form comms-thread-screen">
       <header className="comms-thread-toolbar">
@@ -85,24 +92,40 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
       </details>}
       <Conversation key={value.id} locale={locale} thread={value} changed={reload}/>
     </section>}</TimetableRead>
-  </>;
-  return <section className="auth-card auth-form inbox-panel">
-    <form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();patch({search});}}>
+  </>:null;
+  const inbox=<section className="auth-card auth-form inbox-panel" onTouchStart={pullStart} onTouchEnd={pullEnd} onTouchCancel={()=>{pull.current=null;}}>
+    <div className="comms-inbox-searchbar"><form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();patch({search});}}>
       <Icon name="search"/>
       <input aria-label={text.search} placeholder={locale==="ar"?"ابحث عن محادثة":"Chats suchen"} type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/>
-    </form>
+    </form><button type="button" className="comms-icon-button" aria-label={text.refresh} onClick={reload}><Icon name="retry"/></button></div>
     <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>
       {filters.map(filter=><button className="plain-button" type="button" key={filter} aria-pressed={!archived&&selected===filter} onClick={()=>patch({filter,archived:false})}>{filter==="unread"?(locale==="ar"?"غير مقروءة":"Ungelesen"):text.all}</button>)}
       <button className="plain-button" type="button" aria-pressed={archived} onClick={()=>patch({archived:!archived,filter:"all"})}>{text.archived}</button>
     </div>
-    <AcademicPageItems locale={locale} page={list} emptyMessage={term ? undefined : archived ? (locale==="ar"?"مفيش محادثات في الأرشيف.":"Keine archivierten Unterhaltungen.") : (locale==="ar"?"مفيش محادثات هنا. افتح دليل التواصل لبدء محادثة.":"Keine Unterhaltungen hier. Öffnen Sie das Kontaktverzeichnis, um eine zu beginnen.")}>{(rows)=><ul className="group-list">{rows.map((item)=><li key={item.id}>
-      <Link className="comms-person-row comms-thread-row" href={`${root}?${withInboxThread(routeParams,item.id).toString()}`}>
+    <AcademicPageItems locale={locale} page={list} emptyMessage={term ? undefined : archived ? (locale==="ar"?"مفيش محادثات في الأرشيف.":"Keine archivierten Unterhaltungen.") : (locale==="ar"?"مفيش محادثات هنا. افتح دليل التواصل لبدء محادثة.":"Keine Unterhaltungen hier. Öffnen Sie das Kontaktverzeichnis, um eine zu beginnen.")}>{(rows)=><ul className="group-list">{rows.map(item=><ThreadRow key={item.id} locale={locale} item={item} current={thread===item.id} href={`${root}?${withInboxThread(routeParams,item.id).toString()}`} changed={reload}/>)}</ul>}</AcademicPageItems>
+  </section>;
+  return thread?<div className="comms-split" data-wide={wide}>{wide&&<aside className="comms-split-sidebar"><div className="comms-hub-heading"><h2>{locale==="ar"?"المحادثات":"Chats"}</h2><Link className="comms-icon-button" href={`/${locale}/directory`} aria-label={text.directory}><Icon name="compose"/></Link></div>{inbox}</aside>}<div className="comms-split-thread">{screen}</div></div>:inbox;
+}
+function ThreadRow({locale,item,current,href,changed}:{locale:Locale;item:ThreadSummary;current:boolean;href:string;changed:()=>void}){
+  const text=copy[locale],actor=useAccountScope(),ar=locale==="ar";
+  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
+  const origin=useRef<{x:number;y:number}|null>(null),swiped=useRef(0);
+  function start(event:TouchEvent){const point=event.touches[0];origin.current=point&&event.touches.length===1?{x:point.clientX,y:point.clientY}:null;}
+  function end(event:TouchEvent){const point=event.changedTouches[0],from=origin.current;origin.current=null;if(!point||!from)return;const x=point.clientX-from.x,y=point.clientY-from.y;if(Math.abs(x)>64&&Math.abs(x)>2*Math.abs(y)){swiped.current=Date.now();setOpen(true);}}
+  async function change(field:"pinned"|"archived"|"muted",next:boolean){if(busy)return;setBusy(true);setError("");try{await requestApi(`/threads/${item.id}/state`,threadReaderState,{method:"PATCH",headers:webHeaders(actor.persona),body:JSON.stringify({[field]:next})});setOpen(false);changed();window.dispatchEvent(new Event("madrasty-notices-changed"));}catch(problem){setError(timetableError(locale,problem));if(problem instanceof ApiResponseError&&[401,403,404].includes(problem.status))changed();}finally{setBusy(false);}}
+  return <li className="comms-swipe-row" data-current={current} onTouchStart={start} onTouchEnd={end} onTouchCancel={()=>{origin.current=null;}}>
+    <div className="comms-row-main"><Link className="comms-person-row comms-thread-row" href={href} aria-current={current?"page":undefined} onClick={event=>{if(Date.now()-swiped.current<650){event.preventDefault();swiped.current=0;}}}>
         <span className="comms-avatar" aria-hidden="true">{title(locale,item).trim().slice(0,1).toUpperCase()}</span>
         <span className="comms-thread-copy"><strong><bdi>{title(locale,item)}</bdi></strong><small dir="auto">{item.latestPreview??(locale==="ar"?"محادثة":"Unterhaltung")}</small></span>
         <span className="comms-thread-meta">{(item.pinned||item.muted)&&<span className="comms-thread-indicators">{item.pinned&&<span role="img" aria-label={locale==="ar"?"مثبتة":"Angeheftet"}><Icon name="pin"/></span>}{item.muted&&<span role="img" aria-label={locale==="ar"?"مكتومة":"Stumm"}><Icon name="mute"/></span>}</span>}<small>{new Date(item.activityAt).toLocaleDateString(locale==="ar"?"ar":"de-DE",{day:"numeric",month:"short"})}</small>{item.unread>0&&<span className="notice-count" aria-label={text.unread}>{new Intl.NumberFormat(locale).format(item.unread)}</span>}</span>
-      </Link>
-    </li>)}</ul>}</AcademicPageItems>
-  </section>;
+
+    </Link><button type="button" className="comms-icon-button comms-row-menu" aria-label={ar?"خيارات المحادثة":"Chat-Aktionen"} aria-expanded={open} onClick={()=>setOpen(value=>!value)}><Icon name="more"/></button></div>
+    {open&&<div className="comms-row-actions" role="group" aria-label={ar?"خيارات المحادثة":"Chat-Aktionen"}>
+      <button type="button" className="plain-button" disabled={busy} onClick={()=>void change("pinned",!item.pinned)}>{item.pinned?(ar?"إلغاء التثبيت":"Nicht mehr anheften"):(ar?"تثبيت":"Anheften")}</button>
+      <button type="button" className="plain-button" disabled={busy} onClick={()=>void change("muted",!item.muted)}>{item.muted?(ar?"إلغاء الكتم":"Ton einschalten"):(ar?"كتم":"Stumm")}</button>
+      <button type="button" className="plain-button" disabled={busy} onClick={()=>void change("archived",!item.archived)}>{item.archived?(ar?"إرجاع":"Zurückholen"):(ar?"أرشفة":"Archivieren")}</button>
+    </div>}{error&&<p role="alert">{error}</p>}
+  </li>;
 }
 
 function ReferenceLink({locale,reference}:{locale:Locale;reference:ThreadReferenceView}){
