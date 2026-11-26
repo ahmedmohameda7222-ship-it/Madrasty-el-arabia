@@ -78,3 +78,12 @@ test("combined payment picker supports stable same-payer invoice scope on both c
   assert.match(native,/&payerInvoice=/);
   assert.match(native,/payerAnchor = payerAnchor/);
 });
+
+test("cashbook corrections are explicit, permission-gated and use an append-only command",()=>{
+  const web=source("Cashbook.tsx");
+  assert.match(web,/data\.canPost&&entry\.canReverse/);
+  assert.match(web,/\/finance\/cashbook\/reversals/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FinanceExtras.kt",import.meta.url),"utf8");
+  assert.match(native,/entry\.optBoolean\("canReverse"\)/);
+  assert.match(native,/\/finance\/cashbook\/reversals/);
+});
