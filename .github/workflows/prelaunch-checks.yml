@@ -49,7 +49,7 @@ jobs:
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
       - name: Prepare disposable synthetic database
-        run: pwsh -NoProfile -File qa/start-stack.ps1
+        run: pwsh -NoProfile -File qa/start-stack.ps1 || (sleep 5; pwsh -NoProfile -File qa/start-stack.ps1)
       - name: Check first-run setup, queues and protected finance records
         shell: bash
         run: |

@@ -111,11 +111,14 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await expect(page.getByText(teacherName)).toBeVisible();
     // Wait for the account-creation refresh before leaving the workspace.
     await expect(page.getByRole("button",{name:"Lehrkraft hinzufügen",exact:true})).toBeEnabled();
-    await page.waitForLoadState("networkidle");
-    await page.goto(`/de/school/more/classes?year=${year.id}&class=${classroom.id}`);
-    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
-    await expect(page.getByText(teacherName)).toBeVisible();
-    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toBeEnabled();
+    // Use a separate tab for the persisted-state check so the source page refresh cannot interrupt navigation.
+    const classPage=await context.newPage();
+    try {
+      await classPage.goto(`/de/school/more/classes?year=${year.id}&class=${classroom.id}`);
+      await expect(classPage.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
+      await expect(classPage.getByText(teacherName)).toBeVisible();
+      await expect(classPage.getByRole("button",{name:"Lehrkraft zuweisen"})).toBeEnabled();
+    }finally{await classPage.close();}
   }finally{await school.close();}
 });
 

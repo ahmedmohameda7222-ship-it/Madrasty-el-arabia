@@ -11,7 +11,11 @@ for(const locale of ["de","ar"] as const)for(const width of [320,390,430])for(co
    const {payload}=await fixtureApi(school,"/school/families",{token,persona:"admin",method:"POST",status:201,key:crypto.randomUUID(),body:{displayName:name,situation:"separated",guardians:[{displayName:"QA Parent",contactEmail:null,contactPhone:null,correspondenceLocale:locale}],children:[{displayName:"QA Child",guardianLinks:[{guardianIndex:0,relationship:"mother",approved:true}]}]}});
    await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},{name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"}]);await page.setViewportSize({width,height:844});await page.emulateMedia({colorScheme});
    await page.goto(`/${locale}/school/students?view=guardians`);
+   // The initial API-backed list proves hydration is complete before typing into the controlled input.
+   await expect(page.getByText(name,{exact:true})).toBeVisible({timeout:30000});
+   const searchResponse=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname.endsWith("/school/families")&&url.searchParams.get("query")===name&&response.ok();});
    await page.getByRole("searchbox").fill(name);
+   await searchResponse;
    await expect(page.locator(".family-directory-list .family-list li")).toHaveCount(1);await expect(page.getByText(name,{exact:true})).toBeVisible();
    mkdirSync("qa-artifacts/family",{recursive:true});const prefix=`qa-artifacts/family/${locale}-${width}-${colorScheme}`;
    const noOverflow=async()=>expect(await page.locator(".family-workspace").evaluate(el=>el.scrollWidth<=el.clientWidth+2)).toBeTruthy();
