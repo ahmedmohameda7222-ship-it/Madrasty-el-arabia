@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
 import de.madrasty.app.identity.IdentityViewModel
+import de.madrasty.app.SchoolLocaleProvider
 import de.madrasty.app.ui.SchoolTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -37,6 +38,38 @@ class FamilyVisualTest {
     @Test fun germanDark()=capture("de",true)
     @Test fun arabicLight()=capture("ar",false)
     @Test fun arabicDark()=capture("ar",true)
+    @Test fun languageChangePreservesWizard(){
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val app=instrumentation.targetContext.applicationContext as Application
+        val store=ViewModelStore()
+        lateinit var model:IdentityViewModel
+        instrumentation.runOnMainSync{model=ViewModelProvider(store,ViewModelProvider.AndroidViewModelFactory.getInstance(app))[IdentityViewModel::class.java]}
+        val language=mutableStateOf("de")
+        try{
+            compose.setContent{
+                SchoolLocaleProvider(language.value){
+                    SchoolTheme(darkMode=false){
+                        Surface{
+                            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)){
+                                FamilyWizard(model,false,remember{mutableMapOf<String,Pair<String,String>>()}){error("Do not submit a visual fixture")}
+                            }
+                        }
+                    }
+                }
+            }
+            compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("QA أسرة Müller")
+            compose.onNodeWithText("Weiter").performScrollTo().performClick()
+            compose.onAllNodes(hasSetTextAction()).onFirst().performScrollTo().performTextInput("QA ولي أمر")
+            compose.runOnIdle{language.value="ar"}
+            compose.onNodeWithText("أولياء الأمور · 2/5").performScrollTo().assertIsDisplayed()
+            compose.onAllNodes(hasSetTextAction()).onFirst().assertTextContains("QA ولي أمر",substring=true)
+            compose.runOnIdle{language.value="de"}
+            compose.onNodeWithText("Sorgeberechtigte · 2/5").performScrollTo().assertIsDisplayed()
+            compose.onAllNodes(hasSetTextAction()).onFirst().assertTextContains("QA ولي أمر",substring=true)
+            compose.onNodeWithText("Zurück",substring=false).performScrollTo().performClick()
+            compose.onAllNodes(hasSetTextAction()).onFirst().assertTextContains("QA أسرة Müller",substring=true)
+        }finally{instrumentation.runOnMainSync{store.clear()}}
+    }
     @OptIn(ExperimentalTestApi::class)
     private fun capture(language:String,dark:Boolean){
         val instrumentation=InstrumentationRegistry.getInstrumentation()

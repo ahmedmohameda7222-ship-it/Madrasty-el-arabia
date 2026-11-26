@@ -136,7 +136,7 @@ export function InviteWorkspace({ locale, guardians, batchId, invitationId }: {
       .then(({ data, meta }) => { setAvailable(data); setRecipientNext(meta?.nextCursor); })
       .catch((error) => { if (!cancel.signal.aborted) setError(failure(locale,error)); });
     return () => cancel.abort();
-  }, [batchId, endpoint, guardians, generation, locale]);
+  }, [batchId, endpoint, guardians, generation]);
 
   async function run(action: () => Promise<void>) {
     setPending(true); setError(""); setSaved("");

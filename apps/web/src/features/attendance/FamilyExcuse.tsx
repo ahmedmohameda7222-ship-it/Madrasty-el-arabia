@@ -71,7 +71,7 @@ export function FamilyExcuse({locale,child,initialDate}:{locale:Locale;child:str
         teachingDay:confirmed.teachingDay,validUntil:Date.parse(actor.expiresAt??""),reason:already?"":old?.reason??"",inFlight:already?undefined:old?.inFlight});
     });
     return ()=>{active=false;};
-  },[actor,child,locale,view.value?.data]);
+  },[actor,child,view.value?.data]);
 
   async function change(action:()=>Promise<void>){
     setBusy(true);

@@ -27,7 +27,7 @@ export function FamilyGroupList({locale,select}:{locale:Locale;select:(id:string
  const pending=useRef<AbortController|null>(null);
  useEffect(()=>{const timer=setTimeout(()=>{const q=query.trim();setFilter(q);const url=new URL(location.href);if(q)url.searchParams.set("familyQuery",q);else url.searchParams.delete("familyQuery");history.replaceState(null,"",url);},250);return()=>clearTimeout(timer);},[query]);
  useEffect(()=>{pending.current?.abort();const ctrl=new AbortController();pending.current=ctrl;setRows(undefined);setCursor(undefined);setError("");setBusy(false);
- requestApi(`/school/families?query=${encodeURIComponent(filter)}`,summaries,{signal:ctrl.signal}).then(result=>{if(!ctrl.signal.aborted){setRows(result.data);setCursor(result.meta?.nextCursor);}}).catch(e=>{if(!ctrl.signal.aborted)setError(err(locale,e));});return()=>ctrl.abort();},[filter,generation,locale]);
+ requestApi(`/school/families?query=${encodeURIComponent(filter)}`,summaries,{signal:ctrl.signal}).then(result=>{if(!ctrl.signal.aborted){setRows(result.data);setCursor(result.meta?.nextCursor);}}).catch(e=>{if(!ctrl.signal.aborted)setError(err(locale,e));});return()=>ctrl.abort();},[filter,generation]);
  useEffect(()=>()=>pending.current?.abort(),[]);
  async function more(){if(!cursor||busy)return;pending.current?.abort();const ctrl=new AbortController();pending.current=ctrl;setBusy(true);setError("");try{const result=await requestApi(`/school/families?query=${encodeURIComponent(filter)}&cursor=${encodeURIComponent(cursor)}`,summaries,{signal:ctrl.signal});if(!ctrl.signal.aborted){setRows(old=>[...(old??[]),...result.data]);setCursor(result.meta?.nextCursor);}}catch(e){if(!ctrl.signal.aborted)setError(err(locale,e));}finally{if(!ctrl.signal.aborted)setBusy(false);}}
  return <div className="family-directory-list">
@@ -39,7 +39,7 @@ export function FamilyGroupList({locale,select}:{locale:Locale;select:(id:string
 export function FamilyGroupProfile({locale,id,financeIssue=false,initialAction,openPerson}:{locale:Locale;id:string;financeIssue?:boolean;initialAction?:"student"|"guardian";openPerson:(kind:"students"|"guardians",id:string)=>void}){
  const t=copy[locale],command=useAdminCommand();
  const [group,setGroup]=useState<Group>(),[generation,refresh]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState(false),[view,setView]=useState<"edit"|"student"|"guardian"|undefined>(initialAction),[mode,setMode]=useState<"existing"|"new">("existing"),[selected,setSelected]=useState<Student|Guardian>();
- useEffect(()=>{const ctrl=new AbortController();setGroup(undefined);setError("");requestApi(`/school/families/${id}`,familyGroupDetail,{signal:ctrl.signal}).then(({data})=>{if(!ctrl.signal.aborted)setGroup(data);}).catch(e=>{if(!ctrl.signal.aborted)setError(err(locale,e));});return()=>ctrl.abort();},[id,generation,locale]);
+ useEffect(()=>{const ctrl=new AbortController();setGroup(undefined);setError("");requestApi(`/school/families/${id}`,familyGroupDetail,{signal:ctrl.signal}).then(({data})=>{if(!ctrl.signal.aborted)setGroup(data);}).catch(e=>{if(!ctrl.signal.aborted)setError(err(locale,e));});return()=>ctrl.abort();},[id,generation]);
  const done=()=>{setView(undefined);setSelected(undefined);refresh(v=>v+1);};
  const run=async(work:()=>Promise<unknown>)=>{if(busy)return;setBusy(true);setError("");try{await work();done();}catch(e){setError(err(locale,e));}finally{setBusy(false);}};
  const start=(v:"edit"|"student"|"guardian")=>{setView(v);setMode("existing");setSelected(undefined);setError("");};

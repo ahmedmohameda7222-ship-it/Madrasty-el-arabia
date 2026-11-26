@@ -1,0 +1,9 @@
+# UI locale without workspace reset — 2026-11-26
+
+User requirement: language switches translate application chrome and labels only. Do not navigate away, restart a wizard, clear unsent content/files, change correspondence language, or sign out.
+
+Root cause: header Link changes the dynamic [locale] segment and remounts client components; preferences used hard location.replace. RED run 45825561724 on 38250c3, Chromium: family step reset from 2 to 1; unsent chat textarea became empty (18 pre-existing tests passed, both new tests failed).
+
+Design: keep current URL segment and query intact, store only validated presentation locale in a browser cookie, refresh server component payload on same route; stable account partition remains account/session/persona, not locale. All locale pages/layouts resolve display language from cookie with validated route fallback. Route matching uses normalized display path, scroll state uses actual path. Explicit account preference save uses same refresh. Keep locale out of data-fetch effect dependencies when data itself is not language-dependent and refresh would discard local form state. Import job restore only on new job ID. Native uses in-place CompositionLocalProvider and existing ViewModel, extracted for actual wizard language-switch regression. No sensitive drafts serialized or copied to storage; no changes to security gates, account or DB schema.
+
+Verification gate: exact-head CI and real browser regressions (family wizard, unsent chat, broadcast, selected file); Android real wizard test. Note URL may retain original locale prefix, intentionally, to keep route stable. Header setting is browser display preference; explicit account preferences still persist through existing API. Offline server-label switching needs connectivity. Check remaining locale-dependent flows during QA. No production merge before required checks.

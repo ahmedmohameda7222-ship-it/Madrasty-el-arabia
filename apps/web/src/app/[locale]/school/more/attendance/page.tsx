@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import { notFound, redirect } from "next/navigation";
 import { schoolDateSchema, type Locale } from "@madrasty/contracts";
 import { z } from "zod";
@@ -8,7 +9,7 @@ import { webSchoolSession } from "@/server/identity/web-session";
 export default async function AttendanceReviewPage({params,searchParams}:{
   params:Promise<{locale:Locale}>;searchParams:Promise<{date?:string;class?:string}>;
 }){
-  const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},query,session]=await Promise.all([displayParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   if(!await mayUse(session,"attendance.supervise"))notFound();
   if(session.activePersona==="admin"){

@@ -30,7 +30,7 @@ export function useAttendanceDrafts(actor:AccountPartition,locale:Locale,slot:st
       setReady(true);
     });
     return ()=>{active=false;};
-  },[actor,locale,slot]);
+  },[actor,slot]);
 
   const persist=useCallback((record:CachedSheet)=>{
     loaded.current=record;

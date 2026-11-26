@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import Link from "next/link";
 import type {Locale} from "@madrasty/contracts";
 import {androidRelease} from "@/server/release/android";
@@ -20,7 +21,7 @@ const copy={
   },
 };
 export default async function InstallSchoolApp({params}:{params:Promise<{locale:Locale}>}){
-  const {locale}=await params,text=copy[locale],release=androidRelease();
+  const {locale}=await displayParams(params),text=copy[locale],release=androidRelease();
   return <main className="public-page">
     <SchoolHeader locale={locale}/>
     <section className="auth-card auth-form"><h1>{text.title}</h1>

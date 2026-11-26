@@ -12,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,23 +66,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val language = preference?.uiLocale ?: fallback
-            val localized = remember(system,language) {
-                val configuration = Configuration(system).apply { setLocale(Locale.forLanguageTag(language)) }
-                val localizedResources = createConfigurationContext(configuration).resources
-                object : ContextWrapper(this@MainActivity) {
-                    override fun getResources(): Resources = localizedResources
-                }
-            }
             val darkMode = when (preference?.theme) {
                 "dark" -> true
                 "light" -> false
                 else -> isSystemInDarkTheme()
             }
-            CompositionLocalProvider(
-                LocalContext provides localized,
-                LocalConfiguration provides localized.resources.configuration,
-                LocalLayoutDirection provides if (language == "de") LayoutDirection.Ltr else LayoutDirection.Rtl,
-            ) {
+            SchoolLocaleProvider(language) {
                 SchoolTheme(darkMode = darkMode) {
                     Surface(color = MaterialTheme.colorScheme.background) {
                         ReleaseVersionGate(model) {
@@ -110,4 +100,25 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+/** Change presentation locals in place. Do not key the workspace by locale,
+ * recreate the Activity, or replace the identity/navigation ViewModel. */
+@Composable
+internal fun SchoolLocaleProvider(language:String,content:@Composable ()->Unit){
+    val system=LocalConfiguration.current
+    val base=LocalContext.current
+    val localized=remember(base,system,language){
+        val configuration=Configuration(system).apply{setLocale(Locale.forLanguageTag(language))}
+        val localizedResources=base.createConfigurationContext(configuration).resources
+        object:ContextWrapper(base){
+            override fun getResources():Resources=localizedResources
+        }
+    }
+    CompositionLocalProvider(
+        LocalContext provides localized,
+        LocalConfiguration provides localized.resources.configuration,
+        LocalLayoutDirection provides if(language=="de")LayoutDirection.Ltr else LayoutDirection.Rtl,
+        content=content
+    )
 }

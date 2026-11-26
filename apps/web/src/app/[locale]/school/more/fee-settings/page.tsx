@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import Link from "next/link";
 import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
@@ -11,7 +12,7 @@ import {webSchoolSession} from "@/server/identity/web-session";
 export default async function FeeSettingsPage({params,searchParams}:{
   params:Promise<{locale:Locale}>;searchParams:Promise<{student?:string}>;
 }){
-  const [{locale},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},query,session]=await Promise.all([displayParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   const [billing,bank]=await Promise.all([mayUse(session,"finance.issue"),mayUse(session,"bank.configure")]);
   if(!billing&&!bank)notFound();

@@ -134,7 +134,7 @@ export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount
       if (!abort.signal.aborted) setFailure(error instanceof ApiResponseError ? localizedError(locale, error.messageKey) : dictionary(locale)["error.unavailable"]);
     });
     return () => abort.abort();
-  }, [locale]);
+  }, []);
 
   useEffect(() => {
     if (!target) return;
@@ -146,7 +146,7 @@ export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount
       if (!abort.signal.aborted) setFailure(error instanceof ApiResponseError ? localizedError(locale, error.messageKey) : dictionary(locale)["error.unavailable"]);
     });
     return () => abort.abort();
-  }, [locale, target]);
+  }, [target]);
 
   const select = (id: string) => {
     setSummary(null);

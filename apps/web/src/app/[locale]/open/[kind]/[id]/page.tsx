@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import {notFound,redirect} from "next/navigation";
 import {schoolResourceLinkSchema,type Locale} from "@madrasty/contracts";
 import {schoolResourceDestination,schoolResourceLanding} from "@/features/school/resourceDestination";
@@ -9,7 +10,7 @@ export default async function SchoolResourceLanding({params,searchParams}:{
   params:Promise<{locale:Locale;kind:string;id:string}>;
   searchParams:Promise<{child?:string;date?:string}>;
 }){
-  const [{locale,kind,id},query,session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale,kind,id},query,session]=await Promise.all([displayParams(params),searchParams,webSchoolSession()]);
   const parsed=schoolResourceLinkSchema.safeParse({kind,id,childId:query.child,date:query.date});
   if(!parsed.success)notFound();
   if(!session)redirect(`/${locale}/account/sign-in?next=${encodeURIComponent(schoolResourceLanding(locale,parsed.data))}`);

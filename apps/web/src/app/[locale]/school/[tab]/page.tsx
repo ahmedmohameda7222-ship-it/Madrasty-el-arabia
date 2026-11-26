@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import { SchoolLink as Link } from "@/ui/SchoolLink";
 import { notFound, redirect } from "next/navigation";
 import { schoolDateSchema, type Locale } from "@madrasty/contracts";
@@ -22,7 +23,7 @@ export default async function SchoolPage({ params, searchParams }: {
   params: Promise<{ locale: Locale; tab: string }>;
   searchParams: Promise<{ asOf?: string; guardian?: string; student?:string; link?: string; child?: string; class?:string; date?:string; thread?:string; section?:string; batchId?:string; invite?:string }>;
 }) {
-  const [{ locale, tab }, search, session] = await Promise.all([params, searchParams, webSchoolSession()]);
+  const [{ locale, tab }, search, session] = await Promise.all([displayParams(params), searchParams, webSchoolSession()]);
   if (!(tabs as readonly string[]).includes(tab)) notFound();
   if (!session) redirect(`/${locale}/account/sign-in?next=${encodeURIComponent(`/${locale}/school/${tab}`)}`);
 

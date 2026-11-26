@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Locale } from "@madrasty/contracts";
@@ -11,7 +12,7 @@ export default async function EmailActionPage({ params, searchParams }: {
   params: Promise<Route>;
   searchParams: Promise<{ token_hash?: string }>;
 }) {
-  const [{ locale, action }, values] = await Promise.all([params, searchParams]);
+  const [{ locale, action }, values] = await Promise.all([displayParams(params), searchParams]);
   if (action !== "recover" && action !== "email" && action !== "activate") notFound();
   const token = typeof values.token_hash === "string" ? values.token_hash : undefined;
   return (

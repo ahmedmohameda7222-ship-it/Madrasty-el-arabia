@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
@@ -28,7 +29,7 @@ export function generateStaticParams() {
 export default async function LocaleLayout({
   children, params,
 }: { children: ReactNode; params: Promise<{ locale: string }> }) {
-  const result = localeSchema.safeParse((await params).locale);
+  const result = localeSchema.safeParse((await displayParams(params)).locale);
   if (!result.success) notFound();
 
   return (
