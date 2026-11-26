@@ -35,11 +35,6 @@ import de.madrasty.app.ui.SchoolTab
 import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.InterfaceLanguageProvider
 import androidx.compose.foundation.lazy.rememberLazyListState
-import de.madrasty.app.ui.SchoolShell
-import de.madrasty.app.ui.SchoolPartition
-import de.madrasty.app.ui.SchoolTab
-import de.madrasty.app.ui.Persona
-import de.madrasty.app.ui.InterfaceLanguageProvider
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
