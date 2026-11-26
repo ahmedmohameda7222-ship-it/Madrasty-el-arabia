@@ -119,10 +119,30 @@ internal fun CashbookPanel(model:IdentityViewModel){
             }
             }
         }
-        for(entry in data.financeRows("entries")){
+        for(entry in data.financeRows("entries")) key(entry.getString("id")){
             HorizontalDivider()
+            if(!entry.isNull("reversalOf"))Text(stringResource(R.string.cashbook_correction))
             Text(isolate(entry.getString("description"))+" · "+isolate(entry.getString("date")))
             Text(financeMoney(entry.getLong("signedMinor"),currency))
+            if(data.getBoolean("canPost")&&entry.optBoolean("canReverse"))CashMovementCorrection(model,entry,currency){refresh++}
         }
+    }
+}
+
+@Composable
+private fun CashMovementCorrection(model:IdentityViewModel,entry:JSONObject,currency:String,changed:()->Unit){
+    var open by remember{mutableStateOf(false)}
+    var reason by remember{mutableStateOf("")}
+    val attempts=remember{mutableMapOf<String,Pair<String,String>>()}
+    if(!open)TextButton(onClick={open=true}){Text(stringResource(R.string.cashbook_correct))}
+    else{
+        Text(stringResource(R.string.cashbook_correction_hint))
+        Text(financeMoney(-entry.getLong("signedMinor"),currency))
+        Field(R.string.cashbook_correction_reason,reason){reason=it.take(500)}
+        Submit(reason.trim().length>=3,R.string.cashbook_correction_confirm){
+            model.schoolCommand(attempts,"/finance/cashbook/reversals","POST",JSONObject().put("movementId",entry.getString("id")).put("reason",reason.trim()))
+            open=false;reason="";changed()
+        }
+        TextButton(onClick={open=false;reason=""}){Text(stringResource(R.string.cashbook_cancel_correction))}
     }
 }
