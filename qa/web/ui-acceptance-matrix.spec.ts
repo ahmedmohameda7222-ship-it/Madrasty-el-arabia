@@ -91,7 +91,7 @@ for(const scenario of acceptanceScenarios){
           await page.evaluate(()=>document.documentElement.style.removeProperty("font-size"));
         }
         const nav=page.locator(".school-nav > a");
-        await expect(nav).toHaveCount(4);
+        await expect(nav).toHaveCount(5);
         for(const target of await nav.all()){
           const rect=await target.boundingBox();
           expect(rect).not.toBeNull();

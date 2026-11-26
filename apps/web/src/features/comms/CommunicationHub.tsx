@@ -7,15 +7,14 @@ import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {useTimetableRead} from "@/features/school/timetable/shared";
 import {useAccountScope} from "@/ui/AccountScope";
 import {ThreadInbox} from "./ThreadInbox";
-import {SchoolPublishing} from "./SchoolPublishing";
 const records=communicationFeedEntry.array();
 export function CommunicationHub({locale,section,thread}:{locale:Locale;section?:string;thread?:string}){
   const ar=locale==="ar",root=`/${locale}/school/messages`;
-  const active=thread?"chat":section==="feed"||section==="calendar"?section:"chat";
-  const tabs=[["chat",ar?"المحادثات":"Chats"],["feed",ar?"المستجدات":"Aktuelles"],["calendar",ar?"التقويم":"Kalender"]];
-  return <div className="comms-hub" data-chat-open={!!thread}>{!thread&&<h1>{ar?"التواصل":"Kontakt"}</h1>}
+  const active=thread?"chat":section==="feed"?"feed":"chat";
+  const tabs=[["chat",ar?"المحادثات":"Chats"],["feed",ar?"المستجدات":"Aktuelles"]];
+  return <div className="comms-hub" data-chat-open={!!thread}>{!thread&&<header className="comms-hub-heading"><h1>{ar?"التواصل":"Kontakt"}</h1>{active==="chat"&&<Link className="comms-icon-button comms-compose-action" href={`/${locale}/directory`} aria-label={ar?"رسالة جديدة":"Neue Nachricht"}><Icon name="compose"/></Link>}</header>}
     {!thread&&<nav className="comms-segments comms-hub-tabs" aria-label={ar?"أقسام التواصل":"Kontaktbereiche"}>{tabs.map(([key,label])=><Link className="plain-button" key={key} aria-current={active===key?"page":undefined} href={`${root}?section=${key}`}>{label}</Link>)}</nav>}
-    {active==="chat"?<ThreadInbox locale={locale} thread={thread}/>:active==="feed"?<CommunicationFeed locale={locale}/>:<SchoolPublishing locale={locale} kind="event" embedded/>}
+    {active==="chat"?<ThreadInbox locale={locale} thread={thread}/>:<CommunicationFeed locale={locale}/>}
   </div>;
 }
 function CommunicationFeed({locale}:{locale:Locale}){
@@ -33,7 +32,6 @@ function CommunicationFeed({locale}:{locale:Locale}){
         <Link href={`/${locale}/school/more/news?create=1&from=hub`}>{ar?"خبر جديد":"Neue Neuigkeit"}</Link>
         <Link href={`/${locale}/school/more/broadcasts?from=hub`}>{ar?"الإعلانات":"Mitteilungen"}</Link>
         <Link href={`/${locale}/school/more/news?view=managed&from=hub`}>{ar?"إدارة الأخبار والمسودات":"Neuigkeiten und Entwürfe"}</Link>
-        <Link href={`/${locale}/school/messages?section=calendar`}>{ar?"الأحداث والتقويم":"Veranstaltungen und Kalender"}</Link>
       </div></details>}
       <button type="button" className="comms-icon-button" aria-label={ar?"تحديث":"Aktualisieren"} onClick={()=>setRefresh(n=>n+1)}><Icon name="retry"/></button>
     </div>

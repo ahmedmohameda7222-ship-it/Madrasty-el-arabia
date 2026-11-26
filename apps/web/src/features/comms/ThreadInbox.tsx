@@ -88,10 +88,9 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
     </section>}</TimetableRead>
   </>;
   return <section className="auth-card auth-form inbox-panel">
-    <div className="comms-inbox-heading"><h2>{locale==="ar"?"المحادثات":"Chats"}</h2><Link className="primary-button" href={`/${locale}/directory`}>{text.directory}</Link></div>
     <form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();patch({search});}}>
+      <Icon name="search"/>
       <input aria-label={text.search} placeholder={locale==="ar"?"ابحث عن محادثة":"Chats suchen"} type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/>
-      <button className="plain-button" type="submit">{text.find}</button>
     </form>
     <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>
       {filters.map(filter=><button className="plain-button" type="button" key={filter} aria-pressed={!archived&&selected===filter} onClick={()=>patch({filter,archived:false})}>{filter==="unread"?(locale==="ar"?"غير مقروءة":"Ungelesen"):text.all}</button>)}

@@ -424,7 +424,7 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openDirectory={state.open(WorkspacePage.Directory)},openSetup={state.open(WorkspacePage.Calendar)},
                 openMore={state.choose(SchoolTab.More)},
                 addGuardian={state.open(WorkspacePage.Family(addGuardian=true))},
-                openEvents={state.open(WorkspacePage.Publication(PublicationSection.Events))},
+                openEvents={state.choose(SchoolTab.Calendar)},
                 openNews={state.open(WorkspacePage.Publication(PublicationSection.News))},
                 openIssue={state.open(WorkspacePage.IssueInvoices())},
                 openAnnouncement={state.open(WorkspacePage.Broadcasts())},
@@ -446,20 +446,20 @@ private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:Schoo
                 openFinance={state.open(WorkspacePage.FinanceReport(it))},
                 openStop={state.open(WorkspacePage.Stops(student=it))},
                 openNews={state.open(WorkspacePage.Publication(PublicationSection.News))},
-                openEvents={state.open(WorkspacePage.Publication(PublicationSection.Events))})
+                openEvents={state.choose(SchoolTab.Calendar)})
             SchoolTab.Students -> if(rights.students){
                 FamiliesScreen(model,openEnrollment={state.open(WorkspacePage.Enrollment(it))},openImport={state.open(WorkspacePage.Import())},openPayer=if(rights.billing)({state.open(WorkspacePage.FeeSettings(it))})else null,openInvoices=if(rights.invoiceViewer)({state.open(WorkspacePage.Invoices(student=it))})else null,openStops=if(rights.stopManager)({state.open(WorkspacePage.Stops(student=it))})else null)
             }
+            SchoolTab.Calendar -> SchoolPublicationScreen(model,PublicationSection.Events,null,{state.choose(SchoolTab.Home)},embedded=true)
             SchoolTab.More -> SchoolSettings(model,session,state,rights)
             SchoolTab.Messages -> {
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-                    for((section,label) in listOf("chat" to R.string.comms_chats,"feed" to R.string.comms_feed,"calendar" to R.string.comms_calendar)){
+                    for((section,label) in listOf("chat" to R.string.comms_chats,"feed" to R.string.comms_feed)){
                         FilterChip(state.communicationSection==section,onClick={state.communicationSection=section},label={Text(stringResource(label))})
                     }
                 }
                 when(state.communicationSection){
-                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News,managed=true))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))},{state.communicationSection="calendar"})
-                    "calendar"->SchoolPublicationScreen(model,PublicationSection.Events,null,{state.communicationSection="chat"},embedded=true)
+                    "feed"->CommunicationFeed(model,session.actor.persona,{state.open(WorkspacePage.Broadcasts())},{state.open(WorkspacePage.Publication(PublicationSection.News,managed=true))},{state.open(WorkspacePage.Publication(PublicationSection.News,create=true))})
                     else->ThreadInbox(model,{state.open(WorkspacePage.Directory)},state::openThread)
                 }
             }

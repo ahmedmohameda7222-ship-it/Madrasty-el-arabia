@@ -50,6 +50,7 @@ enum class SchoolTab(val label: Int, val icon: Int) {
     Attendance(R.string.nav_attendance, R.drawable.ic_attendance),
     Children(R.string.nav_children, R.drawable.ic_people),
     Messages(R.string.nav_messages, R.drawable.ic_messages),
+    Calendar(R.string.comms_calendar, R.drawable.ic_calendar),
     More(R.string.nav_more, R.drawable.ic_more),
 }
 
@@ -59,7 +60,7 @@ private fun tabsFor(persona: Persona): List<SchoolTab> {
         Persona.Teacher -> SchoolTab.Attendance
         Persona.Guardian -> SchoolTab.Children
     }
-    return listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.More)
+    return listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.Calendar, SchoolTab.More)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

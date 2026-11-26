@@ -15,7 +15,7 @@ import { MoreBackLink } from "./MoreBackLink";
 import { SchoolLink } from "./SchoolLink";
 import { NotificationLink, PushPreferences } from "@/features/comms/NotificationCenter";
 
-type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
+type Destination = "home" | "students" | "attendance" | "children" | "messages" | "calendar" | "more";
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 const childScope = z.uuid();
 
@@ -69,9 +69,9 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   const classId = childScope.safeParse(routeParams.get("class")).data;
   const returnClass = actor.persona === "admin" && routeParams.get("returnToClass")==="1" && year && classId
     ? {year,id:classId} : undefined;
-  const destinations: Destination[] = ["home", "messages", "more"];
+  const destinations: Destination[] = ["home", "messages", "calendar", "more"];
   if (actor.persona !== "admin" || mayManageStudents) destinations.splice(1,0,roleTab[actor.persona]);
-  const commSection=pathname===`/${locale}/directory`?"chat":pathname===`${root}/more/events`?"calendar":[`${root}/more/news`,`${root}/more/broadcasts`].includes(pathname)?"feed":undefined;
+  const commSection=pathname===`/${locale}/directory`?"chat":[`${root}/more/news`,`${root}/more/broadcasts`].includes(pathname)?"feed":undefined;
   const active = commSection?"messages":destinations.find((tab) => pathname.startsWith(`${root}/${tab}/`) || pathname === `${root}/${tab}`) ?? (pathname.includes("/account/") || pathname.endsWith("/directory") ? "more" : "home");
 
   useLayoutEffect(() => {
@@ -111,12 +111,12 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           {destinations.map((tab) => (
             <SchoolLink key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
               aria-current={active === tab ? "page" : undefined}
-              aria-label={tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):locale==="de"&&tab==="attendance"?text[tab]:undefined}>
+              aria-label={tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):tab==="calendar"?(locale==="ar"?"التقويم":"Kalender"):locale==="de"&&tab==="attendance"?text[tab]:undefined}>
               <Icon name={tab} />
               {locale === "de" && (tab === "attendance" || tab === "messages") ? <>
                 <span className="nav-label-mobile" aria-hidden="true">{tab === "attendance" ? "Anwes." : "Kontakt"}</span>
                 <span className="nav-label-desktop" aria-hidden="true">{tab==="messages"?"Kontakt":text[tab]}</span>
-              </> : <span>{tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):text[tab]}</span>}
+              </> : <span>{tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):tab==="calendar"?(locale==="ar"?"التقويم":"Kalender"):text[tab]}</span>}
             </SchoolLink>
           ))}
           {secondary && (

@@ -37,7 +37,7 @@ import de.madrasty.app.ui.Persona
 import de.madrasty.app.ui.isolate
 
 @Composable
-internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcasts:()->Unit,news:()->Unit,newNews:()->Unit,events:()->Unit){
+internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcasts:()->Unit,news:()->Unit,newNews:()->Unit){
     val language=if(LocalContext.current.resources.configuration.locales[0].language=="de")"de" else "ar"
     var filter by remember{mutableStateOf("all")}
     var refresh by remember{mutableStateOf(0)}
@@ -56,7 +56,6 @@ internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcast
                     DropdownMenuItem(text={Text(stringResource(R.string.publish_new_news))},onClick={manage=false;newNews()})
                     DropdownMenuItem(text={Text(stringResource(R.string.broadcast_title))},onClick={manage=false;broadcasts()})
                     DropdownMenuItem(text={Text(stringResource(R.string.publish_managed))},onClick={manage=false;news()})
-                    DropdownMenuItem(text={Text(stringResource(R.string.school_events))},onClick={manage=false;events()})
                 }
             }
             IconButton(onClick={refresh++},modifier=Modifier.size(48.dp)){
