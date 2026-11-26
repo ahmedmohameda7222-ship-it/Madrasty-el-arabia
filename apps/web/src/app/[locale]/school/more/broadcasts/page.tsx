@@ -1,3 +1,4 @@
+import { presentationParams } from "@/server/identity/ui-locale";
 import {redirect} from "next/navigation";
 import type {Locale} from "@madrasty/contracts";
 import {z} from "zod";
@@ -7,7 +8,7 @@ import {webSchoolSession} from "@/server/identity/web-session";
 export default async function BroadcastPage({params,searchParams}:{
   params:Promise<{locale:Locale}>;searchParams:Promise<{announcement?:string}>;
 }){
-  const [{locale},{announcement},session]=await Promise.all([params,searchParams,webSchoolSession()]);
+  const [{locale},{announcement},session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   return <BroadcastHub locale={locale} selected={z.uuid().safeParse(announcement).data}/>;
 }
