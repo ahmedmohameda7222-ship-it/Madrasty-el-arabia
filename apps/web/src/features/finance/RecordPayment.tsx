@@ -53,10 +53,15 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
     }catch(problem){setError(timetableError(locale,problem));}
     finally{setBusy(false);}
   }
-  function pick(invoice:InvoiceCandidate){
-    const next=[...rows,{invoice,amount:amountText(invoice.balanceMinor)}];
+  function updateRows(next:typeof rows){
     setRows(next);
-    if(!amountEdited)setAmount(amountText(next.reduce((sum,r)=>sum+(inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)??0),0)));
+    if(!amountEdited){
+      const values=next.map(r=>inputAmountMinor(r.amount,currency,r.invoice.balanceMinor));
+      setAmount(next.length&&values.every(value=>value!==null)?amountText(values.reduce<number>((sum,value)=>sum+(value??0),0)):"");
+    }
+  }
+  function pick(invoice:InvoiceCandidate){
+    updateRows([...rows,{invoice,amount:amountText(invoice.balanceMinor)}]);
     setPicker(false);
   }
   return <>
@@ -82,8 +87,8 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
         {rows.map((r,i)=><div key={r.invoice.id} className="timetable-day auth-form">
           <p><bdi>{r.invoice.studentName}</bdi> · <bdi>{r.invoice.period}</bdi> · <bdi>{r.invoice.invoiceNumber}</bdi></p>
           <p>{billingCopy[locale].balance} · <bdi>{financeAmount(r.invoice.balanceMinor,currency,locale)}</bdi></p>
-          <label>{text.amount}<input dir="ltr" inputMode="decimal" value={r.amount} onChange={e=>setRows(list=>list.map((x,j)=>i===j?{...x,amount:e.target.value}:x))}/></label>
-          <button type="button" className="plain-button" onClick={()=>setRows(list=>list.filter((_,j)=>i!==j))}>{text.remove}</button>
+          <label>{text.amount}<input dir="ltr" inputMode="decimal" value={r.amount} onChange={e=>updateRows(rows.map((x,j)=>i===j?{...x,amount:e.target.value}:x))}/></label>
+          <button type="button" className="plain-button" onClick={()=>updateRows(rows.filter((_,j)=>i!==j))}>{text.remove}</button>
         </div>)}
         <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)"}</button>
         {rows.length>0&&<p className={css.secondary}>{text.applied} · <bdi>{financeAmount(assigned,currency,locale)}</bdi></p>}
