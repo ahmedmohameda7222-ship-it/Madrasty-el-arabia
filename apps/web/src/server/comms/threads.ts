@@ -80,6 +80,14 @@ export function threads(actor:ActorContext,input:z.infer<typeof threadQuery>){
       ?Buffer.from(JSON.stringify({id:last.id,activityAt:last.activityAt,pinned:last.pinned})).toString("base64url"):undefined};
   });
 }
+export function unreadThreadCount(actor:ActorContext){
+  return withActor(actor,async(tx)=>{
+    const [row]=await tx<{unread:number}[]>`select coalesce(sum(a.unread),0)::integer as unread
+      from app.thread_projection(null,null) t cross join lateral app.chat_recent_activity(t.id,null) a
+      where not a.archived`;
+    return {unread:row.unread};
+  });
+}
 export function readThread(actor:ActorContext,id:string){
   return withActor(actor,async(tx)=>{
     const [row]=await tx`select ${fields(tx)} from app.thread_projection(${id},null) t

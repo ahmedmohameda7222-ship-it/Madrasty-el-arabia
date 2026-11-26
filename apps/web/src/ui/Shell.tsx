@@ -13,6 +13,7 @@ import { AccountScope, type AccountPartition, type ScopeChoice } from "./Account
 import { Icon } from "./Icon";
 import { MoreBackLink } from "./MoreBackLink";
 import { SchoolLink } from "./SchoolLink";
+import { useChatUnreadCount } from "@/features/comms/useChatUnreadCount";
 import { NotificationLink, PushPreferences } from "@/features/comms/NotificationCenter";
 
 type Destination = "home" | "students" | "attendance" | "children" | "messages" | "calendar" | "more";
@@ -54,6 +55,7 @@ export function SchoolShell(props: {
 
 function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary, mayManageStudents }: Parameters<typeof SchoolShell>[0]) {
   const text = dictionary(locale);
+  const unreadMessages=useChatUnreadCount();
   const routePathname = usePathname();
   const pathname = displayPath(routePathname,locale);
   const routeParams = useSearchParams();
@@ -125,8 +127,9 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
           {destinations.map((tab) => (
             <SchoolLink key={tab} href={tabs.current.get(tab) ?? `${root}/${tab}`} scroll={false}
               aria-current={active === tab ? "page" : undefined}
+              aria-describedby={tab==="messages"&&unreadMessages>0?"chat-nav-unread":undefined}
               aria-label={tab==="messages"?(locale==="ar"?"التواصل":"Kontakt"):tab==="calendar"?(locale==="ar"?"التقويم":"Kalender"):locale==="de"&&tab==="attendance"?text[tab]:undefined}>
-              <Icon name={tab} />
+              {tab==="messages"?<span className="chat-nav-icon"><Icon name={tab}/>{unreadMessages>0&&<span className="chat-nav-count" aria-hidden="true">{unreadMessages>99?"99+":unreadMessages}</span>}</span>:<Icon name={tab}/>}
               {locale === "de" && (tab === "attendance" || tab === "messages") ? <>
                 <span className="nav-label-mobile" aria-hidden="true">{tab === "attendance" ? "Anwes." : "Kontakt"}</span>
                 <span className="nav-label-desktop" aria-hidden="true">{tab==="messages"?"Kontakt":text[tab]}</span>
@@ -139,6 +142,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
             </div>
           )}
         </nav>
+        <span id="chat-nav-unread" className="chat-nav-screenreader">{unreadMessages>0?(locale==="ar"?`${unreadMessages} رسائل غير مقروءة`:`${unreadMessages} ungelesene Nachrichten`):""}</span>
         <main id="school-content" ref={main} className="school-content" tabIndex={-1}>
           {(showMoreBack || returnChild && pathname.startsWith(`${root}/children/`)) && <MoreBackLink locale={locale} child={returnChild} schoolClass={returnClass} communication={commSection} />}
           {selectedScope && <p className="scope-label"><bdi>{selectedScope.label}</bdi>{selectedScope.detail && <> · <bdi>{selectedScope.detail}</bdi></>}</p>}

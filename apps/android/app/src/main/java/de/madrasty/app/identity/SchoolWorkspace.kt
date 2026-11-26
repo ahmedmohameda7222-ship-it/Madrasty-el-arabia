@@ -46,6 +46,7 @@ import de.madrasty.app.attendance.FamilyExcuseScreen
 import de.madrasty.app.attendance.OfflineAttendanceScreen
 import de.madrasty.app.attendance.SupervisorAttendanceScreen
 import de.madrasty.app.comms.BroadcastHub
+import de.madrasty.app.comms.ChatUnreadCount
 import de.madrasty.app.comms.NotificationAction
 import de.madrasty.app.comms.NotificationCenter
 import de.madrasty.app.comms.PushSessionBinding
@@ -419,7 +420,7 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
 @Composable
 private fun SchoolTabs(model:IdentityViewModel,session:SchoolSession,state:SchoolNavigation,rights:SchoolRights){
     val inboxActive=state.tab==SchoolTab.Messages&&state.communicationSection=="chat"
-    SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,scrollContent=!inboxActive,
+    SchoolShell(session.actor,state.tab,state::choose,mayManageStudents=rights.students,scrollContent=!inboxActive,unreadMessages=ChatUnreadCount(model),
         floatingAction={if(inboxActive)FloatingActionButton(onClick={state.open(WorkspacePage.Directory)}){
             Icon(painterResource(R.drawable.ic_comms_compose),contentDescription=stringResource(R.string.comms_new_message))
         }},notificationAction={

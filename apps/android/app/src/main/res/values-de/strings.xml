@@ -634,4 +634,5 @@
     <string name="chat_muted">Stumm</string>
     <string name="chat_shared_media">Geteilte Medien</string>
     <string name="chat_shared_media_empty">Keine geteilten Medien in dieser Unterhaltung.</string>
+    <string name="comms_unread_badge">%1$d ungelesene Nachrichten</string>
 </resources>

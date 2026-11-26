@@ -109,6 +109,26 @@ internal fun NotificationAction(model:IdentityViewModel,open:()->Unit){
 }
 
 @Composable
+internal fun ChatUnreadCount(model:IdentityViewModel):Int{
+    val actor=model.session?.actor
+    val lifecycle=LocalLifecycleOwner.current.lifecycle
+    var count by remember(actor){mutableIntStateOf(0)}
+    LaunchedEffect(actor,model.attendanceNetworkRevision){
+        if(actor==null)return@LaunchedEffect
+        while(true){
+            if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)){
+                try{count=model.noticeObject("/threads/count").getInt("unread")}
+                catch(cancelled:CancellationException){throw cancelled}
+                catch(problem:HttpFailure){if(problem.status in listOf(401,403))count=0}
+                catch(_:Exception){ /* Retain the last authorized value while offline. */ }
+            }
+            delay(12000)
+        }
+    }
+    return count
+}
+
+@Composable
 internal fun NotificationCenter(
     model:IdentityViewModel,initial:String?,openTarget:(JSONObject)->Boolean,preferences:()->Unit,close:()->Unit,
 ){
