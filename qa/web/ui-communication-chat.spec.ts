@@ -479,6 +479,16 @@ test("first-contact attachment preserves typed text and opens the actual compose
     await expect(row).toHaveCount(1);
     await row.click();
     await expect(page.locator(".comms-first-contact")).toBeVisible();
+    const firstComposer=page.locator(".comms-directory[data-compose=true] .comms-composer");
+    await expect(page.locator(".school-nav")).toBeHidden();
+    await expect(page.locator(".school-header").getByRole("button",{name:"App-Einstellungen"})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Zurück zu Personen",exact:true})).toBeVisible();
+    for(const height of [844,480]){
+      await page.setViewportSize({width:390,height});
+      await expect.poll(async()=>{const c=await firstComposer.boundingBox();return !!c&&c.y+c.height>=height-16&&c.y+c.height<=height+1;}).toBe(true);
+      expect(await page.locator(".school-content").evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);
+    }
+    await page.setViewportSize({width:390,height:844});
     const body="QA first message with attachment";
     await page.locator(".comms-composer textarea").fill(body);
     await page.getByRole("button",{name:"Anhang hinzufügen",exact:true}).click();

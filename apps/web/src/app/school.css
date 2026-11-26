@@ -775,3 +775,26 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-message>p{touch-action:pan-y}
 
 .comms-contact-title{min-inline-size:0}.comms-contact-trigger{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:start;border:0;background:transparent;color:inherit;padding:0;min-block-size:44px;max-inline-size:100%;font:inherit;cursor:pointer}.comms-contact-trigger bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-inline-size:100%}.comms-contact-trigger span{font-size:.72rem;color:var(--primary);font-weight:500}.comms-contact-sheet{max-inline-size:min(100%,480px)}.comms-contact-sheet .comms-contact-identity{display:grid;justify-items:center;gap:8px;text-align:center;padding:16px}.comms-contact-sheet .comms-avatar{inline-size:72px;block-size:72px;font-size:1.75rem}.comms-contact-sheet p{overflow-wrap:anywhere}.comms-contact-sheet h2{display:block}
+
+/* First-message compose shares the conversation viewport without opening an empty thread. */
+.school-content:has(> .comms-directory[data-compose="true"]) {display:flex;flex-direction:column;min-block-size:0;overflow:hidden;padding:0}
+.comms-directory[data-compose="true"] {display:flex;flex-direction:column;flex:1 1 0;min-block-size:0;inline-size:100%;max-inline-size:none;margin:0;gap:0;background:var(--canvas)}
+.comms-first-contact-toolbar {display:flex;flex:none;align-items:center;gap:8px;min-block-size:56px;padding:6px 12px;border-block-end:1px solid var(--rule);background:var(--card)}
+.comms-first-contact-toolbar .comms-first-contact {flex:1;min-inline-size:0}
+.comms-first-contact-toolbar .comms-avatar {flex:none;inline-size:40px;block-size:40px}
+.comms-first-contact-toolbar h1 {font-size:1rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.comms-first-contact-toolbar p {font-size:.8rem;margin-block-start:2px}
+.comms-directory[data-compose="true"] .comms-composer {position:relative;bottom:auto;flex:none;margin: auto 0 0;padding:8px 12px;padding-block-end:max(8px,env(safe-area-inset-bottom))}
+.comms-first-error {margin:0;max-block-size:18dvh;overflow:auto}
+@media(max-width:959px){
+ .school-shell:has(.comms-directory[data-compose="true"]) {position:relative;block-size:min(100dvh,var(--chat-viewport-height,100dvh))}
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header {position:absolute;inset-block-start:env(safe-area-inset-top);inset-inline-end:0;z-index:4;border:0;padding:6px 8px}
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header .brand,
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header .notice-link,
+ .school-shell:has(.comms-directory[data-compose="true"]) .school-nav {display:none}
+ .school-shell:has(.comms-directory[data-compose="true"]) > .school-header .app-settings-trigger {background:transparent;color:var(--primary)}
+ .comms-first-contact-toolbar {padding-inline-end:60px}
+ .comms-first-contact-toolbar .comms-avatar {inline-size:36px;block-size:36px}
+ .school-shell[data-platform="android"] .comms-directory[data-compose="true"] .comms-icon-button {min-inline-size:48px;min-block-size:48px}
+ .school-shell[data-platform="android"] .comms-directory[data-compose="true"] .comms-input-bar {grid-template-columns:48px minmax(0,1fr) 48px}
+}

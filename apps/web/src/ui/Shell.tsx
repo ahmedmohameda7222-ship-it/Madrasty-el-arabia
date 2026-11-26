@@ -71,13 +71,14 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
   const threadScreen=pathname===`${root}/messages`&&childScope.safeParse(routeParams.get("thread")).success;
+  const chatViewport=threadScreen||pathname===`/${locale}/directory`;
   useLayoutEffect(()=>{
     const node=shell.current,viewport=window.visualViewport;
-    if(!threadScreen||!node||!viewport)return;
+    if(!chatViewport||!node||!viewport)return;
     const resize=()=>{if(viewport.scale===1)node.style.setProperty("--chat-viewport-height",`${Math.round(viewport.height)}px`);else node.style.removeProperty("--chat-viewport-height");};
     resize();viewport.addEventListener("resize",resize);
     return ()=>{viewport.removeEventListener("resize",resize);node.style.removeProperty("--chat-viewport-height");};
-  },[threadScreen]);
+  },[chatViewport]);
   const showMoreBack = pathname.startsWith(`${root}/more/`) ||
     pathname === `/${locale}/directory` || pathname === `/${locale}/account/preferences`;
   const returnChild = actor.persona === "guardian" ? childScope.safeParse(routeParams.get("returnChild")).data : undefined;
