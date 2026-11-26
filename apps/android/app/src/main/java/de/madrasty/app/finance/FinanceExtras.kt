@@ -60,7 +60,8 @@ internal fun AutomaticBillingPanel(model:IdentityViewModel){
             val attempts=remember{mutableMapOf<String,Pair<String,String>>()}
             val current=data.getString("schoolMonth")
             var enabled by remember{mutableStateOf(data.getBoolean("enabled"))}
-            var start by remember{mutableStateOf(maxOf(current,data.getString("startMonth")))}
+            val storedStart=data.getString("startMonth")
+            var start by remember{mutableStateOf(storedStart)}
             FilterChip(enabled,{enabled=!enabled},label={Text(stringResource(R.string.finance_auto_enabled))})
             Field(R.string.finance_auto_start,start){start=financeDigits(it).take(7)}
             if(data.getInt("missingPayers")>0)Text(stringResource(R.string.finance_auto_missing,data.getInt("missingPayers")))
@@ -77,7 +78,7 @@ internal fun AutomaticBillingPanel(model:IdentityViewModel){
                     }
                 }
             }
-            Submit(validBillingMonth(start)&&start>=current&&(enabled!=data.getBoolean("enabled")||start!=data.getString("startMonth"))){
+            Submit(validBillingMonth(start)&&(start==storedStart||start>=current)&&(enabled!=data.getBoolean("enabled")||start!=data.getString("startMonth"))){
                 model.schoolCommand(attempts,"/finance/automatic-billing","PUT",JSONObject().put("enabled",enabled).put("startMonth",start).put("revision",data.getInt("revision")))
                 refresh++
             }
