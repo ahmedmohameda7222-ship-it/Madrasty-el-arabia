@@ -19,6 +19,8 @@ for(const scenario of [
       const input=form.locator('input[type="search"]');
       const submit=form.locator('button[type="submit"]');
       await expect(input).toBeVisible();
+      await expect(input).toBeEnabled();
+      await expect(page.locator(".school-content [data-async-state=empty], .school-content .group-list").last()).toBeVisible({timeout:25000});
       await expect(submit).toHaveCount(0);
       const query="QA-search-inbox";
       const searched=page.waitForResponse(r=>r.url().includes("/api/v1/threads?")&&new URL(r.url()).searchParams.get("q")===query&&r.request().method()==="GET");
