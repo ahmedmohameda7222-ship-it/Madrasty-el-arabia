@@ -102,7 +102,7 @@ function PublishingPanel({locale,kind,selected,create,options,embedded}:{locale:
   return <section className={`auth-card auth-form comms-publications${kind==="event"?" comms-calendar":""}`}>
     {!embedded&&<h1>{kind==="event"&&locale==="de"?"Kalender":text[kind]}</h1>}
     {editor==="new"&&<PublishingEditor locale={locale} kind={kind} options={options}
-      dismiss={()=>{setEditor(undefined);patch({view:"managed",create:undefined});setRefresh((value)=>value+1);}}/>}
+      dismiss={()=>{setEditor(undefined);patch({view:"managed",add:undefined,create:undefined});setRefresh((value)=>value+1);}}/>}
     {selected&&<><Link className="plain-button" href={returnHref}>{kind==="event"?(locale==="ar"?"رجوع للتقويم":"Zurück zum Kalender"):text.back}</Link>
       <TimetableRead locale={locale} result={detail}>{(record)=>editor==="edit"?
         <PublishingEditor locale={locale} kind={kind} options={options} record={record} dismiss={()=>{setEditor(undefined);setRefresh((value)=>value+1);}}/>:
