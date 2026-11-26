@@ -11,9 +11,12 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
  try{
   await school.seed();
   await signIn(page,school,"admin");
-  await expect(page.locator(".admin-start-actions a[href$='/students?add=family']")).toBeVisible({timeout:20000});
-  await page.locator(".admin-start-actions a[href$='/students?add=family']").click();
+  // Open the authenticated family workspace independently of dashboard shortcut permissions.
+  const yearsResponse=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/v1/school/years"&&response.request().method()==="GET");
+  await page.goto("/de/school/students?add=family");
+  await expect(page.locator(".school-nav")).toBeVisible();
   await expect(page.locator(".family-wizard")).toBeVisible();
+  expect((await yearsResponse).ok()).toBeTruthy();
   await page.getByRole("textbox",{name:"Familienname",exact:true}).fill("QA Unsent Family");
   await page.getByRole("combobox",{name:"Familiensituation (optional)"}).selectOption("divorced");
   await page.getByRole("button",{name:"Weiter",exact:true}).click();
@@ -40,7 +43,9 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
   expect(await page.locator(".school-nav [aria-current=page]").getAttribute("href")).toContain("/school/students");
   const importPage=await context.newPage();
   try{
+    const historyResponse=importPage.waitForResponse(response=>new URL(response.url()).pathname==="/api/v1/school/family-imports"&&response.request().method()==="GET");
     await importPage.goto("/de/school/students/import");
+    expect((await historyResponse).ok()).toBeTruthy();
     const csv="childKey,childName,guardianKey,guardianName,email,communicationLocale\nC1,QA Child,G1,QA Parent,qa@example.invalid,de";
     await importPage.locator('input[type="file"]').setInputFiles({name:"language-draft.csv",mimeType:"text/csv",buffer:Buffer.from(csv)});
     await expect(importPage.getByRole("button",{name:"language-draft.csv"})).toBeVisible();
