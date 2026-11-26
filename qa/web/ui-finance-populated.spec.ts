@@ -227,6 +227,8 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               const received=page.locator(".school-content input[inputmode=decimal]").first();
               await received.fill("100.00");
               await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
+              const partial=records.find(x=>x.label==="B")!.invoice;
+              await expect(page.locator(".school-content li").filter({hasText:partial.invoiceNumber})).toBeVisible();
               const extra=records.find(x=>x.label==="D")!.invoice;
               const option=page.locator(".school-content li").filter({hasText:extra.invoiceNumber});
               await option.getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
