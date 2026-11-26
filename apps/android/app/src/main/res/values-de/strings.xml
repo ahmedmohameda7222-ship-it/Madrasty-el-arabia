@@ -647,4 +647,5 @@
     <string name="chat_contact_phone">Dienstliche Telefonnummer</string>
     <string name="chat_actions">Chat-Aktionen</string>
     <string name="chat_voice_action">Sprachnachricht aufnehmen</string>
+    <string name="receipt_same_payer">Weitere Rechnungen desselben Zahlers</string>
 </resources>
