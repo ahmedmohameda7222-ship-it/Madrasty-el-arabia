@@ -54,6 +54,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     var cashReference by remember { mutableStateOf("CASH-"+UUID.randomUUID()) }
     var rows by remember(initial) { mutableStateOf(initial?.takeIf{it.getLong("balanceMinor")>0L}?.let{listOf(it to financePlainAmount(it.getLong("balanceMinor"),currency))}?:emptyList()) }
     var amount by remember(initial) { mutableStateOf(initial?.takeIf{it.getLong("balanceMinor")>0L}?.let{financePlainAmount(it.getLong("balanceMinor"),currency)}?:"") }
+    var amountEdited by remember(initial) { mutableStateOf(false) }
     var verified by remember { mutableStateOf(false) }
     var choose by remember { mutableStateOf(false) }
     var review by remember { mutableStateOf<JSONObject?>(null) }
@@ -70,11 +71,11 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         TextButton(onClick={review=null}) {Text(stringResource(R.string.fee_edit))}
         Submit(true,R.string.receipt_confirm,success=null){
             result=model.schoolCommand(attempts,"/finance/receipts","POST",prepared)
-            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";verified=false;rows=emptyList()
+            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";amountEdited=false;verified=false;rows=emptyList()
         }
         return
     }
-    Field(R.string.receipt_total,amount){amount=it.take(24)}
+    Field(R.string.receipt_total,amount){amountEdited=true;amount=it.take(24)}
     if(setup.getBoolean("cashEnabled")){
         FlowRow {
             FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
@@ -91,7 +92,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_optional_invoice))}
     if(choose)ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet()){ invoice->
         rows=rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency))
-        amount=financePlainAmount(rows.sumOf{financeMinor(it.second,currency,it.first.getLong("balanceMinor"))?:0L},currency)
+        if(!amountEdited) amount=financePlainAmount(rows.sumOf{financeMinor(it.second,currency,it.first.getLong("balanceMinor"))?:0L},currency)
         choose=false
     }
     FilterChip(verified,{verified=!verified},label={Text(stringResource(R.string.receipt_confirmed_external))})
