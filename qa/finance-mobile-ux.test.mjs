@@ -61,3 +61,12 @@ test("monthly billing configuration lives inside the fee tab, never over the pay
   const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FeeSettings.kt",import.meta.url),"utf8");
   assert.match(native,/if \(!payerTab\)\s*\{[\s\S]*?AutomaticBillingPanel\(model\)/);
 });
+
+test("payer readiness on the overview is limited to authorized billing staff",()=>{
+  const overview=source("FinanceOverview.tsx");
+  assert.match(overview,/canIssue\?"\/finance\/automatic-billing":null/);
+  assert.match(overview,/payerIssues\.length/);
+  const route=readFileSync(new URL("../apps/web/src/app/[locale]/school/more/finance-reports/page.tsx",import.meta.url),"utf8");
+  assert.match(route,/mayUse\(session,"finance.issue"\)/);
+  assert.match(route,/canIssue=\{canIssue\}/);
+});
