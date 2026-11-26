@@ -2,6 +2,7 @@
 
 import css from "./FinanceWorkspace.module.css";
 import {FinanceDateField} from "./FinanceDateField";
+import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {automaticBillingInput,automaticBillingSettings,type Locale} from "@madrasty/contracts";
 import {useTimetableRead,TimetableRead,timetableError} from "@/features/school/timetable/shared";
@@ -23,7 +24,13 @@ function BillingForm({locale,data,refresh}:{locale:Locale;data:Settings;refresh:
     <p className={css.secondary}>{ar?"فاتورة شهرية للطلاب النشطين فقط.":"Monatsrechnung nur für aktive Schüler."}</p>
     <label className={css.switchRow}><span>{ar?"إصدار تلقائي":"Automatisch ausstellen"}</span><input type="checkbox" role="switch" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/></label>
     <FinanceDateField locale={locale} label={ar?"شهر البداية":"Startmonat"} type="month" min={data.schoolMonth} value={month} onChange={e=>setMonth(e.target.value)} required/>
-    {data.missingPayers>0&&<p className="notice">{ar?`طلاب بدون مسؤول سداد: ${data.missingPayers}`:data.missingPayers===1?"Für 1 Schüler fehlt der Zahler.":`Für ${data.missingPayers} Schüler fehlt der Zahler.`}</p>}
+    {data.missingPayers>0&&<p className="notice">{ar?`طلاب بدون مسؤول سداد جاهز: ${data.missingPayers}`:data.missingPayers===1?"Für einen Schüler fehlt ein verfügbarer Zahler.":`Für ${data.missingPayers} Schüler fehlt ein verfügbarer Zahler.`}</p>}
+    {data.payerIssues.some(item=>item.reason==="payer_unreachable")&&<p className="notice" role="status">{ar?`طلاب لا يستطيع مسؤول السداد لديهم استقبال الإشعارات حاليًا: ${data.payerIssues.filter(item=>item.reason==="payer_unreachable").length}`:`Schüler mit derzeit nicht erreichbarem Zahler: ${data.payerIssues.filter(item=>item.reason==="payer_unreachable").length}`}</p>}
+    {data.payerIssues.length>0&&<details className={css.disclosure}>
+      <summary>{ar?"طلاب يحتاجون متابعة":"Handlungsbedarf"} · {data.payerIssues.length}</summary>
+      <p className={css.secondary}>{ar?"راجع مسؤول السداد وتفعيل حساب ولي الأمر قبل الاعتماد على الإشعارات.":"Zahler und Kontofreischaltung prüfen, bevor Sie sich auf Benachrichtigungen verlassen."}</p>
+      <ul className={css.recordList}>{data.payerIssues.map(item=><li key={item.studentId}><Link className={css.recordRow} href={`/${locale}/school/more/fee-settings?student=${item.studentId}`}><span><strong><bdi>{item.studentName}</bdi></strong><small>{item.studentNumber} · {item.reason==="payer_missing"?(ar?"مسؤول سداد غير جاهز":"Zahler fehlt oder ist nicht verfügbar"):(ar?"الحساب غير جاهز للإشعارات":"Konto nicht für Benachrichtigungen bereit")}</small></span><span className={css.chevron} aria-hidden="true"/></Link></li>)}</ul>
+    </details>}
     {error&&<p role="alert">{error}</p>}
     <button className="primary-button" disabled={busy||!input.success||month<data.schoolMonth||(enabled===data.enabled&&month===data.startMonth)}>{ar?"حفظ":"Speichern"}</button>
   </form>;
