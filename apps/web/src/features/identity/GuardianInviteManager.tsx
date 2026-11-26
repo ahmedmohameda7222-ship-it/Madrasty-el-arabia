@@ -28,7 +28,7 @@ export function GuardianInviteManager({locale,id,correspondenceLocale,linkedAcco
       .then(({data})=>{setRows(data);setLoading(false);})
       .catch(err=>{if(!ctrl.signal.aborted){setProblem(message(locale,err));setLoading(false);}});
     return ()=>ctrl.abort();
-  },[id,locale,generation]);
+  },[id,generation]);
   const latest=rows[0];
   const run=(promise:()=>Promise<unknown>)=>{
     setBusy(true);setProblem("");

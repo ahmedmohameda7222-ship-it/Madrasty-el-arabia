@@ -123,3 +123,25 @@ test("guardian chat keeps unsent message and current thread after repeated langu
   await expect(page.locator(".comms-message").filter({hasText:"QA Existing message"})).toBeVisible();
  }finally{await school.close();}
 });
+
+test("app settings do not reset unsaved staff permission edits",async({page,context})=>{
+ test.setTimeout(90000);const school=schoolFixtures();
+ try{
+  await school.seed();await signIn(page,school,"admin");
+  const accessPage=await context.newPage();
+  try{
+   await accessPage.goto("/de/staff/access");
+   const people=accessPage.getByRole("combobox",{name:"Person auswählen"});
+   const teacherEmail=fixtureEmail(school.run,"teacher");
+   await expect(people.getByRole("option",{name:teacherEmail,exact:true})).toHaveCount(1,{timeout:30000});
+   await people.selectOption({label:teacherEmail});
+   const adminRole=accessPage.locator("fieldset").first().locator('input[type="checkbox"]').first();
+   await expect(adminRole).not.toBeChecked();
+   await adminRole.check();
+   await expect(adminRole).toBeChecked();
+   await toggle(accessPage,"ar");await expect(adminRole).toBeChecked();
+   await toggle(accessPage,"de");await expect(adminRole).toBeChecked();
+   // No grant changes are submitted by this test.
+  }finally{await accessPage.close();}
+ }finally{await school.close();}
+});
