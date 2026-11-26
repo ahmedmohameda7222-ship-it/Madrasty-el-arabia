@@ -1,7 +1,7 @@
 name: Prelaunch web and contracts
 on:
   push:
-    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24","remove/audit-and-delivery-status-2026-11-24","feat/admin-start-redesign-2026-11-24","feat/communication-center-2026-11-25","feat/family-management-2026-11-25","fix/preserve-state-language-2026-11-26","feat/communication-native-redesign-2026-11-26"]
+    branches: ["implementation/prelaunch", "fix/workflow-remediation-2026-11-22", "fix/admin-managed-teachers-only-2026-11-22", "feat/calendar-preview-to-app-2026-11-22", "feat/family-first-direct-staff-accounts-2026-11-23", "feat/staff-dark-workflow-class-subject-2026-11-23", "feat/admin-supervision-readonly-2026-11-23", "fix/volunteer-teacher-single-role-2026-11-23", "feat/admin-class-monitoring-2026-11-23", "feat/wochenplan-class-first-multiteacher-2026-11-23","feat/finance-simple-monthly-workflow-2026-11-24","fix/finance-mobile-ux-2026-11-24","fix/finance-ios-polish-2026-11-24","remove/audit-and-delivery-status-2026-11-24","feat/admin-start-redesign-2026-11-24","feat/communication-center-2026-11-25","feat/family-management-2026-11-25","fix/preserve-state-language-2026-11-26","feat/communication-native-redesign-2026-11-26","feat/chat-direct-microphone-2026-11-26"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -104,7 +104,7 @@ jobs:
           path: qa-artifacts/admin-start/
           if-no-files-found: warn
   domain-acceptance:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25","refs/heads/fix/preserve-state-language-2026-11-26","refs/heads/feat/communication-native-redesign-2026-11-26"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25","refs/heads/fix/preserve-state-language-2026-11-26","refs/heads/feat/communication-native-redesign-2026-11-26","refs/heads/feat/chat-direct-microphone-2026-11-26"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -149,7 +149,7 @@ jobs:
         shell: bash
         run: grep -E 'API request failed|Finance PDF stage' "$RUNNER_TEMP/madrasty-acceptance-web.log" || true
   android-debug:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25","refs/heads/fix/preserve-state-language-2026-11-26","refs/heads/feat/communication-native-redesign-2026-11-26"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25","refs/heads/fix/preserve-state-language-2026-11-26","refs/heads/feat/communication-native-redesign-2026-11-26","refs/heads/feat/chat-direct-microphone-2026-11-26"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -227,7 +227,7 @@ jobs:
           retention-days: 7
 
   communication-webkit:
-    if: github.ref == 'refs/heads/feat/communication-center-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
+    if: github.ref == 'refs/heads/feat/communication-center-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -263,7 +263,7 @@ jobs:
           if-no-files-found: warn
 
   communication-native-visual:
-    if: github.ref == 'refs/heads/feat/communication-center-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
+    if: github.ref == 'refs/heads/feat/communication-center-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -416,7 +416,7 @@ jobs:
           if-no-files-found: warn
 
   language-regression:
-    if: github.ref == 'refs/heads/fix/preserve-state-language-2026-11-26' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
+    if: github.ref == 'refs/heads/fix/preserve-state-language-2026-11-26' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -448,7 +448,7 @@ jobs:
           pnpm qa:web --project=${{ matrix.browser }} ui-language-state.spec.ts
 
   language-native-regression:
-    if: github.ref == 'refs/heads/fix/preserve-state-language-2026-11-26' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
+    if: github.ref == 'refs/heads/fix/preserve-state-language-2026-11-26' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' || github.ref == 'refs/heads/feat/chat-direct-microphone-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

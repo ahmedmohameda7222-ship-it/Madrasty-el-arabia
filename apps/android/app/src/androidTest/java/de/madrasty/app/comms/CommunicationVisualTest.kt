@@ -143,6 +143,12 @@ class CommunicationVisualTest {
                     }
                 }
             }
+            compose.onNodeWithTag("chat-voice-action").assertIsDisplayed().assertIsEnabled()
+            compose.onNode(hasSetTextAction()).performTextInput("QA draft")
+            compose.onNodeWithTag("chat-voice-action").assertDoesNotExist()
+            compose.onNodeWithTag("chat-send-action").assertIsDisplayed().assertIsEnabled()
+            compose.onNode(hasSetTextAction()).performTextClearance()
+            compose.onNodeWithTag("chat-voice-action").assertIsDisplayed()
             for(short in listOf(false,true)){
                 compose.runOnIdle{reduced=short}
                 val viewport=compose.onNodeWithTag("first-contact-viewport").fetchSemanticsNode().boundsInRoot
