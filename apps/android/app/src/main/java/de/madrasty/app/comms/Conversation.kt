@@ -65,6 +65,11 @@ import de.madrasty.app.ui.AsyncState
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.isolate
 import java.util.UUID
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -310,7 +315,15 @@ private fun MessageTimeline(
         }
     }
     if(rows.isEmpty())Text(stringResource(R.string.empty))
+    val dateLocale=LocalConfiguration.current.locales[0]
+    val zone=ZoneId.systemDefault()
+    var previousDay:java.time.LocalDate?=null
     for(message in rows){
+        val day=Instant.parse(message.getString("createdAt")).atZone(zone).toLocalDate()
+        if(day!=previousDay){
+            Text(day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(dateLocale)),modifier=Modifier.fillMaxWidth().padding(vertical=8.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center,style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            previousDay=day
+        }
         val messageId=message.getString("id")
         key(messageId){
             ChatMessageItem(model,thread,message,messageId==focus,reply,{target->
@@ -370,7 +383,7 @@ internal fun ChatMessageItem(
     if(!hasContent&&message.getString("source")=="human")Text(stringResource(R.string.chat_message_redacted))
     val actionLabel=stringResource(R.string.chat_reactions)
     Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        Text(isolate(message.getString("createdAt").replace("T"," ").take(16))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),modifier=Modifier.weight(1f,fill=false),style=MaterialTheme.typography.labelSmall)
+        Text(isolate(Instant.parse(message.getString("createdAt")).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(LocalConfiguration.current.locales[0])))+(if(own)" · "+stringResource(if(message.optBoolean("counterpartRead"))R.string.chat_read else R.string.chat_sent) else ""),modifier=Modifier.weight(1f,fill=false),style=MaterialTheme.typography.labelSmall)
         IconButton(onClick={actions=!actions},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
     }
     if(actions){

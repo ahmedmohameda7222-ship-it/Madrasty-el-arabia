@@ -35,9 +35,9 @@ function CommunicationFeed({locale}:{locale:Locale}){
       </div></details>}
       <button type="button" className="comms-icon-button" aria-label={ar?"تحديث":"Aktualisieren"} onClick={()=>setRefresh(n=>n+1)}><Icon name="retry"/></button>
     </div>
-    <AcademicPageItems locale={locale} page={page}>{items=><div className="auth-form">{items.map(item=><article key={item.kind+item.id} className="auth-card comms-feed-card">
+    <AcademicPageItems locale={locale} page={page}>{items=><div className="auth-form">{items.map(item=><article key={item.kind+item.id} className="auth-card comms-feed-card" data-kind={item.kind}>
       <small>{item.kind==="news"?(ar?"خبر":"Neuigkeit"):(ar?"إعلان":"Mitteilung")} · {new Date(item.publishedAt).toLocaleDateString(ar?"ar":"de-DE")}</small>
-      <h3 dir="auto">{item.title}</h3><p dir="auto">{item.body}</p>
+      <h3 dir="auto">{item.title}</h3>{item.body.length>280?<><p dir="auto">{item.body.slice(0,280)}…</p><details><summary>{ar?"اقرأ المنشور بالكامل":"Ganzen Beitrag lesen"}</summary><p dir="auto">{item.body}</p></details></>:<p dir="auto">{item.body}</p>}
     </article>)}</div>}</AcademicPageItems>
   </section>;
 }

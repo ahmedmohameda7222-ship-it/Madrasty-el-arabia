@@ -7,7 +7,7 @@ permissions:
   contents: read
 concurrency:
   group: communication-visual-audit-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26' }}
 jobs:
   visual-audit:
     if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'

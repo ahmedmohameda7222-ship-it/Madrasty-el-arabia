@@ -41,6 +41,7 @@ test("direct chat presents sent and received bubbles and compact actions", async
     await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).toBe(thread);
     await expect(page.locator(".comms-message[data-own=true]").filter({hasText:"Hallo Schule"})).toBeVisible({timeout:20000});
     await expect(page.locator(".comms-message[data-own=false]").filter({hasText:"Guten Tag"})).toBeVisible();
+    await expect(page.locator(".comms-day-divider")).toHaveCount(1);
     await expect(page.locator(".comms-message-actions[open]")).toHaveCount(0);
     await expect(page.getByRole("button",{name:"👍 1",exact:true})).toBeVisible();
     const footer=page.locator(".comms-message-footer").first();

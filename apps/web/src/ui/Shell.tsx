@@ -60,6 +60,11 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   const search = routeParams.toString();
   const main = useRef<HTMLElement>(null);
   const shell = useRef<HTMLDivElement>(null);
+  useLayoutEffect(()=>{
+    const node=shell.current;if(!node)return;
+    const ua=navigator.userAgent;
+    node.dataset.platform=/Android/i.test(ua)?"android":/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1)?"ios":"web";
+  },[]);
   const positions = useRef(new Map<string, { top: number; focus: string | null }>());
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
@@ -112,7 +117,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   }, [routePathname, search, active, commSection]);
 
   return (
-    <div ref={shell} className="school-shell" data-view={threadScreen?"thread":undefined}>
+    <div ref={shell} className="school-shell" data-view={threadScreen?"thread":active==="messages"?"contact":active==="calendar"?"calendar":undefined}>
       <a className="skip-link" href="#school-content">{text.skip}</a>
       <SchoolHeader locale={locale} brandHref={`${root}/home`} notificationSettings={<PushPreferences locale={locale}/>}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">

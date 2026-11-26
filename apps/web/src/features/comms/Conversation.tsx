@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useRef,useState,type FormEvent,type PointerEvent } from "react";
+import { Fragment,useEffect,useRef,useState,type FormEvent,type PointerEvent } from "react";
 import {
   chatMessage,messageReaction,postMessageInput,reactionEmoji,threadReaderState,
   type ChatMessage,type Locale,type ThreadSummary,
@@ -45,10 +45,12 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
   const messageArea=useRef<HTMLDivElement>(null);
   const followTail=useRef(true);
+  const [away,setAway]=useState(false);
+  function jumpToLatest(){const area=messageArea.current;if(!area)return;followTail.current=true;area.scrollTop=area.scrollHeight;setAway(false);}
   useEffect(()=>{
     const area=messageArea.current;if(!area)return;
-    const track=()=>{followTail.current=area.scrollHeight-area.scrollTop-area.clientHeight<80;};
-    const update=()=>{if(followTail.current&&!area.querySelector(".comms-message-actions[open]"))area.scrollTop=area.scrollHeight;};
+    const track=()=>{followTail.current=area.scrollHeight-area.scrollTop-area.clientHeight<80;setAway(!followTail.current);};
+    const update=()=>{if(followTail.current&&!area.querySelector(".comms-message-actions[open]"))area.scrollTop=area.scrollHeight;setAway(area.scrollHeight-area.scrollTop-area.clientHeight>=80);};
     area.addEventListener("scroll",track,{passive:true});
     const observer=new ResizeObserver(update);
     const timeline=area.querySelector(".comms-timeline");if(timeline)observer.observe(timeline);
@@ -151,6 +153,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       <small>{attempt.pending?text.sending:text.failed}</small>
     </div>}
     </div>
+    {away&&!term&&<button type="button" className="comms-tail-action" onClick={jumpToLatest}>{locale==="ar"?"أحدث الرسائل ↓":"Neueste Nachrichten ↓"}</button>}
     {thread.canReply?<form className="comms-composer auth-form" onSubmit={compose}>
       {quote&&<div className="notice">
         <span>{text.reply} · <bdi>{quote.authorName??text.school}</bdi></span>
@@ -321,7 +324,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
     {cursor&&<button type="button" className="plain-button" onClick={()=>void older()} disabled={paging}>{text.older}</button>}
     {failure&&<p role="alert">{failure}</p>}
     {!rows.length&&<AsyncSurface locale={locale} state={{kind:"empty"}}/>}
-    <ol className="comms-timeline">{rows.map((original)=>{const pending=Object.prototype.hasOwnProperty.call(optimistic,original.id);const message=pending?{...original,reactions:projectReaction(original.reactions,optimistic[original.id]??null)}:original;return <li key={message.id} id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
+    <ol className="comms-timeline">{rows.map((original,index)=>{const pending=Object.prototype.hasOwnProperty.call(optimistic,original.id);const message=pending?{...original,reactions:projectReaction(original.reactions,optimistic[original.id]??null)}:original;const date=new Date(message.createdAt);const newDay=index===0||new Date(rows[index-1]!.createdAt).toDateString()!==date.toDateString();return <Fragment key={message.id}>{newDay&&<li className="comms-day-divider">{date.toLocaleDateString(locale==="ar"?"ar":"de-DE",{day:"numeric",month:"long",year:"numeric"})}</li>}<li id={`message-${message.id}`} tabIndex={-1} data-own={message.own} data-highlight={highlight===message.id} className="comms-message">
       {!message.own&&<strong className="comms-message-author"><bdi>{message.authorName??text.school}</bdi></strong>}
       {message.reply&&<button type="button" className="plain-button" aria-label={text.target} onClick={()=>{
         if(message.reply)void jump(message.reply);
@@ -351,6 +354,6 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
           onClick={()=>void react(message,emoji)}>{emoji}</button>)}</div>
       </details>}
       </details></div>
-    </li>})}</ol>
+    </li></Fragment>})}</ol>
   </>;
 }
