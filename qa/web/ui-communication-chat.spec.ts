@@ -31,6 +31,10 @@ test("direct chat presents sent and received bubbles and compact actions", async
     const inbox=page.locator('a[href="/de/school/messages"]').first();
     await expect(inbox).toBeVisible({timeout:20000});
     await inbox.click();
+    await expect(page.getByRole("heading",{name:"Kontakt",exact:true})).toHaveCount(1);
+    await expect(page.locator(".comms-inbox-heading h2")).toHaveCount(0);
+    await expect(page.getByRole("link",{name:"Neue Nachricht",exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Suchen",exact:true})).toHaveCount(0);
     const row=page.locator(".comms-thread-row").filter({has:page.locator('small', {hasText:"Guten Tag"})});
     await expect(row).toBeVisible({timeout:20000});
     await row.click();

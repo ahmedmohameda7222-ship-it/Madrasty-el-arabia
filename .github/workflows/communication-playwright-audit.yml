@@ -1,7 +1,7 @@
 name: Communication Playwright visual audit
 on:
   push:
-    branches: ["fix/communication-playwright-visual-audit-2026-11-25"]
+    branches: ["fix/communication-playwright-visual-audit-2026-11-25", "feat/communication-native-redesign-2026-11-26"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   visual-audit:
-    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25'
+    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -31,7 +31,7 @@ jobs:
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
       - run: pnpm check:types
-      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pwsh -NoProfile -File qa/start-stack.ps1 || (sleep 5; pwsh -NoProfile -File qa/start-stack.ps1)
       - run: pnpm exec playwright install --with-deps webkit
       - name: Capture all populated communication views
         shell: bash
@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   regression:
-    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25'
+    if: github.ref == 'refs/heads/fix/communication-playwright-visual-audit-2026-11-25' || github.ref == 'refs/heads/feat/communication-native-redesign-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -67,7 +67,7 @@ jobs:
           pnpm install --frozen-lockfile
       - run: pnpm check:types
       - run: pnpm build:web
-      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pwsh -NoProfile -File qa/start-stack.ps1 || (sleep 5; pwsh -NoProfile -File qa/start-stack.ps1)
       - run: pnpm exec playwright install --with-deps webkit
       - name: Verify communication behavior has not regressed
         shell: bash
