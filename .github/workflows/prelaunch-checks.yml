@@ -336,7 +336,15 @@ jobs:
       - run: |
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
-      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Start isolated family QA stack
+        shell: bash
+        run: |
+          df -h "$RUNNER_TEMP"
+          if ! pwsh -NoProfile -File qa/start-stack.ps1; then
+            echo "::warning::First local stack startup failed; retrying once on this isolated runner"
+            sleep 5
+            pwsh -NoProfile -File qa/start-stack.ps1
+          fi
       - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Verify family wizard and mobile UI
         shell: bash
@@ -397,7 +405,7 @@ jobs:
             mkdir -p qa-artifacts/native-family
             ./apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=de.madrasty.app.school.FamilyVisualTest --no-daemon --stacktrace
             adb pull /sdcard/Download/madrasty-family-qa/. qa-artifacts/native-family/
-            test "$(find qa-artifacts/native-family -name '*.png' | wc -l)" -eq 8
+            test "$(find qa-artifacts/native-family -name '*.png' | wc -l)" -eq 20
       - uses: actions/upload-artifact@v4
         if: always()
         with:

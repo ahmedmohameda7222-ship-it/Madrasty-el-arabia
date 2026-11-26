@@ -84,6 +84,22 @@ class FamilyVisualTest {
             next.assertIsEnabled().performClick()
             compose.onNodeWithText(if(ar)"أولياء الأمور · 2/5" else "Sorgeberechtigte · 2/5").assertIsDisplayed()
             save("guardian")
+            compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("QA Parent")
+            next.performScrollTo().assertIsEnabled().performClick()
+            compose.onNodeWithText(if(ar)"الأطفال · 3/5" else "Kinder · 3/5").performScrollTo().assertIsDisplayed()
+            compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("QA Child")
+            save("child")
+            next.performScrollTo().assertIsEnabled().performClick()
+            compose.onNodeWithText(if(ar)"الصلاحيات · 4/5" else "Zugriffsrechte · 4/5").performScrollTo().assertIsDisplayed()
+            next.assertIsNotEnabled()
+            compose.onNodeWithText(if(ar)"الربط · عدم إنشاء رابط جديد" else "Verknüpfung · Nicht neu verknüpfen").performScrollTo().performClick()
+            compose.onNodeWithText(if(ar)"معتمد" else "Bestätigt",exact=true).performClick()
+            compose.onNodeWithText(if(ar)"صلة القرابة · غير محدد" else "Beziehung · Nicht angegeben").performScrollTo().performClick()
+            compose.onNodeWithText(if(ar)"الأب" else "Vater",exact=true).performClick()
+            save("links")
+            next.performScrollTo().assertIsEnabled().performClick()
+            compose.onNodeWithText(if(ar)"المراجعة · 5/5" else "Prüfen · 5/5").performScrollTo().assertIsDisplayed()
+            save("review")
         }finally{instrumentation.runOnMainSync{store.clear()}}
     }
 }
