@@ -44,6 +44,9 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   function pullStart(event:TouchEvent<HTMLElement>){const area=event.currentTarget.closest(".comms-split-sidebar")??event.currentTarget.closest(".school-content");const point=event.touches[0];pull.current=point&&event.touches.length===1&&(!area||area.scrollTop<=0)?{x:point.clientX,y:point.clientY}:null;}
   function pullEnd(event:TouchEvent<HTMLElement>){const start=pull.current,point=event.changedTouches[0];pull.current=null;if(start&&point&&point.clientY-start.y>80&&Math.abs(point.clientX-start.x)<45)reload();}
   const [search,setSearch]=useState(term);
+  // Avoid accepting edits before React has attached the search handlers.
+  const [interactive,setInteractive]=useState(false);
+  useEffect(()=>setInteractive(true),[]);
   useEffect(()=>setSearch(term),[term]);
   useEffect(()=>{
     if((thread&&!wide)||search.trim()===term)return;
@@ -96,7 +99,7 @@ export function ThreadInbox({locale,thread}:{locale:Locale;thread?:string}){
   const inbox=<section className="auth-card auth-form inbox-panel" onTouchStart={pullStart} onTouchEnd={pullEnd} onTouchCancel={()=>{pull.current=null;}}>
     <div className="comms-inbox-searchbar"><form className="auth-form inbox-search" role="search" onSubmit={(event)=>{event.preventDefault();patch({search});}}>
       <Icon name="search"/>
-      <input aria-label={text.search} placeholder={locale==="ar"?"ابحث عن محادثة":"Chats suchen"} type="search" value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/>
+      <input aria-label={text.search} placeholder={locale==="ar"?"ابحث عن محادثة":"Chats suchen"} type="search" disabled={!interactive} value={search} maxLength={120} onChange={(event)=>setSearch(event.target.value)}/>
     </form><button type="button" className="comms-icon-button" aria-label={text.refresh} onClick={reload}><Icon name="retry"/></button></div>
     <div className="inbox-filter-strip" role="group" aria-label={locale==="ar"?"تصفية المحادثات":"Unterhaltungen filtern"}>
       {filters.map(filter=><button className="plain-button" type="button" key={filter} aria-pressed={!archived&&selected===filter} onClick={()=>patch({filter,archived:false})}>{filter==="unread"?(locale==="ar"?"غير مقروءة":"Ungelesen"):text.all}</button>)}
