@@ -107,6 +107,34 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(paid.balanceMinor, 0);
     assert.equal(sibling.state, "unpaid");
     assert.equal(sibling.balanceMinor, 3200);
+    // Exercise the real projector against the disposable school and the actual
+    // named payer's session. A posting alone does not prove notification delivery.
+    assert.ok(process.env.SCHOOL_WORKER_SECRET);
+    assert.equal(paid.receiptIds.length,1);
+    const financeNotices=async(token:string,template:string,targetId:string)=>{
+      const rows=(await fixtureApi(school,"/notifications?limit=100",{token,persona:"guardian"})).payload.data;
+      const matches:string[]=[];
+      for(const row of rows.filter((n:{template:string})=>n.template===template)){
+        const detail=(await fixtureApi(school,`/notifications/${row.id}`,{token,persona:"guardian"})).payload.data;
+        if(detail.targets?.some((t:{id:string})=>t.id===targetId))matches.push(row.id);
+      }
+      return matches;
+    };
+    for(let i=0;i<24;i++){
+      if((await financeNotices(payer,"invoice_issued",ahmed.id)).length&&
+         (await financeNotices(payer,"payment_recorded",paid.receiptIds[0])).length)break;
+      await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
+    }
+    const invoiceNotices=await financeNotices(payer,"invoice_issued",ahmed.id);
+    const paymentNotices=await financeNotices(payer,"payment_recorded",paid.receiptIds[0]);
+    assert.equal(invoiceNotices.length,1,"named payer receives exactly one invoice notice");
+    assert.equal(paymentNotices.length,1,"named payer receives exactly one receipt notice");
+    assert.equal((await financeNotices(nonpayer,"invoice_issued",ahmed.id)).length,0);
+    assert.equal((await financeNotices(nonpayer,"payment_recorded",paid.receiptIds[0])).length,0);
+    await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
+    assert.deepEqual(await financeNotices(payer,"invoice_issued",ahmed.id),invoiceNotices);
+    assert.deepEqual(await financeNotices(payer,"payment_recorded",paid.receiptIds[0]),paymentNotices);
+
     const payment = receiptMutation.parse(await send("/finance/receipts", "unmatched-receipt", {
       externalReceiptRef: `${school.run}-BANK-02`, method: "bank", receivedDate: clock.day, currency: "EUR",
       amountMinor: 4000, invoiceId: omar.id, verified: true,
