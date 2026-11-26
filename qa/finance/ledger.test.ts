@@ -185,7 +185,8 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const donation={date:clock.day,kind:"donation",amountMinor:5000,description:"Synthetic donation"};
     const movement=await send("/finance/cashbook","donation",donation);
     assert.deepEqual(await send("/finance/cashbook","donation",donation),movement);
-    await send("/finance/cashbook","expense",{date:clock.day,kind:"expense",amountMinor:1000,description:"Synthetic stationery"});
+    const expenseInput={date:clock.day,kind:"expense",amountMinor:1000,description:"Synthetic stationery"};
+    const expense=await send("/finance/cashbook","expense",expenseInput);
     await send("/finance/cashbook","bank-deposit",{date:clock.day,kind:"bank_deposit",amountMinor:1500,description:"Synthetic deposit"});
     const combined=receiptMutation.parse(await send("/finance/receipts","combined-cash",{externalReceiptRef:`${school.run}-CASH-01`,method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:100,verified:true,allocations:[{invoiceId:omar.id,amountMinor:100,invoiceRevision:restored.revision}]}));
     assert.equal(combined.state,"allocated");
@@ -196,22 +197,22 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(cashAfter.expenseMinor-cashBefore.expenseMinor,1000);
     assert.equal(cashAfter.depositsMinor-cashBefore.depositsMinor,1500);
     await fixtureApi(school,"/finance/cashbook",{token:payer,status:403});
-    const correctionInput={movementId:movement.id,reason:"Synthetic donation correction"};
+    const correctionInput={movementId:expense.id,reason:"Synthetic expense correction"};
     await fixtureApi(school,"/finance/cashbook/reversals",{method:"POST",token:payer,persona:"guardian",key:school.run+".forbidden-correction",body:correctionInput,status:403});
-    const correction=await send("/finance/cashbook/reversals","correct-donation",correctionInput);
-    assert.deepEqual(await send("/finance/cashbook/reversals","correct-donation",correctionInput),correction);
+    const correction=await send("/finance/cashbook/reversals","correct-expense",correctionInput);
+    assert.deepEqual(await send("/finance/cashbook/reversals","correct-expense",correctionInput),correction);
     await fixtureApi(school,"/finance/cashbook/reversals",{method:"POST",token:finance,persona:"admin",key:school.run+".duplicate-correction",body:correctionInput,status:409});
     const correctedBook=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
-    assert.equal(correctedBook.balanceMinor,cashAfter.balanceMinor-5000);
-    assert.equal(correctedBook.correctionsMinor,cashAfter.correctionsMinor+5000);
-    const original=correctedBook.entries.find((row:{id:string})=>row.id===movement.id);
+    assert.equal(correctedBook.balanceMinor,cashAfter.balanceMinor+1000);
+    assert.equal(correctedBook.correctionsMinor,cashAfter.correctionsMinor-1000);
+    const original=correctedBook.entries.find((row:{id:string})=>row.id===expense.id);
     assert.ok(original,"the original cash movement must remain in the journal");
     assert.equal(original.canReverse,false);
     const reversedMovement=correctedBook.entries.find((row:{id:string})=>row.id===correction.id);
-    assert.equal(reversedMovement.reversalOf,movement.id);
-    assert.equal(reversedMovement.signedMinor,-5000);
-    // Keep a positive cash reserve for the existing subsequent family payment assertions.
-    await send("/finance/cashbook","replacement-donation",{...donation,description:"Synthetic replacement donation"});
+    assert.equal(reversedMovement.reversalOf,expense.id);
+    assert.equal(reversedMovement.signedMinor,1000);
+    // Restore the same net cash balance for the subsequent family payment assertions.
+    await send("/finance/cashbook","replacement-expense",{...expenseInput,description:"Synthetic replacement expense"});
 
     const stop = enrollmentStop.parse((await fixtureApi(school, "/enrollment-stops", {
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
