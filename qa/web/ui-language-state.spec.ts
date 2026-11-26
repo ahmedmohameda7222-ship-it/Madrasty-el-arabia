@@ -22,7 +22,7 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
   await page.locator('input[name="guardian1Email"]').fill("unsent@example.invalid");
   const url=page.url();
   await page.evaluate(()=>{(window as Window & {languageTestSentinel?:boolean}).languageTestSentinel=true;});
-  await page.locator(".school-header").getByText("العربية",{exact:true}).click();
+  await toggle(page,"ar");
   await expect(page.locator("html")).toHaveAttribute("lang","ar");
   await expect(page.locator("html")).toHaveAttribute("dir","rtl");
   await expect(page.locator(".family-step-caption")).toContainText("2 / 5");
@@ -30,7 +30,7 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
   await expect(page.locator('input[name="guardian1Email"]')).toHaveValue("unsent@example.invalid");
   expect(page.url()).toBe(url);
   expect(await page.evaluate(()=>(window as Window & {languageTestSentinel?:boolean}).languageTestSentinel)).toBe(true);
-  await page.locator(".school-header").getByText("Deutsch",{exact:true}).click();
+  await toggle(page,"de");
   await expect(page.locator("html")).toHaveAttribute("lang","de");
   await expect(field).toHaveValue("QA Unsaved Parent");
   await page.getByRole("button",{name:"Zurück",exact:true}).last().click();
@@ -77,9 +77,18 @@ async function signIn(page:Page,school:FixtureSchool,principal:"admin"|"guardian
 }
 async function toggle(page:Page,target:"ar"|"de"){
  const url=page.url();
- await page.locator(".school-header").getByRole("button",{name:target==="ar"?"العربية":"Deutsch",exact:true}).click();
+ const header=page.locator(".school-header");
+ await expect(header.getByRole("button",{name:"العربية",exact:true})).toHaveCount(0);
+ await expect(header.getByRole("button",{name:"Deutsch",exact:true})).toHaveCount(0);
+ await header.getByRole("button",{name:target==="ar"?"App-Einstellungen":"إعدادات التطبيق",exact:true}).click();
+ const settings=page.locator(".app-settings-sheet");await expect(settings).toBeVisible();
+ if(await page.locator(".school-nav").count())await expect(settings.getByRole("heading",{name:target==="ar"?"Gerätebenachrichtigungen":"إشعارات الجهاز"})).toBeVisible();
+ await settings.getByRole("button",{name:target==="ar"?"العربية":"Deutsch",exact:true}).click();
  await expect(page.locator("html")).toHaveAttribute("lang",target);
  await expect(page.locator("html")).toHaveAttribute("dir",target==="ar"?"rtl":"ltr");
+ await expect(settings.getByRole("button",{name:target==="ar"?"العربية":"Deutsch",exact:true})).toHaveAttribute("aria-pressed","true");
+ await settings.getByRole("button",{name:target==="ar"?"إغلاق":"Schließen",exact:true}).click();
+ await expect(settings).not.toBeVisible();
  expect(page.url()).toBe(url);
 }
 test("sign-in fields and password visibility are not reset by language",async({page})=>{

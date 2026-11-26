@@ -97,7 +97,7 @@ export default async function SchoolPage({ params, searchParams }: {
           <summary>{locale === "ar" ? "الحساب والجهاز" : "Konto und Gerät"}</summary>
           <div className="more-rows">
             <Link className="more-row" href={`/${locale}/account/profile`}>{locale==="ar"?"الملف الشخصي":"Profil"}</Link>
-            <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "تفضيلات الحساب والإشعارات" : "Konto und Benachrichtigungen"}</Link>
+            <Link className="more-row" href={`/${locale}/account/preferences`}>{locale === "ar" ? "إعدادات التطبيق والإشعارات" : "App-Einstellungen und Benachrichtigungen"}</Link>
             <Link className="more-row" href={`/${locale}/account/security`}>{locale === "ar" ? "الأمان والاسترجاع" : "Sicherheit und Wiederherstellung"}</Link>
           </div>
           <SessionControls locale={locale} session={session} />

@@ -22,9 +22,16 @@ export function PresentationDocument({locale}:{locale:Locale}){
  },[locale]);
  return null;
 }
-export function LanguageButton({locale}:{locale:Locale}){
+export function LanguageSettings({locale}:{locale:Locale}){
  const {select,pending}=usePresentationLanguage();
- const target=locale==="ar"?"de":"ar";
- return <button type="button" className="plain-button" lang={target} disabled={pending} aria-busy={pending}
-   onClick={()=>select(target)}>{target==="ar"?"العربية":"Deutsch"}</button>;
+ const label=locale==="ar"?"لغة التطبيق":"App-Sprache";
+ return <section className="app-language-settings" aria-label={label}>
+  <h3>{label}</h3>
+  <div className="app-language-options" role="group" aria-label={label}>
+   {(["ar","de"] as const).map(language=><button key={language} type="button" className="plain-button"
+    lang={language} aria-pressed={language===locale} disabled={pending} onClick={()=>{if(language!==locale)select(language);}}>
+    {language==="ar"?"العربية":"Deutsch"}
+   </button>)}
+  </div>
+ </section>;
 }

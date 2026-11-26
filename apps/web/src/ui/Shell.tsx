@@ -7,19 +7,19 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { z } from "zod";
 import { dictionary } from "@/i18n";
 import { displayPath } from "@/i18n/presentation";
-import { LanguageButton } from "./PresentationLanguage";
+import { AppSettingsSheet } from "./AppSettingsSheet";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
 import { MoreBackLink } from "./MoreBackLink";
 import { SchoolLink } from "./SchoolLink";
-import { NotificationLink } from "@/features/comms/NotificationCenter";
+import { NotificationLink, PushPreferences } from "@/features/comms/NotificationCenter";
 
 type Destination = "home" | "students" | "attendance" | "children" | "messages" | "more";
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 const childScope = z.uuid();
 
-export function SchoolHeader({ locale, children, brandHref }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string }) {
+export function SchoolHeader({ locale, children, brandHref, notificationSettings }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string; notificationSettings?: ReactNode }) {
   const text = dictionary(locale);
   return (
     <header className="school-header">
@@ -29,7 +29,7 @@ export function SchoolHeader({ locale, children, brandHref }: { locale: Locale; 
       </Link>
       <div className="header-actions">
         {children}
-        <LanguageButton locale={locale}/>
+        <AppSettingsSheet locale={locale}>{notificationSettings}</AppSettingsSheet>
       </div>
     </header>
   );
@@ -105,7 +105,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   return (
     <div className="school-shell">
       <a className="skip-link" href="#school-content">{text.skip}</a>
-      <SchoolHeader locale={locale} brandHref={`${root}/home`} >{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
+      <SchoolHeader locale={locale} brandHref={`${root}/home`} notificationSettings={<PushPreferences locale={locale}/>}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation} data-columns={destinations.length}>
           {destinations.map((tab) => (

@@ -7,18 +7,18 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
-import { usePresentationLanguage } from "@/ui/PresentationLanguage";
+import { LanguageSettings, usePresentationLanguage } from "@/ui/PresentationLanguage";
 import { PushPreferences } from "@/features/comms/NotificationCenter";
 
 const words = {
   ar: {
-    title: "تفضيلات الحساب", ui: "لغة التطبيق", mail: "لغة مراسلات المدرسة", theme: "المظهر",
+    title: "إعدادات التطبيق", ui: "لغة التطبيق", mail: "لغة مراسلات المدرسة", theme: "المظهر",
     system: "حسب الجهاز", light: "فاتح", dark: "داكن", save: "حفظ التفضيلات", notifications: "إشعارات الجهاز",
     notificationsPending: "تفعيل إشعارات هذا الجهاز غير متاح حاليًا.", security: "أمان الحساب",
     refresh: "تحديث التفضيلات",
   },
   de: {
-    title: "Kontoeinstellungen", ui: "App-Sprache", mail: "Sprache für Schulmitteilungen", theme: "Darstellung",
+    title: "App-Einstellungen", ui: "App-Sprache", mail: "Sprache für Schulmitteilungen", theme: "Darstellung",
     system: "Geräteeinstellung", light: "Hell", dark: "Dunkel", save: "Einstellungen speichern", notifications: "Gerätebenachrichtigungen",
     notificationsPending: "Benachrichtigungen für dieses Gerät sind derzeit nicht verfügbar.", security: "Kontosicherheit",
     refresh: "Einstellungen aktualisieren",
@@ -52,7 +52,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void operation(async () => {
-      const next = await command("/account/preferences","PATCH",value,preferencesSchema);
+      const next = await command("/account/preferences","PATCH",{...value,uiLocale:locale},preferencesSchema);
       if (next.uiLocale !== locale) selectLanguage(next.uiLocale);
       document.documentElement.dataset.theme = next.theme;
       setValue(next);
@@ -64,11 +64,8 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
     <h1>{labels.title}</h1>
     <div className="calendar-layout">
       <section className="auth-card">
+        <LanguageSettings locale={locale}/>
         <form className="auth-form" onSubmit={save} aria-busy={pending}>
-          <label>{labels.ui}<select value={value.uiLocale}
-            onChange={(event)=>setValue({ ...value, uiLocale: event.target.value as Locale })}>
-            <option value="ar" lang="ar">العربية</option><option value="de" lang="de">Deutsch</option>
-          </select></label>
           <label>{labels.mail}<select value={value.correspondenceLocale}
             onChange={(event)=>setValue({ ...value, correspondenceLocale: event.target.value as Locale })}>
             <option value="ar" lang="ar">العربية</option><option value="de" lang="de">Deutsch</option>
@@ -83,7 +80,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
               headers:{"X-School-Persona":actor.persona},
             });
             setStale(false);
-            setValue(result.data);
+            setValue({...result.data,uiLocale:locale});
           })}>{labels.refresh}</button>}
           {feedback && <p role={feedback.failed ? "alert" : "status"}>{feedback.message}</p>}
         </form>
