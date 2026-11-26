@@ -57,6 +57,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     var amountEdited by remember(initial) { mutableStateOf(false) }
     var verified by remember { mutableStateOf(false) }
     var choose by remember { mutableStateOf(false) }
+    var payerAnchor by remember { mutableStateOf<String?>(null) }
     var review by remember { mutableStateOf<JSONObject?>(null) }
     var result by remember { mutableStateOf<JSONObject?>(null) }
     fun updateRows(next: List<Pair<JSONObject,String>>) {
@@ -78,7 +79,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         TextButton(onClick={review=null}) {Text(stringResource(R.string.fee_edit))}
         Submit(true,R.string.receipt_confirm,success=null){
             result=model.schoolCommand(attempts,"/finance/receipts","POST",prepared)
-            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";amountEdited=false;verified=false;rows=emptyList()
+            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";amountEdited=false;verified=false;rows=emptyList();payerAnchor=null
         }
         return
     }
@@ -96,11 +97,12 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         Field(R.string.receipt_allocation_amount,row.second){value->updateRows(rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r})}
         TextButton(onClick={updateRows(rows.filterIndexed{i,_->i!=index})}){Text(stringResource(R.string.fee_remove_line))}
     }
-    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_optional_invoice))}
-    if(choose)ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet()){ invoice->
+    TextButton(onClick={choose=payerAnchor!=null||!choose;payerAnchor=null}){Text(stringResource(R.string.receipt_optional_invoice))}
+    if(rows.isNotEmpty())TextButton(onClick={val id=rows.first().first.getString("id");choose=!choose||payerAnchor!=id;payerAnchor=id}){Text(stringResource(R.string.receipt_same_payer))}
+    if(choose)androidx.compose.runtime.key(payerAnchor){ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet(),payerAnchor = payerAnchor){ invoice->
         updateRows(rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency)))
         choose=false
-    }
+    }}
     FilterChip(verified,{verified=!verified},label={Text(stringResource(R.string.receipt_confirmed_external))})
     val allocations=rows.map{(invoice,value)->financeMinor(value,currency,invoice.getLong("balanceMinor"))}
     val minor=financeMinor(amount,currency,100_000_000_000_000)
@@ -115,7 +117,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
 
 @Composable
 internal fun ReceiptInvoicePicker(
-    model: IdentityViewModel, currency: String, excluded: Set<String> = emptySet(), pick: (JSONObject) -> Unit,
+    model: IdentityViewModel, currency: String, excluded: Set<String> = emptySet(), payerAnchor: String? = null, pick: (JSONObject) -> Unit,
 ) {
     var month by remember { mutableStateOf("") }
     var value by remember { mutableStateOf("") }
@@ -124,7 +126,8 @@ internal fun ReceiptInvoicePicker(
     Field(R.string.fee_month, month) { month = financeDigits(it).take(7) }
     Button(onClick = { search = value.trim() }) { Text(stringResource(R.string.fee_search)) }
     val byMonth = if (validBillingMonth(month)) "&period=$month" else ""
-    academicPages(model, "/finance/invoices?limit=20&q=${Uri.encode(search)}&state=open$byMonth", model.attendanceNetworkRevision) { rows ->
+    val byPayer = payerAnchor?.let { "&payerInvoice=${Uri.encode(it)}" } ?: ""
+    academicPages(model, "/finance/invoices?limit=20&q=${Uri.encode(search)}&state=open$byMonth$byPayer", model.attendanceNetworkRevision) { rows ->
         for (row in rows.filter { it.getString("currency") == currency && it.getLong("balanceMinor") > 0L && it.getString("id") !in excluded }) {
             HorizontalDivider()
             Text(receiptInvoiceLabel(row))
