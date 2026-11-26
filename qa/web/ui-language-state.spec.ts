@@ -41,9 +41,16 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
   await expect(page.getByRole("combobox",{name:"Familiensituation (optional)"})).toHaveValue("divorced");
   await expect(page.locator(".school-nav")).toBeVisible();
   expect(await page.locator(".school-nav [aria-current=page]").getAttribute("href")).toContain("/school/students");
-  // Exercise import in the same foreground tab after checking every wizard assertion.
-  const importPage=page;
-  {
+  expect(await page.evaluate(()=>(window as Window & {languageTestSentinel?:boolean}).languageTestSentinel)).toBe(true);
+ }finally{await school.close();}
+});
+
+test("language switch keeps selected import file and unsaved column mapping",async({page:importPage})=>{
+ test.setTimeout(90000);
+ const school=schoolFixtures();
+ try{
+    await school.seed();
+    await signIn(importPage,school,"admin");
     const historyResponse=importPage.waitForResponse(response=>new URL(response.url()).pathname==="/api/v1/school/family-imports"&&response.request().method()==="GET");
     await importPage.goto("/de/school/students/import");
     expect((await historyResponse).ok()).toBeTruthy();
@@ -66,7 +73,6 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
     await expect(mapped).toHaveValue(chosen!);expect(importPage.url()).toBe(importUrl);
     await toggle(importPage,"de");
     await expect(mapped).toHaveValue(chosen!);
-  }
  }finally{await school.close();}
 });
 
@@ -98,6 +104,8 @@ async function toggle(page:Page,target:"ar"|"de"){
  await expect(page.locator("html")).toHaveAttribute("lang",target);
  await expect(page.locator("html")).toHaveAttribute("dir",target==="ar"?"rtl":"ltr");
  await expect(settings.getByRole("button",{name:target==="ar"?"العربية":"Deutsch",exact:true})).toHaveAttribute("aria-pressed","true");
+ // The locale payload may commit before React finishes the refresh transition.
+ await expect(settings.getByRole("button",{name:target==="ar"?"العربية":"Deutsch",exact:true})).toBeEnabled();
  await settings.getByRole("button",{name:target==="ar"?"إغلاق":"Schließen",exact:true}).click();
  await expect(settings).not.toBeVisible();
  expect(page.url()).toBe(url);
