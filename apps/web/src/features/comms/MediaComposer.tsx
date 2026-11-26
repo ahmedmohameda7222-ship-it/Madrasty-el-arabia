@@ -8,6 +8,7 @@ import {ApiResponseError,requestApi} from "@/api/client";
 import {webHeaders} from "@/features/identity/SessionControls";
 import {convertPhoto,voiceCapture} from "./capture";
 import {Icon} from "@/ui/Icon";
+import {VoiceDraftPreview} from "./VoiceDraftPreview";
 
 const copy={
   ar:{gallery:"اختيار صورة",camera:"تصوير",record:"سجّل صوت",stop:"إنهاء التسجيل",cancel:"إلغاء التسجيل",audio:"معاينة التسجيل",
@@ -246,7 +247,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     </div>}
     {draft&&<div className="auth-form">
       {draft.kind==="photo"?<img src={draft.preview} alt={labels.photo} width={240} style={{maxWidth:"100%",objectFit:"contain"}}/>:
-        <audio controls aria-label={labels.audio} src={draft.preview} style={{maxWidth:"100%"}}/>}
+        <VoiceDraftPreview file={draft.file} src={draft.preview} label={labels.audio}/>}
       <div className="header-actions">
         {!draft.readyId&&<button className="plain-button" type="button" disabled={working||locked} onClick={()=>void submit()}>
           {error==="failed"?labels.retry:labels.upload}

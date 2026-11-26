@@ -11,7 +11,12 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -282,6 +287,8 @@ private class VoicePlayer {
 @Composable
 private fun VoicePreview(bytes:ByteArray){
     val player=remember(bytes){VoicePlayer()}
+    var waveform by remember(bytes){mutableStateOf<VoiceWaveform?>(null)}
+    LaunchedEffect(bytes){waveform=withContext(Dispatchers.Default){voiceWaveform(bytes)}}
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     var playing by remember(bytes){mutableStateOf(false)}
     var failed by remember(bytes){mutableStateOf(false)}
@@ -291,6 +298,18 @@ private fun VoicePreview(bytes:ByteArray){
         }
         lifecycle.addObserver(observer)
         onDispose{lifecycle.removeObserver(observer);player.stop()}
+    }
+    waveform?.let{wave->
+        val color=MaterialTheme.colorScheme.primary
+        Canvas(Modifier.fillMaxWidth().height(40.dp)){
+            val step=size.width/wave.bars.size
+            wave.bars.forEachIndexed{index,level->
+                val h=maxOf(2.dp.toPx(),level*size.height*.9f)
+                val x=(index+.5f)*step
+                drawLine(color,Offset(x,(size.height-h)/2),Offset(x,(size.height+h)/2),strokeWidth=minOf(3.dp.toPx(),step*.65f),cap=StrokeCap.Round)
+            }
+        }
+        Text(isolate(voiceTime(wave.duration)),style=MaterialTheme.typography.labelSmall)
     }
     TextButton(onClick={
         if(playing){player.stop();playing=false}
