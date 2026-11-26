@@ -53,3 +53,11 @@ test("native family finance uses the payer summary rather than administrative re
   assert.match(native,/data\.getString\("scope"\) == "payer"/);
   assert.match(native,/FinancePayerSummary\(/);
 });
+
+test("monthly billing configuration lives inside the fee tab, never over the payer editor",()=>{
+  const route=readFileSync(new URL("../apps/web/src/app/[locale]/school/more/fee-settings/page.tsx",import.meta.url),"utf8");
+  assert.doesNotMatch(route, /<AutomaticBilling\b/);
+  assert.match(source("FeeSettings.tsx"), /tab==="tariffs"\?<\>[\s\S]*?<AutomaticBilling\b/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FeeSettings.kt",import.meta.url),"utf8");
+  assert.match(native,/if \(!payerTab\)\s*\{[\s\S]*?AutomaticBillingPanel\(model\)/);
+});
