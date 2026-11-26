@@ -29,6 +29,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import de.madrasty.app.R
 import de.madrasty.app.ui.SchoolTheme
+import de.madrasty.app.ui.SchoolShell
+import de.madrasty.app.ui.SchoolPartition
+import de.madrasty.app.ui.SchoolTab
+import de.madrasty.app.ui.Persona
+import de.madrasty.app.ui.InterfaceLanguageProvider
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +42,27 @@ import java.util.Locale
 /** On-device production bubble layout evidence; no network or real school data. */
 class CommunicationVisualTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun calendarIsAnIndependentMainDestinationForEachPersona(){
+        val persona=mutableStateOf(Persona.Admin)
+        val current=mutableStateOf(SchoolTab.Messages)
+        compose.setContent {
+            InterfaceLanguageProvider("de",{}) {
+                SchoolTheme(darkMode=false) {
+                    SchoolShell(SchoolPartition("qa-account","qa-session",persona.value),current.value,{current.value=it}){tab->
+                        Text("QA destination "+tab.name)
+                    }
+                }
+            }
+        }
+        for(role in listOf(Persona.Admin,Persona.Teacher,Persona.Guardian)){
+            compose.runOnIdle{persona.value=role;current.value=SchoolTab.Messages}
+            compose.onNodeWithText("QA destination Messages").assertIsDisplayed()
+            compose.onNodeWithText("Kalender",substring=false).performClick()
+            compose.onNodeWithText("QA destination Calendar").assertIsDisplayed()
+            compose.onNodeWithText("Kontakt",substring=false).performClick()
+            compose.onNodeWithText("QA destination Messages").assertIsDisplayed()
+        }
+    }
     @Test fun germanLight()=capture("de",false)
     @Test fun arabicDark()=capture("ar",true)
     @Test fun nativeLongPressOpensActionsAndCopiesMessage(){

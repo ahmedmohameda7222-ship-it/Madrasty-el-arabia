@@ -133,6 +133,14 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     assertContext(returned,"month",day.slice(0,7));
     assertContext(returned,"day",day);
     assertContext(returned,"classId",apple.id);
+    await page.goto("/de/school/more/events?item="+event.id+"&"+params);
+    await expect(page).toHaveURL(/\/school\/calendar\?/);
+    await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
+    await page.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
+    const legacyReturned=new URL(page.url()).searchParams;
+    assertContext(legacyReturned,"month",day.slice(0,7));
+    assertContext(legacyReturned,"day",day);
+    assertContext(legacyReturned,"classId",apple.id);
   }finally{await school.close();}
 });
 function assertContext(params:URLSearchParams,key:string,value:string){expect(params.get(key)).toBe(value);}
