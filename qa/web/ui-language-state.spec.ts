@@ -63,6 +63,8 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
 });
 
 async function signIn(page:Page,school:FixtureSchool,principal:"admin"|"guardian-de"){
+  // Enroll the synthetic admin fixture before sign-in; localMfa reads its saved factor.
+  if(principal==="admin")await school.bearer("admin","admin");
   await page.goto("/de/account/sign-in");
   await page.locator('input[name="email"]').fill(fixtureEmail(school.run,principal));
   await page.locator('input[name="password"]').fill(school.password);
@@ -134,8 +136,12 @@ test("app settings do not reset unsaved staff permission edits",async({page,cont
    const people=accessPage.getByRole("combobox",{name:"Person auswählen"});
    const teacherEmail=fixtureEmail(school.run,"teacher");
    await expect(people.getByRole("option",{name:teacherEmail,exact:true})).toHaveCount(1,{timeout:30000});
+   const grantsResponse=accessPage.waitForResponse(response=>/\/api\/v1\/staff\/[^/]+\/grants$/.test(new URL(response.url()).pathname)&&response.request().method()==="GET");
    await people.selectOption({label:teacherEmail});
+   const grants=await grantsResponse;
+   expect(grants.ok(),`Staff grants request returned ${grants.status()}`).toBeTruthy();
    const adminRole=accessPage.locator("fieldset").first().locator('input[type="checkbox"]').first();
+   await expect(adminRole).toBeVisible({timeout:20000});
    await expect(adminRole).not.toBeChecked();
    await adminRole.check();
    await expect(adminRole).toBeChecked();

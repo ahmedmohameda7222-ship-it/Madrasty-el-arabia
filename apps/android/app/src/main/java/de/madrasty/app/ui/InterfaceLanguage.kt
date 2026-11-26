@@ -68,23 +68,27 @@ internal fun InterfaceSettingsAction(){
     val change=LocalChangeInterfaceLanguage.current?:return
     val notifications=LocalNotificationSettings.current
     var open by remember{mutableStateOf(false)}
+    // Resolve the current presentation in the parent composition, not the modal window.
+    val language=LocalConfiguration.current.locales[0].language
+    val title=stringResource(R.string.app_settings)
+    val languageTitle=stringResource(R.string.account_ui_language)
+    val closeLabel=stringResource(R.string.close)
     IconButton(onClick={open=true}){
-        Icon(painterResource(R.drawable.ic_settings),contentDescription=stringResource(R.string.app_settings))
+        Icon(painterResource(R.drawable.ic_settings),contentDescription=title)
     }
     if(open){
         ModalBottomSheet(onDismissRequest={open=false}){
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=20.dp,vertical=12.dp),
                 verticalArrangement=Arrangement.spacedBy(12.dp)){
-                Text(stringResource(R.string.app_settings),style=MaterialTheme.typography.titleLarge)
-                Text(stringResource(R.string.account_ui_language),style=MaterialTheme.typography.titleMedium)
-                val language=LocalConfiguration.current.locales[0].language
+                Text(title,style=MaterialTheme.typography.titleLarge)
+                Text(languageTitle,style=MaterialTheme.typography.titleMedium)
                 Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
                     listOf("ar" to "العربية","de" to "Deutsch").forEach{(value,label)->
                         FilterChip(selected=language==value,onClick={if(value!=language)change(value)},label={Text(label)})
                     }
                 }
                 notifications?.invoke()
-                TextButton(onClick={open=false},modifier=Modifier.heightIn(min=48.dp)){Text(stringResource(R.string.close))}
+                TextButton(onClick={open=false},modifier=Modifier.heightIn(min=48.dp)){Text(closeLabel)}
             }
         }
     }
