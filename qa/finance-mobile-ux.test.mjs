@@ -70,3 +70,11 @@ test("payer readiness on the overview is limited to authorized billing staff",()
   assert.match(route,/mayUse\(session,"finance.issue"\)/);
   assert.match(route,/canIssue=\{canIssue\}/);
 });
+
+test("combined payment picker supports stable same-payer invoice scope on both clients",()=>{
+  assert.match(source("RecordPayment.tsx"), /payerInvoice=\{payerAnchor\}/);
+  assert.match(source("receipt-ui.tsx"), /&payerInvoice=/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/RecordPayment.kt",import.meta.url),"utf8");
+  assert.match(native,/&payerInvoice=/);
+  assert.match(native,/payerAnchor = payerAnchor/);
+});
