@@ -20,6 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,11 +77,15 @@ internal fun CommunicationFeed(model:IdentityViewModel,persona:Persona,broadcast
     }
     if(persona==Persona.Guardian)TextButton(onClick={refresh++}){Text(stringResource(R.string.broadcast_refresh))}
     academicPages(model,"/comms/feed?limit=25&locale=$language&filter=$filter",refresh+model.attendanceNetworkRevision){items->
-        for(item in items){
+        for(item in items)key(item.getString("kind")+item.getString("id")){
+            var expanded by remember{mutableStateOf(false)}
+            val body=item.getString("body")
+            val date=Instant.parse(item.getString("publishedAt")).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(LocalConfiguration.current.locales[0]))
             HorizontalDivider()
-            Text(stringResource(if(item.getString("kind")=="news")R.string.school_news else R.string.broadcast_title),style=MaterialTheme.typography.labelMedium)
+            Text(stringResource(if(item.getString("kind")=="news")R.string.school_news else R.string.broadcast_title)+" · "+isolate(date),style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.primary)
             Text(isolate(item.getString("title")),style=MaterialTheme.typography.titleMedium)
-            Text(isolate(item.getString("body")))
+            Text(isolate(body),maxLines=if(expanded||body.length<=280)Int.MAX_VALUE else 4,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+            if(body.length>280)TextButton(onClick={expanded=!expanded}){Text(stringResource(if(expanded)R.string.comms_read_less else R.string.comms_read_more))}
         }
     }
 }

@@ -173,6 +173,9 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
         }
     }
     }
+    if(term.isEmpty()&&timelineScroll.maxValue!=Int.MAX_VALUE&&timelineScroll.maxValue-timelineScroll.value>followThreshold){
+        TextButton(onClick={scope.launch{timelineScroll.scrollTo(timelineScroll.maxValue)}},modifier=Modifier.align(Alignment.End).heightIn(min=48.dp)){Text(stringResource(R.string.chat_latest)+" ↓")}
+    }
     if(!thread.optBoolean("canReply")){
         Text(stringResource(R.string.chat_read_only))
         return@Column

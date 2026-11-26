@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.imePadding
@@ -21,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -214,9 +216,9 @@ private fun MonthGrid(locale:Locale,month:YearMonth,day:LocalDate?,days:org.json
                     TextButton(modifier=Modifier.weight(1f).semantics{
                         contentDescription=description
                         selected=day==date
-                    },onClick={pick(date)},contentPadding=PaddingValues(0.dp)){
+                    }.heightIn(min=48.dp),onClick={pick(date)},contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.textButtonColors(containerColor=if(day==date)MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)){
                         Column(horizontalAlignment=Alignment.CenterHorizontally){
-                            Text(numbers.format(index),color=if(teaching==true)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(numbers.format(index),color=if(day==date)MaterialTheme.colorScheme.onPrimaryContainer else if(teaching==true)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,fontWeight=if(day==date)androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal)
                             if(amount>0)Text("●",style=MaterialTheme.typography.labelSmall)
                         }
                     }
