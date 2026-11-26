@@ -41,6 +41,11 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       (await fixtureApi(school, path, { method, token: finance, persona: "admin", key: `${school.run}.${name}`, body, status })).payload.data;
     const automatic=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
     assert.equal(typeof automatic.enabled,"boolean");
+    assert.ok(Array.isArray(automatic.payerIssues),"finance must surface payer activation and notification eligibility issues");
+    for(const entry of automatic.payerIssues){
+      assert.equal(typeof entry.studentId,"string");
+      assert.ok(["payer_missing","payer_unreachable"].includes(entry.reason));
+    }
     await fixtureApi(school,"/finance/automatic-billing",{token:payer,status:403});
     const updated=await send("/finance/automatic-billing","automatic-settings",{enabled:false,startMonth:clock.nextMonth,revision:automatic.revision},"PUT",200);
     assert.equal(updated.enabled,false);
@@ -62,6 +67,8 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       assert.ok(guardian?.id);
       await send(path, `payer-${child}`, { guardianId: guardian.id, effectiveFromMonth: clock.month, revision: 0 }, "PUT", 200);
     }
+    const healthAfter=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    assert.ok(!healthAfter.payerIssues.some((entry:{studentId:string})=>[ids.ahmed,ids.omar].includes(entry.studentId)),"confirmed synthetic payer must not be flagged");
     const selection = { kind: "monthly", period: clock.month, classId: apple.id, studentIds: [ids.ahmed, ids.omar] };
     const prepared = invoicePreview.parse(await send("/finance/invoice-previews", "monthly-preview", selection));
     const issue = {
