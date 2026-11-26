@@ -78,6 +78,7 @@ internal fun expireChatCameraFiles(context:Context){
 @Composable
 internal fun MediaComposer(
     model:IdentityViewModel,thread:String,locked:Boolean,consumed:String?,onReady:(String?)->Unit,onBusy:(Boolean)->Unit,
+    initialMenuOpen:Boolean=false,
     rowContent:@Composable RowScope.()->Unit={},
 ){
     val context=LocalContext.current
@@ -93,7 +94,7 @@ internal fun MediaComposer(
     var error by remember(thread){mutableStateOf<Int?>(null)}
     var elapsed by remember(thread){mutableIntStateOf(0)}
     var progress by remember(thread){mutableIntStateOf(0)}
-    var menuOpen by remember(thread){mutableStateOf(false)}
+    var menuOpen by remember(thread){mutableStateOf(initialMenuOpen)}
     LaunchedEffect(locked,capturing,recording,draft){if(locked||capturing||recording||draft!=null)menuOpen=false}
 
     LaunchedEffect(capturing,recording,uploading,draft,ready){

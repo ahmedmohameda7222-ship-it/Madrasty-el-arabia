@@ -71,17 +71,32 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
-private data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
+internal data class Outgoing(val id:String,val body:String,val replyTo:String?,val media:String?,val pending:Boolean)
 
+internal data class NativeChatDraft(val body:String,val quote:JSONObject?=null,val requestId:String?=null,val retry:Outgoing?=null,val openMedia:Boolean=false)
+// In-memory only; the owning SchoolNavigation is keyed by account/session/persona.
+internal class NativeChatDrafts {
+    private val drafts=mutableMapOf<String,NativeChatDraft>()
+    fun read(id:String)=drafts[id]
+    fun write(id:String,value:NativeChatDraft){
+        if(value.body.isEmpty()&&value.quote==null&&value.requestId==null&&!value.openMedia)drafts.remove(id)
+        else drafts[id]=value
+    }
+    fun remove(id:String){drafts.remove(id)}
+    fun acknowledge(id:String,requestId:String){if(drafts[id]?.requestId==requestId)drafts.remove(id)}
+}
 @Composable
-internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Modifier=Modifier,changed:()->Unit){
+internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Modifier=Modifier,drafts:NativeChatDrafts,changed:()->Unit){
     val id=thread.getString("id")
     val path="/threads/$id"
-    var typed by remember(id){mutableStateOf("")}
-    var quote by remember(id){mutableStateOf<JSONObject?>(null)}
+    val restored=remember(id){drafts.read(id)}
+    LaunchedEffect(id){drafts.read(id)?.takeIf{it.openMedia}?.let{drafts.write(id,it.copy(openMedia=false))}}
+    var typed by remember(id){mutableStateOf(restored?.body.orEmpty())}
+    var quote by remember(id){mutableStateOf(restored?.quote)}
+    fun editDraft(value:String,reply:JSONObject?=quote){typed=value;quote=reply;drafts.write(id,NativeChatDraft(value,reply))}
     var term by remember(id){mutableStateOf("")}
     var search by remember(id){mutableStateOf("")}
-    var outgoing by remember(id){mutableStateOf<Outgoing?>(null)}
+    var outgoing by remember(id){mutableStateOf(restored?.retry?.copy(pending=false))}
     var acknowledged by remember(id){mutableStateOf<JSONObject?>(null)}
     var attachment by remember(id){mutableStateOf<String?>(null)}
     var consumed by remember(id){mutableStateOf<String?>(null)}
@@ -89,8 +104,9 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     var forbidden by remember(id){mutableStateOf(false)}
     var archived by remember(id,thread.optBoolean("archived")){mutableStateOf(thread.optBoolean("archived"))}
     val scope=rememberCoroutineScope()
-    fun deny(){forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;attachment=null;changed()}
+    fun deny(){drafts.remove(id);forbidden=true;typed="";quote=null;outgoing=null;acknowledged=null;attachment=null;changed()}
     fun clearSent(message:Outgoing){
+        drafts.acknowledge(id,message.id)
         outgoing=null;typed="";quote=null
         if(message.media!=null){consumed=message.media;attachment=null}
     }
@@ -138,7 +154,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(timelineScroll),verticalArrangement=Arrangement.spacedBy(8.dp)){
     key(id,term){
         MessageTimeline(model,thread,term,acknowledged,::deny,::recognize,{archived=it}){message->
-            if(outgoing?.pending!=true){quote=message;outgoing=null}
+            if(outgoing?.pending!=true){editDraft(typed,message);outgoing=null}
         }
     }
     outgoing?.let{message->
@@ -161,16 +177,17 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     if(quoted!=null){
         Text(stringResource(R.string.chat_reply)+" · "+chatAuthor(quoted))
         quoted.string("body")?.let{Text(isolate(it.take(140)))}
-        TextButton(enabled=outgoing?.pending!=true,onClick={quote=null;outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
+        TextButton(enabled=outgoing?.pending!=true,onClick={editDraft(typed,null);outgoing=null}){Text(stringResource(R.string.chat_cancel_reply))}
     }
-    MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,onReady={
+    MediaComposer(model,id,locked=outgoing?.pending==true,consumed=consumed,initialMenuOpen=restored?.openMedia==true,onReady={
         if(attachment!=it&&outgoing?.pending!=true)outgoing=null
         attachment=it
     },onBusy={preparing=it}){
-    ChatInputField(typed,outgoing?.pending!=true){typed=it;outgoing=null}
+    ChatInputField(typed,outgoing?.pending!=true){editDraft(it);outgoing=null}
     ChatSendAction(enabled=(typed.isNotBlank()||attachment!=null)&&!preparing&&outgoing?.pending!=true,failed=failed,onClick={
         val sending=outgoing?.copy(pending=true)?:Outgoing(UUID.randomUUID().toString(),typed.trim(),quoted?.getString("id"),attachment,true)
         outgoing=sending
+        drafts.write(id,NativeChatDraft(typed,quote,sending.id,sending.takeIf{it.media==null}))
         scope.launch{
             try{
                 val body=JSONObject().put("clientMessageId",sending.id)
@@ -178,6 +195,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
                 sending.media?.let{body.put("attachmentIds",JSONArray(listOf(it)))}
                 sending.replyTo?.let{body.put("replyToId",it)}
                 val result=model.chatCommand("$path/messages",body,"POST",sending.id)
+                drafts.acknowledge(id,sending.id)
                 if(!forbidden){
                     acknowledged=result
                     if(outgoing?.id==sending.id)clearSent(sending)

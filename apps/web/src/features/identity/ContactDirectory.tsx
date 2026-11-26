@@ -7,7 +7,7 @@ import { ApiResponseError, requestApi } from "@/api/client";
 import { useSchoolCommand } from "@/api/commands";
 import { dictionary, localizedError } from "@/i18n";
 import { chatDrafts } from "@/features/comms/chat-drafts";
-import { TimetableRead,useTimetableRead } from "@/features/school/timetable/shared";
+import { useTimetableRead } from "@/features/school/timetable/shared";
 import { StartConversation } from "@/features/comms/StartConversation";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface, type AsyncState } from "@/ui/AsyncSurface";

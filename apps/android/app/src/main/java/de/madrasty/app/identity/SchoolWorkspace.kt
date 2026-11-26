@@ -78,6 +78,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.ui.res.painterResource
 import de.madrasty.app.comms.ThreadInboxState
+import de.madrasty.app.comms.NativeChatDrafts
+import de.madrasty.app.comms.NativeChatDraft
 import de.madrasty.app.comms.ThreadScreen
 import de.madrasty.app.school.CalendarScreen
 import de.madrasty.app.school.ChildrenScreen
@@ -148,6 +150,7 @@ internal sealed interface WorkspacePage {
 internal class SchoolNavigation {
     var communicationSection by mutableStateOf("chat")
     val inbox=ThreadInboxState()
+    val chatDrafts=NativeChatDrafts()
     var page by mutableStateOf<WorkspacePage>(WorkspacePage.Tabs)
         private set
     private val previous = mutableListOf<WorkspacePage>()
@@ -181,6 +184,7 @@ internal class SchoolNavigation {
         })
     }
     fun openThread(id:String)=open(WorkspacePage.Thread(id))
+    fun openThreadWithDraft(id:String,body:String){chatDrafts.write(id,NativeChatDraft(body,openMedia=true));openThread(id)}
     fun openNoticeTarget(target:JSONObject):Boolean{
         val id=target.getString("id")
         val childId=target.optString("childId").takeIf{it.isNotBlank()}
@@ -336,15 +340,15 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         return
     }
     if(page==WorkspacePage.Tabs){SchoolTabs(model,session,state,rights);return}
-    if(page is WorkspacePage.Thread){ThreadScreen(model,page.id,state::openReportSource,state::back);return}
+    if(page is WorkspacePage.Thread){ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back);return}
     InterfaceLanguageWorkspace {
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)
         WorkspacePage.Profile -> ProfileScreen(model,state::back)
         WorkspacePage.Account -> AccountScreen(model,state::back) { state.open(WorkspacePage.Security) }
         WorkspacePage.Security -> SecurityScreen(model,session,state::back)
-        WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::back)
-        is WorkspacePage.Thread -> ThreadScreen(model,page.id,state::openReportSource,state::back)
+        WorkspacePage.Directory -> DirectoryScreen(model,state::openThread,state::openThreadWithDraft,state::back)
+        is WorkspacePage.Thread -> ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back)
         WorkspacePage.MessageReports -> ReportQueue(model,state::back)
         WorkspacePage.Bank -> BankSettings(model,state::back)
         is WorkspacePage.FeeSettings -> FeeSettings(model,page.student,state::back,if(rights.bank)({state.open(WorkspacePage.Bank)})else null)

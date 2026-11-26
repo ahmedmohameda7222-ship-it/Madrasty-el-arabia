@@ -40,7 +40,8 @@ function merge(older:ChatMessage[],incoming:ChatMessage[]){
 export function Conversation({locale,thread,changed}:{locale:Locale;thread:ThreadSummary;changed:()=>void}){
   const actor=useAccountScope(),{persona}=actor,text=copy[locale],root=`/threads/${thread.id}` as const;
   const [restored]=useState(()=>chatDrafts.read(actor,thread.id));
-  useEffect(()=>{if(restored?.openMedia)chatDrafts.write(actor,thread.id,{...restored,openMedia:false});},[restored,actor,thread.id]);
+  const consumedMediaTransfer=useRef(false);
+  useEffect(()=>{if(!consumedMediaTransfer.current&&restored?.openMedia){consumedMediaTransfer.current=true;const current=chatDrafts.read(actor,thread.id);if(current?.openMedia)chatDrafts.write(actor,thread.id,{...current,openMedia:false});}},[restored,actor,thread.id]);
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
   const messageArea=useRef<HTMLDivElement>(null);
   const followTail=useRef(true);
@@ -67,7 +68,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   const live=useRef(false),sending=useRef(false),confirmed=useRef<string|undefined>(undefined);
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   useEffect(()=>setArchived(thread.archived),[thread.archived]);
-  function deny(){chatDrafts.remove(actor,thread.id);setLost(true);setBody("");setQuote(undefined);chatDrafts.write(actor,thread.id,{body});setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
+  function deny(){chatDrafts.remove(actor,thread.id);setLost(true);setBody("");setQuote(undefined);setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
   function clearSent(payload:Proposed){
     confirmed.current=payload.clientMessageId;
     chatDrafts.acknowledge(actor,thread.id,payload.clientMessageId);
@@ -154,7 +155,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       {quote&&<div className="notice">
         <span>{text.reply} · <bdi>{quote.authorName??text.school}</bdi></span>
         {quote.body&&<p dir="auto">{quote.body.slice(0,140)}</p>}
-        <button className="plain-button" type="button" disabled={attempt?.pending} onClick={()=>{setQuote(undefined);setAttempt(undefined);}}>{text.cancelReply}</button>
+        <button className="plain-button" type="button" disabled={attempt?.pending} onClick={()=>{setQuote(undefined);chatDrafts.write(actor,thread.id,{body});setAttempt(undefined);}}>{text.cancelReply}</button>
       </div>}
       <div className="comms-input-bar">
         <MediaComposer locale={locale} persona={persona} thread={thread.id} initialExpanded={restored?.openMedia===true} locked={attempt?.pending===true} consumed={consumed}

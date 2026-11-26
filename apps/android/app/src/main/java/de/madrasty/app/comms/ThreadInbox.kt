@@ -140,7 +140,7 @@ private fun ThreadBack(close:()->Unit){
     }
 }
 @Composable
-internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(ReportTarget)->Unit,close:()->Unit){
+internal fun ThreadScreen(model:IdentityViewModel,id:String,drafts:NativeChatDrafts,openReference:(ReportTarget)->Unit,close:()->Unit){
     var changed by remember{mutableStateOf(0)}
     var showDetails by remember(id){mutableStateOf(false)}
     val revision=threadRefreshVersion()+changed
@@ -170,7 +170,7 @@ internal fun ThreadScreen(model:IdentityViewModel,id:String,openReference:(Repor
                     }
                 }
             }
-            Conversation(model,value,Modifier.weight(1f)){changed++}
+            Conversation(model,value,Modifier.weight(1f),drafts){changed++}
         }
     }
 }

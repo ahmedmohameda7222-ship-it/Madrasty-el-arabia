@@ -89,9 +89,20 @@ class CommunicationVisualTest {
                 ThreadRows(rows,rememberLazyListState(),Modifier.fillMaxSize()){selected=it}
             }
         }
-        compose.onNodeWithText("QA Person 1",substring=false).assertIsDisplayed().performClick()
+        compose.onNodeWithText(de.madrasty.app.ui.isolate("QA Person 1"),substring=false).assertIsDisplayed().performClick()
         compose.runOnIdle{assertTrue(selected=="qa-1")}
-        compose.onNodeWithText("QA Person 100",substring=false).assertDoesNotExist()
+        compose.onNodeWithText(de.madrasty.app.ui.isolate("QA Person 100"),substring=false).assertDoesNotExist()
+    }
+    @Test fun nativeDraftsKeepThreadsSeparateAndDoNotEraseEditedText(){
+        val drafts=NativeChatDrafts()
+        drafts.write("one",NativeChatDraft("Private",requestId="request"))
+        drafts.write("two",NativeChatDraft("Other",openMedia=true))
+        drafts.write("one",NativeChatDraft("Edited"))
+        drafts.acknowledge("one","request")
+        assertTrue(drafts.read("one")?.body=="Edited")
+        assertTrue(drafts.read("two")?.openMedia==true)
+        drafts.remove("one")
+        assertTrue(drafts.read("one")==null)
     }
     @Test fun germanLight()=capture("de",false)
     @Test fun arabicDark()=capture("ar",true)
