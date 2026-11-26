@@ -59,9 +59,18 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   const routeParams = useSearchParams();
   const search = routeParams.toString();
   const main = useRef<HTMLElement>(null);
+  const shell = useRef<HTMLDivElement>(null);
   const positions = useRef(new Map<string, { top: number; focus: string | null }>());
   const tabs = useRef(new Map<Destination, string>());
   const root = `/${locale}/school`;
+  const threadScreen=pathname===`${root}/messages`&&childScope.safeParse(routeParams.get("thread")).success;
+  useLayoutEffect(()=>{
+    const node=shell.current,viewport=window.visualViewport;
+    if(!threadScreen||!node||!viewport)return;
+    const resize=()=>{if(viewport.scale===1)node.style.setProperty("--chat-viewport-height",`${Math.round(viewport.height)}px`);else node.style.removeProperty("--chat-viewport-height");};
+    resize();viewport.addEventListener("resize",resize);
+    return ()=>{viewport.removeEventListener("resize",resize);node.style.removeProperty("--chat-viewport-height");};
+  },[threadScreen]);
   const showMoreBack = pathname.startsWith(`${root}/more/`) ||
     pathname === `/${locale}/directory` || pathname === `/${locale}/account/preferences`;
   const returnChild = actor.persona === "guardian" ? childScope.safeParse(routeParams.get("returnChild")).data : undefined;
@@ -103,7 +112,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   }, [routePathname, search, active, commSection]);
 
   return (
-    <div className="school-shell">
+    <div ref={shell} className="school-shell" data-view={threadScreen?"thread":undefined}>
       <a className="skip-link" href="#school-content">{text.skip}</a>
       <SchoolHeader locale={locale} brandHref={`${root}/home`} notificationSettings={<PushPreferences locale={locale}/>}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">

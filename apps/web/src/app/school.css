@@ -697,3 +697,30 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-hub .inbox-panel .group-list > li { border:0; border-block-end:1px solid var(--rule); border-radius:0; background:transparent; padding:0; }
 .comms-hub .comms-thread-row { min-block-size:64px; padding:10px 0; }
 .comms-calendar { max-inline-size:58rem; }
+
+/* Conversation is a screen, not a form in a scrolling card. The account settings
+   trigger remains accessible without remounting its sheet or the active thread. */
+.school-shell[data-view="thread"] { position:relative; block-size:min(100dvh,var(--chat-viewport-height,100dvh)); }
+.school-shell[data-view="thread"] .school-content { display:flex; flex-direction:column; min-block-size:0; overflow:hidden; padding:0; }
+.comms-hub[data-chat-open="true"] { flex:1 1 0; min-block-size:0; display:flex; flex-direction:column; gap:0; background:var(--card); }
+.comms-hub[data-chat-open="true"] > .comms-icon-button { margin-inline:12px; }
+.comms-hub[data-chat-open="true"] .comms-thread-screen { flex:1 1 0; min-block-size:0; display:flex; flex-direction:column; gap:0; padding:0; margin:0; border:0; border-radius:0; box-shadow:none; }
+.comms-thread-screen > .comms-thread-toolbar { flex:none; grid-template-columns:44px 40px minmax(0,1fr); min-block-size:56px; padding:6px 12px; border-block-end:1px solid var(--rule); }
+.comms-thread-toolbar h2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.comms-thread-screen > p { margin:4px 12px; font-size:.875rem; color:var(--muted); }
+.comms-thread-screen > .comms-legacy-details { flex:none; margin:4px 12px; padding:0 10px; max-block-size:min(28dvh,200px); overflow:auto; }
+.comms-thread-screen .comms-conversation { display:flex; flex:1 1 0; min-block-size:0; margin:0; gap:0; }
+.comms-thread-screen .comms-chat-options { flex:none; padding-inline:12px; max-block-size:min(28dvh,200px); overflow:auto; }
+.comms-thread-screen .comms-chat-options>summary { min-block-size:44px; font-size:.875rem; justify-content:flex-end; }
+.comms-thread-screen .comms-message-area { flex:1 1 0; min-block-size:0; max-block-size:none; overflow:auto; padding:10px 12px; background:var(--canvas); }
+.comms-thread-screen .comms-composer { flex:none; position:relative; bottom:auto; margin:0; padding:8px 12px; padding-block-end:max(8px,env(safe-area-inset-bottom)); }
+.comms-thread-screen .comms-composer > .notice { max-block-size:min(18dvh,100px); overflow:auto; }
+.comms-thread-screen .comms-media[data-idle="false"] { max-block-size:min(28dvh,210px); overflow:auto; }
+@media(max-width:959px) {
+  .school-shell[data-view="thread"] > .school-header { position:absolute; inset-block-start:env(safe-area-inset-top); inset-inline-end:0; z-index:4; border:0; padding:6px 8px; }
+  .school-shell[data-view="thread"] > .school-header .brand,
+  .school-shell[data-view="thread"] > .school-header .notice-link,
+  .school-shell[data-view="thread"] .school-nav { display:none; }
+  .school-shell[data-view="thread"] > .school-header .app-settings-trigger { background:transparent; color:var(--primary); }
+  .comms-thread-screen > .comms-thread-toolbar { padding-inline-end:60px; grid-template-columns:44px 36px minmax(0,1fr); }
+}

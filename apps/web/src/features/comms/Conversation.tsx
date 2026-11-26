@@ -122,6 +122,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   return <section className="comms-conversation auth-form" aria-label={text.search}>
     <details className="comms-chat-options"><summary>{locale==="ar"?"خيارات المحادثة":"Chat-Optionen"}</summary>
     <div className="header-actions">
+      <button type="button" className="plain-button" onClick={changed}><Icon name="retry"/>{locale==="ar"?"تحديث":"Aktualisieren"}</button>
       <button type="button" className="plain-button" onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
       {archived&&<p>{text.archived}</p>}{notice&&<p role="alert">{notice}</p>}
     </div>
