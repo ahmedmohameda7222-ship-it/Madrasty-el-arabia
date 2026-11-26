@@ -1,10 +1,11 @@
+import { displayParams } from "@/server/identity/display-locale";
 import Link from "next/link";
 import type { Locale } from "@madrasty/contracts";
 import { dictionary } from "@/i18n";
 import { SchoolHeader } from "@/ui/Shell";
 
 export default async function Welcome({ params }: { params: Promise<{ locale: Locale }> }) {
-  const { locale } = await params;
+  const { locale } = await displayParams(params);
   return (
     <main className="public-page">
       <SchoolHeader locale={locale} />

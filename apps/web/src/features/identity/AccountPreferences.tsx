@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+import {setDisplayLocale} from "@/i18n/display-locale";
 import { useState, type FormEvent } from "react";
 import { appearanceSchema, preferencesSchema, type Locale, type Preferences } from "@madrasty/contracts";
 import { ApiResponseError, requestApi } from "@/api/client";
@@ -26,7 +28,8 @@ const words = {
 
 export function AccountPreferences({ locale, initial }: { locale: Locale; initial: Preferences }) {
   const labels = words[locale], text = dictionary(locale), actor = useAccountScope();
-  const [value, setValue] = useState(initial);
+  const router=useRouter();
+  const [value, setValue] = useState({...initial,uiLocale:locale});
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ failed: boolean; message: string }>();
   const [stale, setStale] = useState(false);
@@ -46,10 +49,8 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
     event.preventDefault();
     void operation(async () => {
       const next = await command("/account/preferences","PATCH",value,preferencesSchema);
-      if (next.uiLocale !== locale) {
-        window.location.replace(`/${next.uiLocale}/account/preferences`);
-        return;
-      }
+      setDisplayLocale(next.uiLocale);
+      if(next.uiLocale!==locale)router.refresh();
       document.documentElement.dataset.theme = next.theme;
       setValue(next);
       setFeedback({ failed: false, message: text.saved });

@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import { redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
 import { notFound } from "next/navigation";
@@ -8,7 +9,7 @@ export default async function FormerInvitationPage({params,searchParams}:{
   params:Promise<{locale:string}>;
   searchParams:Promise<{batchId?:string;invite?:string}>;
 }) {
-  const [{locale},query]=await Promise.all([params,searchParams]);
+  const [{locale},query]=await Promise.all([displayParams(params),searchParams]);
   const accepted=localeSchema.safeParse(locale);
   if(!accepted.success)notFound();
   const paramsOut=new URLSearchParams();

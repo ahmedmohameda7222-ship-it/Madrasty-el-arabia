@@ -88,7 +88,7 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
       setAccounts(one.data);setYears(three.data);setReadiness("ready");
     }).catch((error)=>{if(!abort.signal.aborted){setError(report(locale,error));setReadiness("error");}});
     return ()=>abort.abort();
-  },[locale,reload]);
+  },[reload]);
 
   useEffect(()=>{
     const abort=new AbortController();
@@ -96,7 +96,7 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
       .then(({data,meta})=>{setPeople(data);setPeopleCursor(meta?.nextCursor);})
       .catch((error)=>{if(!abort.signal.aborted)setError(report(locale,error));});
     return ()=>abort.abort();
-  },[query,reload,locale]);
+  },[query,reload]);
 
   useEffect(()=>{
     if(!yearId)return;
@@ -104,7 +104,7 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
     requestApi(`${area}/classes?yearId=${yearId}&limit=100`,classes,{signal:abort.signal})
       .then(({data})=>setClassList(data)).catch((error)=>{if(!abort.signal.aborted)setError(report(locale,error));});
     return ()=>abort.abort();
-  },[yearId,locale]);
+  },[yearId]);
 
   useEffect(()=>{
     if(!classId)return;
@@ -112,7 +112,7 @@ export function StaffAssignments({locale,initialYear,initialClass,canCreateAdmin
     requestApi(`${area}/classes/${classId}/assignments`,assignmentList,{signal:abort.signal}).then(({data})=>setRows(classId?data.filter((row)=>row.classId===classId):data))
       .catch((error)=>{if(!abort.signal.aborted)setError(report(locale,error));});
     return ()=>abort.abort();
-  },[classId,locale,reload]);
+  },[classId,reload]);
 
   const content=<div className="auth-form">
     <div className="header-actions family-tabs">

@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import { notFound, redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
 import { z } from "zod";
@@ -8,7 +9,7 @@ import { FamilyImport } from "@/features/school/FamilyImport";
 export default async function FamilyImportPage({ params, searchParams }: {
   params: Promise<{ locale: string }>; searchParams: Promise<{ job?:string }>;
 }) {
-  const [route, query, session] = await Promise.all([params, searchParams, webSchoolSession()]);
+  const [route, query, session] = await Promise.all([displayParams(params), searchParams, webSchoolSession()]);
   const locale = localeSchema.safeParse(route.locale);
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);

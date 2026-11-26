@@ -124,7 +124,7 @@ export function AccountSecurity({ locale, persona, assured }: { locale: Locale; 
       .then(({ data }) => setFactors(data))
       .catch((error) => { if (!controller.signal.aborted) setFailure(message(locale, error)); });
     return () => controller.abort();
-  }, [locale, persona, reloadFactors]);
+  }, [persona, reloadFactors]);
 
   async function run(action: () => Promise<void>) {
     setPending(true);

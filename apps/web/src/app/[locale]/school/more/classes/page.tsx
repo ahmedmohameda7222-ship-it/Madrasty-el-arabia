@@ -1,3 +1,4 @@
+import { displayParams } from "@/server/identity/display-locale";
 import { notFound, redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
 import { webSchoolSession } from "@/server/identity/web-session";
@@ -9,7 +10,7 @@ export default async function ClassesPage({ params, searchParams }: {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ student?: string }>;
 }) {
-  const [route, session, query] = await Promise.all([params, webSchoolSession(), searchParams]);
+  const [route, session, query] = await Promise.all([displayParams(params), webSchoolSession(), searchParams]);
   const locale = localeSchema.safeParse(route.locale);
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);

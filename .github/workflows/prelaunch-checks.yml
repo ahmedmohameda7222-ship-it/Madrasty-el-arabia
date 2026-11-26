@@ -104,7 +104,7 @@ jobs:
           path: qa-artifacts/admin-start/
           if-no-files-found: warn
   domain-acceptance:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25","refs/heads/fix/locale-preserve-workspace-2026-11-26"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -149,7 +149,7 @@ jobs:
         shell: bash
         run: grep -E 'API request failed|Finance PDF stage' "$RUNNER_TEMP/madrasty-acceptance-web.log" || true
   android-debug:
-    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25"]'), github.ref)
+    if: contains(fromJSON('["refs/heads/fix/workflow-remediation-2026-11-22","refs/heads/fix/admin-managed-teachers-only-2026-11-22","refs/heads/feat/calendar-preview-to-app-2026-11-22","refs/heads/feat/family-first-direct-staff-accounts-2026-11-23","refs/heads/feat/staff-dark-workflow-class-subject-2026-11-23","refs/heads/feat/admin-supervision-readonly-2026-11-23","refs/heads/fix/volunteer-teacher-single-role-2026-11-23","refs/heads/feat/admin-class-monitoring-2026-11-23","refs/heads/feat/wochenplan-class-first-multiteacher-2026-11-23","refs/heads/feat/finance-simple-monthly-workflow-2026-11-24","refs/heads/fix/finance-mobile-ux-2026-11-24","refs/heads/remove/audit-and-delivery-status-2026-11-24","refs/heads/feat/admin-start-redesign-2026-11-24","refs/heads/feat/communication-center-2026-11-25","refs/heads/feat/family-management-2026-11-25","refs/heads/fix/locale-preserve-workspace-2026-11-26"]'), github.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -365,7 +365,7 @@ jobs:
           if-no-files-found: warn
 
   family-native-visual:
-    if: github.ref == 'refs/heads/feat/family-management-2026-11-25'
+    if: github.ref == 'refs/heads/feat/family-management-2026-11-25' || github.ref == 'refs/heads/fix/locale-preserve-workspace-2026-11-26'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:

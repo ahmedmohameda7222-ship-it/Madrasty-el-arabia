@@ -85,9 +85,10 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
   useEffect(()=>{document.querySelector(".school-content")?.scrollTo(0,0);window.scrollTo(0,0);},[stage]);
   const [confirmed,setConfirmed]=useState(false);
   const fileInput=useRef<HTMLInputElement>(null);
+  const currentJob=useRef<string|undefined>(undefined);
   const ar=locale==="ar";
   const tr=(de:string,arabic:string)=>ar?arabic:de;
-  function rememberJob(id?:string){const url=new URL(window.location.href);if(id)url.searchParams.set("job",id);else url.searchParams.delete("job");window.history.replaceState(null,"",url);}
+  function rememberJob(id?:string){currentJob.current=id;const url=new URL(window.location.href);if(id)url.searchParams.set("job",id);else url.searchParams.delete("job");window.history.replaceState(null,"",url);}
   async function resume(id:string,signal?:AbortSignal){
     const {data:status}=await requestApi(`${base}/${id}/status`,importVersionSchema,{signal});
     if(signal?.aborted)return;
@@ -134,16 +135,16 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
   }
 
   useEffect(()=>{
-    if(!job)return;
+    if(!job||currentJob.current===job)return;
     const abort=new AbortController();
     setPending(true);
     setError("");
-    void resume(job,abort.signal).catch((cause)=>{
+    void resume(job,abort.signal).then(()=>{if(!abort.signal.aborted)currentJob.current=job;}).catch((cause)=>{
       if(!abort.signal.aborted)setError(cause instanceof ApiResponseError
         ? localizedError(locale,cause.messageKey) : translated["error.unavailable"]);
     }).finally(()=>{if(!abort.signal.aborted)setPending(false);});
     return ()=>abort.abort();
-  },[job,locale,translated]);
+  },[job]);
 
   const upload = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

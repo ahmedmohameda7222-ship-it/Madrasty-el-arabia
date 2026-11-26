@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useTransition, type ReactNode } from "react";
 import { z } from "zod";
 import { dictionary } from "@/i18n";
+import {setDisplayLocale} from "@/i18n/display-locale";
 import type { Locale, Persona, Preferences } from "@madrasty/contracts";
 import { AccountScope, type AccountPartition, type ScopeChoice } from "./AccountScope";
 import { Icon } from "./Icon";
@@ -17,8 +18,18 @@ type Destination = "home" | "students" | "attendance" | "children" | "messages" 
 const roleTab: Record<Persona, Destination> = { admin: "students", teacher: "attendance", guardian: "children" };
 const childScope = z.uuid();
 
-export function SchoolHeader({ locale, children, alternateHref, brandHref }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string }) {
-  const text = dictionary(locale);
+export function SchoolHeader({ locale, children, brandHref }: { locale: Locale; children?: ReactNode; alternateHref?: string; brandHref?: string }) {
+  const text = dictionary(locale),router=useRouter();
+  const [pending,startTransition]=useTransition();
+  const next=locale==="ar"?"de":"ar";
+  useLayoutEffect(()=>{document.documentElement.lang=locale;document.documentElement.dir=locale==="ar"?"rtl":"ltr";},[locale]);
+  function switchLanguage(){
+    if(pending)return;
+    setDisplayLocale(next);
+    // Refresh only the server component payload for the *same* route. React
+    // preserves mounted client state, DOM inputs, files and the current session.
+    startTransition(()=>router.refresh());
+  }
   return (
     <header className="school-header">
       <Link className="brand" href={brandHref ?? `/${locale}`} aria-label={text.school} title={text.school}>
@@ -27,9 +38,9 @@ export function SchoolHeader({ locale, children, alternateHref, brandHref }: { l
       </Link>
       <div className="header-actions">
         {children}
-        <Link className="plain-button" href={alternateHref ?? (locale === "ar" ? "/de" : "/ar")} lang={locale === "ar" ? "de" : "ar"}>
-          {locale === "ar" ? "Deutsch" : "العربية"}
-        </Link>
+        <button type="button" className="plain-button" lang={next} disabled={pending} aria-busy={pending} onClick={switchLanguage}>
+          {next==="de"?"Deutsch":"العربية"}
+        </button>
       </div>
     </header>
   );
@@ -54,7 +65,10 @@ export function SchoolShell(props: {
 
 function ScopedShell({ actor, locale, children, theme = "system", selectedScope, scopePicker, secondary, mayManageStudents }: Parameters<typeof SchoolShell>[0]) {
   const text = dictionary(locale);
-  const pathname = usePathname();
+  const actualPathname = usePathname();
+  // Locale changes only presentation. Match navigation against a normalized
+  // display path, but keep history/scroll keyed to the actual stable route.
+  const pathname=actualPathname.replace(/^\/(ar|de)(?=\/|$)/,`/${locale}`);
   const routeParams = useSearchParams();
   const search = routeParams.toString();
   const main = useRef<HTMLElement>(null);
@@ -81,7 +95,7 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
   useLayoutEffect(() => {
     const area = main.current;
     if (!area) return;
-    const route = search ? pathname + "?" + search : pathname;
+    const route = search ? actualPathname + "?" + search : actualPathname;
     if(!commSection)tabs.current.set(active, route);
     const previous = positions.current.get(route);
     area.scrollTop = previous?.top ?? 0;
@@ -99,12 +113,12 @@ function ScopedShell({ actor, locale, children, theme = "system", selectedScope,
       area.removeEventListener("scroll", save);
       area.removeEventListener("focusin", save);
     };
-  }, [pathname, search, active]);
+  }, [actualPathname, search, active]);
 
   return (
     <div className="school-shell">
       <a className="skip-link" href="#school-content">{text.skip}</a>
-      <SchoolHeader locale={locale} brandHref={`${root}/home`} alternateHref={pathname.replace(/^\/(ar|de)(?=\/|$)/, locale === "ar" ? "/de" : "/ar") + (search ? "?" + search : "")}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
+      <SchoolHeader locale={locale} brandHref={`${root}/home`}>{scopePicker}<NotificationLink locale={locale}/></SchoolHeader>
       <div className="school-body">
         <nav className="school-nav" aria-label={text.navigation} data-columns={destinations.length}>
           {destinations.map((tab) => (
