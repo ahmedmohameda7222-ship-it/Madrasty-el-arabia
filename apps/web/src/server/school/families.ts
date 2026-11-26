@@ -1,7 +1,7 @@
 import "server-only";
 import {
-  childLinkSchema, childSummarySchema, guardianDetailSchema, guardianSchema, studentSchema,
-  createFamilyInput, createFamilyChildInput, createdFamilySchema,
+  childLinkSchema, childSummarySchema, guardianDetailSchema, guardianSchema, studentSchema, studentDetailSchema,
+  createFamilyInput, createFamilyChildInput, createdFamilySchema, familyGroupSummary, familyGroupDetail, type familyGroupQuery, type familyGroupEdit, type familyGroupAttach, type familyGroupChildInput, type familyGroupGuardianInput, familyOverviewSchema,
   type createGuardianInput, type createLinkInput, type createStudentInput, type changeLinkInput,
   type updateGuardianInput, type updateStudentInput, type familyQuerySchema,
 } from "@madrasty/contracts";
@@ -38,7 +38,7 @@ async function guardian(tx: Transaction, id: string, lock = false) {
 
 async function link(tx: Transaction, id: string, lock = false) {
   const [row] = await tx`
-    select l.id, l.guardian_id as "guardianId", l.student_id as "studentId", l.state, l.reason, l.revision,
+    select l.id, l.guardian_id as "guardianId", l.student_id as "studentId", l.state, l.reason, l.revision, l.relationship,
       s.display_name as "studentName", s.student_number as "studentNumber"
     from app.child_link l join app.student s on s.id = l.student_id where l.id = ${id}
     ${lock ? tx`for update of l` : tx``}
@@ -55,11 +55,17 @@ export function listStudents(ctx: ActorContext, query: Query) {
   return withActor(ctx, async (tx) => {
     await office(ctx)(tx);
     const term = (query.query ?? "").toLowerCase();
-    const rows = await tx`
-      select id, student_number as "studentNumber", display_name as "displayName", state, revision
-      from app.student where (${query.cursor ?? null}::uuid is null or id > ${query.cursor ?? null}::uuid)
-        and (${term} = '' or strpos(lower(display_name), ${term}) > 0 or strpos(lower(student_number), ${term}) > 0)
-      order by id limit ${query.limit + 1}
+    const rows=await tx`
+      select s.id,s.student_number as "studentNumber",s.display_name as "displayName",s.state,s.revision,c.value as "currentClass"
+      from app.student s
+      left join lateral (select jsonb_build_object('id',cl.id,'code',cl.code,'nameAr',cl.name_ar,'nameDe',cl.name_de) as value
+        from app.enrollment e join app.school_class cl on cl.id=e.class_id
+        where e.student_id=s.id and e.voided_at is null and app.school_today()>=e.effective_from and app.school_today()<e.effective_until limit 1) c on true
+      where (${query.cursor??null}::uuid is null or ${query.sort==="name"?tx`(lower(s.display_name),s.id) > (select lower(display_name),id from app.student where id=${query.cursor??null}::uuid)`:tx`s.id>${query.cursor??null}::uuid`})
+        and (${term}='' or strpos(lower(s.display_name),${term})>0 or strpos(lower(s.student_number),${term})>0)
+        and (${query.state??null}::text is null or s.state=${query.state??null})
+        and (${query.classId===undefined?tx`true`:query.classId==="none"?tx`c.value is null`:tx`c.value->>'id'=${query.classId}`})
+      order by ${query.sort==="name"?tx`lower(s.display_name),s.id`:tx`s.id`} limit ${query.limit+1}
     `;
     return slice(studentSchema.array().parse(rows), query.limit);
   });
@@ -70,7 +76,10 @@ export function readStudent(ctx: ActorContext, id: string) {
     await office(ctx)(tx);
     const record=await student(tx,id);
     const [profile]=await tx<{birthDate:string|null}[]>`select birth_date::text as "birthDate" from app.student where id=${id}`;
-    return studentSchema.parse({...record,...profile});
+    const [classroom]=await tx`select jsonb_build_object('id',cl.id,'code',cl.code,'nameAr',cl.name_ar,'nameDe',cl.name_de) as value from app.enrollment e join app.school_class cl on cl.id=e.class_id where e.student_id=${id} and e.voided_at is null and app.school_today()>=e.effective_from and app.school_today()<e.effective_until limit 1`;
+    const guardianRelationships=await tx`select l.id,l.guardian_id as "guardianId",l.student_id as "studentId",l.state,l.reason,l.revision,l.relationship,g.display_name as "guardianName",s.display_name as "studentName",s.student_number as "studentNumber" from app.child_link l join app.guardian_profile g on g.id=l.guardian_id join app.student s on s.id=l.student_id where l.student_id=${id} order by l.created_at desc,l.id`;
+    const familyGroups=await tx`select f.id,f.display_name as "displayName" from app.family_group_student m join app.family_group f on f.id=m.family_id where m.student_id=${id} order by f.display_name,f.id`;
+    return studentDetailSchema.parse({...record,...profile,currentClass:classroom?.value??null,guardianRelationships,familyGroups});
   });
 }
 
@@ -96,6 +105,7 @@ export function updateStudent(ctx: ActorContext, id: string, key: string | null,
       requireRevision(current.revision, input.revision);
       await tx`
         update app.student set display_name = ${input.displayName}, state = ${input.state},
+          birth_date=case when ${input.birthDate!==undefined} then ${input.birthDate??null}::date else birth_date end,
           revision = revision + 1 where id = ${id}
       `;
       await appendAudit(tx, { action: "school.student_updated", aggregateId: id, metadata: { revision: current.revision + 1 } });
@@ -108,13 +118,14 @@ export function listGuardians(ctx: ActorContext, query: Query) {
   return withActor(ctx, async (tx) => {
     await office(ctx)(tx);
     const term = (query.query ?? "").toLowerCase();
-    const rows = await tx`
-      select id, display_name as "displayName", contact_email as "contactEmail", contact_phone as "contactPhone",
-        correspondence_locale as "correspondenceLocale", account_id is not null as "linkedAccount", revision
-      from app.guardian_profile where (${query.cursor ?? null}::uuid is null or id > ${query.cursor ?? null}::uuid)
-        and (${term} = '' or strpos(lower(display_name), ${term}) > 0)
-      order by id limit ${query.limit + 1}
-    `;
+    const rows=await tx`
+      select g.id,g.display_name as "displayName",g.contact_email as "contactEmail",g.contact_phone as "contactPhone",
+        g.correspondence_locale as "correspondenceLocale",g.account_id is not null as "linkedAccount",g.revision
+      from app.guardian_profile g
+      where (${query.cursor??null}::uuid is null or ${query.sort==="name"?tx`(lower(g.display_name),g.id)>(select lower(display_name),id from app.guardian_profile where id=${query.cursor??null}::uuid)`:tx`g.id>${query.cursor??null}::uuid`})
+      and (${term}='' or strpos(lower(g.display_name),${term})>0)
+      and (${query.ungrouped!=="true"} or not exists(select 1 from app.family_group_guardian m where m.guardian_id=g.id))
+      order by ${query.sort==="name"?tx`lower(g.display_name),g.id`:tx`g.id`} limit ${query.limit+1}`;
     return slice(guardianSchema.array().parse(rows), query.limit);
   });
 }
@@ -124,13 +135,14 @@ export function readGuardian(ctx: ActorContext, id: string) {
     await office(ctx)(tx);
     const adult = await guardian(tx, id);
     const rows = await tx`
-      select l.id, l.guardian_id as "guardianId", l.student_id as "studentId", l.state, l.reason, l.revision,
+      select l.id, l.guardian_id as "guardianId", l.student_id as "studentId", l.state, l.reason, l.revision, l.relationship,
         s.display_name as "studentName", s.student_number as "studentNumber"
       from app.child_link l join app.student s on s.id = l.student_id
       where l.guardian_id = ${id} order by l.created_at desc, l.id
     `;
     const [profile]=await tx<{birthDate:string|null;emergencyAddress:string|null}[]>`select birth_date::text as "birthDate",emergency_address as "emergencyAddress" from app.guardian_profile where id=${id}`;
-    return guardianDetailSchema.parse({ ...adult, ...profile, links: rows });
+    const familyGroups=await tx`select f.id,f.display_name as "displayName" from app.family_group_guardian m join app.family_group f on f.id=m.family_id where m.guardian_id=${id} order by f.display_name,f.id`;
+    return guardianDetailSchema.parse({ ...adult, ...profile, links: rows,familyGroups });
   });
 }
 
@@ -161,6 +173,8 @@ export function updateGuardian(ctx: ActorContext, id: string, key: string | null
       await tx`
         update app.guardian_profile set display_name = ${input.displayName}, contact_email = ${input.contactEmail},
           contact_phone = ${input.contactPhone}, correspondence_locale = ${input.correspondenceLocale},
+          birth_date=case when ${input.birthDate!==undefined} then ${input.birthDate??null}::date else birth_date end,
+          emergency_address=case when ${input.emergencyAddress!==undefined} then ${input.emergencyAddress??null} else emergency_address end,
           revision = revision + 1 where id = ${id}
       `;
       await appendAudit(tx, { action: "school.guardian_updated", aggregateId: id, metadata: { revision: current.revision + 1 } });
@@ -262,46 +276,72 @@ async function placeFamilyChild(tx: Transaction, studentId: string, classId: str
   await insertEnrollment(tx, studentId, classId, classroom.yearId, from, year.ends);
 }
 
-async function addFamilyStudent(tx: Transaction, actor: ActorContext, child: z.infer<typeof createFamilyChildInput>, guardianIds: string[]) {
+async function addFamilyStudent(tx: Transaction, actor: ActorContext, child: z.infer<typeof createFamilyChildInput>, guardianIds: string[], links?: z.infer<typeof createFamilyInput>["children"][number]["guardianLinks"]) {
   const [created] = await tx<{ id: string }[]>`
-    insert into app.student(display_name) values (${child.displayName}) returning id
+    insert into app.student(display_name,birth_date) values (${child.displayName},${child.birthDate??null}::date) returning id
   `;
-  for (const guardianId of guardianIds) {
-    const [relation] = await tx<{ id: string }[]>`
-      insert into app.child_link(guardian_id,student_id,state,effective_from,changed_by,reason)
-      values (${guardianId},${created.id},'approved',now(),${actor.accountId},'School registration') returning id
-    `;
-    await appendAudit(tx, { action: "family.link_approved", aggregateId: relation.id });
-  }
+  await assignFamilyLinks(tx,actor,created.id,guardianIds,links);
   await placeFamilyChild(tx, created.id, child.classId);
   await appendAudit(tx, { action: "school.student_created", aggregateId: created.id });
   return student(tx, created.id);
 }
+async function assignFamilyLinks(tx:Transaction,actor:ActorContext,studentId:string,guardianIds:string[],links?:z.infer<typeof createFamilyInput>["children"][number]["guardianLinks"]){
+  const selected=links??guardianIds.map((_,guardianIndex)=>({guardianIndex,relationship:"unspecified" as const,approved:true}));
+  for(const entry of selected){
+    const guardianId=guardianIds[entry.guardianIndex];
+    if(!guardianId)throw new ApiError("validation");
+    const state=entry.approved?"approved":"pending";
+    const [current]=await tx<{state:string}[]>`select state from app.child_link where guardian_id=${guardianId} and student_id=${studentId} and state<>'revoked' for update`;
+    // Existing access must be changed only in the existing explicit approve/revoke workflow.
+    if(current){if(current.state!==state)throw new ApiError("conflict");continue;}
+    const [revoked]=await tx`select id from app.child_link where guardian_id=${guardianId} and student_id=${studentId} and state='revoked' limit 1`;
+    if(revoked)throw new ApiError("conflict");
+    const [relation]=await tx<{id:string}[]>`
+      insert into app.child_link(guardian_id,student_id,state,effective_from,changed_by,reason,relationship)
+      values (${guardianId},${studentId},${state},case when ${entry.approved} then now() else null end,${actor.accountId},'School registration',${entry.relationship}) returning id`;
+    await publishLinkEvent(tx,actor,relation.id);
+  }
+}
 
 export function createFamily(ctx: ActorContext, key: string | null, input: z.infer<typeof createFamilyInput>) {
   return commitCommand(ctx, "school.family.create", key, hashCommand(input), {
-    authorize: office(ctx),
+    authorize: async tx=>{await office(ctx)(tx);if(input.children.some(c=>c.payerGuardianIndex!==undefined))await requireCapability(tx,ctx,"finance.issue");},
     mutate: async (tx) => {
       // Duplicate contacts should be selected from existing family records, not cloned.
       for (const adult of input.guardians) {
+        if(adult.existingId){await guardian(tx,adult.existingId,true);continue;}
         if (adult.contactEmail) {
           const existing = await tx`select id from app.guardian_profile where contact_email = ${adult.contactEmail}`;
           if (existing.length) throw new ApiError("conflict");
         }
       }
+      const [family]=await tx<{id:string}[]>`insert into app.family_group(display_name,situation) values (${input.displayName??input.guardians[0].displayName},${input.situation??"unknown"}) returning id`;
       const guardianIds: string[] = [];
       for (const adult of input.guardians) {
+        if(adult.existingId){guardianIds.push(adult.existingId);await tx`insert into app.family_group_guardian(family_id,guardian_id) values (${family.id},${adult.existingId})`;continue;}
         const [saved] = await tx<{ id: string }[]>`
-          insert into app.guardian_profile(display_name,contact_email,contact_phone,correspondence_locale)
-          values (${adult.displayName},${adult.contactEmail},${adult.contactPhone},${adult.correspondenceLocale})
+          insert into app.guardian_profile(display_name,contact_email,contact_phone,correspondence_locale,birth_date,emergency_address)
+          values (${adult.displayName},${adult.contactEmail},${adult.contactPhone},${adult.correspondenceLocale},${adult.birthDate??null}::date,${adult.emergencyAddress??null})
           returning id
         `;
         guardianIds.push(saved.id);
+        await tx`insert into app.family_group_guardian(family_id,guardian_id) values (${family.id},${saved.id})`;
         await appendAudit(tx, { action: "school.guardian_created", aggregateId: saved.id });
       }
       const children = [];
-      for (const child of input.children) children.push(await addFamilyStudent(tx, ctx, child, guardianIds));
-      return createdFamilySchema.parse({ guardianIds, children });
+      for (const child of input.children) {
+        const row=child.existingId?await student(tx,child.existingId,true):await addFamilyStudent(tx,ctx,child,guardianIds,child.guardianLinks);
+        if(child.existingId){if(row.state!=="active")throw new ApiError("validation");await assignFamilyLinks(tx,ctx,row.id,guardianIds,child.guardianLinks);}
+        if(child.payerGuardianIndex!==undefined){
+          const [payer]=await tx<{revision:number|null}[]>`select app.set_billing_payer(${row.id},${guardianIds[child.payerGuardianIndex]},app.billing_school_month(),0) as revision`;
+          if(payer.revision===null)throw new ApiError("stale_revision");
+          await appendAudit(tx,{action:"finance.payer_designated",aggregateId:row.id,metadata:{revision:payer.revision}});
+        }
+        children.push(row);
+        await tx`insert into app.family_group_student(family_id,student_id) values (${family.id},${row.id})`;
+      }
+      await appendAudit(tx,{action:"school.family_created",aggregateId:family.id});
+      return createdFamilySchema.parse({familyId:family.id,guardianIds,children});
     },
   });
 }
@@ -315,4 +355,81 @@ export function createFamilyChild(ctx: ActorContext, guardianId: string, key: st
       return addFamilyStudent(tx, ctx, input, [guardianId]);
     },
   });
+}
+
+// These office-only records deliberately do not use membership to authorize child access.
+export function listFamilyGroups(ctx:ActorContext,query:z.infer<typeof familyGroupQuery>){
+  return withActor(ctx,async tx=>{
+    await office(ctx)(tx);
+    const term=(query.query??"").toLowerCase();
+    const rows=familyGroupSummary.array().parse(await tx`
+      select f.id,f.display_name as "displayName",f.revision,
+      (select count(*)::int from app.family_group_guardian g where g.family_id=f.id) as "guardianCount",
+      (select count(*)::int from app.family_group_student c where c.family_id=f.id) as "childCount"
+      from app.family_group f
+      where (${query.cursor??null}::uuid is null or (lower(f.display_name),f.id) > (select lower(display_name),id from app.family_group where id=${query.cursor??null}::uuid))
+      and (${term}='' or strpos(lower(f.display_name),${term})>0
+        or exists(select 1 from app.family_group_guardian m join app.guardian_profile g on g.id=m.guardian_id where m.family_id=f.id and strpos(lower(g.display_name),${term})>0)
+        or exists(select 1 from app.family_group_student m join app.student s on s.id=m.student_id where m.family_id=f.id and strpos(lower(s.display_name),${term})>0))
+      order by lower(f.display_name),f.id limit ${query.limit+1}`);
+    return slice(rows,query.limit);
+  });
+}
+export function readFamilyGroup(ctx:ActorContext,id:string){
+  return withActor(ctx,async tx=>{
+    await office(ctx)(tx);
+    const [family]=await tx`select id,display_name as "displayName",situation,revision from app.family_group where id=${id}`;
+    if(!family)throw accessError();
+    const guardians=guardianSchema.array().parse(await tx`select g.id,g.display_name as "displayName",g.contact_email as "contactEmail",g.contact_phone as "contactPhone",g.correspondence_locale as "correspondenceLocale",g.account_id is not null as "linkedAccount",g.revision from app.family_group_guardian m join app.guardian_profile g on g.id=m.guardian_id where m.family_id=${id} order by g.display_name,g.id`);
+    const children=studentSchema.array().parse(await tx`select s.id,s.student_number as "studentNumber",s.display_name as "displayName",s.state,s.revision from app.family_group_student m join app.student s on s.id=m.student_id where m.family_id=${id} order by s.display_name,s.id`);
+    const links=childLinkSchema.array().parse(await tx`select l.id,l.guardian_id as "guardianId",l.student_id as "studentId",l.state,l.reason,l.revision,l.relationship,s.display_name as "studentName",s.student_number as "studentNumber"
+    from app.child_link l join app.student s on s.id=l.student_id join app.family_group_student c on c.student_id=l.student_id and c.family_id=${id}
+    join app.family_group_guardian g on g.guardian_id=l.guardian_id and g.family_id=${id} order by l.created_at desc,l.id`);
+    return familyGroupDetail.parse({...family,guardians,children,links,guardianCount:guardians.length,childCount:children.length});
+  });
+}
+
+async function groupRecord(tx:Transaction,id:string,lock=false){
+ const [row]=await tx<{id:string;revision:number}[]>`select id,revision from app.family_group where id=${id} ${lock?tx`for update`:tx``}`;
+ if(!row)throw accessError();return row;
+}
+export async function editFamilyGroup(ctx:ActorContext,id:string,key:string|null,input:z.infer<typeof familyGroupEdit>){
+ await commitCommand(ctx,"school.family.edit",key,hashCommand({id,...input}),{authorize:async tx=>{await office(ctx)(tx);await groupRecord(tx,id);},mutate:async tx=>{const row=await groupRecord(tx,id,true);requireRevision(row.revision,input.revision);
+ await tx`update app.family_group set display_name=${input.displayName},situation=${input.situation},revision=revision+1 where id=${id}`;
+ await appendAudit(tx,{action:"school.family_updated",aggregateId:id});return {id};}});
+ return readFamilyGroup(ctx,id);
+}
+export async function attachFamilyMember(ctx:ActorContext,id:string,key:string|null,input:z.infer<typeof familyGroupAttach>){
+ await commitCommand(ctx,"school.family.attach",key,hashCommand({id,...input}),{authorize:async tx=>{await office(ctx)(tx);await groupRecord(tx,id);},mutate:async tx=>{const row=await groupRecord(tx,id,true);requireRevision(row.revision,input.revision);
+ if(input.kind==="guardian"){await guardian(tx,input.personId);await tx`insert into app.family_group_guardian(family_id,guardian_id) values (${id},${input.personId}) on conflict do nothing`;}
+ else{await student(tx,input.personId);await tx`insert into app.family_group_student(family_id,student_id) values (${id},${input.personId}) on conflict do nothing`;}
+ await tx`update app.family_group set revision=revision+1 where id=${id}`;
+ await appendAudit(tx,{action:"school.family_member_attached",aggregateId:id,metadata:{kind:input.kind,personId:input.personId}});return {id};}});
+ return readFamilyGroup(ctx,id);
+}
+export function createGroupChild(ctx:ActorContext,id:string,key:string|null,input:z.infer<typeof familyGroupChildInput>){
+ return commitCommand(ctx,"school.family.group_child",key,hashCommand({id,...input}),{authorize:async tx=>{await office(ctx)(tx);await groupRecord(tx,id);},mutate:async tx=>{
+ const row=await groupRecord(tx,id,true);requireRevision(row.revision,input.revision);
+ const ids=input.guardianLinks.map(l=>l.guardianId);
+ for(const guardianId of ids){const [member]=await tx`select guardian_id from app.family_group_guardian where family_id=${id} and guardian_id=${guardianId}`;if(!member)throw accessError();}
+ const child=await addFamilyStudent(tx,ctx,input,ids,input.guardianLinks.map((l,guardianIndex)=>({guardianIndex,relationship:l.relationship,approved:l.approved})));
+ await tx`insert into app.family_group_student(family_id,student_id) values (${id},${child.id})`;
+ await tx`update app.family_group set revision=revision+1 where id=${id}`;
+ await appendAudit(tx,{action:"school.family_member_attached",aggregateId:id,metadata:{kind:"student",personId:child.id}});return child;
+ }});
+}
+
+export function readFamilyOverview(ctx:ActorContext){
+ return withActor(ctx,async tx=>{await office(ctx)(tx);const [row]=await tx`select (select count(*)::int from app.student where state='active') as "activeStudents",(select count(*)::int from app.family_group) as families,(select count(*)::int from app.guardian_profile g where not exists(select 1 from app.family_group_guardian m where m.guardian_id=g.id)) as "ungroupedGuardians"`;return familyOverviewSchema.parse(row);});
+}
+export function createGroupGuardian(ctx:ActorContext,id:string,key:string|null,input:z.infer<typeof familyGroupGuardianInput>){
+ return commitCommand(ctx,"school.family.group_guardian",key,hashCommand({id,...input}),{authorize:async tx=>{await office(ctx)(tx);await groupRecord(tx,id);},mutate:async tx=>{
+ const family=await groupRecord(tx,id,true);requireRevision(family.revision,input.revision);
+ if(input.contactEmail){const existing=await tx`select id from app.guardian_profile where contact_email=${input.contactEmail}`;if(existing.length)throw new ApiError("conflict");}
+ const [g]=await tx<{id:string}[]>`insert into app.guardian_profile(display_name,contact_email,contact_phone,correspondence_locale,birth_date,emergency_address)
+ values(${input.displayName},${input.contactEmail},${input.contactPhone},${input.correspondenceLocale},${input.birthDate??null}::date,${input.emergencyAddress??null}) returning id`;
+ await tx`insert into app.family_group_guardian(family_id,guardian_id) values(${id},${g.id})`;
+ await tx`update app.family_group set revision=revision+1 where id=${id}`;
+ await appendAudit(tx,{action:"school.guardian_created",aggregateId:g.id});return guardian(tx,g.id);
+ }});
 }

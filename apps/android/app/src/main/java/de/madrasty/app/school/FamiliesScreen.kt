@@ -1,6 +1,13 @@
 package de.madrasty.app.school
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.material3.ListItem
+import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,52 +48,66 @@ private typealias Picker = AsyncState<WirePage<List<JSONObject>>>
 @Composable
 fun FamiliesScreen(model: IdentityViewModel, initialStudent: String? = null,
     initialGuardian: String? = null, initialLink: String? = null, addGuardian: Boolean = false,
-    openEnrollment: (String)->Unit = {},
+    openEnrollment: (String)->Unit = {},openImport:(()->Unit)?=null,openPayer:((String)->Unit)?=null,openInvoices:((String)->Unit)?=null,openStops:((String)->Unit)?=null,
 ) {
-    var mode by androidx.compose.runtime.saveable.rememberSaveable(initialGuardian, addGuardian) {
-        mutableStateOf(if (initialGuardian != null || addGuardian) "guardians" else "students")
+    var mode by rememberSaveable(initialGuardian) { mutableStateOf(if(initialGuardian!=null)"guardians" else "students") }
+    var target by rememberSaveable(initialGuardian,initialStudent) { mutableStateOf(initialGuardian ?: initialStudent) }
+    var wizard by rememberSaveable(addGuardian) { mutableStateOf(addGuardian) }
+    var group by rememberSaveable { mutableStateOf<String?>(null) }
+    var forStudent by rememberSaveable { mutableStateOf<String?>(null) }
+    val requests=remember{mutableMapOf<String,Pair<String,String>>()}
+    fun back(){when{wizard->wizard=false;target!=null->target=null;group!=null->group=null;mode=="guardians"->{mode="families";forStudent=null}}}
+    BackHandler(enabled=wizard||target!=null||group!=null||mode=="guardians"){back()}
+    if(wizard){TextButton(onClick={back()}){Text(stringResource(R.string.back))};FamilyWizard(model,openPayer!=null,requests){wizard=false;group=it;mode="families"};return}
+    if(target!=null){
+        TextButton(onClick={back()}){Text(stringResource(R.string.back))}
+        val id=target!!
+        key(mode,id){FamilyRecord(model,mode,id,requests,initialLink,forStudent,openEnrollment,pickGuardian={forStudent=id;mode="guardians";target=null;group=null},openGroup={group=it;target=null;mode="families"},openGuardian={mode="guardians";target=it}){target=it}}
+        if(mode=="students"&&openPayer!=null)TextButton(onClick={openPayer(id)}){Text(fm("Zahlungspflichtige Person","مسؤول السداد"))}
+        if(mode=="students"&&openInvoices!=null)TextButton(onClick={openInvoices(id)}){Text(stringResource(R.string.fee_invoices))}
+        if(mode=="students"&&openStops!=null)TextButton(onClick={openStops(id)}){Text(stringResource(R.string.stop_title))}
+        return
     }
-    var target by androidx.compose.runtime.saveable.rememberSaveable(initialGuardian,initialStudent,addGuardian) {
-        mutableStateOf(if(addGuardian) "new" else initialGuardian ?: initialStudent)
+    if(group!=null){
+        TextButton(onClick={back()}){Text(stringResource(R.string.back))}
+        key(group){FamilyGroupScreen(model,group!!,requests,openPayer){kind,id->mode=kind;target=id}}
+        return
     }
-    var run by remember { mutableStateOf(0) }
-    var forStudent by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
-    val requests = remember { mutableMapOf<String, Pair<String, String>>() }
-    FilterChip(mode == "students", onClick = { mode = "students"; target = null; forStudent = null },
-        label = { Text(stringResource(R.string.nav_students)) })
-    FilterChip(mode == "guardians", onClick = { mode = "guardians"; target = null },
-        label = { Text(stringResource(R.string.families)) })
-    key(mode, run) {
-        RecordPicker(model, mode) { target = it.getString("id") }
+    var overview by remember { mutableStateOf<JSONObject?>(null) }
+    LaunchedEffect(mode){overview=try{item(model,"/school/families/summary")}catch(e:CancellationException){throw e}catch(_:Exception){null}}
+    Text(fm("Schüler und Familien","الطلاب والأسر"),style=MaterialTheme.typography.titleLarge)
+    overview?.let{Text(fm("Aktive Schüler: ","الطلاب النشطون: ")+it.optInt("activeStudents")+" · "+fm("Familien: ","الأسر: ")+it.optInt("families"))}
+    Button(onClick={wizard=true},modifier=Modifier.fillMaxWidth()){Text(fm("+ Neue Familie","+ أسرة جديدة"))}
+    if(openImport!=null)TextButton(onClick=openImport){Text(stringResource(R.string.import_families))}
+    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        FilterChip(mode=="students",onClick={mode="students";forStudent=null},label={Text(stringResource(R.string.nav_students))})
+        FilterChip(mode=="families",onClick={mode="families";forStudent=null},label={Text(stringResource(R.string.families))})
     }
-    TextButton(onClick = { target = "new" }) {
-        Text(stringResource(if (mode == "students") R.string.add_student else R.string.add_guardian))
-    }
-    target?.let { id ->
-        HorizontalDivider()
-        key(mode, id) {
-            FamilyRecord(model, mode, id, requests, initialLink, forStudent, openEnrollment,
-                pickGuardian={forStudent=id;mode="guardians";target=null}) { updated ->
-                target = updated
-                run++
-            }
-        }
-    }
+    if(mode=="guardians"){TextButton(onClick={back()}){Text(stringResource(R.string.back))};Text(fm("Sorgeberechtigte ohne Familiengruppe","أولياء الأمور بدون أسرة"))}
+    key(mode){RecordPicker(model,mode,ungrouped=mode=="guardians"&&forStudent==null){row->if(mode=="families")group=row.getString("id") else target=row.getString("id")}}
+    if(mode=="families")TextButton(onClick={mode="guardians"}){Text(fm("Sorgeberechtigte ohne Familiengruppe","أولياء الأمور بدون أسرة"))}
 }
 
 @Composable
-private fun RecordPicker(model: IdentityViewModel, mode: String, select: (JSONObject) -> Unit) {
-    var query by remember { mutableStateOf("") }
-    var filter by remember { mutableStateOf("") }
+internal fun RecordPicker(model: IdentityViewModel, mode: String, ungrouped:Boolean=false,exclude:Set<String> = emptySet(), select: (JSONObject) -> Unit) {
+    var query by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf("") }
+    var status by rememberSaveable { mutableStateOf("") }
+    var classId by rememberSaveable { mutableStateOf("") }
+    var classes by remember { mutableStateOf(emptyList<JSONObject>()) }
+    val language=LocalConfiguration.current.locales[0].language
+    LaunchedEffect(mode){if(mode=="students")classes=try{model.records("/school/classes?limit=100")}catch(e:CancellationException){throw e}catch(_:Exception){emptyList()}}
     var generation by remember { mutableStateOf(0) }
     var after by remember { mutableStateOf<String?>(null) }
     var currentRows by remember { mutableStateOf(emptyList<JSONObject>()) }
     var state by remember { mutableStateOf<Picker>(AsyncState.InitialLoading()) }
+    LaunchedEffect(query){delay(250);if(filter!=query.trim()){filter=query.trim();after=null;currentRows=emptyList();generation++}}
+    LaunchedEffect(status,classId){after=null;currentRows=emptyList();generation++}
     LaunchedEffect(generation) {
         state = AsyncState.InitialLoading()
         state = try {
             val cursor = after?.let { "&cursor=${Uri.encode(it)}" }.orEmpty()
-            val page = listPage(model, "/school/$mode?query=${Uri.encode(filter)}$cursor")
+            val page = listPage(model, "/school/$mode?query=${Uri.encode(filter)}&sort=name${if(ungrouped) "&ungrouped=true" else ""}${if(mode=="students"&&status.isNotEmpty())"&state=$status" else ""}${if(mode=="students"&&classId.isNotEmpty())"&classId=$classId" else ""}$cursor")
             currentRows = if (after == null) page.data else currentRows + page.data
             AsyncState.Ready(page.copy(data = currentRows))
         } catch (error: CancellationException) { throw error }
@@ -99,15 +120,19 @@ private fun RecordPicker(model: IdentityViewModel, mode: String, select: (JSONOb
     TextButton(onClick = { filter = query.trim(); after = null; currentRows = emptyList(); generation++ }) {
         Text(stringResource(R.string.search_family))
     }
+    if(mode=="students"){
+        FamilyChoice(fm("Status","الحالة"),status,listOf("" to fm("Alle","الكل"),"active" to fm("Aktiv","نشط"),"inactive" to fm("Inaktiv","غير نشط"))){status=it}
+        FamilyChoice(fm("Klasse","الفصل"),classId,listOf("" to fm("Alle","الكل"),"none" to fm("Ohne Klasse","بدون فصل"))+classes.map{it.getString("id") to classLabel(it,language)}){classId=it}
+    }
     AsyncSurface(state) { page ->
         if (page.data.isEmpty()) Text(stringResource(if (filter.isEmpty()) R.string.empty else R.string.filtered_empty))
-        page.data.forEach { row ->
-            TextButton(onClick = { select(row) }) {
-                Column(Modifier.fillMaxWidth()) {
-                    Text(isolate(row.getString("displayName")))
-                    if (row.has("studentNumber")) Text("\u2066${row.getString("studentNumber")}\u2069")
-                }
-            }
+        page.data.filter{it.getString("id") !in exclude}.forEach { row ->
+            ListItem(modifier=Modifier.fillMaxWidth().clickable{select(row)},headlineContent={Text(isolate(row.getString("displayName")))},supportingContent={
+                if(row.has("studentNumber"))Text(row.getString("studentNumber")+" · "+(row.optJSONObject("currentClass")?.let{classLabel(it,LocalConfiguration.current.locales[0].language)}?:fm("Ohne Klasse","بدون فصل")))
+                else if(row.has("childCount"))Text(fm("Kinder: ","الأطفال: ")+row.optInt("childCount")+" · "+fm("Sorgeberechtigte: ","أولياء الأمور: ")+row.optInt("guardianCount"))
+                else Text(if(row.optBoolean("linkedAccount"))fm("Konto verbunden","حساب مرتبط")else fm("Kein Konto","بدون حساب"))
+            })
+            HorizontalDivider()
         }
         page.nextCursor?.let { cursor -> TextButton(onClick = { after = cursor; generation++ }) {
             Text(stringResource(R.string.staff_more))
@@ -118,7 +143,7 @@ private fun RecordPicker(model: IdentityViewModel, mode: String, select: (JSONOb
 @Composable
 private fun FamilyRecord(model: IdentityViewModel, mode: String, id: String,
     requests: MutableMap<String, Pair<String, String>>, focusLink: String?, forStudent:String?,
-    openEnrollment:(String)->Unit, pickGuardian:()->Unit, saved: (String) -> Unit,
+    openEnrollment:(String)->Unit, pickGuardian:()->Unit,openGroup:(String)->Unit={},openGuardian:(String)->Unit={}, saved: (String) -> Unit,
 ) {
     var generation by remember { mutableStateOf(0) }
     var value by remember { mutableStateOf<AsyncState<JSONObject>>(AsyncState.InitialLoading()) }
@@ -144,7 +169,10 @@ private fun FamilyRecord(model: IdentityViewModel, mode: String, id: String,
                 if (!new) generation++
             }
         }
+        if(!new)record.optJSONArray("familyGroups")?.objects()?.forEach{g->TextButton(onClick={openGroup(g.getString("id"))}){Text(isolate(g.getString("displayName")))}}
         if (!new && isStudent) {
+            record.optJSONObject("currentClass")?.let{Text(classLabel(it,LocalConfiguration.current.locales[0].language))}
+            record.optJSONArray("guardianRelationships")?.objects()?.forEach{g->TextButton(onClick={openGuardian(g.getString("guardianId"))}){Text(isolate(g.optString("guardianName"))+" · "+familyLinkLabel(g.optString("state")))}}
             TextButton(onClick=pickGuardian) { Text(stringResource(R.string.choose_guardian_for_student)) }
             TextButton(onClick={openEnrollment(id)}) { Text(stringResource(R.string.place_students)) }
         }
@@ -161,8 +189,10 @@ private fun ProfileForm(record: JSONObject, student: Boolean, new: Boolean, comm
     var phone by remember { mutableStateOf(record.stringOrEmpty("contactPhone")) }
     var locale by remember { mutableStateOf(record.optString("correspondenceLocale", uiLocale)) }
 
-    if (!new && !record.isNull("birthDate")) Text(stringResource(R.string.profile_birth)+": "+isolate(record.getString("birthDate")))
-    if (!student && !new && !record.isNull("emergencyAddress")) Text(stringResource(R.string.profile_address)+": "+isolate(record.getString("emergencyAddress")))
+    var birth by remember { mutableStateOf(record.stringOrEmpty("birthDate")) }
+    var address by remember { mutableStateOf(record.stringOrEmpty("emergencyAddress")) }
+    if(!new)Field(R.string.profile_birth,birth){birth=it}
+    if(!new&&!student)Field(R.string.profile_address,address){address=it}
     if (student && !new) Text("${stringResource(R.string.student_number)} · \u2066${record.getString("studentNumber")}\u2069")
     Field(R.string.family_name, name) { name = it }
     if (student && !new) {
@@ -177,9 +207,10 @@ private fun ProfileForm(record: JSONObject, student: Boolean, new: Boolean, comm
         FilterChip(locale == "ar", { locale = "ar" }, label = { Text("العربية") })
         FilterChip(locale == "de", { locale = "de" }, label = { Text("Deutsch") })
     }
-    Submit(enabled = name.trim().length in 1..200 && phone.length <= 48 && email.length <= 254) {
+    Submit(enabled = name.trim().length in 1..200 && phone.length <= 48 && email.length <= 254 && validFamilyBirth(birth) && address.length<=500) {
         val input = JSONObject().put("displayName", name.trim())
-        if (!new) input.put("revision", record.getInt("revision"))
+        if (!new) input.put("revision", record.getInt("revision")).put("birthDate",birth.trim().takeIf{it.isNotEmpty()}?:JSONObject.NULL)
+        if(!new&&!student)input.put("emergencyAddress",address.trim().takeIf{it.isNotEmpty()}?:JSONObject.NULL)
         if (student && !new) input.put("state", state)
         if (!student) {
             input.put("contactEmail", email.trim().takeIf { it.isNotEmpty() } ?: JSONObject.NULL)

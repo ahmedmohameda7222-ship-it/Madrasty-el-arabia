@@ -18,22 +18,30 @@ test("family-first dashboard opens one guardian-and-children form with optional 
       {name:"madrasty-csrf",value:"a".repeat(64),url:localOrigin,sameSite:"Lax"},
     ]);
     await page.goto("/de/school/home");
-    await expect(page.locator(".school-overview-metrics dt")).toHaveText(["Schüler","Klassen","Lehrkräfte"]);
-    await page.getByRole("link",{name:"Neue Familie hinzufügen",exact:true}).first().click();
+    await expect(page.locator(".admin-start-metrics dt")).toHaveText(["Schüler","Klassen","Lehrkräfte"]);
+    await page.locator('.admin-start-actions a[href$="/students?add=family"]').click();
     await expect(page).toHaveURL(/students\?add=family$/);
     await expect(page.getByRole("heading",{name:"Neue Familie hinzufügen",exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"Schüler hinzufügen",exact:true})).toHaveCount(0);
     const seed=Date.now();
+    await page.getByRole("textbox",{name:"Familienname",exact:true}).fill("QA Group "+seed);
+    await page.getByRole("button",{name:"Weiter",exact:true}).click();
     await page.locator('input[name="guardian1Name"]').fill("QA Family "+seed);
     await page.locator('input[name="guardian1Email"]').fill(`qa-family-${seed}@madrasty.invalid`);
+    await page.getByRole("button",{name:"Weiter",exact:true}).click();
     await page.getByRole("combobox",{name:"Schuljahr für die Klassenauswahl"}).selectOption(year.id);
     await page.getByRole("textbox",{name:"Name",exact:true}).last().fill("QA Child "+seed);
     await page.getByRole("combobox",{name:"Klasse (optional)"}).selectOption(apple.id);
+    await page.getByRole("button",{name:"Weiter",exact:true}).click();
+    await page.getByRole("combobox",{name:"Zugang zum Kind",exact:true}).selectOption("approved");
+    await page.getByRole("combobox",{name:"Beziehung zum Kind",exact:true}).selectOption("mother");
+    await page.getByRole("button",{name:"Weiter",exact:true}).click();
+    await page.getByRole("checkbox",{name:"Ich habe die Angaben und Berechtigungen geprüft."}).check();
     await page.getByRole("button",{name:"Familie und Kinder speichern",exact:true}).click();
-    await expect(page).toHaveURL(/guardian=[0-9a-f-]{36}/);
-    await expect(page.getByRole("heading",{name:"Kind zur Familie hinzufügen",exact:true})).toBeVisible();
-    await expect(page.getByText("QA Child "+seed)).toBeVisible();
-    await page.getByRole("link",{name:"Nachrichten",exact:true}).click();
+    await expect(page).toHaveURL(/family=[0-9a-f-]{36}/);
+    await expect(page.getByRole("button",{name:"Kind zur Familie hinzufügen",exact:true})).toBeVisible();
+    await expect(page.getByText("QA Child "+seed,{exact:true}).first()).toBeVisible();
+    await page.locator('nav a[href$="/school/messages"]').click();
     await expect(page).toHaveURL("/de/school/messages");
   } finally { await school.close(); }
 });
@@ -47,7 +55,7 @@ test("a finance-only administrator has no pupil navigation or school-wide pupil 
     await expect(page.getByRole("heading",{name:"Mehr",exact:true})).toBeVisible();
     await expect(page.getByRole("navigation").getByRole("link",{name:"Schüler",exact:true})).toHaveCount(0);
     await page.goto("/de/school/home");
-    await expect(page.getByRole("link",{name:"Rechnungen ausstellen",exact:true})).toBeVisible({timeout:15_000});
+    await expect(page.locator('.admin-start-actions a[href$="/more/issue-invoices"]')).toBeVisible({timeout:15_000});
     await expect(page.locator(".school-overview-metrics")).toHaveCount(0);
   } finally {
     await school.close();
@@ -101,10 +109,16 @@ test("the team workspace uses a dark compact directory and offers permanent-pass
     await page.locator('input[name="password"]').fill("QA-volunteer-permanent-2026");
     await page.getByRole("button",{name:"Konto erstellen"}).click();
     await expect(page.getByText(teacherName)).toBeVisible();
-    await page.goto(`/de/school/more/classes?year=${year.id}&class=${classroom.id}`);
-    await expect(page.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
-    await expect(page.getByText(teacherName)).toBeVisible();
-    await expect(page.getByRole("button",{name:"Lehrkraft zuweisen"})).toBeEnabled();
+    // Wait for the account-creation refresh before leaving the workspace.
+    await expect(page.getByRole("button",{name:"Lehrkraft hinzufügen",exact:true})).toBeEnabled();
+    // Use a separate tab for the persisted-state check so the source page refresh cannot interrupt navigation.
+    const classPage=await context.newPage();
+    try {
+      await classPage.goto(`/de/school/more/classes?year=${year.id}&class=${classroom.id}`);
+      await expect(classPage.getByRole("heading",{name:"Lehrkräfte dieser Klasse"})).toBeVisible();
+      await expect(classPage.getByText(teacherName)).toBeVisible();
+      await expect(classPage.getByRole("button",{name:"Lehrkraft zuweisen"})).toBeEnabled();
+    }finally{await classPage.close();}
   }finally{await school.close();}
 });
 

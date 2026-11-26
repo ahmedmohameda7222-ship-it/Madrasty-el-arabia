@@ -581,3 +581,93 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .comms-message-actions[open]>.header-actions>.plain-button{padding-inline:8px;font-size:.875rem;min-block-size:44px}
 .comms-message-actions[open]>.header-actions>.plain-button:last-child,.comms-message-actions[open]>.header-actions>form,.comms-message-actions[open]>.header-actions>small{grid-column:1/-1}
 .comms-report-form .header-actions>button{font-size:.875rem;padding-inline:10px}
+
+/* Family workspace: compact mobile-first lists, independent detail and wizard surfaces. */
+.family-workspace{display:grid;gap:12px;min-inline-size:0;max-inline-size:52rem;margin-inline:auto}
+.family-workspace-heading,.family-profile-header{display:flex;align-items:center;gap:10px;min-inline-size:0}
+.family-workspace-heading h1,.family-profile-header h1,.family-wizard h1{font-size:clamp(1.35rem,5vw,1.85rem);line-height:1.25;margin:0;min-inline-size:0;overflow-wrap:anywhere}
+.family-workspace-heading h1{flex:1}
+.family-primary-icon{display:grid;place-items:center;inline-size:44px;block-size:44px;flex:none;border:0;border-radius:50%;background:var(--primary);color:var(--on-primary)}
+.family-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.family-metrics button{display:grid;gap:4px;align-content:start;text-align:start;min-inline-size:0;border:1px solid var(--rule);border-radius:14px;background:var(--card);color:var(--ink);padding:12px;min-block-size:64px}
+.family-metrics strong{font-size:1.55rem;color:var(--primary);line-height:1.2}.family-metrics small{font-size:.82rem;color:var(--muted);overflow-wrap:normal}
+.family-segments{display:flex;gap:4px;background:var(--inset);border-radius:14px;padding:4px;min-inline-size:0}
+.family-segments button{flex:1;min-inline-size:0;min-block-size:44px;background:transparent;border:0;border-radius:11px;color:var(--ink);font:inherit;font-weight:600;font-size:.875rem;padding:6px;overflow-wrap:normal}
+.family-segments button[aria-pressed=true]{background:var(--card);color:var(--primary);box-shadow:0 1px 3px #0002}
+.family-directory-list,.family-profile,.family-person-picker{display:grid;gap:8px;min-inline-size:0}
+.family-search{display:flex;gap:6px;min-inline-size:0;align-items:center}
+.family-search input{flex:1;min-inline-size:0;inline-size:100%;min-block-size:44px;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:12px;padding:8px 12px;font:inherit;font-size:16px}
+.family-filter-panel{margin:0;padding:10px;border:1px solid var(--rule);border-radius:12px;grid-template-columns:repeat(2,minmax(0,1fr));background:var(--card)}
+.family-filter-panel label,.family-filter-panel select{min-inline-size:0;max-inline-size:100%;font-size:.875rem}
+.family-list,.family-action-menu{background:var(--card);border:1px solid var(--rule);border-radius:14px;overflow:hidden;margin:0;padding:0;list-style:none;min-inline-size:0}
+.family-list-row{display:flex;align-items:center;gap:10px;min-inline-size:0;inline-size:100%;min-block-size:52px;border:0;background:transparent;color:var(--ink);text-align:start;font:inherit;text-decoration:none;padding:9px 12px}
+.family-list-row>span:not(.family-avatar){flex:1;min-inline-size:0;overflow-wrap:anywhere}
+.family-list-row>svg{flex:none;inline-size:18px;block-size:18px;color:var(--muted)}
+.family-list-row:active{background:var(--inset)}
+.family-list-row:focus-visible,.family-primary-icon:focus-visible,.family-segments button:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+.family-list-row strong{font-size:.95rem;line-height:1.3;font-weight:650}
+.family-row-label{display:grid;gap:2px;text-align:start;min-inline-size:0}
+.family-row-label strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.family-row-label small{font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}
+.family-avatar{display:grid;place-items:center;flex:0 0 40px;inline-size:40px;block-size:40px;border-radius:50%;background:var(--inset);color:var(--primary);font-weight:700}
+.family-avatar svg{inline-size:22px;block-size:22px}
+.family-legacy-link,.family-import-link,.family-back,.family-add-action{display:flex;align-items:center;gap:6px;justify-content:flex-start;text-decoration:none;font-size:.875rem;min-block-size:44px}
+.family-legacy-link svg{margin-inline-start:auto;flex:none}.family-back{justify-self:start;padding:6px 10px}.family-import-link{justify-content:center}
+.family-detail-card,.family-wizard{margin:0;padding:14px;min-inline-size:0;max-inline-size:100%;border-radius:16px}
+.family-detail-card h2{font-size:1.05rem;line-height:1.3;margin:0 0 10px}
+.family-detail-card .group-list{margin:0}
+.family-profile-header{flex-wrap:wrap;padding-block:8px}.family-profile-header>div{flex:1;min-inline-size:0}.family-profile-header p{margin:4px 0;font-size:.8rem;color:var(--muted)}
+.family-profile-header>.plain-button{min-block-size:44px;font-size:.8rem;padding-inline:8px}
+.family-sub-action{display:block;padding:0 12px 8px;color:var(--primary);font-size:.8rem;min-block-size:44px;align-content:center}
+.family-profile-actions,.family-mode-row{display:flex;flex-wrap:wrap;gap:6px;min-inline-size:0}
+.family-profile-actions>.plain-button,.family-mode-row>.plain-button{flex:1 1 130px;min-inline-size:0;font-size:.875rem;white-space:normal;overflow-wrap:normal}
+.family-wizard .auth-form,.family-detail-card .auth-form{grid-template-columns:minmax(0,1fr);min-inline-size:0;gap:10px}
+.family-wizard label,.family-detail-card label,.family-wizard fieldset{min-inline-size:0;max-inline-size:100%;overflow-wrap:anywhere}
+.family-wizard input:not([type=checkbox]),.family-wizard select,.family-wizard textarea,.family-detail-card input:not([type=checkbox]),.family-detail-card select,.family-detail-card textarea{inline-size:100%;min-inline-size:0;max-inline-size:100%;box-sizing:border-box;font-size:16px}
+.family-wizard select,.family-detail-card select,.family-filter-panel select{border:1px solid var(--rule);border-radius:12px;padding:8px;background:var(--canvas);color:var(--ink);text-overflow:ellipsis}
+.family-wizard textarea,.family-detail-card textarea{background:var(--canvas);color:var(--ink);border:1px solid var(--rule);border-radius:12px;min-block-size:64px;padding:8px;font:inherit;resize:vertical}
+.family-step-caption{font-size:.82rem;color:var(--muted);margin:8px 0}
+.family-step-track{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;list-style:none;padding:0;margin:8px 0}
+.family-step-track li{display:grid;justify-items:center;gap:4px;min-inline-size:0;text-align:center;color:var(--muted)}
+.family-step-track li span{inline-size:28px;block-size:28px;display:grid;place-items:center;border-radius:50%;background:var(--inset);font-weight:650}
+.family-step-track li[data-current=true] span,.family-step-track li[data-done=true] span{background:var(--primary);color:var(--on-primary)}
+.family-step-track small{font-size:.64rem;line-height:1.2;overflow-wrap:anywhere}
+.family-step-track li[data-current=true] small{font-weight:700;color:var(--primary)}
+.family-fieldset{padding:12px;margin:0!important}.family-fieldset legend{font-weight:650;max-inline-size:100%;overflow-wrap:anywhere}
+.family-hint{font-size:.83rem;color:var(--muted);line-height:1.5;overflow-wrap:anywhere;margin:4px 0}
+.family-link-options{display:grid;gap:6px;border-block-start:1px solid var(--rule);padding-block:8px;min-inline-size:0;overflow-wrap:anywhere}
+.family-review-card{display:grid;gap:5px;border:1px solid var(--rule);border-radius:12px;padding:10px;min-inline-size:0;overflow-wrap:anywhere}
+.family-review-card small,.family-review-line span{font-size:.78rem;color:var(--muted)}
+.family-review-line{display:flex;align-items:start;justify-content:space-between;gap:8px;flex-wrap:wrap;border-block-start:1px solid var(--rule);padding-block-start:6px}
+.family-wizard-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;align-items:stretch;margin-block-start:8px}.family-wizard-actions button{margin:0!important;min-inline-size:0;min-block-size:48px;font-size:.9rem;overflow-wrap:normal}
+@media(max-width:360px){.family-workspace{gap:8px}.family-detail-card,.family-wizard{padding:10px}.family-metrics button{padding:10px}.family-list-row{padding:8px;gap:8px}.family-avatar{flex-basis:36px;inline-size:36px;block-size:36px}.family-step-track li small{display:none}.family-filter-panel{grid-template-columns:minmax(0,1fr)}}
+
+/* Audit 2026-11-25: keep full profile title width on narrow iPhones. */
+.family-profile-header{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center}
+.family-profile-header>.plain-button{grid-column:2;justify-self:start;max-inline-size:100%;white-space:normal}
+.family-profile-header h1{overflow-wrap:break-word}
+.family-wizard select,.family-detail-card select,.family-filter-panel select,.family-import select{appearance:none;-webkit-appearance:none;padding-inline-end:32px;background:var(--canvas);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%237e8996' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;color:var(--ink)}
+[dir=rtl] :is(.family-wizard,.family-detail-card,.family-filter-panel,.family-import) select{background-position:left 10px center}
+.family-import .auth-card{margin:0;min-inline-size:0;padding:14px;max-inline-size:100%}
+.family-import .header-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-inline-size:0}
+.family-import .header-actions a{margin:0;display:flex;align-items:center;justify-content:center;min-block-size:44px;font-size:.875rem;white-space:normal;text-align:center}
+.family-import .auth-form,.family-import label,.family-import select{min-inline-size:0;max-inline-size:100%}
+.family-import select{inline-size:100%;min-block-size:44px;border:1px solid var(--rule);border-radius:12px}
+.family-import .group-list{min-inline-size:0;overflow-wrap:anywhere}
+.family-import .primary-button,.family-import .plain-button{white-space:normal;overflow-wrap:break-word}
+@media(max-width:360px){.family-profile-header{grid-template-columns:36px minmax(0,1fr)}.family-import .header-actions{grid-template-columns:1fr}}
+
+/* Import audit: clear status numbers, 44px confirmation and independent action rows. */
+.family-import>h1{margin:0;font-size:clamp(1.35rem,5vw,1.85rem);line-height:1.25}
+.family-import>p[role=status]{margin:0;color:var(--muted);font-size:.83rem}
+.family-import>.auth-card{display:grid;gap:10px}
+.family-import>.auth-card>h2,.family-import>.auth-card>p{margin:0}
+.family-import-counts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0}
+.family-import-counts>div,.family-import-receipt>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-inline-size:0;padding:8px 10px;background:var(--inset);border-radius:10px}
+.family-import-counts dt,.family-import-receipt dt{font-size:.8rem;line-height:1.35;overflow-wrap:anywhere;min-inline-size:0}
+.family-import-counts dd,.family-import-receipt dd{margin:0;flex:none;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.family-import-receipt{display:grid;gap:6px;margin:0}
+.family-import-confirm{display:flex;align-items:center;gap:10px;min-block-size:44px;font-size:.875rem;line-height:1.4}
+.family-import-confirm input[type=checkbox]{appearance:auto;flex:none;inline-size:22px;block-size:22px;margin:0;accent-color:var(--primary)}
+.family-import-review-actions{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.family-import-review-actions button{margin:0!important;inline-size:100%;min-block-size:44px}

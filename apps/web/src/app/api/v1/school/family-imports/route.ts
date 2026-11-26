@@ -1,7 +1,7 @@
 import { importUploadInput, maxFamilyUploadBytes } from "@madrasty/contracts";
 import { api, data, readJson } from "@/server/http";
 import { requireActor } from "@/server/identity/actor";
-import { uploadImport } from "@/server/school/imports";
+import { uploadImport, listFamilyImports } from "@/server/school/imports";
 
 export const POST = api(async (request, ctx) => {
   const actor = await requireActor(request, ctx);
@@ -9,3 +9,5 @@ export const POST = api(async (request, ctx) => {
   const result = await uploadImport(actor, request.headers.get("idempotency-key"), body);
   return data(result.data, result.replayed ? 200 : 201);
 });
+
+export const GET=api(async(request,ctx)=>data(await listFamilyImports(await requireActor(request,ctx))));

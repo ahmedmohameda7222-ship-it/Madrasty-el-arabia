@@ -72,3 +72,24 @@ test("XLSX preview keeps leading zeroes and flags formulas or numeric identifier
     await school.close();
   }
 });
+
+test("explicit family keys are reusable and committed receipts are recoverable",async()=>{
+ const school=schoolFixtures();
+ try{
+ const token=await school.bearer("admin","admin"),key=randomUUID();
+ const csv=["familyKey,familyName,childKey,childName,guardianKey,guardianName,email,communicationLocale",`${key},QA Explicit Group,${key}-c,QA Child,${key}-g,QA Guardian,${key}@madrasty.invalid,de`].join("\n");
+ const body={fileName:"explicit.csv",mime:"text/csv",bytesBase64:Buffer.from(csv).toString("base64")};
+ for(const pass of ["first","second"]){
+ const write={token,persona:"admin" as const};
+ const upload=(await fixtureApi(school,"/school/family-imports",{...write,method:"POST",key:key+pass,body,status:201})).payload.data;
+ const path="/school/family-imports/"+upload.id;
+ const preview=(await fixtureApi(school,path+"/mapping",{...write,method:"PUT",key:key+pass+"map",body:{revision:upload.revision,columnMap:{familyKey:1,familyName:2,childKey:3,childName:4,guardianKey:5,guardianName:6,email:7,communicationLocale:8}}})).payload.data;
+ assert.equal(preview.counts.conflict,0);
+ const receipt=(await fixtureApi(school,path+"/commit",{...write,method:"POST",key:key+pass+"commit",body:{reviewedRevision:preview.revision}})).payload.data;
+ assert.deepEqual((await fixtureApi(school,path+"/receipt",{token})).payload.data,receipt);
+ assert.equal((await fixtureApi(school,path+"/status",{token})).payload.data.state,"committed");
+ const groups=(await fixtureApi(school,"/school/families?query=QA%20Explicit%20Group",{token})).payload.data;
+ assert.equal(groups.length,1);assert.equal(groups[0].childCount,1);assert.equal(groups[0].guardianCount,1);
+ }
+ }finally{await school.close();}
+});

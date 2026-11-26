@@ -253,6 +253,16 @@ export function commitImport(ctx: ActorContext, id: string, key: string | null, 
           guardians.set(item.guardianKey, adult);
         }
 
+        // Only a supplied external family key may create or reuse an organizational group.
+        // Never infer membership from a surname, e-mail or shared child.
+        if(item.familyKey&&item.familyName){
+          const [group]=await tx<{id:string;name:string}[]>`insert into app.family_group(import_key,display_name) values (${item.familyKey},${item.familyName})
+            on conflict(import_key) do update set import_key=excluded.import_key returning id,display_name as name`;
+          if(group.name!==item.familyName)throw new ApiError("stale_revision");
+          const addedAdult=await tx`insert into app.family_group_guardian(family_id,guardian_id) values(${group.id},${adult.id}) on conflict do nothing returning guardian_id`;
+          const addedChild=await tx`insert into app.family_group_student(family_id,student_id) values(${group.id},${student}) on conflict do nothing returning student_id`;
+          if(addedAdult.length||addedChild.length)await tx`update app.family_group set revision=revision+1 where id=${group.id}`;
+        }
         const relation = row.link;
         if (!relation || relation.state === "revoked" || relation.state === "pending") {
           const reason = relation?.state === "revoked" ? "approved_import_restore" : "approved_import";
@@ -289,4 +299,22 @@ export function commitImport(ctx: ActorContext, id: string, key: string | null, 
       return receipt;
     },
   });
+}
+
+export function listFamilyImports(ctx: ActorContext) {
+  return withActor(ctx, async tx => {
+    await allowed(ctx)(tx);
+    const rows=await tx<Job[]>`select id, file_name as "fileName", file_mime as mime, state, revision,
+      to_char(expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "expiresAt",
+      null::bytea as bytes, receipt, mapping
+      from app.family_import_job where owner_id=${ctx.accountId} and (state='committed' or expires_at>now())
+      order by expires_at desc,id limit 100`;
+    return rows.map(version);
+  });
+}
+export function familyImportStatus(ctx:ActorContext,id:string){
+  return withActor(ctx,async tx=>{await allowed(ctx)(tx);const current=await job(tx,id);return version(current);});
+}
+export function familyImportReceipt(ctx:ActorContext,id:string){
+  return withActor(ctx,async tx=>{await allowed(ctx)(tx);const current=await job(tx,id);if(current.state!=="committed")throw new ApiError("conflict");return importReceiptSchema.parse(current.receipt);});
 }

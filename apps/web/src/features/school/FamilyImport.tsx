@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
   guardianSchema, importColumns, importInspectionSchema, importPreviewSchema, importReceiptSchema,
@@ -13,7 +13,7 @@ import { dictionary, localizedError } from "@/i18n";
 
 const copy = {
   ar: {
-    title:"استيراد الأسر", upload:"رفع الملف", template:"تنزيل قالب", instructions:"استبدل صفوف الأمثلة، واحفظ مفاتيح الطلبة وأولياء الأمور كنص.",
+    title:"استيراد الأسر", upload:"رفع الملف", template:"تنزيل قالب", instructions:"استبدل صفوف الأمثلة، واحفظ مفاتيح الأسر والطلاب وأولياء الأمور كنص. كل صف يربط طفلًا بولي أمر واحد.",
     file:"ملف CSV أو XLSX", worksheet:"ورقة العمل", delimiter:"فاصل CSV", noColumn:"غير مستخدم", mapping:"مطابقة الأعمدة",
     map:"معاينة البيانات", review:"مراجعة الصفوف", row:"صف", column:"عمود", decision:"القرار", save:"حفظ القرار",
     approve:"استخدم السجل الحالي", skip:"تخطّ الصف", restore:"اعتمد إعادة الربط", match_guardian:"اختر ولي أمر موجودًا",
@@ -23,7 +23,7 @@ const copy = {
     invalidFile:"راجع الملف واختر CSV أو XLSX صالحًا.", utf8:"احفظ CSV بترميز UTF-8.", workbookSize:"ملف Excel أكبر من الحدود المسموحة.",
     unsupportedWorkbook:"تركيب ملف Excel غير مدعوم.", worksheetError:"اختر ورقة عمل متاحة.", cellSize:"إحدى الخلايا أكبر من المسموح.",
     csvLayout:"راجع فاصل CSV والاقتباسات.", headers:"تأكد من وجود صف عناوين.", columnLimit:"الملف يتجاوز حد الأعمدة.", rowLimit:"الملف يتجاوز حد الصفوف.",
-    childKey:"مفتاح الطالب", studentNumber:"رقم الطالب", childName:"اسم الطالب", guardianKey:"مفتاح ولي الأمر",
+    familyKey:"مفتاح الأسرة (اختياري)",familyName:"اسم الأسرة (اختياري)",childKey:"مفتاح الطالب", studentNumber:"رقم الطالب", childName:"اسم الطالب", guardianKey:"مفتاح ولي الأمر",
     guardianName:"اسم ولي الأمر", email:"البريد الإلكتروني", communicationLocale:"لغة المراسلات", payerCandidate:"مرشح للسداد",
     new:"جديد", existing:"موجود", duplicate:"مكرر", conflict:"تعارض", revoked:"رابط ملغى", skipped:"متخطّى",
     invalid_value:"قيمة غير صالحة", identifier_needs_text:"احفظ المفتاح كنص للحفاظ على الأصفار", formula:"استبدل المعادلة بقيمة نصية",
@@ -33,7 +33,7 @@ const copy = {
   },
   de: {
     title:"Familien importieren", upload:"Datei hochladen", template:"Vorlage herunterladen",
-    instructions:"Ersetzen Sie die Beispielzeilen. Speichern Sie Schüler- und Sorgeberechtigten-Schlüssel als Text.",
+    instructions:"Ersetzen Sie die Beispielzeilen. Speichern Sie Familien-, Schüler- und Sorgeberechtigten-Schlüssel als Text. Jede Zeile verknüpft ein Kind mit einer sorgeberechtigten Person.",
     file:"CSV- oder XLSX-Datei", worksheet:"Arbeitsblatt", delimiter:"CSV-Trennzeichen", noColumn:"Nicht verwendet", mapping:"Spalten zuordnen",
     map:"Vorschau anzeigen", review:"Zeilen prüfen", row:"Zeile", column:"Spalte", decision:"Entscheidung", save:"Entscheidung speichern",
     approve:"Bestehenden Eintrag übernehmen", skip:"Zeile überspringen", restore:"Verknüpfung erneut bestätigen", match_guardian:"Vorhandene Sorgeberechtigte auswählen",
@@ -45,7 +45,7 @@ const copy = {
     worksheetError:"Wählen Sie ein vorhandenes Arbeitsblatt.", cellSize:"Eine Zelle überschreitet die zulässige Größe.",
     csvLayout:"Prüfen Sie Trennzeichen und Anführungszeichen.", headers:"Prüfen Sie die Kopfzeile.",
     columnLimit:"Die Datei enthält zu viele Spalten.", rowLimit:"Die Datei enthält zu viele Zeilen.",
-    childKey:"Schülerschlüssel", studentNumber:"Schülernummer", childName:"Schülername", guardianKey:"Schlüssel der Sorgeberechtigten",
+    familyKey:"Familienschlüssel (optional)",familyName:"Familienname (optional)",childKey:"Schülerschlüssel", studentNumber:"Schülernummer", childName:"Schülername", guardianKey:"Schlüssel der Sorgeberechtigten",
     guardianName:"Name der Sorgeberechtigten", email:"E-Mail-Adresse", communicationLocale:"Sprache für Mitteilungen", payerCandidate:"Vorgeschlagener Zahler",
     new:"Neu", existing:"Vorhanden", duplicate:"Duplikat", conflict:"Konflikt", revoked:"Widerrufen", skipped:"Übersprungen",
     invalid_value:"Ungültiger Wert", identifier_needs_text:"Schlüssel als Text speichern, damit führende Nullen erhalten bleiben",
@@ -56,7 +56,7 @@ const copy = {
   },
 } as const;
 const fields = Object.keys(importColumns.shape) as (keyof typeof importColumns.shape)[];
-const optional = new Set(["studentNumber","payerCandidate"]);
+const optional = new Set(["studentNumber","payerCandidate","familyKey","familyName"]);
 const lookup = z.union([studentSchema.array(), guardianSchema.array()]);
 type Inspection = z.infer<typeof importInspectionSchema>;
 type Preview = z.infer<typeof importPreviewSchema>;
@@ -79,6 +79,26 @@ function encode(bytes: Uint8Array) {
 export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
   const text = copy[locale], translated = dictionary(locale), command = useAdminCommand();
   const [file, setFile] = useState<File>();
+  const [history,setHistory]=useState<z.infer<typeof importVersionSchema>[]>([]);
+  const [filter,setFilter]=useState("all");
+  const [stage,setStage]=useState(1);
+  useEffect(()=>{document.querySelector(".school-content")?.scrollTo(0,0);window.scrollTo(0,0);},[stage]);
+  const [confirmed,setConfirmed]=useState(false);
+  const fileInput=useRef<HTMLInputElement>(null);
+  const ar=locale==="ar";
+  const tr=(de:string,arabic:string)=>ar?arabic:de;
+  function rememberJob(id?:string){const url=new URL(window.location.href);if(id)url.searchParams.set("job",id);else url.searchParams.delete("job");window.history.replaceState(null,"",url);}
+  async function resume(id:string,signal?:AbortSignal){
+    const {data:status}=await requestApi(`${base}/${id}/status`,importVersionSchema,{signal});
+    if(signal?.aborted)return;
+    if(status.state==="committed"){const {data}=await requestApi(`${base}/${id}/receipt`,importReceiptSchema,{signal});if(!signal?.aborted){setReceipt(data);setStage(4);}return;}
+    setReceipt(undefined);
+    const info=await inspect(id,undefined,signal);
+    if(!info||signal?.aborted)return;
+    setStage(2);
+    if(info.state==="review"){const {data}=await requestApi(`${base}/${id}/preview`,importPreviewSchema,{signal});if(!signal?.aborted){setPreview(data);setStage(3);}}
+  }
+  useEffect(()=>{const ctrl=new AbortController();void requestApi(base,importVersionSchema.array(),{signal:ctrl.signal}).then(({data})=>setHistory(data)).catch(()=>{});return()=>ctrl.abort();},[]);
   const [inspection, setInspection] = useState<Inspection>();
   const [mapping, setMapping] = useState<Partial<Record<(typeof fields)[number], number>>>({});
   const [preview, setPreview] = useState<Preview>();
@@ -118,12 +138,7 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
     const abort=new AbortController();
     setPending(true);
     setError("");
-    void inspect(job,undefined,abort.signal).then(async(info)=>{
-      if(info?.state==="review"){
-        const {data}=await requestApi(`${base}/${info.id}/preview`,importPreviewSchema,{signal:abort.signal});
-        if(!abort.signal.aborted)setPreview(data);
-      }
-    }).catch((cause)=>{
+    void resume(job,abort.signal).catch((cause)=>{
       if(!abort.signal.aborted)setError(cause instanceof ApiResponseError
         ? localizedError(locale,cause.messageKey) : translated["error.unavailable"]);
     }).finally(()=>{if(!abort.signal.aborted)setPending(false);});
@@ -141,7 +156,8 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
         fileName: file.name, mime, bytesBase64: encode(new Uint8Array(await file.arrayBuffer())),
       }, importVersionSchema);
       setReceipt(undefined);
-      await inspect(result.id);
+      rememberJob(result.id);
+      await inspect(result.id);setStage(2);
     });
   };
 
@@ -156,9 +172,9 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
         ...(inspection.worksheet && { worksheet: inspection.worksheet }),
         ...(inspection.delimiter && { delimiter: inspection.delimiter }),
       }, importPreviewSchema);
-      setPreview(next);
+      setPreview(next);setConfirmed(false);
       setInspection({ ...inspection, revision: next.revision });
-      setLimit(40);
+      setLimit(40);setStage(3);setConfirmed(false);
     });
   };
 
@@ -167,26 +183,30 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
     void run(async () => {
       const next = await command(`${base}/${preview.id}/decisions`, "PATCH",
         { revision: preview.revision, rows: [edit] }, importPreviewSchema);
-      setPreview(next);
+      setPreview(next);setConfirmed(false);
       setInspection({ ...inspection, revision: next.revision });
     });
   };
 
-  return <>
+  const rows=preview?.rows.filter(row=>filter==="all"||row.disposition===filter)??[];
+  return <div className="family-workspace family-import">
+    <Link className="plain-button family-back" href={`/${locale}/school/students`}>{tr("Zurück","رجوع")}</Link>
     <h1>{text.title}</h1>
-    <section className="auth-card">
+    <p role="status">{tr("Schritt","الخطوة")} {stage}/4 · {[tr("Datei auswählen","اختيار الملف"),text.mapping,text.review,text.receipt][stage-1]}</p>
+    {stage===1&&<section className="auth-card">
+      {history.length>0&&<details><summary>{tr("Frühere Importe","الاستيرادات السابقة")}</summary>{history.map(item=><button type="button" className="plain-button" key={item.id} disabled={pending} onClick={()=>void run(async()=>{rememberJob(item.id);await resume(item.id);})}>{item.fileName} · {item.state==="committed"?text.receipt:tr("Fortsetzen","استكمال")}</button>)}</details>}
       <p>{text.instructions}</p>
       <div className="header-actions">
-        <a className="plain-button" href="/templates/family-import.csv" download>{text.template} CSV</a>
-        <a className="plain-button" href="/templates/family-import.xlsx" download>{text.template} XLSX</a>
+        <a className="plain-button" href="/templates/family-import-groups.csv" download>CSV · {locale==="ar"?"قالب":"Vorlage"}</a>
+        <a className="plain-button" href="/templates/family-import.xlsx" download>XLSX · {locale==="ar"?"قالب":"Vorlage"}</a>
       </div>
       <form className="auth-form" onSubmit={upload}>
-        <label>{text.file}<input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          onChange={(event) => setFile(event.target.files?.[0])} required /></label>
+        <p>{text.file} · 2.5 MB max.</p><input ref={fileInput} type="file" hidden accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={event=>setFile(event.target.files?.[0])}/>
+        <button type="button" className="plain-button" disabled={pending} onClick={()=>fileInput.current?.click()}>{file?.name??tr("Datei auswählen","اختيار الملف")}</button>
         <button disabled={pending || !file} className="primary-button">{text.upload}</button>
       </form>
-    </section>
-    {inspection && !receipt && <section className="auth-card">
+    </section>}
+    {stage===2&&inspection && !receipt && <section className="auth-card">
       <h2>{text.mapping}</h2>
       <p><bdi>{inspection.fileName}</bdi></p>
       <form className="auth-form" onSubmit={map}>
@@ -216,29 +236,32 @@ export function FamilyImport({ locale, job }: { locale: Locale; job?:string }) {
         <button disabled={pending} className="plain-button">{text.map}</button>
       </form>
     </section>}
-    {preview && !receipt && <section className="auth-card">
+    {stage===3&&preview && !receipt && <section className="auth-card">
       <h2>{text.review}</h2>
-      <p>{Object.entries(preview.counts).map(([key, value]) => `${text[key as keyof typeof preview.counts]} ${value}`).join(" · ")}</p>
+      <dl className="family-import-counts">{Object.entries(preview.counts).map(([key,value])=><div key={key}><dt>{text[key as keyof typeof preview.counts]}</dt><dd>{value}</dd></div>)}</dl>
+      <label>{tr("Status filtern","تصفية الحالة")}<select value={filter} onChange={e=>{setFilter(e.target.value);setLimit(40);}}><option value="all">{tr("Alle","الكل")}</option>{Object.keys(preview.counts).map(key=><option key={key} value={key}>{text[key as keyof typeof preview.counts]}</option>)}</select></label>
       <ol className="group-list">
-        {preview.rows.slice(0, limit).map((row) => <ImportRow key={row.rowNo} locale={locale} row={row} busy={pending} save={decide} />)}
+        {rows.slice(0, limit).map((row) => <ImportRow key={row.rowNo} locale={locale} row={row} busy={pending} save={decide} />)}
       </ol>
-      {preview.rows.length > limit && <button className="plain-button" onClick={() => setLimit(limit + 40)}>{text.next}</button>}
-      <button className="primary-button" disabled={pending || Boolean(preview.counts.conflict || preview.counts.revoked)
+      {rows.length > limit && <button className="plain-button" onClick={() => setLimit(limit + 40)}>{text.next}</button>}
+      <label className="family-import-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>{tr("Ich habe die Verknüpfungen geprüft.","راجعت روابط الطلاب وأولياء الأمور.")}</label>
+      <div className="family-import-review-actions"><button className="plain-button" disabled={pending} onClick={()=>setStage(2)}>{tr("Zuordnung bearbeiten","تعديل الأعمدة")}</button>
+      <button className="primary-button" disabled={!confirmed || pending || Boolean(preview.counts.conflict || preview.counts.revoked)
         || preview.counts.new + preview.counts.existing === 0}
-        onClick={() => void run(async () => setReceipt(await command(`${base}/${preview.id}/commit`, "POST",
-          { reviewedRevision: preview.revision }, importReceiptSchema)))}>{text.commit}</button>
+        onClick={() => void run(async () => {setReceipt(await command(`${base}/${preview.id}/commit`, "POST", { reviewedRevision: preview.revision }, importReceiptSchema));setStage(4);})}>{text.commit}</button></div>
     </section>}
-    {receipt && <section className="auth-card">
+    {stage===4&&receipt && <section className="auth-card">
       <h2>{text.receipt}</h2>
-      <dl><dt>{text.rows}</dt><dd>{receipt.rowsCommitted}</dd>
-        <dt>{text.links}</dt><dd>{receipt.linksCreated}</dd>
-        <dt>{text.eligible}</dt><dd>{receipt.eligibleGuardians}</dd></dl>
+      <dl className="family-import-receipt"><div><dt>{text.rows}</dt><dd>{receipt.rowsCommitted}</dd></div>
+        <div><dt>{text.links}</dt><dd>{receipt.linksCreated}</dd></div>
+        <div><dt>{text.eligible}</dt><dd>{receipt.eligibleGuardians}</dd></div></dl>
       <p>{text.sendNotice}</p>
       {receipt.eligibleGuardians > 0 && <Link className="plain-button" href={`/${locale}/school/students?batchId=${receipt.id}`}>{text.eligible}</Link>}
     </section>}
+    {stage>1&&<button type="button" className="plain-button" disabled={pending} onClick={()=>{rememberJob();setStage(1);setFile(undefined);setInspection(undefined);setPreview(undefined);setReceipt(undefined);setConfirmed(false);void requestApi(base,importVersionSchema.array()).then(({data})=>setHistory(data)).catch(()=>{});}}>{tr("Neuer Import","استيراد جديد")}</button>}
     {pending && <p role="status">{translated.pending}</p>}
     {error && <p role="alert" className="notice">{error}</p>}
-  </>;
+  </div>;
 }
 
 function ImportRow({ locale, row, busy, save }: { locale: Locale; row: Review; busy: boolean; save: (edit: Edit) => void }) {
@@ -252,7 +275,7 @@ function ImportRow({ locale, row, busy, save }: { locale: Locale; row: Review; b
   const expectsMatch = choice === "match_guardian" || choice === "match_student";
   return <li className="import-row">
     <p>{text.row} {row.rowNo} · {text[row.disposition]}</p>
-    {row.display && <p><bdi>{row.display.childName}</bdi> · <bdi>{row.display.guardianName}</bdi></p>}
+    {row.display && <p>{row.display.familyName&&<><bdi>{row.display.familyName}</bdi> · </>}<bdi>{row.display.childName}</bdi> · <bdi>{row.display.guardianName}</bdi></p>}
     {row.reason && <p>{text[row.reason]}{row.column && <> · {text.column} <bdi>{text[row.column as keyof typeof importColumns.shape] ?? row.column}</bdi></>}</p>}
     <details>
       <summary>{text.decision}{row.decision && <> · {text[row.decision]}</>}</summary>
