@@ -33,7 +33,7 @@ as $$
     v.reason,v.recorded_by,v.recorded_at,null::uuid
   from app.cashbook_movement_reversal v join app.cashbook_movement m on m.id=v.movement_id
   where app.finance_receipt_staff()
-$;
+$$;
 
 
 create or replace function app.cashbook_month(month_key date)
