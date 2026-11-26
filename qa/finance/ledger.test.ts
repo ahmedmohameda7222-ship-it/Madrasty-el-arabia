@@ -152,6 +152,11 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.ok(open.some((row:{id:string;state:string})=>row.id===omar.id&&row.state==="partial"));
     assert.ok(!open.some((row:{id:string})=>row.id===ahmed.id));
     assert.ok(open.every((row:{state:string})=>row.state==="unpaid"||row.state==="partial"));
+    const payerSearch=encodeURIComponent(sibling.payerName);
+    const byPayer=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&q=${payerSearch}&limit=100`,{token:finance})).payload.data;
+    assert.ok(byPayer.some((row:{id:string})=>row.id===omar.id),"staff can find open invoices using the named payer");
+    const foreignSearch=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&q=${payerSearch}&limit=100`,{token:nonpayer,persona:"guardian"})).payload.data;
+    assert.ok(!foreignSearch.some((row:{id:string})=>row.id===omar.id),"payer search must not bypass invoice visibility");
     const partial = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(partial.state, "partial");
     assert.equal(partial.balanceMinor, 1600);
