@@ -78,9 +78,11 @@ export function listInvoices(actor:ActorContext,input:z.infer<typeof invoiceQuer
       const [scope]=await tx<{allowed:boolean}[]>`select app.finance_receipt_staff() or app.has_capability('finance.issue') as allowed`;
       if(!scope.allowed)throw new ApiError("forbidden");
     }
+    if(input.payerInvoice)await requireCapability(tx,actor,"finance.post");
     const rows=invoiceSummary.array().parse(await tx`select ${fields(tx)}
       from app.invoice_rows(null,${input.period?input.period+"-01":null}::date,${input.studentId??null}::uuid,${input.state==="open"?null:input.state??null}::text,false) j
       where (not ${input.state==="open"}::boolean or j.state in ('unpaid','partial'))
+        and (${input.payerInvoice??null}::uuid is null or j.id in (select invoice_id from app.finance_same_payer_invoices(${input.payerInvoice??null}::uuid)))
         and (${after?.id??null}::uuid is null or (j.issued_at,j.id)<(${after?.issuedAt??null}::timestamptz,${after?.id??null}::uuid))
         and (${input.q||null}::text is null or strpos(lower(j.student_name),lower(${input.q||null}::text))>0
           or strpos(lower(j.student_number),lower(${input.q||null}::text))>0 or strpos(lower(j.invoice_number),lower(${input.q||null}::text))>0
