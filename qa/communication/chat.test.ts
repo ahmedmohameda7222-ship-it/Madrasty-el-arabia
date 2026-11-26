@@ -34,6 +34,9 @@ test("a guardian and teacher exchange one private message, read and react withou
     assert.ok(unreadList.every((row: {unread:number}) => row.unread > 0));
     const teacherInbox = await fixtureApi(school, `${path}/messages?q=${encodeURIComponent(id)}`, { token: teacher });
     assert.deepEqual(teacherInbox.payload.data.map((message: { body: string }) => message.body), [body]);
+    const sharedMedia=await fixtureApi(school,`${path}/messages?mediaOnly=true&limit=1`,{token:teacher});
+    assert.deepEqual(sharedMedia.payload.data,[],"text-only chat messages must not appear in shared media");
+    await fixtureApi(school,`${path}/messages?mediaOnly=true`,{token:admin,status:404});
 
     for (const outsider of [admin, finance]) {
       await fixtureApi(school, `${path}/messages`, { token: outsider, status: 404 });
