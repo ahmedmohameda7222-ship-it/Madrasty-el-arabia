@@ -83,7 +83,8 @@ export function listInvoices(actor:ActorContext,input:z.infer<typeof invoiceQuer
       where (not ${input.state==="open"}::boolean or j.state in ('unpaid','partial'))
         and (${after?.id??null}::uuid is null or (j.issued_at,j.id)<(${after?.issuedAt??null}::timestamptz,${after?.id??null}::uuid))
         and (${input.q||null}::text is null or strpos(lower(j.student_name),lower(${input.q||null}::text))>0
-          or strpos(lower(j.student_number),lower(${input.q||null}::text))>0 or strpos(lower(j.invoice_number),lower(${input.q||null}::text))>0)
+          or strpos(lower(j.student_number),lower(${input.q||null}::text))>0 or strpos(lower(j.invoice_number),lower(${input.q||null}::text))>0
+          or strpos(lower(j.payer_name),lower(${input.q||null}::text))>0)
       order by j.issued_at desc,j.id desc limit ${input.limit+1}`);
     const items=rows.slice(0,input.limit),end=items.at(-1);
     return {items,nextCursor:rows.length>input.limit&&end?Buffer.from(JSON.stringify(position.parse(end))).toString("base64url"):undefined};
