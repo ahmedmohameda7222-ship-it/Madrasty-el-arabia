@@ -34,6 +34,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
   // Suggested amounts may follow the selected invoices until the operator enters actual cash received.
   const [amountEdited,setAmountEdited]=useState(false);
   const [rows,setRows]=useState<{invoice:InvoiceCandidate;amount:string}[]>(initial&&initial.balanceMinor>0?[{invoice:initial,amount:amountText(initial.balanceMinor)}]:[]);
+  const [payerAnchor,setPayerAnchor]=useState<string>();
   const [picker,setPicker]=useState(false),[preview,setPreview]=useState<ReturnType<typeof recordReceiptInput.parse>>();
   const [receipt,setReceipt]=useState<ReturnType<typeof receiptMutation.parse>>(),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const allocations=rows.map(r=>({invoiceId:r.invoice.id,invoiceRevision:r.invoice.revision,amountMinor:inputAmountMinor(r.amount,currency,r.invoice.balanceMinor)}));
@@ -49,7 +50,7 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
     setBusy(true);setError("");
     try{
       setReceipt(await command("/finance/receipts","POST",preview,receiptMutation));
-      setPreview(undefined);setReference("");setCashReference("");setAmount("");setAmountEdited(false);setVerified(false);setRows([]);
+      setPreview(undefined);setReference("");setCashReference("");setPayerAnchor(undefined);setAmount("");setAmountEdited(false);setVerified(false);setRows([]);
     }catch(problem){setError(timetableError(locale,problem));}
     finally{setBusy(false);}
   }
@@ -90,14 +91,15 @@ function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;ini
           <label>{text.amount}<input dir="ltr" inputMode="decimal" value={r.amount} onChange={e=>updateRows(rows.map((x,j)=>i===j?{...x,amount:e.target.value}:x))}/></label>
           <button type="button" className="plain-button" onClick={()=>updateRows(rows.filter((_,j)=>i!==j))}>{text.remove}</button>
         </div>)}
-        <button type="button" className="plain-button" onClick={()=>setPicker(!picker)}>{ar?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)"}</button>
+        <button type="button" className="plain-button" onClick={()=>{setPayerAnchor(undefined);setPicker(payerAnchor!==undefined||!picker);}}>{ar?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)"}</button>
+        {rows.length>0&&<button type="button" className="plain-button" onClick={()=>{setPayerAnchor(rows[0].invoice.id);setPicker(!picker||payerAnchor!==rows[0].invoice.id);}}>{ar?"فواتير نفس مسؤول السداد":"Weitere Rechnungen desselben Zahlers"}</button>}
         {rows.length>0&&<p className={css.secondary}>{text.applied} · <bdi>{financeAmount(assigned,currency,locale)}</bdi></p>}
         {received!==null&&assigned>received&&<p role="alert">{ar?"المبلغ المخصص للفواتير أكبر من المبلغ المستلم. عدّل مبالغ الفواتير أو صحّح المبلغ المستلم.":"Die Rechnungsbeträge übersteigen den erhaltenen Betrag. Bitte die Zuordnung oder den erhaltenen Betrag korrigieren."}</p>}
         {received!==null&&received>assigned&&<p className={css.secondary}>{text.remainder} · <bdi>{financeAmount(received-assigned,currency,locale)}</bdi></p>}
         <label className={css.checkRow}><input type="checkbox" checked={verified} onChange={event=>setVerified(event.target.checked)}/>{text.verification}</label>
         <div className={css.formAction}><button type="submit" className="primary-button" disabled={!input.success||date>options.schoolDate}>{text.preview}</button></div>
       </form>
-      {picker&&<InvoicePicker locale={locale} currency={currency} exclude={rows.map(r=>r.invoice.id)} onPick={pick}/>}
+      {picker&&<InvoicePicker key={payerAnchor??"all"} locale={locale} currency={currency} payerInvoice={payerAnchor} exclude={rows.map(r=>r.invoice.id)} onPick={pick}/>}
     </>}
   </>;
 }
