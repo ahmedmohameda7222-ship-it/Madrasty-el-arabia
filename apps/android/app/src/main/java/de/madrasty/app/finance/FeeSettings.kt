@@ -35,15 +35,16 @@ internal fun FeeSettings(model: IdentityViewModel, initialStudent: String?, clos
     val context = academicRead("/finance/billing-options", revision) { model.financeObject(it) }
     FinancePage(R.string.fee_settings, close) {
         if(bank!=null)TextButton(onClick=bank){Text(stringResource(R.string.finance_bank))}
-        AutomaticBillingPanel(model)
         FlowRow {
             FilterChip(!payerTab, { payerTab = false }, label = { Text(stringResource(R.string.fee_tariffs)) })
             FilterChip(payerTab, { payerTab = true }, label = { Text(stringResource(R.string.fee_payer)) })
         }
         AsyncSurface(context) { options ->
             val month = options.getString("schoolMonth")
-            if (!payerTab) TariffEditor(model, options)
-            else {
+            if (!payerTab) {
+                AutomaticBillingPanel(model)
+                TariffEditor(model, options)
+            } else {
                 val selected = student
                 if (selected == null) {
                     PupilFinancePicker(model, month, null, false, revision) { pupil ->
