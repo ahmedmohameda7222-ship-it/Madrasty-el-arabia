@@ -155,7 +155,8 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     assertContext(returned,"month",day.slice(0,7));
     assertContext(returned,"day",day);
     assertContext(returned,"classId",apple.id);
-    await page.goto("/de/school/more/events?item="+event.id+"&"+params);
+    await page.goto("/de/school/more/events?item="+event.id+"&"+params,{waitUntil:"commit"});
+    await expect.poll(()=>new URL(page.url()).searchParams.get("item")).toBe(event.id);
     await expect(page).toHaveURL(/\/school\/calendar\?/);
     await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
     await page.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
@@ -416,16 +417,23 @@ test("first-contact attachment preserves typed text and opens the actual compose
     await school.seed();
     const admin=await school.bearer("admin","admin");await setUpCalendar(school,admin);
     const guardian=await school.bearer("guardian-de","guardian");
-    const rows=(await fixtureApi(school,"/directory?view=mine&limit=100",{token:guardian,persona:"guardian"})).payload.data;
-    const target=rows.find((row:{displayName:string})=>row.displayName==="يوسف عبد الرحمن محمود");
-    expect(target).toBeTruthy();
-    const detail=(await fixtureApi(school,"/directory/"+target.id,{token:guardian,persona:"guardian"})).payload.data;
-    expect(detail.directThreadId).toBeFalsy();
+    // The synthetic run is shared across this suite. Select an actually unused person
+    // instead of the teacher whom earlier tests have already messaged.
+    const rows=(await fixtureApi(school,"/directory?view=all&limit=100",{token:guardian,persona:"guardian"})).payload.data as {id:string;displayName:string;target:{kind:string}}[];
+    let target:typeof rows[number]|undefined;
+    for(const row of rows.filter(row=>row.target.kind==="person"&&row.displayName)){
+      const detail=(await fixtureApi(school,"/directory/"+row.id,{token:guardian,persona:"guardian"})).payload.data;
+      if(!detail.directThreadId){target=row;break;}
+    }
+    expect(target,"fixture must include an unmessaged person").toBeTruthy();
+    if(!target)throw Error("No unused contact in synthetic directory");
     await signInForWrite(page,school,"guardian-de");
     await page.setViewportSize({width:390,height:844});
     await page.locator('.school-nav a[href*="/school/messages"]').click();
     await page.getByRole("link",{name:"Neue Nachricht",exact:true}).click();
-    await page.locator(".comms-person-row").filter({hasText:target.displayName}).click();
+    await page.getByRole("button",{name:"Alle Personen",exact:true}).click();
+    await page.getByRole("searchbox",{name:"Person suchen"}).fill(target.displayName);
+    await page.locator(".comms-person-row").filter({has:page.getByText(target.displayName,{exact:true})}).click();
     const body="QA first message with attachment";
     await page.locator(".comms-composer textarea").fill(body);
     await page.getByRole("button",{name:"Anhang hinzufügen",exact:true}).click();
