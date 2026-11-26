@@ -120,6 +120,10 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       revision: payment.revision, lines: [{ invoiceId: omar.id, amountMinor: 1600, invoiceRevision: sibling.revision }],
     }));
     assert.equal(allocated.remainderMinor, 2400);
+    const open=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&limit=100`,{token:finance})).payload.data;
+    assert.ok(open.some((row:{id:string;state:string})=>row.id===omar.id&&row.state==="partial"));
+    assert.ok(!open.some((row:{id:string})=>row.id===ahmed.id));
+    assert.ok(open.every((row:{state:string})=>row.state==="unpaid"||row.state==="partial"));
     const partial = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(partial.state, "partial");
     assert.equal(partial.balanceMinor, 1600);
