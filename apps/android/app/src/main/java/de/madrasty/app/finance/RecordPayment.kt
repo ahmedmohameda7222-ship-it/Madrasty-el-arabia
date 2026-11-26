@@ -114,15 +114,11 @@ internal fun ReceiptInvoicePicker(
     var month by remember { mutableStateOf("") }
     var value by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
-    var partial by remember { mutableStateOf(false) }
     Field(R.string.receipt_invoice_search, value) { value = it.take(100) }
     Field(R.string.fee_month, month) { month = financeDigits(it).take(7) }
     Button(onClick = { search = value.trim() }) { Text(stringResource(R.string.fee_search)) }
-    FilterChip(!partial, { partial = false }, label = { Text(stringResource(R.string.fee_unpaid)) })
-    FilterChip(partial, { partial = true }, label = { Text(stringResource(R.string.fee_partial)) })
     val byMonth = if (validBillingMonth(month)) "&period=$month" else ""
-    val state = if (partial) "partial" else "unpaid"
-    academicPages(model, "/finance/invoices?limit=20&q=${Uri.encode(search)}&state=$state$byMonth", model.attendanceNetworkRevision) { rows ->
+    academicPages(model, "/finance/invoices?limit=20&q=${Uri.encode(search)}&state=open$byMonth", model.attendanceNetworkRevision) { rows ->
         for (row in rows.filter { it.getString("currency") == currency && it.getLong("balanceMinor") > 0L && it.getString("id") !in excluded }) {
             HorizontalDivider()
             Text(receiptInvoiceLabel(row))
