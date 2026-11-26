@@ -613,6 +613,10 @@
     <string name="finance_auto_start">شهر البداية</string>
     <string name="finance_auto_enabled">إصدار تلقائي</string>
     <string name="finance_auto_missing">طلاب بدون مسؤول سداد: %1$d</string>
+    <string name="finance_payer_issues">طلاب يحتاجون متابعة: %1$d</string>
+    <string name="finance_payer_unreachable">الحساب غير جاهز للإشعارات</string>
+    <string name="finance_payer_missing">مسؤول سداد غير جاهز</string>
+    <string name="finance_payer_issue_hint">راجع مسؤول السداد وتفعيل حساب ولي الأمر قبل الاعتماد على الإشعارات.</string>
     <string name="finance_filters">تصفية</string>
     <string name="finance_more_details">تفاصيل الحساب</string>
     <string name="finance_new_movement">إضافة حركة</string>
