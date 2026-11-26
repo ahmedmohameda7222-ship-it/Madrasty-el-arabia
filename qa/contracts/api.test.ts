@@ -16,7 +16,9 @@ const contract = parse(source.toString("utf8"));
 test("the local contract declares the expected API operations with unique identifiers", () => {
   const ids = Object.values(contract.paths).flatMap((entries) => Object.values(entries as Record<string, { operationId?: string }>))
     .flatMap((operation) => operation.operationId ? [operation.operationId] : []);
-  assert.equal(ids.length, 255);
+  assert.equal(ids.length, 256);
+  assert.equal(contract.paths["/finance/cashbook/reversals"].post.operationId,"reverseCashbookMovement");
+  assert.ok(ids.includes("reverseCashbookMovement"));
   assert.equal(contract.paths["/threads/count"].get.operationId, "countUnreadScopedMessages");
   for(const path of ["/comms/feed","/comms/calendar","/notifications/read-all"])assert.ok(contract.paths[path],path);
   for(const operation of ['listCommunicationFeed','readCommunicationCalendar','markAllScopedNotificationsRead'])assert.ok(ids.includes(operation));
