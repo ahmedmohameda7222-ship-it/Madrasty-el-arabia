@@ -79,8 +79,9 @@ export function listInvoices(actor:ActorContext,input:z.infer<typeof invoiceQuer
       if(!scope.allowed)throw new ApiError("forbidden");
     }
     const rows=invoiceSummary.array().parse(await tx`select ${fields(tx)}
-      from app.invoice_rows(null,${input.period?input.period+"-01":null}::date,${input.studentId??null}::uuid,${input.state??null}::text,false) j
-      where (${after?.id??null}::uuid is null or (j.issued_at,j.id)<(${after?.issuedAt??null}::timestamptz,${after?.id??null}::uuid))
+      from app.invoice_rows(null,${input.period?input.period+"-01":null}::date,${input.studentId??null}::uuid,${input.state==="open"?null:input.state??null}::text,false) j
+      where (not ${input.state==="open"}::boolean or j.state in ('unpaid','partial'))
+        and (${after?.id??null}::uuid is null or (j.issued_at,j.id)<(${after?.issuedAt??null}::timestamptz,${after?.id??null}::uuid))
         and (${input.q||null}::text is null or strpos(lower(j.student_name),lower(${input.q||null}::text))>0
           or strpos(lower(j.student_number),lower(${input.q||null}::text))>0 or strpos(lower(j.invoice_number),lower(${input.q||null}::text))>0)
       order by j.issued_at desc,j.id desc limit ${input.limit+1}`);
