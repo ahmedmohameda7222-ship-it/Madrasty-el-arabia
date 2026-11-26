@@ -127,6 +127,6 @@ export async function cashbookPdf(item:CashbookMonth,locale:Locale){
   const ar=locale==="ar",m=(v:number)=>money(v,item.currency,locale),t=ar?{opening:"رصيد البداية",income:"المقبوضات",expenses:"المصروفات",deposit:"الإيداعات البنكية",refund:"المبالغ المرتجعة",correction:"التصحيحات",closing:"رصيد النهاية",entries:"الحركات"}:{opening:"Anfangsbestand",income:"Einnahmen",expenses:"Ausgaben",deposit:"Bankeinzahlungen",refund:"Erstattungen",correction:"Korrekturen",closing:"Endbestand",entries:"Buchungen"};
   return renderDocument(ar?"دفتر الخزنة":"Kassenbuch",item.month,locale,[
     pair(t.opening,m(item.openingMinor)),pair(t.income,m(item.incomeMinor)),pair(t.expenses,m(item.expenseMinor)),pair(t.deposit,m(item.depositsMinor)),pair(t.refund,m(item.refundsMinor)),pair(t.correction,m(item.correctionsMinor)),{...pair(t.closing,m(item.closingMinor)),bold:true},heading(t.entries),
-    ...item.entries.map(e=>pair(e.date+" · "+e.description,m(e.signedMinor))),
+    ...item.entries.map(e=>pair(e.date+" · "+(e.reversalOf?(ar?"تصحيح حركة":"Buchungskorrektur")+" · ":"")+e.description,m(e.signedMinor))),
   ]);
 }
