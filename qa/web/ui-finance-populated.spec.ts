@@ -189,6 +189,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             const amount=(visibleInvoice.balanceMinor/100).toFixed(2).replace(".",",");
             await expect(page.getByText(new RegExp(amount+"\\s*€")).first()).toBeVisible();
           }
+          if(s.persona==="admin"){
+            const paymentLink=page.locator(`a[href*="record-payment?invoice=${record.invoice.id}"]`);
+            await expect(paymentLink).toHaveCount(visibleInvoice.balanceMinor>0?1:0);
+          }
           await capture(page,prefix+"invoice-detail");
           // Follow the invoice's persona-scoped receipt link, not the staff ledger ID.
           const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
@@ -218,6 +222,16 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             }
             if(width===320||width===390){
               const unpaid=records.find(x=>x.label==="C")!.invoice;
+              await go("record-payment?invoice="+unpaid.id);
+              // A manually entered cash amount must not be overwritten when an invoice is selected.
+              const received=page.locator(".school-content input[inputmode=decimal]").first();
+              await received.fill("100.00");
+              await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
+              const extra=records.find(x=>x.label==="D")!.invoice;
+              const option=page.locator(".school-content li").filter({hasText:extra.invoiceNumber});
+              await option.getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
+              await expect(received).toHaveValue("100.00");
+              // Return to a valid single-invoice payment for the original screenshot flow.
               await go("record-payment?invoice="+unpaid.id);
               const checkbox=page.locator(".school-content input[type=checkbox]").first();
               await checkbox.check();
