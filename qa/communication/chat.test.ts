@@ -100,7 +100,7 @@ test("chat pin and mute are private to the actor and pinned ordering survives pa
     assert.equal(mine.pinned,true);assert.equal(mine.muted,true);
     const theirs=(await fixtureApi(school,path,{token:teacher})).payload.data;
     assert.equal(theirs.pinned,false);assert.equal(theirs.muted,false);
-    await fixtureApi(school,path+"/state",{token:admin,method:"PATCH",body:{pinned:true,muted:false},status:404});
+    await fixtureApi(school,path+"/state",{token:admin,persona:"admin",method:"PATCH",body:{pinned:true,muted:false},status:404});
     const all:string[]=[];let cursor:string|undefined;
     do{const result=(await fixtureApi(school,"/threads?limit=1&includeEmpty=false"+(cursor?"&cursor="+encodeURIComponent(cursor):""),{token})).payload;all.push(...result.data.map((r:{id:string})=>r.id));cursor=result.meta?.nextCursor;assert.ok(all.length<100,"pagination terminates");}while(cursor);
     assert.equal(all[0],pinned);assert.ok(all.includes(recent));assert.equal(new Set(all).size,all.length);
