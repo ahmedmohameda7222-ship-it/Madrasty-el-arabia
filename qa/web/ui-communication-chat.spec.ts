@@ -105,6 +105,17 @@ test("guardian contact picker exposes responsible teacher first, then the full s
     await page.getByRole("searchbox",{name:"Person suchen"}).fill("Johannes Peter Schneider");
     await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible();
     await expect(page.locator(".comms-person-row")).toHaveCount(1);
+    // Same-query foreground refresh must not replace the visible directory with a skeleton.
+    const matches=(url:URL)=>url.pathname==="/api/v1/directory"&&url.searchParams.get("view")==="all"&&url.searchParams.get("query")==="Johannes Peter Schneider";
+    let release!:()=>void; const gate=new Promise<void>(resolve=>{release=resolve;});
+    let refreshing=false;
+    await page.route(matches,async route=>{refreshing=true;await gate;await route.continue();});
+    try{
+      await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
+      await expect.poll(()=>refreshing).toBe(true);
+      await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible({timeout:1500});
+      await expect(page.locator(".comms-directory [data-async-state=loading]")).toHaveCount(0);
+    }finally{release();await page.unroute(matches);}
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-directory-de-320.png",animations:"disabled"});
