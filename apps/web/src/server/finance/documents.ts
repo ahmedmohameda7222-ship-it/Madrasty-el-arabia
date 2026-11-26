@@ -31,7 +31,8 @@ async function renderDocument(title:string,number:string,locale:Locale,blocks:Bl
   const logo=await readFile(join(process.cwd(),"public","school-192.png")).then(b=>sharp(b).resize(80,80,{fit:"contain"}).png().toBuffer()).catch(cause=>{console.error("Finance PDF stage: logo initialization",cause instanceof Error?cause.name:"unknown");throw cause;});
   type Layer={input:Buffer;left:number;top:number};
   let layers:Layer[]=[],y=0;
-  const pages:Buffer[]=[];
+  const pages:Buffer[]=[],textPages:PdfTextRun[][]=[];
+  let textRuns:PdfTextRun[]=[];
   const raster=async(text:string,width:number,size:number,color:string,bold=false,align:"left"|"right"=rtl?"right":"left")=>{
     const markup='<span foreground="'+color+'">'+(bold?"<b>":"")+esc(text||" ")+(bold?"</b>":"")+"</span>";
     const {data,info}=await sharp({text:{text:markup,font:"IBM Plex Sans Arabic "+size,fontfile,width,align,rgba:true,wrap:"word-char"}}).png().toBuffer({resolveWithObject:true}).catch(cause=>{console.error("Finance PDF stage: text raster",cause instanceof Error?cause.name:"unknown");throw cause;});
@@ -39,10 +40,13 @@ async function renderDocument(title:string,number:string,locale:Locale,blocks:Bl
   };
   const put=async(text:string,left:number,top:number,width:number,size:number,color:string,bold=false,align:"left"|"right"=rtl?"right":"left")=>{
     const image=await raster(text,width,size,color,bold,align);
-    layers.push({input:image.data,left:align==="right"?left+width-image.width:left,top});
+    const x=align==="right"?left+width-image.width:left;
+    layers.push({input:image.data,left:x,top});
+    textRuns.push({text,left:x,top,width:image.width,height:image.height});
     return image.height;
   };
   async function start(){
+    textRuns=[];
     layers=[{input:logo,left:rtl?W-margin-80:margin,top:60}];
     await put("Madrasty El Arabia",rtl?margin:margin+105,68,bodyWidth-105,32,accent,true);
     const rule=await sharp({create:{width:bodyWidth,height:5,channels:3,background:accent}}).png().toBuffer();
@@ -54,6 +58,7 @@ async function renderDocument(title:string,number:string,locale:Locale,blocks:Bl
   async function finish(){
     await put(t.snapshot+": "+date(new Date().toISOString(),locale),margin,H-105,bodyWidth-130,19,muted);
     await put(t.page+" "+(pages.length+1),W-margin-125,H-105,125,19,muted,false,"right");
+    textPages.push(textRuns);
     pages.push(await sharp({create:{width:W,height:H,channels:3,background:"#ffffff"}}).composite(layers).jpeg({quality:94,chromaSubsampling:"4:4:4"}).toBuffer().catch(cause=>{console.error("Finance PDF stage: page composite",cause instanceof Error?cause.name:"unknown");throw cause;}));
   }
   await start();
@@ -66,28 +71,51 @@ async function renderDocument(title:string,number:string,locale:Locale,blocks:Bl
     if(y+height>H-145){await finish();await start();}
     if(y+height>H-145)throw new Error("Document row exceeds page");
     const labelLeft=rtl?W-margin-labelWidth:margin;
-    layers.push({input:a.data,left:rtl?labelLeft+labelWidth-a.width:labelLeft,top:y});
-    if(b){const left=rtl?margin:W-margin-valueWidth;layers.push({input:b.data,left:rtl?left:left+valueWidth-b.width,top:y});}
+    const x=rtl?labelLeft+labelWidth-a.width:labelLeft;
+    layers.push({input:a.data,left:x,top:y});
+    textRuns.push({text:block.text,left:x,top:y,width:a.width,height:a.height});
+    if(b&&block.value!==undefined){
+      const left=rtl?margin:W-margin-valueWidth,x=rtl?left:left+valueWidth-b.width;
+      layers.push({input:b.data,left:x,top:y});
+      textRuns.push({text:block.value,left:x,top:y,width:b.width,height:b.height});
+    }
     y+=height;
   }
   await finish();
-  return imagePdf(pages);
+  return imagePdf(pages,textPages,locale);
 }
 
-// Image-only PDF; each A4 page is independently rendered at print resolution.
-// Offsets are byte counts, not UTF-16 string lengths.
-export function imagePdf(pages:Buffer[]){
+type PdfTextRun={text:string;left:number;top:number;width:number;height:number};
+
+// ActualText preserves the logical Unicode text rather than re-shaping Arabic glyphs.
+// Invisible placeholder glyphs locate the text without changing the printed page.
+function textLayer(runs:readonly PdfTextRun[]){
+  return runs.filter(run=>run.text.trim()).map(run=>{
+    const unicode="FEFF"+Buffer.from(run.text,"utf16le").swap16().toString("hex").toUpperCase();
+    const x=(run.left*595.28/W).toFixed(3);
+    const y=(841.89-(run.top+run.height*.8)*841.89/H).toFixed(3);
+    const h=Math.max(1,run.height*841.89/H).toFixed(3);
+    const w=Math.max(1,run.width*595.28/W*2).toFixed(3);
+    return `/Span << /ActualText <${unicode}> >> BDC\nBT /F1 1 Tf 3 Tr ${w} 0 0 ${h} ${x} ${y} Tm (x) Tj ET\nEMC\n`;
+  }).join("");
+}
+
+// A4 image-backed layout with a Unicode extraction/search layer. Byte-accurate offsets.
+// This is not a fully tagged PDF/UA document.
+export function imagePdf(pages:Buffer[],textPages:readonly (readonly PdfTextRun[])[]=[],locale:Locale="de"){
   const objects:Buffer[]=[];
   const add=(s:string|Buffer)=>objects.push(typeof s==="string"?Buffer.from(s,"ascii"):s);
-  add("<< /Type /Catalog /Pages 2 0 R >>");
+  add("<< /Type /Catalog /Pages 2 0 R /Lang ("+locale+") >>");
   add("<< /Type /Pages /Count "+pages.length+" /Kids ["+pages.map((_,i)=>(3+i*3)+" 0 R").join(" ")+"] >>");
+  const font=3+pages.length*3;
   for(let i=0;i<pages.length;i++){
     const p=3+i*3,im=p+1,stream=p+2;
-    add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im "+im+" 0 R >> >> /Contents "+stream+" 0 R >>");
+    add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im "+im+" 0 R >> /Font << /F1 "+font+" 0 R >> >> /Contents "+stream+" 0 R >>");
     add(Buffer.concat([Buffer.from("<< /Type /XObject /Subtype /Image /Width "+W+" /Height "+H+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+pages[i].length+" >>\nstream\n"),pages[i],Buffer.from("\nendstream")]));
-    const body="q\n595.28 0 0 841.89 0 0 cm\n/Im Do\nQ\n";
+    const body="q\n595.28 0 0 841.89 0 0 cm\n/Im Do\nQ\n"+textLayer(textPages[i]??[]);
     add("<< /Length "+Buffer.byteLength(body)+" >>\nstream\n"+body+"endstream");
   }
+  add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
   const chunks=[Buffer.from("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n","latin1")],offsets=[0];
   let offset=chunks[0].length;
   for(let i=0;i<objects.length;i++){
