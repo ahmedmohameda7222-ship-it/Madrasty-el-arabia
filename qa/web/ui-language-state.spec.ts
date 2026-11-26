@@ -5,7 +5,7 @@ import {fixtureApi} from "../support/api";
 import {setUpCalendar} from "../fixtures/calendar";
 import {randomUUID} from "node:crypto";
 
-test("language switch keeps an unsaved family wizard and signed-in session",async({page,context})=>{
+test("language switch keeps an unsaved family wizard and signed-in session",async({page})=>{
  test.setTimeout(90000);
  const school=schoolFixtures();
  try{
@@ -41,15 +41,18 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
   await expect(page.getByRole("combobox",{name:"Familiensituation (optional)"})).toHaveValue("divorced");
   await expect(page.locator(".school-nav")).toBeVisible();
   expect(await page.locator(".school-nav [aria-current=page]").getAttribute("href")).toContain("/school/students");
-  const importPage=await context.newPage();
-  try{
+  // Exercise import in the same foreground tab after checking every wizard assertion.
+  const importPage=page;
+  {
     const historyResponse=importPage.waitForResponse(response=>new URL(response.url()).pathname==="/api/v1/school/family-imports"&&response.request().method()==="GET");
     await importPage.goto("/de/school/students/import");
     expect((await historyResponse).ok()).toBeTruthy();
     const csv="childKey,childName,guardianKey,guardianName,email,communicationLocale\nC1,QA Child,G1,QA Parent,qa@example.invalid,de";
     await importPage.locator('input[type="file"]').setInputFiles({name:"language-draft.csv",mimeType:"text/csv",buffer:Buffer.from(csv)});
     await expect(importPage.getByRole("button",{name:"language-draft.csv"})).toBeVisible();
+    await importPage.evaluate(()=>{(window as Window & {languageTestSentinel?:boolean}).languageTestSentinel=true;});
     await toggle(importPage,"ar");
+    expect(await importPage.evaluate(()=>(window as Window & {languageTestSentinel?:boolean}).languageTestSentinel)).toBe(true);
     await expect(importPage.getByRole("button",{name:"language-draft.csv"})).toBeVisible();
     expect(await importPage.locator('input[type="file"]').evaluate((el:HTMLInputElement)=>el.files?.[0]?.name)).toBe("language-draft.csv");
     await toggle(importPage,"de");
@@ -63,7 +66,7 @@ test("language switch keeps an unsaved family wizard and signed-in session",asyn
     await expect(mapped).toHaveValue(chosen!);expect(importPage.url()).toBe(importUrl);
     await toggle(importPage,"de");
     await expect(mapped).toHaveValue(chosen!);
-  }finally{await importPage.close();}
+  }
  }finally{await school.close();}
 });
 
@@ -84,6 +87,7 @@ async function signIn(page:Page,school:FixtureSchool,principal:"admin"|"guardian
 }
 async function toggle(page:Page,target:"ar"|"de"){
  const url=page.url();
+ await page.bringToFront();
  const header=page.locator(".school-header");
  await expect(header.getByRole("button",{name:"العربية",exact:true})).toHaveCount(0);
  await expect(header.getByRole("button",{name:"Deutsch",exact:true})).toHaveCount(0);
@@ -131,12 +135,13 @@ test("guardian chat keeps unsent message and current thread after repeated langu
  }finally{await school.close();}
 });
 
-test("app settings do not reset unsaved staff permission edits",async({page,context})=>{
+test("app settings do not reset unsaved staff permission edits",async({page})=>{
  test.setTimeout(90000);const school=schoolFixtures();
  try{
   await school.seed();await signIn(page,school,"admin");
-  const accessPage=await context.newPage();
-  try{
+  // Avoid a background test tab; the actual permission editor is the active screen.
+  const accessPage=page;
+  {
    await accessPage.goto("/de/staff/access");
    const people=accessPage.getByRole("combobox",{name:"Person auswählen"});
    const teacherEmail=fixtureEmail(school.run,"teacher");
@@ -153,6 +158,6 @@ test("app settings do not reset unsaved staff permission edits",async({page,cont
    await toggle(accessPage,"ar");await expect(adminRole).toBeChecked();
    await toggle(accessPage,"de");await expect(adminRole).toBeChecked();
    // No grant changes are submitted by this test.
-  }finally{await accessPage.close();}
+  }
  }finally{await school.close();}
 });
