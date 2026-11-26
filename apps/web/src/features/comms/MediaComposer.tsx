@@ -50,15 +50,15 @@ function uploadFile(url:string,file:Blob,signal:AbortSignal,progress:(percent:nu
   });
 }
 
-export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onBusy}:{
+export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onBusy,initialExpanded=false}:{
   locale:Locale;persona:Persona;thread:string;locked:boolean;consumed:string|undefined;
-  onReady:(id?:string)=>void;onBusy:(busy:boolean)=>void;
+  onReady:(id?:string)=>void;onBusy:(busy:boolean)=>void;initialExpanded?:boolean;
 }){
   const labels=copy[locale],root=`/threads/${thread}/uploads` as const;
   const [draft,setDraft]=useState<Draft>(),[percent,setPercent]=useState(0),[working,setWorking]=useState(false);
   const [mic,setMic]=useState<"idle"|"starting"|"recording"|"finishing">("idle"),[elapsed,setElapsed]=useState(0);
   const [error,setError]=useState<ErrorKey>();
-  const [expanded,setExpanded]=useState(false);
+  const [expanded,setExpanded]=useState(initialExpanded);
   const current=useRef<Draft>(undefined),capture=useRef<ReturnType<typeof voiceCapture>>(undefined);
   const token=useRef<Token>(undefined),upload=useRef<AbortController>(undefined),generation=useRef(0);
   const finishing=useRef(false),alive=useRef(false),captureStarts=useRef(0),photoInput=useRef<HTMLInputElement>(null),cameraInput=useRef<HTMLInputElement>(null);

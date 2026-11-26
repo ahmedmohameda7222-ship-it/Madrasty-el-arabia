@@ -13,6 +13,7 @@ import { AsyncSurface } from "@/ui/AsyncSurface";
 import { MediaComposer } from "./MediaComposer";
 import { Icon } from "@/ui/Icon";
 import { projectReaction } from "./chat-state";
+import { chatDrafts } from "./chat-drafts";
 import { PrivateChatMedia,ReportMessage,reportCopy } from "./ReportQueue";
 
 const copy={
@@ -37,7 +38,9 @@ function merge(older:ChatMessage[],incoming:ChatMessage[]){
 }
 
 export function Conversation({locale,thread,changed}:{locale:Locale;thread:ThreadSummary;changed:()=>void}){
-  const {persona}=useAccountScope(),text=copy[locale],root=`/threads/${thread.id}` as const;
+  const actor=useAccountScope(),{persona}=actor,text=copy[locale],root=`/threads/${thread.id}` as const;
+  const [restored]=useState(()=>chatDrafts.read(actor,thread.id));
+  useEffect(()=>{if(restored?.openMedia)chatDrafts.write(actor,thread.id,{...restored,openMedia:false});},[restored,actor,thread.id]);
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
   const messageArea=useRef<HTMLDivElement>(null);
   const followTail=useRef(true);
@@ -52,10 +55,11 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     mutations.observe(area,{childList:true,subtree:true});
     return ()=>{area.removeEventListener("scroll",track);observer.disconnect();mutations.disconnect();};
   },[]);
-  const [body,setBody]=useState(""),[quote,setQuote]=useState<ChatMessage>();
+  const [body,setBody]=useState(restored?.body??""),[quote,setQuote]=useState<ChatMessage|undefined>(restored?.quote);
+  function editDraft(next:string,nextQuote:ChatMessage|undefined=quote){setBody(next);setQuote(nextQuote);chatDrafts.write(actor,thread.id,{body:next,quote:nextQuote});}
   const inputRef=useRef<HTMLTextAreaElement>(null);
   useEffect(()=>{const field=inputRef.current;if(!field)return;field.style.height="auto";field.style.height=`${Math.min(140,Math.max(44,field.scrollHeight))}px`;},[body]);
-  const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}>();
+  const [attempt,setAttempt]=useState<{payload:Proposed;pending:boolean;failed:boolean}|undefined>(restored?.retry?{payload:restored.retry,pending:false,failed:true}:undefined);
   const [ack,setAck]=useState<ChatMessage>(),[lost,setLost]=useState(false);
   const [attachment,setAttachment]=useState<string>(),[consumed,setConsumed]=useState<string>(),[preparing,setPreparing]=useState(false);
   const [archived,setArchived]=useState(thread.archived),[notice,setNotice]=useState("");
@@ -63,9 +67,10 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
   const live=useRef(false),sending=useRef(false),confirmed=useRef<string|undefined>(undefined);
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   useEffect(()=>setArchived(thread.archived),[thread.archived]);
-  function deny(){setLost(true);setBody("");setQuote(undefined);setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
+  function deny(){chatDrafts.remove(actor,thread.id);setLost(true);setBody("");setQuote(undefined);chatDrafts.write(actor,thread.id,{body});setAttempt(undefined);setAck(undefined);setAttachment(undefined);changed();}
   function clearSent(payload:Proposed){
     confirmed.current=payload.clientMessageId;
+    chatDrafts.acknowledge(actor,thread.id,payload.clientMessageId);
     setAttempt(undefined);setBody("");setQuote(undefined);
     if(payload.attachmentIds?.[0]){
       setConsumed(payload.attachmentIds[0]);setAttachment(undefined);
@@ -81,16 +86,19 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     messageArea.current?.querySelectorAll<HTMLDetailsElement>(".comms-message-actions[open]").forEach((details)=>{details.open=false;});
     followTail.current=true;
     setAttempt({payload,pending:true,failed:false});
+    chatDrafts.write(actor,thread.id,{body,quote,requestId:payload.clientMessageId,retry:payload.attachmentIds?.length?undefined:payload});
     try{
       const result=await requestApi(`${root}/messages`,chatMessage,{
         method:"POST",headers:{...webHeaders(persona),"Idempotency-Key":payload.clientMessageId},body:JSON.stringify(payload),
       });
+      chatDrafts.acknowledge(actor,thread.id,payload.clientMessageId);
       if(!live.current)return;
       setAck(result.data);
       if(confirmed.current!==payload.clientMessageId){
         clearSent(payload);
       }
     }catch(problem){
+      if(unavailable(problem))chatDrafts.remove(actor,thread.id);
       if(!live.current||confirmed.current===payload.clientMessageId)return;
       if(unavailable(problem))deny();
       else {setAttempt({payload,pending:false,failed:true});if(problem instanceof ApiResponseError&&problem.status===409)changed();}
@@ -135,7 +143,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     </form>
     </details>
     <div className="comms-message-area" ref={messageArea}>
-    <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={(message)=>{if(!sending.current){setQuote(message);setAttempt(undefined);inputRef.current?.focus();}}} deny={deny}
+    <Timeline key={term} locale={locale} thread={thread} term={term} ack={ack} reply={(message)=>{if(!sending.current){editDraft(body,message);setAttempt(undefined);inputRef.current?.focus();}}} deny={deny}
       recognize={recognize} updateArchive={setArchived} pauseFollow={()=>{followTail.current=false;}}/>
     {attempt&&<div className="comms-message comms-pending" data-own="true" role={attempt.failed?"alert":"status"}>
       <p dir="auto">{attempt.payload.body}</p>
@@ -149,10 +157,10 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
         <button className="plain-button" type="button" disabled={attempt?.pending} onClick={()=>{setQuote(undefined);setAttempt(undefined);}}>{text.cancelReply}</button>
       </div>}
       <div className="comms-input-bar">
-        <MediaComposer locale={locale} persona={persona} thread={thread.id} locked={attempt?.pending===true} consumed={consumed}
+        <MediaComposer locale={locale} persona={persona} thread={thread.id} initialExpanded={restored?.openMedia===true} locked={attempt?.pending===true} consumed={consumed}
           onReady={setAttachment} onBusy={setPreparing}/>
         <label className="comms-input-field"><textarea ref={inputRef} aria-label={text.body} placeholder={locale==="ar"?"اكتب رسالة…":"Nachricht schreiben…"} dir="auto" value={body} maxLength={4000} rows={1} disabled={attempt?.pending}
-          onChange={(event)=>{setBody(event.target.value);setAttempt(undefined);}}/></label>
+          onChange={(event)=>{editDraft(event.target.value);setAttempt(undefined);}}/></label>
         <button className="comms-icon-button comms-send-button" type="submit" aria-label={attempt?.failed?text.retry:text.send} disabled={(!body.trim()&&!attachment)||preparing||attempt?.pending}>
           <Icon name={attempt?.failed?"retry":"sendUp"}/>
         </button>

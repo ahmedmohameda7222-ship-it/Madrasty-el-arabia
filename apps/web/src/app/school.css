@@ -724,3 +724,9 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
   .school-shell[data-view="thread"] > .school-header .app-settings-trigger { background:transparent; color:var(--primary); }
   .comms-thread-screen > .comms-thread-toolbar { padding-inline-end:60px; grid-template-columns:44px 36px minmax(0,1fr); }
 }
+
+/* Directory is a contact picker; a first-message screen owns its own back action. */
+.school-content:has(.comms-directory[data-compose="true"]) > .more-back-link { display:none; }
+.comms-directory .comms-people-group .group-list { gap:0; }
+.comms-directory .comms-people-group .group-list>li { border:0; border-block-end:1px solid var(--rule); border-radius:0; background:transparent; padding:0; }
+.comms-directory .comms-person-row { min-block-size:64px; padding:10px 0; }

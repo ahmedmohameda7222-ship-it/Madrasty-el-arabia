@@ -381,3 +381,52 @@ for(const scenario of [
     }finally{await school.close();}
   });
 }
+
+
+test("first-contact attachment preserves typed text and opens the actual composer",async({page})=>{
+  test.setTimeout(90000);
+  const school=schoolFixtures();
+  try{
+    await school.seed();
+    const admin=await school.bearer("admin","admin");await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const rows=(await fixtureApi(school,"/directory?view=mine&limit=100",{token:guardian,persona:"guardian"})).payload.data;
+    const target=rows.find((row:{displayName:string})=>row.displayName==="يوسف عبد الرحمن محمود");
+    expect(target).toBeTruthy();
+    const detail=(await fixtureApi(school,"/directory/"+target.id,{token:guardian,persona:"guardian"})).payload.data;
+    expect(detail.directThreadId).toBeFalsy();
+    await signInForWrite(page,school,"guardian-de");
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('.school-nav a[href*="/school/messages"]').click();
+    await page.getByRole("link",{name:"Neue Nachricht",exact:true}).click();
+    await page.locator(".comms-person-row").filter({hasText:target.displayName}).click();
+    const body="QA first message with attachment";
+    await page.locator(".comms-composer textarea").fill(body);
+    await page.getByRole("button",{name:"Anhang hinzufügen",exact:true}).click();
+    await expect.poll(()=>new URL(page.url()).searchParams.get("thread")).not.toBeNull();
+    await expect(page.locator(".comms-conversation textarea")).toHaveValue(body);
+    await expect(page.getByRole("button",{name:"Foto auswählen",exact:true})).toBeVisible();
+    const thread=new URL(page.url()).searchParams.get("thread")!;
+    expect((await fixtureApi(school,"/threads/"+thread+"/messages",{token:guardian,persona:"guardian"})).payload.data).toHaveLength(0);
+    expect(await page.evaluate(text=>JSON.stringify(localStorage).includes(text)||JSON.stringify(sessionStorage).includes(text),body)).toBe(false);
+  }finally{await school.close();}
+});
+
+test("unsent chat text survives leaving and returning to the thread in the same document",async({page,context})=>{
+  const school=schoolFixtures();
+  try{
+    await school.seed();const admin=await school.bearer("admin","admin");await setUpCalendar(school,admin);
+    const guardian=await school.bearer("guardian-de","guardian");
+    const contacts=(await fixtureApi(school,"/directory",{token:guardian})).payload.data;
+    const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
+    const thread=(await fixtureApi(school,"/threads",{token:guardian,persona:"guardian",method:"POST",key:randomUUID(),body:{target}})).payload.data.threadId;
+    const id=randomUUID();await fixtureApi(school,"/threads/"+thread+"/messages",{token:guardian,persona:"guardian",method:"POST",key:id,status:201,body:{clientMessageId:id,body:"QA previous message"}});
+    await context.addCookies([{name:"madrasty-session",value:guardian,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+    await page.setViewportSize({width:390,height:844});await page.goto("/de/school/messages?thread="+thread);
+    const body="QA private unsent message";
+    await page.locator(".comms-conversation textarea").fill(body);
+    await page.getByRole("link",{name:"Zurück zu den Unterhaltungen"}).click();
+    await page.locator('.comms-thread-row[href*="'+thread+'"]').click();
+    await expect(page.locator(".comms-conversation textarea")).toHaveValue(body);
+  }finally{await school.close();}
+});
