@@ -93,6 +93,20 @@ class CommunicationVisualTest {
         compose.runOnIdle{assertTrue(selected=="qa-1")}
         compose.onNodeWithText(de.madrasty.app.ui.isolate("QA Person 100"),substring=false).assertDoesNotExist()
     }
+    @Test fun nativeInboxSwipeRevealsActionsWithoutMutatingUntilChosen(){
+        val row=JSONObject().put("id","qa-swipe").put("contactName","QA Swipe").put("latestPreview","QA Preview")
+        var selected=""
+        lateinit var pin:String
+        compose.setContent{
+            pin=stringResource(R.string.chat_pin)
+            SchoolTheme(darkMode=false){ThreadRows(listOf(row),rememberLazyListState(),Modifier.fillMaxSize(),actions={_,field,next->selected="$field:$next"}){}}
+        }
+        compose.onNodeWithText(de.madrasty.app.ui.isolate("QA Swipe"),substring=false).performTouchInput{swipeLeft()}
+        compose.waitUntil(5000){compose.onAllNodesWithText(pin,substring=false).fetchSemanticsNodes().isNotEmpty()}
+        compose.runOnIdle{assertTrue(selected=="")}
+        compose.onNodeWithText(pin,substring=false).performClick()
+        compose.runOnIdle{assertTrue(selected=="pinned:true")}
+    }
     @Test fun nativeDraftsKeepThreadsSeparateAndDoNotEraseEditedText(){
         val drafts=NativeChatDrafts()
         drafts.write("one",NativeChatDraft("Private",requestId="request"))

@@ -3,6 +3,11 @@ package de.madrasty.app.identity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.key
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ListItem
@@ -185,6 +190,7 @@ internal class SchoolNavigation {
         })
     }
     fun openThread(id:String)=open(WorkspacePage.Thread(id))
+    fun selectSplitThread(id:String){if(page is WorkspacePage.Thread)page=WorkspacePage.Thread(id)else openThread(id)}
     fun openThreadWithDraft(id:String,body:String){chatDrafts.write(id,NativeChatDraft(body,openMedia=true));openThread(id)}
     fun openNoticeTarget(target:JSONObject):Boolean{
         val id=target.getString("id")
@@ -341,7 +347,19 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
         return
     }
     if(page==WorkspacePage.Tabs){SchoolTabs(model,session,state,rights);return}
-    if(page is WorkspacePage.Thread){ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back);return}
+    if(page is WorkspacePage.Thread){
+        if(LocalConfiguration.current.screenWidthDp>=840&&state.tab==SchoolTab.Messages){
+            Row(Modifier.fillMaxSize().safeDrawingPadding()){
+                Column(Modifier.weight(.35f).fillMaxSize().padding(12.dp)){
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(stringResource(R.string.comms_chats),style=MaterialTheme.typography.titleLarge);TextButton(onClick={state.open(WorkspacePage.Directory)}){Text("+")}}
+                    ThreadInbox(model,state.inbox,state::selectSplitThread)
+                }
+                VerticalDivider()
+                Box(Modifier.weight(.65f).fillMaxSize()){key(page.id){ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back)}}
+            }
+        }else key(page.id){ThreadScreen(model,page.id,state.chatDrafts,state::openReportSource,state::back)}
+        return
+    }
     InterfaceLanguageWorkspace {
     when(page){
         WorkspacePage.Tabs -> SchoolTabs(model,session,state,rights)

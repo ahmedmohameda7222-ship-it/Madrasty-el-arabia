@@ -7,6 +7,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -60,7 +66,12 @@ import de.madrasty.app.academics.ReportTarget
 import de.madrasty.app.academics.academicPages
 import de.madrasty.app.academics.academicRead
 import de.madrasty.app.academics.string
+import de.madrasty.app.api.WirePage
+import de.madrasty.app.api.decodeData
+import de.madrasty.app.identity.loadAccountSurface
 import de.madrasty.app.identity.HttpFailure
+import kotlinx.coroutines.CancellationException
+import org.json.JSONArray
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.school.Field
 import de.madrasty.app.school.Submit
@@ -85,10 +96,14 @@ internal class ThreadInboxState {
     var search by mutableStateOf("")
     val list=LazyListState()
 }
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ThreadInbox(model:IdentityViewModel,state:ThreadInboxState,open:(String)->Unit){
     val version=threadRefreshVersion(poll=true)
     val scope=rememberCoroutineScope()
+    var manual by remember{mutableStateOf(0)}
+    var refreshing by remember{mutableStateOf(false)}
+    var actionError by remember{mutableStateOf(false)}
     var queryTerm by remember{mutableStateOf(state.search.trim())}
     LaunchedEffect(state.search){delay(250);val next=state.search.trim();if(next!=queryTerm){queryTerm=next;state.list.scrollToItem(0)}}
     Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)){
@@ -101,17 +116,43 @@ internal fun ThreadInbox(model:IdentityViewModel,state:ThreadInboxState,open:(St
             }
         }
         val term=queryTerm.takeIf(String::isNotEmpty)?.let{"&q=${Uri.encode(it)}"}.orEmpty()
-        academicPages(model,"/threads?limit=30&includeEmpty=false&archived=${state.filter=="archive"}&unread=${state.filter=="unread"}$term",version+model.attendanceNetworkRevision){threads->
-            ThreadRows(threads,state.list,Modifier.weight(1f),open)
+        val path="/threads?limit=30&includeEmpty=false&archived=${state.filter=="archive"}&unread=${state.filter=="unread"}$term"
+        var view by remember(path){mutableStateOf<AsyncState<WirePage<List<JSONObject>>>>(AsyncState.InitialLoading())}
+        suspend fun read(url:String)=decodeData(model.schoolRequest(url)){payload->(payload as JSONArray).let{items->List(items.length(),items::getJSONObject)}}
+        LaunchedEffect(path,version,manual,model.attendanceNetworkRevision){
+            try{view=loadAccountSurface({manual++}){read(path)}}finally{refreshing=false}
+        }
+        if(actionError)Text(stringResource(R.string.generic_error),color=MaterialTheme.colorScheme.error)
+        PullToRefreshBox(isRefreshing=refreshing,onRefresh={refreshing=true;manual++},modifier=Modifier.weight(1f).fillMaxWidth()){
+            Column(Modifier.fillMaxSize()){
+                AsyncSurface(view){page->
+                    if(page.data.isEmpty())Text(stringResource(R.string.empty))
+                    ThreadRows(page.data,state.list,Modifier.weight(1f),actions={thread,field,next->
+                        scope.launch{
+                            actionError=false
+                            try{model.schoolRequest("/threads/${thread.getString("id")}/state",JSONObject().put(field,next),"PATCH");manual++}
+                            catch(cancelled:CancellationException){throw cancelled}
+                            catch(error:HttpFailure){if(error.status in listOf(401,403,404))manual++;actionError=true}
+                            catch(_:Exception){actionError=true}
+                        }
+                    },open=open)
+                    page.nextCursor?.let{cursor->Submit(true,R.string.staff_more,success=null){
+                        try{val next=read("$path&cursor=${Uri.encode(cursor)}");if((view as? AsyncState.Ready)?.content==page)view=AsyncState.Ready(WirePage((page.data+next.data).distinctBy{it.getString("id")},next.nextCursor))}
+                        catch(error:HttpFailure){if(error.status in listOf(401,403,404))view=AsyncState.Forbidden();throw error}
+                    }}
+                }
+            }
         }
     }
 }
 
 @Composable
-internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Modifier=Modifier,open:(String)->Unit){
+internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Modifier=Modifier,actions:((JSONObject,String,Boolean)->Unit)?=null,open:(String)->Unit){
     LazyColumn(modifier.fillMaxWidth(),state=state,contentPadding=PaddingValues(bottom=84.dp)){
         items(threads.distinctBy{it.getString("id")},key={it.getString("id")}){thread->
-            ListItem(modifier=Modifier.fillMaxWidth().clickable{open(thread.getString("id"))},
+            var menu by remember{mutableStateOf(false)}
+            val swipe=if(actions==null)Modifier else Modifier.pointerInput(thread.getString("id")){var distance=0f;detectHorizontalDragGestures(onDragStart={distance=0f},onDragEnd={if(kotlin.math.abs(distance)>64.dp.toPx())menu=true},onHorizontalDrag={change,amount->change.consume();distance+=amount})}
+            ListItem(modifier=Modifier.fillMaxWidth().then(swipe).clickable{open(thread.getString("id"))},
                 headlineContent={Text(threadTitle(thread),maxLines=2,overflow=TextOverflow.Ellipsis)},
                 supportingContent={thread.string("latestPreview")?.let{Text(isolate(it),maxLines=2,overflow=TextOverflow.Ellipsis)}},
                 leadingContent={ThreadAvatar(thread)},
@@ -130,6 +171,15 @@ internal fun ThreadRows(threads:List<JSONObject>,state:LazyListState,modifier:Mo
                             if(thread.optBoolean("muted"))Icon(painterResource(R.drawable.ic_comms_mute),contentDescription=stringResource(R.string.chat_muted),modifier=Modifier.size(16.dp))
                         }
                         if(thread.optInt("unread")>0){val label=stringResource(R.string.chat_unread)+" "+thread.optInt("unread");Badge(Modifier.semantics{contentDescription=label}){Text(thread.optInt("unread").toString())}}
+                        if(actions!=null)Box{
+                            val actionLabel=stringResource(R.string.chat_reactions)
+                            IconButton(onClick={menu=true},modifier=Modifier.size(48.dp).semantics{contentDescription=actionLabel}){Text("⋯",style=MaterialTheme.typography.titleLarge)}
+                            DropdownMenu(expanded=menu,onDismissRequest={menu=false}){
+                                for((field,label) in listOf("pinned" to (if(thread.optBoolean("pinned"))R.string.chat_unpin else R.string.chat_pin),"muted" to (if(thread.optBoolean("muted"))R.string.chat_unmute else R.string.chat_mute),"archived" to (if(thread.optBoolean("archived"))R.string.chat_restore else R.string.chat_archive))){
+                                    DropdownMenuItem(text={Text(stringResource(label))},onClick={menu=false;actions(thread,field,!thread.optBoolean(field))})
+                                }
+                            }
+                        }
                     }
                 })
             HorizontalDivider()
