@@ -67,6 +67,7 @@ export function NotificationLink({locale}:{locale:Locale}){
     function wake(){void sync();reconcile();}
     function rotate(message:MessageEvent){
       if(message.data?.type==="madrasty-push-refresh")void reconcileBrowserPush(actor,abort.signal,true).catch(()=>undefined);
+      if(message.data?.type==="madrasty-communication-wake"){window.dispatchEvent(new Event(changed));window.dispatchEvent(new Event("madrasty-communication-wake"));}
     }
     navigator.serviceWorker?.addEventListener("message",rotate);
     const timer=window.setInterval(()=>void sync(),25000);

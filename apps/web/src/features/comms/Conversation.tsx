@@ -231,7 +231,7 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
   },[ack,term]);
   useEffect(()=>{
     const abort=new AbortController();
-    let working=false,failures=0,nextPoll=0;
+    let working=false,dirty=false,failures=0,nextPoll=0;
     async function poll(){
       if(working||abort.signal.aborted||document.hidden||!navigator.onLine)return;
       working=true;
@@ -271,16 +271,17 @@ function Timeline({locale,thread,term,ack,reply,deny,recognize,updateArchive,pau
           if(unavailable(problem)){setRows(undefined);liveActions.current.deny();}
           else {failures++;nextPoll=Date.now()+Math.min(60000,5000*2**Math.min(failures,4));setFailure(timetableError(locale,problem));}
         }
-      }finally{working=false;}
+      }finally{working=false;if(dirty&&!abort.signal.aborted){dirty=false;void poll();}}
     }
+    const wake=()=>{if(working)dirty=true;else void poll();};
     const timer=window.setInterval(()=>{if(Date.now()>=nextPoll)void poll();},5000);
     window.addEventListener("online",poll);
-    window.addEventListener("focus",poll);
+    window.addEventListener("focus",poll);window.addEventListener("madrasty-communication-wake",wake);
     document.addEventListener("visibilitychange",poll);
     void poll();
     return ()=>{
       abort.abort();window.clearInterval(timer);window.removeEventListener("online",poll);
-      window.removeEventListener("focus",poll);document.removeEventListener("visibilitychange",poll);
+      window.removeEventListener("focus",poll);window.removeEventListener("madrasty-communication-wake",wake);document.removeEventListener("visibilitychange",poll);
     };
   },[path,persona,thread.id,term,initialAttempt]);
 

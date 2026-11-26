@@ -49,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -305,6 +306,7 @@ private fun ThreadAvatar(thread:JSONObject){
 @Composable
 private fun threadRefreshVersion(poll:Boolean=false):Int{
     var version by remember{mutableStateOf(0)}
+    val push by schoolPushRevision.collectAsState()
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle,poll){if(poll)while(true){delay(15000);if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))version++}}
     DisposableEffect(lifecycle){
@@ -312,5 +314,5 @@ private fun threadRefreshVersion(poll:Boolean=false):Int{
         lifecycle.addObserver(observer)
         onDispose{lifecycle.removeObserver(observer)}
     }
-    return version
+    return version+push
 }

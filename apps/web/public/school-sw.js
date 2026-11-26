@@ -66,6 +66,9 @@ self.addEventListener("push", (event) => {
     let message;
     try { message = event.data?.json(); } catch { return; }
     if (!noticeMessage(message) || await storedDeliveryGuard() !== message.deviceGuard) return;
+    // A verified, opaque push is only a refresh hint; clients re-read scoped APIs.
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) client.postMessage({ type: "madrasty-communication-wake" });
     const { title, body, dir } = pushLabels[message.locale];
     await self.registration.showNotification(title, {
       body, dir, lang: message.locale, icon: "/school-192.png", tag: "notice-" + message.noticeId,

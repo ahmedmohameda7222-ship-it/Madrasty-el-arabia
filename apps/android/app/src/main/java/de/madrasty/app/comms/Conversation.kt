@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -278,7 +279,8 @@ private fun MessageTimeline(
     LaunchedEffect(ack){
         if(ack!=null&&term.isEmpty())records=mergeChat(records.orEmpty(),listOf(ack))
     }
-    LaunchedEffect(path,retry,model.attendanceNetworkRevision){
+    val push by schoolPushRevision.collectAsState()
+    LaunchedEffect(path,retry,model.attendanceNetworkRevision,push){
         do{
             if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)){
                 try{

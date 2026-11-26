@@ -350,6 +350,10 @@ test("message retry preserves the client identifier and a remote reply arrives w
     expect(actual.filter((item:{body:string})=>item.body===body)).toHaveLength(1);
     const reply="QA reply "+randomUUID().slice(0,8),id=randomUUID();
     await fixtureApi(school,"/threads/"+thread+"/messages",{token:teacher,persona:"teacher",method:"POST",key:id,status:201,body:{clientMessageId:id,body:reply}});
+    // Simulate the opaque, verified service-worker refresh hint; the response is still the actual scoped API.
+    const wake=page.waitForResponse(response=>response.url().includes("/api/v1/threads/"+thread+"/messages?")&&response.request().method()==="GET");
+    await page.evaluate(()=>window.dispatchEvent(new Event("madrasty-communication-wake")));
+    expect((await wake).ok()).toBe(true);
     await expect(page.locator(".comms-timeline .comms-message[data-own=false]").filter({hasText:reply})).toBeVisible({timeout:20000});
   }finally{await school.close();}
 });
