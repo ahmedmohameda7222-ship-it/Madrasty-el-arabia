@@ -219,12 +219,22 @@ class CommunicationVisualTest {
                 SchoolTheme(darkMode=false){
                     Surface{
                         Column(Modifier.fillMaxSize().padding(16.dp)){
-                            MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={})
+                            var typed by remember{mutableStateOf("")}
+                            MediaComposer(model,"qa-thread",locked=false,consumed=null,onReady={},onBusy={}){recordVoice->
+                                ChatInputField(typed,true){typed=it}
+                                ChatSendAction(typed.isNotBlank(),false,onRecord=recordVoice.takeIf{typed.isBlank()}){}
+                            }
                         }
                     }
                 }
             }
             compose.waitForIdle()
+            compose.onNodeWithTag("chat-voice-action").assertIsDisplayed().assertIsEnabled()
+            compose.onNode(hasSetTextAction()).performTextInput("QA draft")
+            compose.onNodeWithTag("chat-voice-action").assertDoesNotExist()
+            compose.onNodeWithTag("chat-send-action").assertIsDisplayed().assertIsEnabled()
+            compose.onNode(hasSetTextAction()).performTextClearance()
+            compose.onNodeWithTag("chat-voice-action").assertIsDisplayed()
             val attach=compose.onNodeWithContentDescription(attachLabel)
             attach.assertIsDisplayed()
             actions.forEach{compose.onNodeWithText(it,substring=false).assertDoesNotExist()}
