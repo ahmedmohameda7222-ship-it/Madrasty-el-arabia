@@ -173,32 +173,38 @@ test("calendar detail returns to the same month, day and class filter",async({pa
     await expect(page.locator(".school-nav [aria-current=page]")).toHaveText("Kalender");
     await page.getByRole("link",{name:"Details öffnen"}).first().click();
     await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
+    // The detail and list share the same pathname. Wait for the list navigation
+    // itself to finish, not merely a URL regex that already matches the detail.
+    async function expectReturn(target:Page){
+      await expect.poll(()=>new URL(target.url()).searchParams.has("item")).toBe(false);
+      await expect(target.locator(".school-month-grid[data-calendar-ready=true]")).toBeVisible();
+      await expect(target.getByRole("link",{name:"Zurück zum Kalender",exact:true})).toHaveCount(0);
+      const returned=new URL(target.url());
+      expect(returned.pathname).toBe("/de/school/calendar");
+      for(const [key,value] of params)assertContext(returned.searchParams,key,value);
+    }
     await page.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
-    await expect(page).toHaveURL(/\/school\/calendar\?/);
-    const returned=new URL(page.url()).searchParams;
-    assertContext(returned,"month",day.slice(0,7));
-    assertContext(returned,"day",day);
-    assertContext(returned,"classId",apple.id);
-    // A Next streaming redirect may interrupt the original WebKit navigation.
-    try{const legacy="/de/school/more/events?item="+event.id+"&"+params;
+    await expectReturn(page);
+    const legacy="/de/school/more/events?item="+event.id+"&"+params;
     const redirect=await page.request.get(legacy,{maxRedirects:0});
     expect(redirect.status()).toBe(307);
     const destination=new URL(redirect.headers().location!,localOrigin);
     expect(destination.pathname).toBe("/de/school/calendar");
     assertContext(destination.searchParams,"item",event.id);
-    assertContext(destination.searchParams,"month",day.slice(0,7));
-    assertContext(destination.searchParams,"day",day);
-    assertContext(destination.searchParams,"classId",apple.id);
-    await page.goto(legacy);}
-    catch(error){if(!/interrupted by another navigation to .*\/de\/school\/calendar\?/.test(String(error)))throw error;}
-    await expect.poll(()=>new URL(page.url()).searchParams.get("item")).toBe(event.id);
-    await expect(page).toHaveURL(/\/school\/calendar\?/);
-    await expect(page.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
-    await page.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
-    const legacyReturned=new URL(page.url()).searchParams;
-    assertContext(legacyReturned,"month",day.slice(0,7));
-    assertContext(legacyReturned,"day",day);
-    assertContext(legacyReturned,"classId",apple.id);
+    for(const [key,value] of params)assertContext(destination.searchParams,key,value);
+    // Exercise a real external bookmark in an independent browser document,
+    // so it cannot race with the preceding client-side calendar return.
+    const bookmark=await context.newPage();
+    try{
+      await bookmark.setViewportSize({width:390,height:844});
+      await bookmark.goto(legacy);
+      await expect.poll(()=>new URL(bookmark.url()).searchParams.get("item")).toBe(event.id);
+      await expect(bookmark).toHaveURL(/\/school\/calendar\?/);
+      for(const [key,value] of params)assertContext(new URL(bookmark.url()).searchParams,key,value);
+      await expect(bookmark.getByRole("heading",{name:"QA event for calendar return"})).toBeVisible();
+      await bookmark.getByRole("link",{name:"Zurück zum Kalender",exact:true}).click();
+      await expectReturn(bookmark);
+    }finally{await bookmark.close();}
   }finally{await school.close();}
 });
 function assertContext(params:URLSearchParams,key:string,value:string){expect(params.get(key)).toBe(value);}
