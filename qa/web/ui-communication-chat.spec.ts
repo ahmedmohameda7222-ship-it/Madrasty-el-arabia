@@ -106,16 +106,29 @@ test("guardian contact picker exposes responsible teacher first, then the full s
     await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible();
     await expect(page.locator(".comms-person-row")).toHaveCount(1);
     // Same-query foreground refresh must not replace the visible directory with a skeleton.
-    const matches=(url:URL)=>url.pathname==="/api/v1/directory"&&url.searchParams.get("view")==="all"&&url.searchParams.get("query")==="Johannes Peter Schneider";
-    let release!:()=>void; const gate=new Promise<void>(resolve=>{release=resolve;});
-    let refreshing=false;
-    await page.route(matches,async route=>{refreshing=true;await gate;await route.continue();});
+    // Hold only the real matching fetch at the page boundary. This also works
+    // when a browser service worker makes Playwright network routes invisible.
+    await page.bringToFront();
+    await page.evaluate(()=>{
+      const original=window.fetch;
+      let release!:()=>void;
+      const gate=new Promise<void>(resolve=>{release=resolve;});
+      const state={started:false,restore:()=>{window.fetch=original;release();}};
+      (window as typeof window & {__qaDirectoryRefresh?:typeof state}).__qaDirectoryRefresh=state;
+      window.fetch=async(input,init)=>{
+        const url=new URL(typeof input==="string"?input:input instanceof URL?input.href:input.url,location.origin);
+        if(url.pathname==="/api/v1/directory"&&url.searchParams.get("view")==="all"&&url.searchParams.get("query")==="Johannes Peter Schneider"){
+          state.started=true;await gate;
+        }
+        return original.call(window,input,init);
+      };
+      window.dispatchEvent(new Event("focus"));
+    });
     try{
-      await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
-      await expect.poll(()=>refreshing).toBe(true);
+      await expect.poll(()=>page.evaluate(()=>(window as typeof window & {__qaDirectoryRefresh?:{started:boolean}}).__qaDirectoryRefresh?.started)).toBe(true);
       await expect(page.locator(".comms-person-row").filter({hasText:"Johannes Peter Schneider"})).toBeVisible({timeout:1500});
       await expect(page.locator(".comms-directory [data-async-state=loading]")).toHaveCount(0);
-    }finally{release();await page.unroute(matches);}
+    }finally{await page.evaluate(()=>(window as typeof window & {__qaDirectoryRefresh?:{restore:()=>void}}).__qaDirectoryRefresh?.restore());}
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-directory-de-320.png",animations:"disabled"});
