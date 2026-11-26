@@ -11,7 +11,7 @@ export const receiptCopy={
     title:"الإيصالات",record:"تسجيل سداد",queue:"مطابقة الإيصالات",needs_matching:"يحتاج مطابقة",allocated:"مخصص بالكامل",voided:"ملغى محاسبيًا",
     all:"كل الإيصالات",bank:"تحويل بنكي",cash:"نقدي",reference:"مرجع كشف البنك أو رقم سند القبض",received:"تاريخ استلام المبلغ",
     verification:"أكدت استلام المبلغ خارج التطبيق",preview:"مراجعة",confirm:"تأكيد",edit:"تعديل",optionalInvoice:"اختيار فاتورة (اختياري)",
-    invoice:"الفاتورة",noInvoice:"من غير فاتورة",forInvoice:"الفاتورة المقترحة",search:"اسم الطالب أو رقمه أو رقم الفاتورة",
+    invoice:"الفاتورة",noInvoice:"من غير فاتورة",forInvoice:"الفاتورة المقترحة",search:"اسم ولي الأمر أو الطالب أو رقم الفاتورة",
     total:"المبلغ الأصلي",applied:"المبلغ المخصص",remainder:"المبلغ المتاح للمطابقة",active:"المبلغ المثبت",allocations:"تخصيصات الفواتير",
     allocate:"تخصيص دفعة",amount:"مبلغ التخصيص",current:"الرصيد قبل",after:"الرصيد بعد",remove:"حذف",due:"الاستحقاق",
     reason:"السبب",unapply:"إلغاء تخصيص",void_receipt:"إلغاء الإيصال",reverseHint:"الإلغاء المحاسبي ما بيرجعش فلوس للبنك.",
@@ -25,7 +25,7 @@ export const receiptCopy={
     all:"Alle Belege",bank:"Banküberweisung",cash:"Barzahlung",reference:"Buchungsreferenz des Kontoauszugs oder Quittungsnummer",
     received:"Eingangsdatum",verification:"Ich habe den externen Geldeingang bestätigt",preview:"Prüfen",confirm:"Bestätigen",edit:"Bearbeiten",
     optionalInvoice:"Rechnung auswählen (optional)",invoice:"Rechnung",noInvoice:"Ohne Rechnung",forInvoice:"Vorgeschlagene Rechnung",
-    search:"Name, Schüler- oder Rechnungsnummer",total:"Ursprünglicher Betrag",applied:"Zugeordneter Betrag",remainder:"Verfügbar für Zuordnung",
+    search:"Name des Zahlers, Schülers oder Rechnungsnummer",total:"Ursprünglicher Betrag",applied:"Zugeordneter Betrag",remainder:"Verfügbar für Zuordnung",
     active:"Erfasster Betrag",allocations:"Rechnungszuordnungen",allocate:"Zahlung zuordnen",amount:"Zuordnungsbetrag",current:"Offen vorher",
     after:"Offen nachher",remove:"Entfernen",due:"Fälligkeit",reason:"Begründung",unapply:"Zuordnung aufheben",
     void_receipt:"Beleg stornieren",reverseHint:"Die Buchungskorrektur löst keine Rückzahlung aus.",correction:"Zuordnung korrigiert",
@@ -57,7 +57,7 @@ export function InvoicePicker({locale,currency,exclude=[],refresh=0,onPick}:{
       .filter((item)=>item.currency===currency&&item.balanceMinor>0&&!exclude.includes(item.id))
       .map((item)=><li className="timetable-day" key={item.id}>
         <p><bdi>{item.studentName}</bdi> · <bdi>{item.studentNumber}</bdi> · <bdi>{item.invoiceNumber}</bdi></p>
-        <p><bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi dir="ltr">{financeAmount(item.balanceMinor,currency,locale)}</bdi></p>
+        <p><bdi>{item.payerName}</bdi> · <bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi dir="ltr">{financeAmount(item.balanceMinor,currency,locale)}</bdi></p>
         <button type="button" className="plain-button" onClick={()=>onPick(item)}>{text.use}</button>
       </li>)}</ul>}</AcademicPageItems>
   </div>;
