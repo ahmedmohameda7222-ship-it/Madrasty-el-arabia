@@ -11,7 +11,8 @@ export function readAutomaticBilling(actor:ActorContext){
     await requireCapability(tx,actor,"finance.issue");
     const [row]=await tx`select enabled,to_char(start_month,'YYYY-MM') as "startMonth",to_char(school_month,'YYYY-MM') as "schoolMonth",revision,missing_payers::float8 as "missingPayers" from app.automatic_billing_settings()`;
     if(!row)throw new ApiError("unavailable");
-    return automaticBillingSettings.parse(row);
+    const payerIssues=await tx`select student_id as "studentId",student_name as "studentName",student_number as "studentNumber",reason from app.finance_payer_delivery_health()`;
+    return automaticBillingSettings.parse({...row,payerIssues});
   });
 }
 export async function saveAutomaticBilling(actor:ActorContext,key:string|null,input:z.infer<typeof automaticBillingInput>){
