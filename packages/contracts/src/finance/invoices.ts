@@ -71,4 +71,5 @@ export const autoBillingSettings=z.object({enabled:z.boolean(),startMonth:billin
 export const autoBillingUpdate=autoBillingSettings.pick({enabled:true,startMonth:true,revision:true}).strict();
 
 export const automaticBillingInput=z.object({enabled:z.boolean(),startMonth:billingMonth,revision:z.int().positive()}).strict();
-export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative()});
+export const financePayerIssue=z.object({studentId:id,studentName:z.string(),studentNumber:z.string(),reason:z.enum(["payer_missing","payer_unreachable"])});
+export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative(),payerIssues:financePayerIssue.array()});
