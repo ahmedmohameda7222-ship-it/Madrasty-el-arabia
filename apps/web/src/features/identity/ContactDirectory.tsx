@@ -45,9 +45,12 @@ function initials(entry:DirectoryEntry,locale:Locale) {
 export function ContactDirectory({ locale, contact }: { locale: Locale; contact?: string }) {
   const text=words[locale], actor=useAccountScope(), router=useRouter(), command=useSchoolCommand(actor.persona);
   const [query,setQuery]=useState(""), [term,setTerm]=useState("");
+  const [interactive,setInteractive]=useState(false);
+  useEffect(()=>setInteractive(true),[]);
   const [mode,setMode]=useState<Mode>("mine"),[selected,setSelected]=useState(contact);
   const [revision,setRevision]=useState(0),[view,setView]=useState<AsyncState>({kind:"initialLoading"});
   const [entry,setEntry]=useState<DirectoryEntry>(),[rows,setRows]=useState<Page>();
+  const confirmed=useRef<string|undefined>(undefined);
   const offices=useTimetableRead(`/directory?role=office&limit=10${term?`&query=${encodeURIComponent(term)}`:""}`,directoryList,revision);
   const [gettingMore,setGettingMore]=useState(false),[moreError,setMoreError]=useState("");
   const [opening,setOpening]=useState<string>(),[openError,setOpenError]=useState("");
@@ -74,7 +77,11 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
     const abort=new AbortController();
     const options={signal:abort.signal,headers:{"X-School-Persona":actor.persona}};
     const retry=()=>setRevision(count=>count+1);
-    setView({kind:"initialLoading"});setEntry(undefined);setRows(undefined);setMoreError("");
+    const key=JSON.stringify([actor.accountId,actor.sessionId,actor.persona,selected??null,term,mode]);
+    // Keep confirmed results visible only while refreshing the identical scope and query.
+    if(confirmed.current===key)setView({kind:"refreshing",content:null});
+    else{confirmed.current=undefined;setView({kind:"initialLoading"});setEntry(undefined);setRows(undefined);}
+    setMoreError("");
     async function refresh(){
       try{
         if(selected){
@@ -84,16 +91,17 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
           const result=await requestApi(`/directory?${filter(term,mode)}`,directoryList,options);
           if(!abort.signal.aborted)setRows(result);
         }
-        if(!abort.signal.aborted)setView({kind:"ready",content:null});
+        if(!abort.signal.aborted){confirmed.current=key;setView({kind:"ready",content:null});}
       }catch(error){
         if(abort.signal.aborted)return;
+        confirmed.current=undefined;setEntry(undefined);setRows(undefined);
         if(error instanceof ApiResponseError&&[401,403,404].includes(error.status))setView({kind:"forbidden",action:<p>{text.unavailable}</p>});
         else setView({kind:"error",message:message(locale,error),retry});
       }
     }
     void refresh();
     return ()=>abort.abort();
-  },[selected,revision,term,mode,actor.persona]);
+  },[selected,revision,term,mode,actor.accountId,actor.sessionId,actor.persona]);
 
   function back(){
     const url=new URL(window.location.href);url.searchParams.delete("contact");
@@ -180,12 +188,12 @@ export function ContactDirectory({ locale, contact }: { locale: Locale; contact?
   return <section className="comms-directory">
     <h1>{text.title}</h1>
     {selected?<button type="button" className="plain-button" onClick={back}>{text.back}</button>:<>
-      <input className="comms-search" type="search" aria-label={text.query} placeholder={text.query} maxLength={120} value={query} onChange={event=>setQuery(event.target.value)}/>
+      <input className="comms-search" type="search" aria-label={text.query} placeholder={text.query} maxLength={120} disabled={!interactive} value={query} onChange={event=>setQuery(event.target.value)}/>
       <div className="comms-segments" role="group" aria-label={text.title}>
-        {(["mine","all"] as const).map(key=><button key={key} type="button" aria-pressed={mode===key} onClick={()=>setMode(key)}>{text[key]}</button>)}
+        {(["mine","all"] as const).map(key=><button key={key} type="button" disabled={!interactive} aria-pressed={mode===key} onClick={()=>setMode(key)}>{text[key]}</button>)}
       </div>
     </>}
-    <AsyncSurface locale={locale} state={view.kind==="ready"?{...view,content}:view}/>
+    <AsyncSurface locale={locale} state={view.kind==="ready"||view.kind==="refreshing"?{...view,content}:view}/>
   </section>;
 }
 export function DirectoryCard({entry,locale}:{entry:DirectoryEntry;locale:Locale}) {
