@@ -98,7 +98,7 @@ function localInput(value: string | null) {
 }
 
 export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount: string }) {
-  const text = copy[];
+  const text = copy[locale];
   const localized = dictionary(locale);
   const label = (key: keyof typeof names) => names[key][locale === "ar" ? 0 : 1];
   const [people, setPeople] = useState<z.infer<typeof accessTargetsSchema>>([]);
@@ -134,7 +134,7 @@ export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount
       if (!abort.signal.aborted) setFailure(error instanceof ApiResponseError ? localizedError(locale, error.messageKey) : dictionary(locale)["error.unavailable"]);
     });
     return () => abort.abort();
-  }, [locale]);
+  }, []);
 
   useEffect(() => {
     if (!target) return;
