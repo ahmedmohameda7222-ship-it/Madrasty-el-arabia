@@ -495,7 +495,7 @@
     <string name="receipt_choose_invoice">اختيار الفاتورة</string>
     <string name="receipt_without_invoice">من غير فاتورة</string>
     <string name="receipt_suggested_invoice">الفاتورة المقترحة</string>
-    <string name="receipt_invoice_search">اسم الطالب أو رقمه أو رقم الفاتورة</string>
+    <string name="receipt_invoice_search">اسم ولي الأمر أو الطالب أو رقم الفاتورة</string>
     <string name="receipt_total">المبلغ الأصلي</string>
     <string name="receipt_active">المبلغ المثبت</string>
     <string name="receipt_remainder">المبلغ المتاح للمطابقة</string>
