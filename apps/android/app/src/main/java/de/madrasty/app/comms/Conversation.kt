@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -127,6 +128,8 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
     }
     val failed=outgoing?.pending==false
     var optionsOpen by remember(id){mutableStateOf(false)}
+    var mediaOpen by remember(id){mutableStateOf(false)}
+    if(mediaOpen)SharedChatMediaDialog(model,id,{mediaOpen=false},{mediaOpen=false;deny()})
     Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)){
     TextButton(onClick={optionsOpen=!optionsOpen}){Text(stringResource(R.string.chat_search_thread)+" · ⋯")}
     if(optionsOpen){
@@ -153,6 +156,7 @@ internal fun Conversation(model:IdentityViewModel,thread:JSONObject,modifier:Mod
             pinned=result.getBoolean("pinned");muted=result.getBoolean("muted");changed()
         }catch(error:HttpFailure){if(error.denied)deny();throw error}
     }
+    TextButton(onClick={mediaOpen=true;optionsOpen=false}){Text(stringResource(R.string.chat_shared_media))}
     if(archived)Text(stringResource(R.string.chat_archived))
     Field(R.string.chat_search_thread,search){search=it.take(120)}
     TextButton(onClick={term=search.trim()}){Text(stringResource(R.string.staff_search))}
@@ -489,3 +493,52 @@ private suspend fun IdentityViewModel.chatPage(path:String):WirePage<List<JSONOb
     decodeData(schoolRequest(path)){payload->(payload as JSONArray).let{records->List(records.length(),records::getJSONObject)}}
 private fun mergeChat(existing:List<JSONObject>,fresh:List<JSONObject>)=
     (existing+fresh).associateBy{it.getString("id")}.values.sortedBy{it.getString("sequence").toLong()}
+
+@Composable
+private fun SharedChatMediaDialog(model:IdentityViewModel,thread:String,close:()->Unit,denied:()->Unit){
+    var rows by remember(thread){mutableStateOf<List<JSONObject>?>(null)}
+    var cursor by remember(thread){mutableStateOf<String?>(null)}
+    var failed by remember(thread){mutableStateOf(false)}
+    var retry by remember(thread){mutableStateOf(0)}
+    LaunchedEffect(thread,retry){
+        failed=false
+        try{
+            val page=model.chatPage("/threads/$thread/messages?mediaOnly=true&limit=20")
+            rows=page.data;cursor=page.nextCursor
+        }catch(error:CancellationException){throw error}
+        catch(error:HttpFailure){rows=null;if(error.denied)denied()else failed=true}
+        catch(_:Exception){rows=null;failed=true}
+    }
+    AlertDialog(onDismissRequest=close,title={Text(stringResource(R.string.chat_shared_media))},
+        text={
+            Column(Modifier.fillMaxWidth().heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+                val current=rows
+                if(failed){
+                    Text(stringResource(R.string.generic_error))
+                    TextButton(onClick={retry++}){Text(stringResource(R.string.broadcast_refresh))}
+                }else if(current==null){AsyncSurface<Unit>(AsyncState.InitialLoading()){}}
+                else if(current.isEmpty()){Text(stringResource(R.string.chat_shared_media_empty))}
+                else{
+                    for(message in current){
+                        key(message.getString("id")){
+                            Text(chatAuthor(message),style=MaterialTheme.typography.labelMedium)
+                            val media=message.getJSONArray("attachments")
+                            for(index in 0 until media.length()){
+                                val attachment=media.getJSONObject(index)
+                                val mediaId=attachment.getString("id")
+                                key(mediaId){PrivateChatMedia(model,"/threads/$thread/media/$mediaId",ChatMediaKind.read(attachment.getString("kind")))}
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                    val before=cursor
+                    if(before!=null)Submit(true,R.string.chat_older,success=null){
+                        try{
+                            val page=model.chatPage("/threads/$thread/messages?mediaOnly=true&limit=20&before=$before")
+                            rows=(rows.orEmpty()+page.data).distinctBy{it.getString("id")};cursor=page.nextCursor
+                        }catch(error:HttpFailure){if(error.denied)denied();throw error}
+                    }
+                }
+            }
+        },confirmButton={TextButton(onClick=close){Text(stringResource(R.string.close))}})
+}

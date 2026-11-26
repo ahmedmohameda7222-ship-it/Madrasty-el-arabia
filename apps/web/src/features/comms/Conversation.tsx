@@ -12,6 +12,7 @@ import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
 import { MediaComposer } from "./MediaComposer";
 import { Icon } from "@/ui/Icon";
+import { SharedChatMedia } from "./SharedChatMedia";
 import { projectReaction } from "./chat-state";
 import { chatDrafts } from "./chat-drafts";
 import { PrivateChatMedia,ReportMessage,reportCopy } from "./ReportQueue";
@@ -148,6 +149,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
       <button type="button" className="plain-button" disabled={preferenceBusy} aria-pressed={pinned} onClick={()=>void changePreference("pinned",!pinned)}><Icon name="pin"/>{pinned?(locale==="ar"?"إلغاء التثبيت":"Nicht mehr anheften"):(locale==="ar"?"تثبيت المحادثة":"Chat anheften")}</button>
       <button type="button" className="plain-button" disabled={preferenceBusy} aria-pressed={muted} onClick={()=>void changePreference("muted",!muted)}><Icon name="mute"/>{muted?(locale==="ar"?"إلغاء الكتم":"Stummschaltung aufheben"):(locale==="ar"?"كتم المحادثة":"Chat stummschalten")}</button>
       <button type="button" className="plain-button" disabled={preferenceBusy} onClick={()=>void archive()}>{archived?text.restore:text.archive}</button>
+      <SharedChatMedia locale={locale} thread={thread.id} denied={deny}/>
       {archived&&<p>{text.archived}</p>}{notice&&<p role="alert">{notice}</p>}
     </div>
     <form className="auth-form" onSubmit={(event)=>{event.preventDefault();setTerm(query.trim());}}>

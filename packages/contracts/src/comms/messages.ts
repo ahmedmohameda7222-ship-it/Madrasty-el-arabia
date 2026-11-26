@@ -21,6 +21,7 @@ export const chatMessage=z.object({
 });
 export const chatMessagesQuery=pageQuerySchema.pick({limit:true}).extend({
   before:sequenceSchema.optional(),after:sequenceSchema.optional(),q:z.string().trim().max(120).optional(),
+  mediaOnly:z.enum(["true","false"]).transform(value=>value==="true").optional(),
 }).refine((value)=>!(value.before&&value.after),{path:["after"],message:"error.validation"});
 export const postMessageInput=z.object({
   clientMessageId:id,body:z.string().trim().min(1).max(4000).optional(),

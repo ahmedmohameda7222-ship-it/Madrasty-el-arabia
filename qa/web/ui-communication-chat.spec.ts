@@ -60,6 +60,16 @@ test("direct chat presents sent and received bubbles and compact actions", async
       expect(await page.locator(".school-content").evaluate(el=>el.scrollHeight-el.clientHeight)).toBeLessThanOrEqual(1);
     }
     await page.setViewportSize({width:390,height:844});
+    await composer.locator("textarea").fill("QA gallery retains draft");
+    await page.locator(".comms-chat-options > summary").click();
+    await page.getByRole("button",{name:"Geteilte Medien",exact:true}).click();
+    const gallery=page.getByRole("dialog",{name:"Geteilte Medien"});
+    await expect(gallery).toBeVisible();
+    await expect(gallery.getByText("Keine geteilten Medien in dieser Unterhaltung.")).toBeVisible();
+    await gallery.getByRole("button",{name:"Schließen",exact:true}).click();
+    await expect(composer.locator("textarea")).toHaveValue("QA gallery retains draft");
+    await composer.locator("textarea").fill("");
+    await page.locator(".comms-chat-options > summary").click();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("qa-artifacts/ui-after",{recursive:true});
     await page.screenshot({path:"qa-artifacts/ui-after/communication-chat-de-390.png",animations:"disabled"});

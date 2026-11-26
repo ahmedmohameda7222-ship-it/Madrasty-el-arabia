@@ -632,4 +632,6 @@
     <string name="chat_unmute">إلغاء الكتم</string>
     <string name="chat_pinned">مثبتة</string>
     <string name="chat_muted">مكتومة</string>
+    <string name="chat_shared_media">الصور والرسائل الصوتية</string>
+    <string name="chat_shared_media_empty">مفيش مرفقات في المحادثة دي.</string>
 </resources>

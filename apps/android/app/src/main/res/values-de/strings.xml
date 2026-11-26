@@ -632,4 +632,6 @@
     <string name="chat_unmute">Stummschaltung aufheben</string>
     <string name="chat_pinned">Angeheftet</string>
     <string name="chat_muted">Stumm</string>
+    <string name="chat_shared_media">Geteilte Medien</string>
+    <string name="chat_shared_media_empty">Keine geteilten Medien in dieser Unterhaltung.</string>
 </resources>
