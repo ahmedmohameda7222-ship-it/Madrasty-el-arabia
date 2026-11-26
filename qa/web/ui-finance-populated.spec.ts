@@ -207,6 +207,13 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           await expect(receiptPdfLink).toHaveAttribute("href","/api/v1/finance/receipts/"+visibleReceiptId+"/pdf?locale="+s.locale);
           await capture(page,prefix+"receipt-detail");
           if(s.persona==="admin"){
+            if(width===390){
+              const payerProfile=(await fixtureApi(school,"/finance/children/"+record.invoice.studentId+"/payer",actorOptions)).payload.data;
+              const active=payerProfile.designations.filter((d:{effectiveFromMonth:string})=>d.effectiveFromMonth<=clock.month)
+                .sort((a:{effectiveFromMonth:string},b:{effectiveFromMonth:string})=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth))[0];
+              await go("fee-settings?student="+record.invoice.studentId);
+              await expect(page.locator(".school-content select").filter({has:page.locator(`option[value="${active.guardianId}"]`)})).toHaveValue(active.guardianId);
+            }
             await go("receipts");
             await expect(page.locator('a[href*="receipt='+record.receiptId+'"]')).toBeVisible();
             await capture(page,prefix+"receipts");
