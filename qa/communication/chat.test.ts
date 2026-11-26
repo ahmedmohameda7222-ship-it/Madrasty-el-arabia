@@ -76,3 +76,34 @@ test("first message opens a direct conversation atomically and retries do not du
     assert.equal(messages[0].clientMessageId,clientMessageId);
   }finally{await school.close();}
 });
+
+
+test("chat pin and mute are private to the actor and pinned ordering survives pagination",async()=>{
+  const school=schoolFixtures();
+  try{
+    const admin=await school.bearer("admin","admin");
+    await setUpCalendar(school,admin);
+    const token=await school.bearer("guardian-de","guardian");
+    const teacher=await school.bearer("teacher","teacher");
+    const contacts=(await fixtureApi(school,"/directory?view=all&limit=100",{token})).payload.data;
+    const target=contacts.find((c:{displayName:string})=>c.displayName==="يوسف عبد الرحمن محمود").target;
+    const other=contacts.find((c:{role:string;target:{kind:string}})=>c.role==="guardian"&&c.target.kind==="person").target;
+    const open=async(target:unknown)=>{const id=randomUUID();return (await fixtureApi(school,"/threads",{token,persona:"guardian",method:"POST",key:id,body:{target,firstMessage:{clientMessageId:id,body:"QA pin "+id}}})).payload.data.threadId as string;};
+    const pinned=await open(target),recent=await open(other),path="/threads/"+pinned;
+    const patch=async(body:unknown)=>(await fixtureApi(school,path+"/state",{token,persona:"guardian",method:"PATCH",body})).payload.data;
+    const saved=await patch({pinned:true,muted:true});
+    assert.equal(saved.pinned,true);assert.equal(saved.muted,true);
+    const mine=(await fixtureApi(school,path,{token})).payload.data;
+    assert.equal(mine.pinned,true);assert.equal(mine.muted,true);
+    const theirs=(await fixtureApi(school,path,{token:teacher})).payload.data;
+    assert.equal(theirs.pinned,false);assert.equal(theirs.muted,false);
+    await fixtureApi(school,path+"/state",{token:admin,method:"PATCH",body:{pinned:true,muted:false},status:404});
+    const all:string[]=[];let cursor:string|undefined;
+    do{const result=(await fixtureApi(school,"/threads?limit=1&includeEmpty=false"+(cursor?"&cursor="+encodeURIComponent(cursor):""),{token})).payload;all.push(...result.data.map((r:{id:string})=>r.id));cursor=result.meta?.nextCursor;assert.ok(all.length<100,"pagination terminates");}while(cursor);
+    assert.equal(all[0],pinned);assert.ok(all.includes(recent));assert.equal(new Set(all).size,all.length);
+    const archived=await patch({archived:true});assert.equal(archived.pinned,true);assert.equal(archived.muted,true);
+    await patch({archived:false});
+    const unpinned=await patch({pinned:false});assert.equal(unpinned.pinned,false);assert.equal(unpinned.muted,true);
+    const unmuted=await patch({muted:false});assert.equal(unmuted.muted,false);
+  }finally{await school.close();}
+});
