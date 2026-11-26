@@ -25,3 +25,17 @@ Base: 9c2fa9ac2495650e13fedbd1a3aad58ebb036af5.
 
 Ruling: preserve existing authorization and accounting semantics; address inability to receive communications by reporting readiness, not bypassing Auth or fabricating users. Payer readiness is current-period, not a delivery receipt or a historical replay mechanism.
 Ruling: use branch-scoped CI as local container cannot resolve github.com. Source checks are not runtime tests. Keep draft until tests and migration deployment sequencing are validated.
+
+## Continuation — second implementation batch
+- [x] Read-only account-origin investigation: 19 active linked guardian accounts, 18 without matching Auth identities; the 18 use reserved test email domains. The 36 unreachable pupil designations are not 36 separate people. Readiness query returns 1 missing payer and 36 unreachable pupils. No activation or historical replay attempted. Real account creation still follows the existing verified invitation path.
+- [x] Added synthetic API regression covering a named payer receiving exactly one invoice notice and one payment notice, nonpayer isolation, and dispatcher replay deduplication.
+- [x] Current payer selected by effective month/revision, with explicit selection when there is no eligible current choice; remount on student link change; Web and Android.
+- [x] Monthly fee configuration and automation share one tab; payer editor is separate. Added structure regression.
+- [x] Search invoices by payer name without bypassing invoice visibility; display payer in both native and web pickers; add negative cross-family API regression.
+- [x] Keep suggested received amount synchronized with editing/removing invoice allocations; preserve any manually entered received amount. Added browser assertions.
+- [x] Retain historical automatic billing start on toggle; reject different past dates. Added migration, local-only fixture and regression; Web and Android UI retain stored value.
+- [x] Capability-gated payer readiness counter and settings link on Web/Android overview.
+- [ ] Runtime verification: GitHub connector reports no combined statuses and no PR-triggered workflow runs, which does not establish whether push-triggered CI passed. Local git ls-remote failed DNS. Nine source-level checks passed; no claim of runtime RED/GREEN or full build.
+- [ ] Remaining: finance email/push acceptance evidence in isolated provider/inbox, full API matrix, family-first selection by stable family identity, cashbook corrections, visual device validation, PDF improvements, final review and squash merge.
+
+Ruling: do not activate test-domain accounts or retrospectively send notifications to them. Name search is not a family identity match; never automatically group or allocate by a display name. Historical billing dates are retained only if identical to the stored date.
