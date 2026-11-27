@@ -14,13 +14,13 @@ const copy={
  ar:{title:"دفتر الخزنة",balance:"رصيد الخزنة الحالي",opening:"رصيد بداية الشهر",closing:"رصيد نهاية الفترة",income:"إيراد إضافي",donation:"تبرع",expense:"مصروف",bank_deposit:"إيداع في البنك",fee:"اشتراك نقدي",void:"تصحيح إيصال",refund:"رد مبلغ",in:"إجمالي المقبوض",out:"المصروفات",deposits:"الإيداعات البنكية",refunds:"المبالغ المرتجعة",corrections:"تصحيحات",month:"الشهر",new:"إضافة حركة",type:"نوع الحركة",date:"التاريخ",amount:"المبلغ",description:"السبب / البيان",save:"حفظ الحركة",review:"مراجعة",edit:"تعديل",saved:"تم تسجيل الحركة",empty:"لا توجد حركات",limited:"يتم عرض آخر ١٠٠٠ حركة.",export:"تحميل CSV"},
  de:{title:"Kassenbuch",balance:"Aktueller Kassenbestand",opening:"Anfangsbestand",closing:"Bestand zum Monatsende",income:"Sonstige Einnahme",donation:"Spende",expense:"Ausgabe",bank_deposit:"Bankeinzahlung",fee:"Barzahlung Schulgebühr",void:"Belegkorrektur",refund:"Erstattung",in:"Einnahmen",out:"Ausgaben",deposits:"Bankeinzahlungen",refunds:"Erstattungen",corrections:"Korrekturen",month:"Monat",new:"Neue Buchung",type:"Art",date:"Datum",amount:"Betrag",description:"Beschreibung / Grund",save:"Buchung speichern",review:"Prüfen",edit:"Bearbeiten",saved:"Buchung gespeichert",empty:"Keine Buchungen",limited:"Die letzten 1.000 Buchungen werden angezeigt.",export:"CSV herunterladen"},
 } as const;
-export function Cashbook({locale}:{locale:Locale}){
-  const [month,setMonth]=useState(""),[refresh,update]=useState(0),t=copy[locale];
+export function Cashbook({locale,initialMonth}:{locale:Locale;initialMonth?:string}){
+  const [month,setMonth]=useState(initialMonth??""),[refresh,update]=useState(0),t=copy[locale];
   const result=useTimetableRead(`/finance/cashbook${month?"?month="+month:""}`,cashbookMonth,refresh);
   return <section className={css.workspace}>
     <h1>{t.title}</h1>
     <TimetableRead locale={locale} result={result}>{data=><>
-      <FinanceDateField className={css.control} locale={locale} label={t.month} type="month" value={month||data.month} max={data.schoolDate.slice(0,7)} onChange={e=>setMonth(e.target.value)}/>
+      <FinanceDateField className={css.control} locale={locale} label={t.month} type="month" value={month||data.month} max={data.schoolDate.slice(0,7)} onChange={e=>{const next=e.target.value;setMonth(next);const params=new URLSearchParams(window.location.search);if(next)params.set("month",next);else params.delete("month");window.history.replaceState(null,"",window.location.pathname+"?"+params);}}/>
       <CashbookContents key={data.month} locale={locale} data={data} refresh={()=>update(n=>n+1)}/>
     </>}</TimetableRead>
   </section>;
