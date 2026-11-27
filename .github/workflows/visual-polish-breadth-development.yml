@@ -1,0 +1,97 @@
+name: Visual polish - isolated scene regression discovery
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-breadth-development.yml"]
+permissions:
+  contents: read
+jobs:
+  scenes:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - slice: P05-family
+            browser: chromium
+          - slice: P06-attendance
+            browser: chromium
+          - slice: P07-academics
+            browser: chromium
+          - slice: P08-communication
+            browser: webkit
+          - slice: P09-calendar
+            browser: chromium
+          - slice: P10-finance
+            browser: webkit
+          - slice: P11-P12-navigation-motion
+            browser: chromium
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Start isolated QA stack
+        shell: bash
+        run: |
+          echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          df -h / /var/lib/docker
+          docker system df
+          pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Run existing scene and business regression assertions
+        shell: bash
+        env:
+          AUDIT_SLICE: ${{ matrix.slice }}
+          AUDIT_BROWSER: ${{ matrix.browser }}
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-visual-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          ui() { pnpm qa:web --project="$AUDIT_BROWSER" --timeout=120000 "$@"; }
+          case "$AUDIT_SLICE" in
+            P05-family)
+              ui ui-family-management.spec.ts ui-guided-workflows.spec.ts ui-guardian-children.spec.ts
+              ;;
+            P06-attendance)
+              pnpm exec playwright test --config qa/ui-attendance-ready.config.ts ui-attendance-ready.spec.ts
+              ui attendance-offline.spec.ts
+              ;;
+            P07-academics)
+              ui ui-academic-empty.spec.ts ui-admin-oversight.spec.ts
+              pnpm qa:academics
+              ;;
+            P08-communication)
+              ui ui-thread-inbox.spec.ts ui-communication-chat.spec.ts
+              pnpm qa:communication
+              ;;
+            P09-calendar)
+              ui ui-calendar-preview.spec.ts ui-date-locale.spec.ts
+              ;;
+            P10-finance)
+              pnpm exec playwright test --config qa/ui-finance-ios.config.ts
+              pnpm qa:finance
+              ;;
+            P11-P12-navigation-motion)
+              ui ui-native-foundation.spec.ts ui-motion-contract.spec.ts ui-navigation-pending.spec.ts ui-bottom-nav.spec.ts
+              node --test qa/performance/*.test.mjs
+              ui ui-performance.spec.ts
+              ;;
+            *) exit 2 ;;
+          esac
