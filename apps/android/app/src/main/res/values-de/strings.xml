@@ -664,4 +664,5 @@
     <string name="receipt_special">Sonderzahlung erfassen</string>
     <string name="finance_cash_bank">Kasse &amp; Bank</string>
     <string name="finance_payment_history">Zahlungsverlauf</string>
+    <string name="stop_next_month_only">Die Pause gilt nur für den nächsten Monat. Der Beitrag für diesen Monat bleibt unverändert.</string>
 </resources>
