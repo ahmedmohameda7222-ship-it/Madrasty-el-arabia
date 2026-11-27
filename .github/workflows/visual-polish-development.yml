@@ -1,0 +1,71 @@
+name: Visual polish - isolated development QA
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths:
+      - "apps/**"
+      - "qa/**"
+      - "packages/**"
+      - ".github/workflows/visual-polish-development.yml"
+permissions:
+  contents: read
+concurrency:
+  group: visual-polish-development-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: node --test qa/screenshot-audit-policy.test.mjs qa/qa-overlay-policy.test.mjs qa/finance-mobile-ux.test.mjs
+      - run: node qa/fixtures/visual-polish-registry.mjs --check
+      - run: pnpm check:types
+      - run: pnpm build:web
+  visual-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Start isolated QA stack
+        shell: bash
+        run: |
+          echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Run existing and added visual checks against disposable fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-visual-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; import {setUpCalendar} from "./qa/fixtures/calendar"; (async()=>{const school=schoolFixtures();try{await school.seed();await setUpCalendar(school,await school.bearer("admin","admin"));}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
+          pnpm exec playwright test --config qa/visual-polish.config.ts --browser ${{ matrix.browser }}
