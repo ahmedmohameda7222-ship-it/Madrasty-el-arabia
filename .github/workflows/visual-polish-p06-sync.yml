@@ -1,0 +1,49 @@
+name: P06 isolated attendance polish and registry synchronization
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-p06-sync.yml"]
+permissions:
+  contents: read
+jobs:
+  regenerate:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Apply exact presentation-only replacements and regenerate registries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          patches=json.loads(r'''{"apps/web/src/features/attendance/DailySheet.tsx":[["    <section className=\"auth-card\">","    <section className=\"auth-card attendance-filters\">"],["    return <section className=\"auth-card auth-form\">","    return <section className=\"auth-card auth-form attendance-sheet\">"],["<ul className=\"group-list\" aria-label={text.tally}>","<ul className=\"group-list attendance-tally\" aria-label={text.tally}>"],["<ul className=\"group-list\">\n          {value.rows.map","<ul className=\"group-list attendance-rows\">\n          {value.rows.map"]],"apps/web/src/features/attendance/CachedAttendance.tsx":[["<section className=\"auth-card auth-form\">","<section className=\"auth-card auth-form attendance-sheet\">"],["<ul className=\"group-list\">","<ul className=\"group-list attendance-rows\">"]],"apps/web/src/app/school.css":[[".timetable-day h2 { font-size: 1.125rem; margin-block-end: 4px; }",".timetable-day h2 { font-size: 1.125rem; margin-block-end: 4px; }\n\n/* Attendance: preserve exact counts, row order and existing controls. */\n.attendance-filters, .attendance-sheet { min-inline-size: 0; overflow-wrap: anywhere; padding: clamp(12px, 4vw, 24px); }\n.attendance-filters .auth-form, .attendance-sheet, .attendance-sheet .auth-form,\n.attendance-filters label, .attendance-sheet label { grid-template-columns: minmax(0, 1fr); min-inline-size: 0; }\n.attendance-filters :is(input, select), .attendance-sheet :is(input, select, textarea) {\n  display: block; inline-size: 100%; max-inline-size: 100%; min-inline-size: 0;\n  min-block-size: 48px; border: 1px solid var(--field-border); border-radius: var(--radius-control);\n  padding: 8px; background: var(--canvas); color: var(--ink);\n}\n.attendance-filters input[type=date]::-webkit-date-and-time-value { text-align: start; }\n.attendance-filters select, .attendance-sheet select { text-overflow: ellipsis; }\n.attendance-sheet .header-actions { justify-content: flex-start; }\n.attendance-sheet .header-actions > * { min-inline-size: 0; max-inline-size: 100%; }\n.attendance-filters :is(.plain-button,.primary-button), .attendance-sheet :is(.plain-button,.primary-button) {\n  max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere;\n}\n.attendance-tally, .attendance-rows { min-inline-size: 0; }\n.attendance-tally .group-row {\n  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;\n  gap: 8px; padding: 10px 12px; min-inline-size: 0;\n}\n.attendance-tally output { font-size: 1.375rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--primary); }\n.attendance-rows > .timetable-day {\n  padding: 12px; min-inline-size: 0; display: grid; grid-template-columns: minmax(0,1fr);\n  gap: 8px; overflow-wrap: anywhere; border-block-end: 0;\n}\n.attendance-rows > .timetable-day > small { color: var(--muted); }\n.attendance-rows > .timetable-day > :is(.notice,.auth-card) { min-inline-size: 0; margin: 0; padding: 12px; }\n"]],"apps/web/public/offline/attendance.css":[[":root{color-scheme:light dark;font:100% system-ui,-apple-system,sans-serif;--card:#fff;--canvas:#f7f9fc;--ink:#172c37;--rule:#dae3ec;--green:#076e61}",":root{color-scheme:light dark;font:100% system-ui,-apple-system,sans-serif;--card:#fff;--canvas:#f5f6f2;--ink:#17221e;--rule:#dce4dd;--green:#155544;--field:#77887e}"],["@media(prefers-color-scheme:dark){:root{--card:#1b2634;--canvas:#0e1623;--ink:#f3f6fb;--rule:#354556;--green:#8bdec0}}","@media(prefers-color-scheme:dark){:root{--card:#1c2925;--canvas:#111a18;--ink:#f2f6f2;--rule:#3a4c43;--green:#a1e0c6;--field:#869b90}}"],["border-radius:16px;padding:16px;display:grid;gap:12px","border-radius:22px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;overflow-wrap:anywhere"],["min-height:44px;border:1px solid var(--rule);border-radius:10px","min-height:48px;border:1px solid var(--field);border-radius:14px"],["label{display:grid;gap:6px}","label{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-width:0}\nmain>*{min-width:0;overflow-wrap:anywhere}\nselect,textarea{width:100%;min-width:0}\nbutton{white-space:normal;overflow-wrap:anywhere}"]]}''')
+          for path,replacements in patches.items():
+              file=Path(path)
+              content=file.read_text()
+              for old,new in replacements:
+                  assert content.count(old)==1, "Unexpected source precondition: "+path
+                  content=content.replace(old,new)
+              file.write_text(content)
+          PY
+          node qa/fixtures/visual-polish-registry.mjs
+          node qa/fixtures/visual-polish-registry.mjs --check
+          git add -- apps/web/src/features/attendance/DailySheet.tsx apps/web/src/features/attendance/CachedAttendance.tsx apps/web/src/app/school.css apps/web/public/offline/attendance.css docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' apps/web/src/features/attendance/DailySheet.tsx apps/web/src/features/attendance/CachedAttendance.tsx apps/web/src/app/school.css apps/web/public/offline/attendance.css docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Polish attendance tally and responsive row controls"
+          git push origin HEAD:refs/heads/visual-polish/premium
