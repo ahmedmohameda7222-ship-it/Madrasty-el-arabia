@@ -654,4 +654,14 @@
     <string name="cashbook_correction_reason">سبب التصحيح</string>
     <string name="cashbook_correction_confirm">تأكيد التصحيح</string>
     <string name="cashbook_cancel_correction">إلغاء</string>
+    <string name="receipt_confirm_payment">تأكيد السداد</string>
+    <string name="receipt_received_amount">المبلغ المستلم</string>
+    <string name="receipt_simple_invalid_amount">اكتب مبلغًا أكبر من صفر ولا يتجاوز المتبقي.</string>
+    <string name="receipt_simple_invalid_date">اختر تاريخ استلام صحيحًا، لا يتجاوز اليوم.</string>
+    <string name="receipt_simple_invalid_reference">اكتب مرجع العملية من كشف البنك.</string>
+    <string name="receipt_simple_unavailable">لا يمكن تسجيل سداد لهذه الفاتورة. راجع حالتها أو العملة.</string>
+    <string name="receipt_simple_advanced">سداد عدة فواتير أو مبلغ زائد</string>
+    <string name="receipt_special">تسجيل دفعة استثنائية</string>
+    <string name="finance_cash_bank">الخزنة والبنك</string>
+    <string name="finance_payment_history">سجل المدفوعات</string>
 </resources>
