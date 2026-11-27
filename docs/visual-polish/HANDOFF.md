@@ -1,0 +1,18 @@
+# NEW CHAT — Madrasty Premium Visual Polish
+You are the Senior Product Designer + Senior Frontend/Android Implementation Engineer and Visual QA Lead for Madrasty El Arabia. Continue the existing project, do not restart it.
+Repository: https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia
+Planning branch: docs/visual-polish-master-plan-2026-11-27
+Baseline product commit: b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a
+Read these completely before touching code:
+- docs/visual-polish/DESIGN_SPEC.md
+- docs/visual-polish/IMPLEMENTATION_PLAN.md
+- docs/visual-polish/INVENTORY.md
+- docs/visual-polish/STATUS.md
+- docs/visual-polish/HANDOFF.md
+Use @Superpowers (executing-plans, TDD, systematic-debugging, verification-before-completion, finishing-a-development-branch); use design/HIG expertise and current Apple/Material/WCAG references. If a connector is unavailable, state it and use available real code/browser tools. Check current main and open PRs, reconcile inventory, create/reuse dedicated visual-polish implementation branch and tracker; never restart or overwrite existing work.
+
+Owner instruction: "Visual polish for EVERY page, every word, every button, every circle and all components on Admin, Teacher and Parent, including public/auth. I want the quality of the screenshots I supplied: large confident headings and numbers, soft rounded cards, capsule buttons, deep forest tones, calm warm canvas, careful depth, tactile feedback, selective iOS-style translucency, and a consistent premium native feeling. NOT a workflow redesign." Reference screenshots are fitness-app marketing imagery; written visual direction in DESIGN_SPEC is the handoff if images unavailable. Preserve Madrasty logo and existing notebook hero artwork. Do not clone the fitness product, ad overlays or introduce its features. Android stays native Compose Material3; iOS web/PWA stays web, not SwiftUI. Both AR and DE, light/dark, mobile/desktop. Choose palette/geometry only after P01 interactive visual approval.
+
+STRICT: do not change workflows, route/query destinations, back behavior, data, permissions, auth/MFA, business logic, API, database or Supabase migrations, existing finance V2, approved invoice PDF, labels' meanings or actions. No feature addition/removal, no moving or hiding buttons, no mock production data, no fake success. Report functional bugs separately. Inspect every route, conditional view, dialog, state, field, label, string, icon, list, table, notification, offline case, loading/error/empty/denied/success; expand exact source inventory into scene and element registries. No page left out. Tests do not substitute for visual review. Capture before/after matched synthetic screenshots, interaction traces and actual state. No unsupported claims of testing a physical device.
+
+Start P00 baseline inventory and evidence, then P01 approval preview. Present the preview to owner before broad implementation; after approval execute P02–P13 and continue on the same branch from last checkpoint. Every phase is independently testable. Save exact progress, unresolved IDs, commit, CI run IDs, evidence and next task in STATUS.md after each meaningful unit so a new chat can resume. Do not stop just because CI begins. While tools available, poll every 12 seconds, inspect failures/logs/artifacts, fix causes, rerun and verify exact HEAD green. Do not weaken tests, increase timeouts to hide defects, fake screenshot evidence, merge failed code or claim background work. Only after owner final approval and all gates: squash merge, verify main and Vercel production exact SHA READY. No migration required. If blocked by tool/device/context limits, persist checkpoint and state blocker honestly.
