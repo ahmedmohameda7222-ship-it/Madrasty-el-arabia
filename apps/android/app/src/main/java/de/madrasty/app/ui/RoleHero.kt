@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,12 +39,12 @@ fun AdminRoleHero(title:String,detail:String,action:String,highlights:List<Strin
 private fun RoleHeroContent(persona: Persona, title: String, detail: String, action: String,
     highlights:List<String>, emphasizeDetail:Boolean,onAction: () -> Unit) {
     val (background, artwork) = when (persona) {
-        Persona.Admin -> Color(0xFF2355A0) to R.drawable.notebook_admin
-        Persona.Teacher -> Color(0xFF096656) to R.drawable.notebook_teacher
-        Persona.Guardian -> Color(0xFFA84647) to R.drawable.notebook_guardian
+        Persona.Admin -> Color(0xFF173F39) to R.drawable.notebook_admin
+        Persona.Teacher -> Color(0xFF195345) to R.drawable.notebook_teacher
+        Persona.Guardian -> Color(0xFF733F46) to R.drawable.notebook_guardian
     }
     Row(
-        Modifier.fillMaxWidth().background(background, RoundedCornerShape(24.dp)).padding(16.dp),
+        Modifier.fillMaxWidth().background(background, RoundedCornerShape(30.dp)).padding(18.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -54,9 +55,10 @@ private fun RoleHeroContent(persona: Persona, title: String, detail: String, act
                 highlights.forEach{Text(it,style=MaterialTheme.typography.bodySmall)}
                 Button(
                     onClick = onAction,
+                    modifier = Modifier.heightIn(min = 48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (persona == Persona.Teacher) Color(0xFFD6F668) else Color.White,
-                        contentColor = Color(0xFF172C37),
+                        containerColor = if (persona == Persona.Teacher) Color(0xFFD6EF8A) else Color.White,
+                        contentColor = Color(0xFF20311F),
                     ),
                 ) { Text(action) }
             }

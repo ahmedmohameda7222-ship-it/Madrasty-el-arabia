@@ -113,7 +113,7 @@ fun SchoolShell(
                 )
             },
             bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = active == tab,
