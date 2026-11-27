@@ -121,3 +121,5 @@ Reconcile P00 matrix and fixture follow-ups. Verify remaining P03 variants. Resu
 ## Existing scene regression discovery
 
 - Added a one-shot, read-only development workflow `.github/workflows/visual-polish-breadth-development.yml` with separate disposable fixture stacks for P05 family, P06 attendance/offline, P07 academics, P08 communication, P09 calendar, P10 finance and P11/P12 navigation/motion. It runs the existing test files and domain assertions without modifying them; artifacts stay within the runner. This is supplementary discovery on the current candidate, not final release CI or coverage signoff. No deployment, production access, or PR creation. Remove the branch-only development workflow before final release. Results pending.
+
+- Added `COVERAGE.md` mapping each discovery scene ID to narrow observed runtime evidence or an explicit OPEN state. No scene or element was marked audited; the registry and visual review gates remain unchanged.
