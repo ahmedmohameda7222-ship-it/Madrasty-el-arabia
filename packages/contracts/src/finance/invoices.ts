@@ -51,7 +51,7 @@ export const invoiceBatch=z.object({
 });
 export const invoiceState=z.enum(["unpaid","partial","paid","cancelled"]);
 export const invoiceQuery=pageQuerySchema.extend({
-  period:billingMonth.optional(),studentId:id.optional(),state:invoiceState.optional(),q:z.string().trim().max(100).optional(),
+  period:billingMonth.optional(),studentId:id.optional(),payerInvoice:id.optional(),state:z.union([invoiceState,z.literal("open")]).optional(),q:z.string().trim().max(100).optional(),
 });
 export const invoiceSummary=z.object({
   id,invoiceNumber:z.string(),studentId:id,studentNumber:z.string(),studentName:z.string(),payerName:z.string(),
@@ -71,4 +71,5 @@ export const autoBillingSettings=z.object({enabled:z.boolean(),startMonth:billin
 export const autoBillingUpdate=autoBillingSettings.pick({enabled:true,startMonth:true,revision:true}).strict();
 
 export const automaticBillingInput=z.object({enabled:z.boolean(),startMonth:billingMonth,revision:z.int().positive()}).strict();
-export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative()});
+export const financePayerIssue=z.object({studentId:id,studentName:z.string(),studentNumber:z.string(),reason:z.enum(["payer_missing","payer_unreachable"])});
+export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative(),payerIssues:financePayerIssue.array()});

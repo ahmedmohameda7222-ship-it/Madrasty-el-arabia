@@ -495,7 +495,7 @@
     <string name="receipt_choose_invoice">اختيار الفاتورة</string>
     <string name="receipt_without_invoice">من غير فاتورة</string>
     <string name="receipt_suggested_invoice">الفاتورة المقترحة</string>
-    <string name="receipt_invoice_search">اسم الطالب أو رقمه أو رقم الفاتورة</string>
+    <string name="receipt_invoice_search">اسم ولي الأمر أو الطالب أو رقم الفاتورة</string>
     <string name="receipt_total">المبلغ الأصلي</string>
     <string name="receipt_active">المبلغ المثبت</string>
     <string name="receipt_remainder">المبلغ المتاح للمطابقة</string>
@@ -613,6 +613,10 @@
     <string name="finance_auto_start">شهر البداية</string>
     <string name="finance_auto_enabled">إصدار تلقائي</string>
     <string name="finance_auto_missing">طلاب بدون مسؤول سداد: %1$d</string>
+    <string name="finance_payer_issues">طلاب يحتاجون متابعة: %1$d</string>
+    <string name="finance_payer_unreachable">الحساب غير جاهز للإشعارات</string>
+    <string name="finance_payer_missing">مسؤول سداد غير جاهز</string>
+    <string name="finance_payer_issue_hint">راجع مسؤول السداد وتفعيل حساب ولي الأمر قبل الاعتماد على الإشعارات.</string>
     <string name="finance_filters">تصفية</string>
     <string name="finance_more_details">تفاصيل الحساب</string>
     <string name="finance_new_movement">إضافة حركة</string>
@@ -643,4 +647,11 @@
     <string name="chat_contact_phone">هاتف العمل</string>
     <string name="chat_actions">خيارات المحادثة</string>
     <string name="chat_voice_action">تسجيل رسالة صوتية</string>
+    <string name="receipt_same_payer">فواتير نفس مسؤول السداد</string>
+    <string name="cashbook_correction">تصحيح حركة</string>
+    <string name="cashbook_correct">تصحيح الحركة</string>
+    <string name="cashbook_correction_hint">سيتم تسجيل حركة عكسية بتاريخ اليوم مع الاحتفاظ بالحركة الأصلية.</string>
+    <string name="cashbook_correction_reason">سبب التصحيح</string>
+    <string name="cashbook_correction_confirm">تأكيد التصحيح</string>
+    <string name="cashbook_cancel_correction">إلغاء</string>
 </resources>

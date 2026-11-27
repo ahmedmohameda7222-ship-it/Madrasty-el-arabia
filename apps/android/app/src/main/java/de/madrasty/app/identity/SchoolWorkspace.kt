@@ -386,7 +386,8 @@ internal fun SchoolWorkspace(model: IdentityViewModel,session: SchoolSession,sta
             {state.open(WorkspacePage.Receipts(id=it))},state::back,{state.open(WorkspacePage.StopReviews())})
         is WorkspacePage.FinanceReport -> FinanceReports(model,page.student,rights.receiptViewer,
             {state.open(WorkspacePage.Invoices(id=it))},{state.open(WorkspacePage.Receipts(id=it))},
-            {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back,{student,period->state.open(WorkspacePage.Invoices(student=student,period=period))})
+            {state.open(WorkspacePage.Receipts(state="needs_matching"))},state::back,{student,period->state.open(WorkspacePage.Invoices(student=student,period=period))},
+            if(rights.billing)({state.open(WorkspacePage.FeeSettings())})else null)
         is WorkspacePage.Stops -> StopQueue(model,page.id,page.student,rights.stopManager,
             {state.open(WorkspacePage.Stops(id=it))},state::back)
         is WorkspacePage.StopReviews -> StopReview(model,page.id,{state.open(WorkspacePage.StopReviews(it))},

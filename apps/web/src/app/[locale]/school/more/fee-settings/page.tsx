@@ -3,7 +3,6 @@ import Link from "next/link";
 import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
 import type {Locale} from "@madrasty/contracts";
-import {AutomaticBilling} from "@/features/finance/AutomaticBilling";
 import css from "@/features/finance/FinanceWorkspace.module.css";
 import {FeeSettings} from "@/features/finance/FeeSettings";
 import {mayUse} from "@/server/access/capabilities";
@@ -19,6 +18,6 @@ export default async function FeeSettingsPage({params,searchParams}:{
   return <div className={`${css.workspace} ${css.narrowForm} auth-form`}>
     <h1>{locale==="ar"?"إعدادات الحسابات":"Buchhaltung – Einstellungen"}</h1>
     {bank&&<Link className="plain-button" href={`/${locale}/school/more/bank`}>{locale==="ar"?"حساب التحصيل":"Zahlungskonto"}</Link>}
-    {billing&&<><AutomaticBilling locale={locale}/><FeeSettings locale={locale} student={z.uuid().safeParse(query.student).data}/></>}
+    {billing&&<FeeSettings key={query.student??"settings"} locale={locale} student={z.uuid().safeParse(query.student).data}/>}
   </div>;
 }

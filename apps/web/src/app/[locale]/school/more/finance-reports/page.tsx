@@ -12,13 +12,13 @@ export default async function FinanceReportsPage({params,searchParams}:{
   const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   const staff=session.activePersona==="admin";
-  let canPost=false;
+  let canPost=false,canIssue=false;
   if(session.activePersona!=="guardian"){
-    const [read,post]=await Promise.all([mayUse(session,"finance.read"),mayUse(session,"finance.post")]);
+    const [read,post,issue]=await Promise.all([mayUse(session,"finance.read"),mayUse(session,"finance.post"),mayUse(session,"finance.issue")]);
     if(!read&&!post)notFound();
-    canPost=post;
+    canPost=post;canIssue=issue;
   }
-  return <FinanceReports locale={locale} staff={staff} canPost={canPost} initial={{
+  return <FinanceReports locale={locale} staff={staff} canPost={canPost} canIssue={canIssue} initial={{
     studentId:z.uuid().safeParse(query.student).data,period:billingMonth.safeParse(query.period).data??(staff?new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit"}).format(new Date()):undefined),
     status:financeReportStatus.safeParse(query.status).data,asOf:schoolDateSchema.safeParse(query.asOf).data,
   }}/>;

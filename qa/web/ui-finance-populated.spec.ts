@@ -189,6 +189,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             const amount=(visibleInvoice.balanceMinor/100).toFixed(2).replace(".",",");
             await expect(page.getByText(new RegExp(amount+"\\s*€")).first()).toBeVisible();
           }
+          if(s.persona==="admin"){
+            const paymentLink=page.locator(`a[href*="record-payment?invoice=${record.invoice.id}"]`);
+            await expect(paymentLink).toHaveCount(visibleInvoice.balanceMinor>0?1:0);
+          }
           await capture(page,prefix+"invoice-detail");
           // Follow the invoice's persona-scoped receipt link, not the staff ledger ID.
           const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
@@ -203,6 +207,13 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           await expect(receiptPdfLink).toHaveAttribute("href","/api/v1/finance/receipts/"+visibleReceiptId+"/pdf?locale="+s.locale);
           await capture(page,prefix+"receipt-detail");
           if(s.persona==="admin"){
+            if(width===390){
+              const payerProfile=(await fixtureApi(school,"/finance/children/"+record.invoice.studentId+"/payer",actorOptions)).payload.data;
+              const active=payerProfile.designations.filter((d:{effectiveFromMonth:string})=>d.effectiveFromMonth<=clock.month)
+                .sort((a:{effectiveFromMonth:string},b:{effectiveFromMonth:string})=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth))[0];
+              await go("fee-settings?student="+record.invoice.studentId);
+              await expect(page.locator(".school-content select").filter({has:page.locator(`option[value="${active.guardianId}"]`)})).toHaveValue(active.guardianId);
+            }
             await go("receipts");
             await expect(page.locator('a[href*="receipt='+record.receiptId+'"]')).toBeVisible();
             await capture(page,prefix+"receipts");
@@ -219,6 +230,30 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             if(width===320||width===390){
               const unpaid=records.find(x=>x.label==="C")!.invoice;
               await go("record-payment?invoice="+unpaid.id);
+              // A manually entered cash amount must not be overwritten when an invoice is selected.
+              const received=page.locator(".school-content input[inputmode=decimal]").first();
+              await received.fill("100.00");
+              await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
+              const partial=records.find(x=>x.label==="B")!.invoice;
+              await expect(page.locator(".school-content li").filter({hasText:partial.invoiceNumber})).toBeVisible();
+              const extra=records.find(x=>x.label==="D")!.invoice;
+              const option=page.locator(".school-content li").filter({hasText:extra.invoiceNumber});
+              await option.getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
+              await expect(received).toHaveValue("100.00");
+              const remove=page.getByRole("button",{name:s.locale==="ar"?"حذف":"Entfernen",exact:true});
+              await remove.last().click();
+              await expect(received).toHaveValue("100.00");
+              // In suggestion mode, removal must reduce the total rather than create an unintended credit.
+              await go("record-payment?invoice="+unpaid.id);
+              // go() closes the old Page; recreate every page-bound locator after navigation.
+              const suggested=page.locator(".school-content input[inputmode=decimal]").first();
+              const initialAmount=(unpaid.balanceMinor/100).toFixed(2);
+              await expect(suggested).toHaveValue(initialAmount);
+              await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
+              await page.locator(".school-content li").filter({hasText:extra.invoiceNumber}).getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
+              await expect(suggested).toHaveValue(((unpaid.balanceMinor+extra.balanceMinor)/100).toFixed(2));
+              await page.getByRole("button",{name:s.locale==="ar"?"حذف":"Entfernen",exact:true}).last().click();
+              await expect(suggested).toHaveValue(initialAmount);
               const checkbox=page.locator(".school-content input[type=checkbox]").first();
               await checkbox.check();
               const review=page.getByRole("button",{name:s.locale==="ar"?"مراجعة":"Prüfen",exact:true});

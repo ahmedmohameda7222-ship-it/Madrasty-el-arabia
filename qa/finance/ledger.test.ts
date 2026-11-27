@@ -39,8 +39,18 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
 
     const send = async (path: string, name: string, body: unknown, method: "POST" | "PUT" = "POST", status = 201) =>
       (await fixtureApi(school, path, { method, token: finance, persona: "admin", key: `${school.run}.${name}`, body, status })).payload.data;
-    const automatic=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    const historicalStart=await school.seedHistoricalBillingStart();
+    const historicalSettings=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    assert.equal(historicalSettings.startMonth,historicalStart);
+    const automatic=await send("/finance/automatic-billing","keep-historical-start",{enabled:true,startMonth:historicalStart,revision:historicalSettings.revision},"PUT",200);
+    assert.equal(automatic.enabled,true);
+    assert.equal(automatic.startMonth,historicalStart,"enabling billing must not silently change its historical start");
     assert.equal(typeof automatic.enabled,"boolean");
+    assert.ok(Array.isArray(automatic.payerIssues),"finance must surface payer activation and notification eligibility issues");
+    for(const entry of automatic.payerIssues){
+      assert.equal(typeof entry.studentId,"string");
+      assert.ok(["payer_missing","payer_unreachable"].includes(entry.reason));
+    }
     await fixtureApi(school,"/finance/automatic-billing",{token:payer,status:403});
     const updated=await send("/finance/automatic-billing","automatic-settings",{enabled:false,startMonth:clock.nextMonth,revision:automatic.revision},"PUT",200);
     assert.equal(updated.enabled,false);
@@ -62,6 +72,8 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       assert.ok(guardian?.id);
       await send(path, `payer-${child}`, { guardianId: guardian.id, effectiveFromMonth: clock.month, revision: 0 }, "PUT", 200);
     }
+    const healthAfter=(await fixtureApi(school,"/finance/automatic-billing",{token:finance})).payload.data;
+    assert.ok(!healthAfter.payerIssues.some((entry:{studentId:string})=>[ids.ahmed,ids.omar].includes(entry.studentId)),"confirmed synthetic payer must not be flagged");
     const selection = { kind: "monthly", period: clock.month, classId: apple.id, studentIds: [ids.ahmed, ids.omar] };
     const prepared = invoicePreview.parse(await send("/finance/invoice-previews", "monthly-preview", selection));
     const issue = {
@@ -100,6 +112,34 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(paid.balanceMinor, 0);
     assert.equal(sibling.state, "unpaid");
     assert.equal(sibling.balanceMinor, 3200);
+    // Exercise the real projector against the disposable school and the actual
+    // named payer's session. A posting alone does not prove notification delivery.
+    assert.ok(process.env.SCHOOL_WORKER_SECRET);
+    assert.equal(paid.receiptIds.length,1);
+    const financeNotices=async(token:string,template:string,targetId:string)=>{
+      const rows=(await fixtureApi(school,"/notifications?limit=100",{token,persona:"guardian"})).payload.data;
+      const matches:string[]=[];
+      for(const row of rows.filter((n:{template:string})=>n.template===template)){
+        const detail=(await fixtureApi(school,`/notifications/${row.id}`,{token,persona:"guardian"})).payload.data;
+        if(detail.targets?.some((t:{id:string})=>t.id===targetId))matches.push(row.id);
+      }
+      return matches;
+    };
+    for(let i=0;i<24;i++){
+      if((await financeNotices(payer,"invoice_issued",ahmed.id)).length&&
+         (await financeNotices(payer,"payment_recorded",paid.receiptIds[0])).length)break;
+      await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
+    }
+    const invoiceNotices=await financeNotices(payer,"invoice_issued",ahmed.id);
+    const paymentNotices=await financeNotices(payer,"payment_recorded",paid.receiptIds[0]);
+    assert.equal(invoiceNotices.length,1,"named payer receives exactly one invoice notice");
+    assert.equal(paymentNotices.length,1,"named payer receives exactly one receipt notice");
+    assert.equal((await financeNotices(nonpayer,"invoice_issued",ahmed.id)).length,0);
+    assert.equal((await financeNotices(nonpayer,"payment_recorded",paid.receiptIds[0])).length,0);
+    await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
+    assert.deepEqual(await financeNotices(payer,"invoice_issued",ahmed.id),invoiceNotices);
+    assert.deepEqual(await financeNotices(payer,"payment_recorded",paid.receiptIds[0]),paymentNotices);
+
     const payment = receiptMutation.parse(await send("/finance/receipts", "unmatched-receipt", {
       externalReceiptRef: `${school.run}-BANK-02`, method: "bank", receivedDate: clock.day, currency: "EUR",
       amountMinor: 4000, invoiceId: omar.id, verified: true,
@@ -113,6 +153,19 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       revision: payment.revision, lines: [{ invoiceId: omar.id, amountMinor: 1600, invoiceRevision: sibling.revision }],
     }));
     assert.equal(allocated.remainderMinor, 2400);
+    const open=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&limit=100`,{token:finance})).payload.data;
+    assert.ok(open.some((row:{id:string;state:string})=>row.id===omar.id&&row.state==="partial"));
+    assert.ok(!open.some((row:{id:string})=>row.id===ahmed.id));
+    assert.ok(open.every((row:{state:string})=>row.state==="unpaid"||row.state==="partial"));
+    const payerSearch=encodeURIComponent(sibling.payerName);
+    const byPayer=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&q=${payerSearch}&limit=100`,{token:finance})).payload.data;
+    assert.ok(byPayer.some((row:{id:string})=>row.id===omar.id),"staff can find open invoices using the named payer");
+    const foreignSearch=(await fixtureApi(school,`/finance/invoices?period=${clock.month}&state=open&q=${payerSearch}&limit=100`,{token:nonpayer,persona:"guardian"})).payload.data;
+    assert.ok(!foreignSearch.some((row:{id:string})=>row.id===omar.id),"payer search must not bypass invoice visibility");
+    const related=(await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${ahmed.id}&limit=100`,{token:finance,persona:"admin"})).payload.data;
+    assert.ok(related.some((row:{id:string})=>row.id===omar.id),"same named payer's sibling invoice must be available");
+    assert.ok(!related.some((row:{id:string})=>row.id===ahmed.id),"settled invoice is not payable");
+    await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${ahmed.id}`,{token:nonpayer,persona:"guardian",status:403});
     const partial = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(partial.state, "partial");
     assert.equal(partial.balanceMinor, 1600);
@@ -132,7 +185,8 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const donation={date:clock.day,kind:"donation",amountMinor:5000,description:"Synthetic donation"};
     const movement=await send("/finance/cashbook","donation",donation);
     assert.deepEqual(await send("/finance/cashbook","donation",donation),movement);
-    await send("/finance/cashbook","expense",{date:clock.day,kind:"expense",amountMinor:1000,description:"Synthetic stationery"});
+    const expenseInput={date:clock.day,kind:"expense",amountMinor:1000,description:"Synthetic stationery"};
+    const expense=await send("/finance/cashbook","expense",expenseInput);
     await send("/finance/cashbook","bank-deposit",{date:clock.day,kind:"bank_deposit",amountMinor:1500,description:"Synthetic deposit"});
     const combined=receiptMutation.parse(await send("/finance/receipts","combined-cash",{externalReceiptRef:`${school.run}-CASH-01`,method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:100,verified:true,allocations:[{invoiceId:omar.id,amountMinor:100,invoiceRevision:restored.revision}]}));
     assert.equal(combined.state,"allocated");
@@ -143,6 +197,27 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(cashAfter.expenseMinor-cashBefore.expenseMinor,1000);
     assert.equal(cashAfter.depositsMinor-cashBefore.depositsMinor,1500);
     await fixtureApi(school,"/finance/cashbook",{token:payer,status:403});
+    const correctionInput={movementId:expense.id,reason:"Synthetic expense correction"};
+    await fixtureApi(school,"/finance/cashbook/reversals",{method:"POST",token:payer,persona:"guardian",key:school.run+".forbidden-correction",body:correctionInput,status:403});
+    const correction=await send("/finance/cashbook/reversals","correct-expense",correctionInput);
+    assert.deepEqual(await send("/finance/cashbook/reversals","correct-expense",correctionInput),correction);
+    await fixtureApi(school,"/finance/cashbook/reversals",{method:"POST",token:finance,persona:"admin",key:school.run+".duplicate-correction",body:correctionInput,status:409});
+    const correctedBook=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    assert.equal(correctedBook.balanceMinor,cashAfter.balanceMinor+1000);
+    assert.equal(correctedBook.correctionsMinor,cashAfter.correctionsMinor-1000);
+    const original=correctedBook.entries.find((row:{id:string})=>row.id===expense.id);
+    assert.ok(original,"the original cash movement must remain in the journal");
+    assert.equal(original.canReverse,false);
+    const reversedMovement=correctedBook.entries.find((row:{id:string})=>row.id===correction.id);
+    assert.equal(reversedMovement.reversalOf,expense.id);
+    assert.equal(reversedMovement.signedMinor,1000);
+    const cashExport=await fixtureApi(school,`/finance/cashbook/export?month=${clock.month}`,{token:finance,persona:"admin"});
+    assert.match(cashExport.response.headers.get("content-type")??"",/text\/csv/);
+    const csv=await cashExport.response.text();
+    assert.ok(csv.includes(correction.id)&&csv.includes(expense.id),"export must preserve correction and original identifiers");
+    await fixtureApi(school,`/finance/cashbook/export?month=${clock.month}`,{token:payer,persona:"guardian",status:403});
+    // Restore the same net cash balance for the subsequent family payment assertions.
+    await send("/finance/cashbook","replacement-expense",{...expenseInput,description:"Synthetic replacement expense"});
 
     const stop = enrollmentStop.parse((await fixtureApi(school, "/enrollment-stops", {
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
@@ -192,6 +267,9 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       assert.ok(typeof dispatch.payload.data.automaticBilling.issued==="number");
       const first=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
       assert.equal(first.filter((row:{kind:string})=>row.kind==="monthly").length,1);
+      const samePayer=(await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${omar.id}&limit=100`,{token:finance,persona:"admin"})).payload.data;
+      assert.ok(samePayer.some((row:{id:string})=>row.id===omar.id));
+      assert.ok(!samePayer.some((row:{id:string})=>row.id===first[0].id),"unrelated payer must not appear in the scoped selection");
       await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
       const again=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
       assert.deepEqual(again.map((row:{id:string})=>row.id),first.map((row:{id:string})=>row.id));

@@ -2,6 +2,7 @@
 
 import css from "./FinanceWorkspace.module.css";
 import {FinanceDateField,financeDate} from "./FinanceDateField";
+import {AutomaticBilling} from "./AutomaticBilling";
 
 import {useState,type FormEvent} from "react";
 import {
@@ -49,6 +50,8 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
       <button className="plain-button" type="button" aria-label={text.payer} aria-pressed={tab==="payer"} onClick={()=>setTab("payer")}>{locale==="ar"?"مسؤول السداد":"Zahler"}</button>
     </div>
     {tab==="tariffs"?<>
+      <AutomaticBilling locale={locale}/>
+      <h2>{locale==="ar"?"الاشتراك الشهري":"Monatsbeitrag"}</h2>
       {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
       {preview&&options.currency?<div className="notice auth-form">
         <p>{text.effective} · <bdi>{financeDate(preview.effectiveFromMonth,locale,"month")}</bdi></p>
@@ -86,7 +89,8 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
 }
 function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnType<typeof payerProfile.parse>;month:string;refresh:()=>void}){
   const text=billingCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
-  const [guardian,setGuardian]=useState(profile.choices[0]?.id??""),[effective,setEffective]=useState(month);
+  const current=[...profile.designations].filter(item=>item.effectiveFromMonth<=month).sort((a,b)=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth)||b.revision-a.revision)[0];
+  const [guardian,setGuardian]=useState(current&&profile.choices.some(item=>item.id===current.guardianId)?current.guardianId:""),[effective,setEffective]=useState(month);
   const [review,setReview]=useState(false),[pending,setPending]=useState(false),[error,setError]=useState("");
   const chosen=profile.choices.find((item)=>item.id===guardian);
   const input=payerEdit.safeParse({guardianId:guardian,effectiveFromMonth:effective,revision:profile.revision});
@@ -104,6 +108,7 @@ function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnT
     {!profile.choices.length?<p>{text.emptyPayer}</p>:<form className="auth-form" onSubmit={(event)=>void save(event)}>
       {review?<p className="notice"><bdi>{chosen?.displayName}</bdi> · <bdi>{effective}</bdi></p>:<>
         <label>{text.guardian}<select value={guardian} onChange={(event)=>setGuardian(event.target.value)}>
+          <option value="" disabled>{locale==="ar"?"اختر مسؤول السداد":"Zahler auswählen"}</option>
           {profile.choices.map((item)=><option key={item.id} value={item.id}>{item.displayName}{!item.activeAccount?" · "+text.activeLater:""}</option>)}
         </select></label>
         <FinanceDateField locale={locale} label={text.effective} type="month" min={month} value={effective} onChange={(event)=>setEffective(event.target.value)} required/>

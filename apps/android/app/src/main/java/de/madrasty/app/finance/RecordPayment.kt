@@ -54,10 +54,19 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     var cashReference by remember { mutableStateOf("CASH-"+UUID.randomUUID()) }
     var rows by remember(initial) { mutableStateOf(initial?.takeIf{it.getLong("balanceMinor")>0L}?.let{listOf(it to financePlainAmount(it.getLong("balanceMinor"),currency))}?:emptyList()) }
     var amount by remember(initial) { mutableStateOf(initial?.takeIf{it.getLong("balanceMinor")>0L}?.let{financePlainAmount(it.getLong("balanceMinor"),currency)}?:"") }
+    var amountEdited by remember(initial) { mutableStateOf(false) }
     var verified by remember { mutableStateOf(false) }
     var choose by remember { mutableStateOf(false) }
+    var payerAnchor by remember { mutableStateOf<String?>(null) }
     var review by remember { mutableStateOf<JSONObject?>(null) }
     var result by remember { mutableStateOf<JSONObject?>(null) }
+    fun updateRows(next: List<Pair<JSONObject,String>>) {
+        rows=next
+        if(!amountEdited){
+            val values=next.map { financeMinor(it.second,currency,it.first.getLong("balanceMinor")) }
+            amount=if(next.isNotEmpty()&&values.all{it!=null}) financePlainAmount(values.filterNotNull().sum(),currency) else ""
+        }
+    }
     val prepared=review
     result?.let { receipt ->
         Text(isolate(receipt.getString("receiptNumber"))+" · "+stringResource(receiptStateLabel(receipt.getString("state"))))
@@ -70,11 +79,11 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         TextButton(onClick={review=null}) {Text(stringResource(R.string.fee_edit))}
         Submit(true,R.string.receipt_confirm,success=null){
             result=model.schoolCommand(attempts,"/finance/receipts","POST",prepared)
-            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";verified=false;rows=emptyList()
+            review=null;reference="";cashReference="CASH-"+UUID.randomUUID();amount="";amountEdited=false;verified=false;rows=emptyList();payerAnchor=null
         }
         return
     }
-    Field(R.string.receipt_total,amount){amount=it.take(24)}
+    Field(R.string.receipt_total,amount){amountEdited=true;amount=it.take(24)}
     if(setup.getBoolean("cashEnabled")){
         FlowRow {
             FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
@@ -85,15 +94,15 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
     Field(R.string.receipt_date,date){date=financeDigits(it).take(10)}
     for((index,row) in rows.withIndex()){
         Text(receiptInvoiceLabel(row.first))
-        Field(R.string.receipt_allocation_amount,row.second){value->rows=rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r}}
-        TextButton(onClick={rows=rows.filterIndexed{i,_->i!=index}}){Text(stringResource(R.string.fee_remove_line))}
+        Field(R.string.receipt_allocation_amount,row.second){value->updateRows(rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r})}
+        TextButton(onClick={updateRows(rows.filterIndexed{i,_->i!=index})}){Text(stringResource(R.string.fee_remove_line))}
     }
-    TextButton(onClick={choose=!choose}){Text(stringResource(R.string.receipt_optional_invoice))}
-    if(choose)ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet()){ invoice->
-        rows=rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency))
-        amount=financePlainAmount(rows.sumOf{financeMinor(it.second,currency,it.first.getLong("balanceMinor"))?:0L},currency)
+    TextButton(onClick={choose=payerAnchor!=null||!choose;payerAnchor=null}){Text(stringResource(R.string.receipt_optional_invoice))}
+    if(rows.isNotEmpty())TextButton(onClick={val id=rows.first().first.getString("id");choose=!choose||payerAnchor!=id;payerAnchor=id}){Text(stringResource(R.string.receipt_same_payer))}
+    if(choose)androidx.compose.runtime.key(payerAnchor){ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet(),payerAnchor = payerAnchor){ invoice->
+        updateRows(rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency)))
         choose=false
-    }
+    }}
     FilterChip(verified,{verified=!verified},label={Text(stringResource(R.string.receipt_confirmed_external))})
     val allocations=rows.map{(invoice,value)->financeMinor(value,currency,invoice.getLong("balanceMinor"))}
     val minor=financeMinor(amount,currency,100_000_000_000_000)
@@ -108,23 +117,21 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
 
 @Composable
 internal fun ReceiptInvoicePicker(
-    model: IdentityViewModel, currency: String, excluded: Set<String> = emptySet(), pick: (JSONObject) -> Unit,
+    model: IdentityViewModel, currency: String, excluded: Set<String> = emptySet(), payerAnchor: String? = null, pick: (JSONObject) -> Unit,
 ) {
     var month by remember { mutableStateOf("") }
     var value by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
-    var partial by remember { mutableStateOf(false) }
     Field(R.string.receipt_invoice_search, value) { value = it.take(100) }
     Field(R.string.fee_month, month) { month = financeDigits(it).take(7) }
     Button(onClick = { search = value.trim() }) { Text(stringResource(R.string.fee_search)) }
-    FilterChip(!partial, { partial = false }, label = { Text(stringResource(R.string.fee_unpaid)) })
-    FilterChip(partial, { partial = true }, label = { Text(stringResource(R.string.fee_partial)) })
     val byMonth = if (validBillingMonth(month)) "&period=$month" else ""
-    val state = if (partial) "partial" else "unpaid"
-    academicPages(model, "/finance/invoices?limit=20&q=${Uri.encode(search)}&state=$state$byMonth", model.attendanceNetworkRevision) { rows ->
+    val byPayer = payerAnchor?.let { "&payerInvoice=${Uri.encode(it)}" } ?: ""
+    academicPages(model, "/finance/invoices?limit=20&q=${Uri.encode(search)}&state=open$byMonth$byPayer", model.attendanceNetworkRevision) { rows ->
         for (row in rows.filter { it.getString("currency") == currency && it.getLong("balanceMinor") > 0L && it.getString("id") !in excluded }) {
             HorizontalDivider()
             Text(receiptInvoiceLabel(row))
+            Text(isolate(row.getString("payerName")))
             Text(financeMoney(row.getLong("balanceMinor"), currency))
             TextButton(onClick = { pick(row) }) { Text(stringResource(R.string.receipt_choose_invoice)) }
         }

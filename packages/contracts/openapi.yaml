@@ -4232,7 +4232,8 @@ paths:
         - {"name":"q","in":"query","required":false,"schema":{"type":"string","maxLength":100}}
         - {"name":"period","in":"query","required":false,"schema":{"$ref":"#/components/schemas/BillingMonth"}}
         - {"name":"studentId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}}
-        - {"name":"state","in":"query","required":false,"schema":{"$ref":"#/components/schemas/InvoiceState"}}
+        - {"name":"state","in":"query","required":false,"description":"open includes both unpaid and partially paid invoices","schema":{"anyOf":[{"$ref":"#/components/schemas/InvoiceState"},{"const":"open"}]}}
+        - {"name":"payerInvoice","in":"query","required":false,"description":"Finance posting staff only: filter by the named payer and currency of this invoice ID","schema":{"type":"string","format":"uuid"}}
         - {"name":"limit","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":100}}
         - {"name":"cursor","in":"query","required":false,"schema":{"type":"string"}}
       responses:
@@ -4362,6 +4363,26 @@ paths:
           content:
             application/json:
               schema: {"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/ReceiptMutation"}}}
+        default:
+          $ref: '#/components/responses/AuthError'
+  /finance/cashbook/reversals:
+    post:
+      operationId: reverseCashbookMovement
+      summary: Append a dated offset to a manually posted cash movement without deleting the original
+      security: [{ webSession: [] }, { nativeBearer: [] }]
+      parameters:
+        - {"$ref":"#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","additionalProperties":false,"required":["movementId","reason"],"properties":{"movementId":{"type":"string","format":"uuid"},"reason":{"type":"string","minLength":3,"maxLength":500}}}
+      responses:
+        '201':
+          description: The correction journal entry identifier
+          content:
+            application/json:
+              schema: {"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["id"],"properties":{"id":{"type":"string","format":"uuid"}}}}}
         default:
           $ref: '#/components/responses/AuthError'
   /finance/reports/summary:

@@ -14,11 +14,12 @@ test("school header stays in one row at normal mobile text size in both locales"
       await page.goto(`/${locale}/school/more/homework`);
       const header = page.locator(".school-shell > .school-header");
       await expect(header).toBeVisible();
-      const visible = await header.locator(".brand img, .brand span, .header-actions > a").evaluateAll((els) => els.map(el => {
+      const visible = await header.locator(".brand img, .brand span, .header-actions > a, .header-actions > button").evaluateAll((els) => els.map(el => {
         const box = el.getBoundingClientRect();
         return { text: el.textContent?.trim() || el.tagName, centerY: box.y + box.height / 2,
           x: box.x, right: box.right, width: box.width, height: box.height };
       }));
+      await expect(header.locator(".app-settings-trigger")).toBeVisible();
       expect(visible.length).toBeGreaterThanOrEqual(4);
       const centers = visible.map(item => item.centerY);
       expect(Math.max(...centers) - Math.min(...centers), `${locale} header unexpectedly wraps at ${width}px: ${JSON.stringify(visible)}`).toBeLessThanOrEqual(20);

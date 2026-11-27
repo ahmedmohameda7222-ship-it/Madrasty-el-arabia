@@ -53,3 +53,37 @@ test("native family finance uses the payer summary rather than administrative re
   assert.match(native,/data\.getString\("scope"\) == "payer"/);
   assert.match(native,/FinancePayerSummary\(/);
 });
+
+test("monthly billing configuration lives inside the fee tab, never over the payer editor",()=>{
+  const route=readFileSync(new URL("../apps/web/src/app/[locale]/school/more/fee-settings/page.tsx",import.meta.url),"utf8");
+  assert.doesNotMatch(route, /<AutomaticBilling\b/);
+  assert.match(source("FeeSettings.tsx"), /tab==="tariffs"\?<\>[\s\S]*?<AutomaticBilling\b/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FeeSettings.kt",import.meta.url),"utf8");
+  assert.match(native,/if \(!payerTab\)\s*\{[\s\S]*?AutomaticBillingPanel\(model\)/);
+});
+
+test("payer readiness on the overview is limited to authorized billing staff",()=>{
+  const overview=source("FinanceOverview.tsx");
+  assert.match(overview,/canIssue\?"\/finance\/automatic-billing":null/);
+  assert.match(overview,/payerIssues\.length/);
+  const route=readFileSync(new URL("../apps/web/src/app/[locale]/school/more/finance-reports/page.tsx",import.meta.url),"utf8");
+  assert.match(route,/mayUse\(session,"finance.issue"\)/);
+  assert.match(route,/canIssue=\{canIssue\}/);
+});
+
+test("combined payment picker supports stable same-payer invoice scope on both clients",()=>{
+  assert.match(source("RecordPayment.tsx"), /payerInvoice=\{payerAnchor\}/);
+  assert.match(source("receipt-ui.tsx"), /&payerInvoice=/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/RecordPayment.kt",import.meta.url),"utf8");
+  assert.match(native,/&payerInvoice=/);
+  assert.match(native,/payerAnchor = payerAnchor/);
+});
+
+test("cashbook corrections are explicit, permission-gated and use an append-only command",()=>{
+  const web=source("Cashbook.tsx");
+  assert.match(web,/data\.canPost&&entry\.canReverse/);
+  assert.match(web,/\/finance\/cashbook\/reversals/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FinanceExtras.kt",import.meta.url),"utf8");
+  assert.match(native,/entry\.optBoolean\("canReverse"\)/);
+  assert.match(native,/\/finance\/cashbook\/reversals/);
+});

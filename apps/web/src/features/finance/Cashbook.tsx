@@ -1,7 +1,7 @@
 "use client";
 import {useState,type FormEvent} from "react";
 import {z} from "zod";
-import {cashbookMonth,cashMovementInput,cashMovementKind,type CashbookMonth,type Locale} from "@madrasty/contracts";
+import {cashbookMonth,cashMovementInput,cashMovementKind,cashMovementReversalInput,type CashbookMonth,type Locale} from "@madrasty/contracts";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useSchoolCommand} from "@/api/commands";
 import {useAccountScope} from "@/ui/AccountScope";
@@ -34,7 +34,7 @@ function CashbookContents({locale,data,refresh}:{locale:Locale;data:CashbookMont
     <div className="header-actions">{data.entryCount===data.entries.length&&<a className="plain-button" download href={"/api/v1/finance/cashbook/export?month="+data.month}>{t.export}</a>}{data.entryCount<=100&&<a className="plain-button" download href={"/api/v1/finance/cashbook/pdf?month="+data.month+"&locale="+locale}>PDF</a>}</div>
     {data.entryCount>data.entries.length&&<p>{t.limited}</p>}
     {data.entries.length===0?<p>{t.empty}</p>:<ul className={css.entries}>{data.entries.map(entry=><li key={entry.id}>
-      <div><strong>{t[entry.kind]}</strong><small><bdi>{entry.description}</bdi> · <bdi>{entry.date}</bdi></small>{entry.receiptId&&<a href={"/"+locale+"/school/more/receipts?receipt="+entry.receiptId}>{locale==="ar"?"فتح الإيصال":"Beleg öffnen"}</a>}</div>
+      <div><strong>{entry.reversalOf?(locale==="ar"?"تصحيح حركة":"Buchungskorrektur"):t[entry.kind]}</strong><small><bdi>{entry.description}</bdi> · <bdi>{entry.date}</bdi></small>{entry.receiptId&&<a href={"/"+locale+"/school/more/receipts?receipt="+entry.receiptId}>{locale==="ar"?"فتح الإيصال":"Beleg öffnen"}</a>}{data.canPost&&entry.canReverse&&<CashCorrection key={entry.id} locale={locale} entry={entry} currency={data.currency} refresh={refresh}/>}</div>
       <strong className={entry.signedMinor<0?css.negative:css.positive}><bdi>{signed(entry.signedMinor)}</bdi></strong>
     </li>)}</ul>}
   </>;
@@ -61,6 +61,27 @@ function CashMovement({locale,data,refresh}:{locale:Locale;data:CashbookMonth;re
         <label>{t.description}<textarea value={description} maxLength={500} onChange={e=>setDescription(e.target.value)}/></label>
       </>}
       <div className="header-actions"><button className="primary-button" disabled={!input.success||busy||date>data.schoolDate}>{preview?t.save:t.review}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>preview?setPreview(false):setOpen(false)}>{preview?t.edit:(locale==="ar"?"إلغاء":"Abbrechen")}</button></div>
+    </form>}
+  </div>;
+}
+
+function CashCorrection({locale,entry,currency,refresh}:{locale:Locale;entry:CashbookMonth["entries"][number];currency:string;refresh:()=>void}){
+  const ar=locale==="ar",command=useSchoolCommand(useAccountScope().persona);
+  const [open,setOpen]=useState(false),[reason,setReason]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
+  const input=cashMovementReversalInput.safeParse({movementId:entry.id,reason});
+  async function submit(e:FormEvent){
+    e.preventDefault();if(!input.success||busy)return;
+    setBusy(true);setError("");
+    try{await command("/finance/cashbook/reversals","POST",input.data,z.object({id:z.uuid()}));setOpen(false);refresh();}
+    catch(problem){setError(timetableError(locale,problem));}finally{setBusy(false);}
+  }
+  return <div className="auth-form">
+    {!open?<button type="button" className="plain-button" onClick={()=>setOpen(true)}>{ar?"تصحيح الحركة":"Buchung korrigieren"}</button>:<form className="auth-form" onSubmit={submit}>
+      <p className={css.secondary}>{ar?"سيتم تسجيل حركة عكسية بتاريخ اليوم مع الاحتفاظ بالحركة الأصلية.":"Eine Gegenbuchung mit heutigem Datum wird erfasst. Die ursprüngliche Buchung bleibt erhalten."} · <bdi>{entry.signedMinor>0?"−":"+"}{financeAmount(Math.abs(entry.signedMinor),currency,locale)}</bdi></p>
+      <label>{ar?"سبب التصحيح":"Grund der Korrektur"}<textarea value={reason} maxLength={500} required onChange={e=>setReason(e.target.value)}/></label>
+      {error&&<p role="alert">{error}</p>}
+      <button type="submit" className="plain-button" disabled={!input.success||busy}>{ar?"تأكيد التصحيح":"Korrektur bestätigen"}</button>
+      <button type="button" className="plain-button" disabled={busy} onClick={()=>{setOpen(false);setReason("");setError("");}}>{ar?"إلغاء":"Abbrechen"}</button>
     </form>}
   </div>;
 }

@@ -35,15 +35,16 @@ internal fun FeeSettings(model: IdentityViewModel, initialStudent: String?, clos
     val context = academicRead("/finance/billing-options", revision) { model.financeObject(it) }
     FinancePage(R.string.fee_settings, close) {
         if(bank!=null)TextButton(onClick=bank){Text(stringResource(R.string.finance_bank))}
-        AutomaticBillingPanel(model)
         FlowRow {
             FilterChip(!payerTab, { payerTab = false }, label = { Text(stringResource(R.string.fee_tariffs)) })
             FilterChip(payerTab, { payerTab = true }, label = { Text(stringResource(R.string.fee_payer)) })
         }
         AsyncSurface(context) { options ->
             val month = options.getString("schoolMonth")
-            if (!payerTab) TariffEditor(model, options)
-            else {
+            if (!payerTab) {
+                AutomaticBillingPanel(model)
+                TariffEditor(model, options)
+            } else {
                 val selected = student
                 if (selected == null) {
                     PupilFinancePicker(model, month, null, false, revision) { pupil ->
@@ -108,7 +109,10 @@ private fun TariffEditor(model: IdentityViewModel, options: JSONObject) {
 @Composable
 private fun PayerEditor(model: IdentityViewModel, profile: JSONObject, firstMonth: String, changed: () -> Unit) {
     val choices = profile.financeRows("choices")
-    var guardian by remember { mutableStateOf(choices.firstOrNull()?.getString("id")) }
+    val current = profile.financeRows("designations").filter { it.getString("effectiveFromMonth") <= firstMonth }
+        .maxWithOrNull(compareBy<JSONObject> { it.getString("effectiveFromMonth") }.thenBy { it.getInt("revision") })
+        ?.getString("guardianId")
+    var guardian by remember { mutableStateOf(current?.takeIf { id -> choices.any { it.getString("id") == id } }) }
     var month by remember(firstMonth) { mutableStateOf(firstMonth) }
     var review by remember { mutableStateOf(false) }
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }

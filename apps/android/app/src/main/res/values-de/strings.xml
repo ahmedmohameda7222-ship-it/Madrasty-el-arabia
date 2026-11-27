@@ -495,7 +495,7 @@
     <string name="receipt_choose_invoice">Rechnung auswählen</string>
     <string name="receipt_without_invoice">Ohne Rechnung</string>
     <string name="receipt_suggested_invoice">Vorgeschlagene Rechnung</string>
-    <string name="receipt_invoice_search">Name, Schüler- oder Rechnungsnummer</string>
+    <string name="receipt_invoice_search">Name des Zahlers, Schülers oder Rechnungsnummer</string>
     <string name="receipt_total">Ursprünglicher Betrag</string>
     <string name="receipt_active">Erfasster Betrag</string>
     <string name="receipt_remainder">Verfügbar für Zuordnung</string>
@@ -613,6 +613,10 @@
     <string name="finance_auto_start">Startmonat</string>
     <string name="finance_auto_enabled">Automatisch ausstellen</string>
     <string name="finance_auto_missing">Schüler ohne Zahlungspflichtige: %1$d</string>
+    <string name="finance_payer_issues">Handlungsbedarf: %1$d Schüler</string>
+    <string name="finance_payer_unreachable">Konto nicht für Benachrichtigungen bereit</string>
+    <string name="finance_payer_missing">Zahler fehlt oder ist nicht verfügbar</string>
+    <string name="finance_payer_issue_hint">Zahler und Kontofreischaltung prüfen, bevor Sie sich auf Benachrichtigungen verlassen.</string>
     <string name="finance_filters">Filter</string>
     <string name="finance_more_details">Weitere Kennzahlen</string>
     <string name="finance_new_movement">Neue Buchung</string>
@@ -643,4 +647,11 @@
     <string name="chat_contact_phone">Dienstliche Telefonnummer</string>
     <string name="chat_actions">Chat-Aktionen</string>
     <string name="chat_voice_action">Sprachnachricht aufnehmen</string>
+    <string name="receipt_same_payer">Weitere Rechnungen desselben Zahlers</string>
+    <string name="cashbook_correction">Buchungskorrektur</string>
+    <string name="cashbook_correct">Buchung korrigieren</string>
+    <string name="cashbook_correction_hint">Eine Gegenbuchung mit heutigem Datum wird erfasst. Die ursprüngliche Buchung bleibt erhalten.</string>
+    <string name="cashbook_correction_reason">Grund der Korrektur</string>
+    <string name="cashbook_correction_confirm">Korrektur bestätigen</string>
+    <string name="cashbook_cancel_correction">Abbrechen</string>
 </resources>

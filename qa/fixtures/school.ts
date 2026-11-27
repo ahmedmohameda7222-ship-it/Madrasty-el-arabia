@@ -135,7 +135,12 @@ export function schoolFixtures() {
     assert.equal(expired.expired, true);
   }
 
-  return { origin: target.origin, run, collisionRun, references, seed, purgeUnused, bearer, localMfa, expireSession, password,
+  async function seedHistoricalBillingStart(){
+    const [row]=await sql<{start:string}[]>`select qa.seed_historical_billing_start(${run}) as start`;
+    assert.match(row.start,/^\d{4}-\d{2}$/);
+    return row.start;
+  }
+  return { origin: target.origin, run, collisionRun, references, seed, purgeUnused, bearer, localMfa, expireSession, seedHistoricalBillingStart, password,
     close: () => sql.end() };
 }
 

@@ -14,14 +14,15 @@ test("German 320px message bottom tab never splits a word and retains its full a
     await page.goto("/de/school/more");
     const nav=page.locator('.school-nav a[href*="/messages"]');
     await expect(nav).toBeVisible();
-    const label=nav.locator("span").first();
+    const label=nav.locator(".nav-label-mobile");
+    await expect(label).toHaveText("Kontakt");
     const dimensions=await label.evaluate(el=>{
       const rect=el.getBoundingClientRect();
       const css=getComputedStyle(el);
       return {height:rect.height,lineHeight:parseFloat(css.lineHeight),width:rect.width};
     });
     expect(dimensions.height,"mobile message tab must stay one line at narrow 320px").toBeLessThanOrEqual(dimensions.lineHeight+2);
-    await expect(nav).toHaveAttribute("aria-label","Nachrichten");
+    await expect(nav).toHaveAttribute("aria-label","Kontakt");
     const target=await nav.boundingBox();
     expect(target!.height).toBeGreaterThanOrEqual(44);
     expect(target!.width).toBeGreaterThanOrEqual(44);

@@ -49,7 +49,7 @@ function queryString(filters:FinanceReportQuery){
   return search.toString();
 }
 
-export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Locale;staff:boolean;initial:FinanceReportQuery;canPost?:boolean}){
+export function FinanceReports({locale,staff,initial,canPost=false,canIssue=false}:{locale:Locale;staff:boolean;initial:FinanceReportQuery;canPost?:boolean;canIssue?:boolean}){
   const text=copy[locale];
   const routeParams=useSearchParams();
   const [filters,setFilters]=useState(()=>({...initial,...readFinanceReportContext(routeParams)}));
@@ -75,7 +75,7 @@ export function FinanceReports({locale,staff,initial,canPost=false}:{locale:Loca
   const classChoices=summary.value?.data?.classes??[];
   return <section className={`${css.workspace} auth-form`}>
     <h1>{staff?text.title:locale==="ar"?"مدفوعاتي":"Meine Zahlungen"}</h1>
-    {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh} canPost={canPost}/>}
+    {staff&&<FinanceOverview locale={locale} month={filters.period} refresh={refresh} canPost={canPost} canIssue={canIssue}/>}
     {staff&&<details className={css.disclosure}><summary>{locale==="ar"?"تصفية التقرير":"Bericht filtern"}</summary>
     <form className="auth-form" onSubmit={apply}>
       <div className="header-actions">

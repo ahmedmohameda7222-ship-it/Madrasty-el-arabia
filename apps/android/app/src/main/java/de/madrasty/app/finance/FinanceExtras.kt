@@ -60,11 +60,25 @@ internal fun AutomaticBillingPanel(model:IdentityViewModel){
             val attempts=remember{mutableMapOf<String,Pair<String,String>>()}
             val current=data.getString("schoolMonth")
             var enabled by remember{mutableStateOf(data.getBoolean("enabled"))}
-            var start by remember{mutableStateOf(maxOf(current,data.getString("startMonth")))}
+            val storedStart=data.getString("startMonth")
+            var start by remember{mutableStateOf(storedStart)}
             FilterChip(enabled,{enabled=!enabled},label={Text(stringResource(R.string.finance_auto_enabled))})
             Field(R.string.finance_auto_start,start){start=financeDigits(it).take(7)}
             if(data.getInt("missingPayers")>0)Text(stringResource(R.string.finance_auto_missing,data.getInt("missingPayers")))
-            Submit(validBillingMonth(start)&&start>=current&&(enabled!=data.getBoolean("enabled")||start!=data.getString("startMonth"))){
+            val issues=data.optJSONArray("payerIssues")
+            if(issues!=null&&issues.length()>0){
+                var showIssues by remember { mutableStateOf(false) }
+                TextButton(onClick={showIssues=!showIssues}) {Text(stringResource(R.string.finance_payer_issues,issues.length()))}
+                if(showIssues){
+                    Text(stringResource(R.string.finance_payer_issue_hint))
+                    for(index in 0 until issues.length()){
+                        val issue=issues.getJSONObject(index)
+                        Text(isolate(issue.getString("studentName"))+" · "+isolate(issue.getString("studentNumber")))
+                        Text(stringResource(if(issue.getString("reason")=="payer_missing") R.string.finance_payer_missing else R.string.finance_payer_unreachable))
+                    }
+                }
+            }
+            Submit(validBillingMonth(start)&&(start==storedStart||start>=current)&&(enabled!=data.getBoolean("enabled")||start!=data.getString("startMonth"))){
                 model.schoolCommand(attempts,"/finance/automatic-billing","PUT",JSONObject().put("enabled",enabled).put("startMonth",start).put("revision",data.getInt("revision")))
                 refresh++
             }
@@ -105,10 +119,30 @@ internal fun CashbookPanel(model:IdentityViewModel){
             }
             }
         }
-        for(entry in data.financeRows("entries")){
+        for(entry in data.financeRows("entries")) key(entry.getString("id")){
             HorizontalDivider()
+            if(!entry.isNull("reversalOf"))Text(stringResource(R.string.cashbook_correction))
             Text(isolate(entry.getString("description"))+" · "+isolate(entry.getString("date")))
             Text(financeMoney(entry.getLong("signedMinor"),currency))
+            if(data.getBoolean("canPost")&&entry.optBoolean("canReverse"))CashMovementCorrection(model,entry,currency){refresh++}
         }
+    }
+}
+
+@Composable
+private fun CashMovementCorrection(model:IdentityViewModel,entry:JSONObject,currency:String,changed:()->Unit){
+    var open by remember{mutableStateOf(false)}
+    var reason by remember{mutableStateOf("")}
+    val attempts=remember{mutableMapOf<String,Pair<String,String>>()}
+    if(!open)TextButton(onClick={open=true}){Text(stringResource(R.string.cashbook_correct))}
+    else{
+        Text(stringResource(R.string.cashbook_correction_hint))
+        Text(financeMoney(-entry.getLong("signedMinor"),currency))
+        Field(R.string.cashbook_correction_reason,reason){reason=it.take(500)}
+        Submit(reason.trim().length>=3,R.string.cashbook_correction_confirm){
+            model.schoolCommand(attempts,"/finance/cashbook/reversals","POST",JSONObject().put("movementId",entry.getString("id")).put("reason",reason.trim()))
+            open=false;reason="";changed()
+        }
+        TextButton(onClick={open=false;reason=""}){Text(stringResource(R.string.cashbook_cancel_correction))}
     }
 }

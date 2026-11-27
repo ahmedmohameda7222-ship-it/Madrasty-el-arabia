@@ -19,11 +19,11 @@ test("linked guardian child is explicit on first visit and switch updates the su
     await page.screenshot({path:"qa-artifacts/ui-after/UIX09-guardian-ar-children-390-initial.png",animations:"disabled"});
     const trigger=page.locator(".school-content .auth-card button.plain-button").first();
     await trigger.click();
-    const row=page.locator(".scope-sheet .group-row").filter({hasText:"نور"});
+    const row=page.locator(".scope-sheet:not(.app-settings-sheet) .group-row").filter({hasText:"نور"});
     await expect(row).toBeVisible();
     await row.click();
     await expect(heading).toHaveText("نور");
-    await expect(page.locator(".scope-sheet")).not.toBeVisible();
+    await expect(page.locator(".school-content dialog.scope-sheet:not(.app-settings-sheet)")).not.toBeVisible();
     await page.screenshot({path:"qa-artifacts/ui-after/UIX09-guardian-ar-children-390-switched.png",animations:"disabled"});
   } finally {await school.close();}
 });
@@ -74,6 +74,6 @@ test("invalid child deep link does not show another child's protected details",a
     const forbidden=page.locator(".school-content [data-async-state='forbidden']");
     await expect(forbidden).toBeVisible({timeout:30_000});
     await expect(page.locator(".school-content .auth-card h2 bdi")).toHaveCount(0);
-    await expect(page.locator(".scope-sheet")).toBeAttached();
+    await expect(page.locator(".school-content dialog.scope-sheet:not(.app-settings-sheet)")).toBeAttached();
   } finally {await school.close();}
 });

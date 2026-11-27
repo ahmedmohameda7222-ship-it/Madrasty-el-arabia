@@ -33,7 +33,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
           <small>{text.due} · <bdi>{financeDate(item.dueDate,locale)}</bdi></small>
         </div>
         <div className={css.invoiceActions}>
-          {canPost&&item.state!=="cancelled"&&<Link className="primary-button" href={`/${locale}/school/more/record-payment?invoice=${item.id}`}>{receiptCopy[locale].record}</Link>}
+          {canPost&&item.balanceMinor>0&&item.state!=="cancelled"&&<Link className="primary-button" href={`/${locale}/school/more/record-payment?invoice=${item.id}`}>{receiptCopy[locale].record}</Link>}
           <a className="plain-button" href={`/api/v1/finance/invoices/${item.id}/pdf?locale=${locale}`} download>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>
             {locale==="ar"?"تحميل الفاتورة PDF":"Rechnung als PDF"}</a>

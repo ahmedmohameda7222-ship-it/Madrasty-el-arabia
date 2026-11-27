@@ -55,6 +55,7 @@ private data class ReportFilters(
 internal fun FinanceReports(
     model: IdentityViewModel, initialStudent: String?, staff: Boolean,
     openInvoice: (String) -> Unit, openReceipt: (String) -> Unit, openMatching: () -> Unit, close: () -> Unit, openInvoices: (String?, String?) -> Unit,
+    openBilling: (() -> Unit)? = null,
 ) {
     var draft by remember(initialStudent) { mutableStateOf(ReportFilters(student = initialStudent)) }
     var filters by remember(initialStudent) { mutableStateOf(ReportFilters(student = initialStudent)) }
@@ -62,6 +63,13 @@ internal fun FinanceReports(
     var showFilters by remember { mutableStateOf(false) }
     val read = academicRead("/finance/reports/summary?${filters.query()}", version) { model.financeObject(it) }
     FinancePage(if (staff) R.string.finance_report_title else R.string.finance_my_payments, close) {
+        if(staff && openBilling!=null){
+            val billing=academicRead("/finance/automatic-billing",version){model.financeObject(it)}
+            AsyncSurface(billing){settings->
+                val count=settings.optJSONArray("payerIssues")?.length()?:0
+                if(count>0) TextButton(onClick=openBilling){Text(stringResource(R.string.finance_payer_issues,count))}
+            }
+        }
         AsyncSurface(read) { data ->
             if (data.getString("scope") == "payer") {
                 FinancePayerSummary(data.financeRows("totals")) { openInvoices(filters.student, filters.period.ifBlank { null }) }
