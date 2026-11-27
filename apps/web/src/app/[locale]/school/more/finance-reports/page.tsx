@@ -3,7 +3,7 @@ import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
 import {billingMonth,financeReportStatus,schoolDateSchema,type Locale} from "@madrasty/contracts";
 import {FinanceReports} from "@/features/finance/FinanceReports";
-import {mayUse} from "@/server/access/capabilities";
+import { mayUseMany} from "@/server/access/capabilities";
 import {webSchoolSession} from "@/server/identity/web-session";
 
 export default async function FinanceReportsPage({params,searchParams}:{
@@ -14,7 +14,7 @@ export default async function FinanceReportsPage({params,searchParams}:{
   const staff=session.activePersona==="admin";
   let canPost=false,canIssue=false;
   if(session.activePersona!=="guardian"){
-    const [read,post,issue]=await Promise.all([mayUse(session,"finance.read"),mayUse(session,"finance.post"),mayUse(session,"finance.issue")]);
+    const [read,post,issue]=await mayUseMany(session,["finance.read","finance.post","finance.issue"]);
     if(!read&&!post)notFound();
     canPost=post;canIssue=issue;
   }
