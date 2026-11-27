@@ -230,6 +230,11 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             if(width===320||width===390){
               const unpaid=records.find(x=>x.label==="C")!.invoice;
               await go("record-payment?invoice="+unpaid.id);
+              await expect(page.getByRole("button",{name:s.locale==="ar"?"تأكيد السداد":"Zahlung bestätigen",exact:true})).toBeEnabled();
+              await expect(page.locator(".school-content input[type=checkbox]")).toHaveCount(0);
+              await expect(page.locator(".school-content input[inputmode=decimal]")).toHaveCount(1);
+              await capture(page,prefix+"simple-payment");
+              await go("record-payment?advanced=1&invoice="+unpaid.id);
               // A manually entered cash amount must not be overwritten when an invoice is selected.
               const received=page.locator(".school-content input[inputmode=decimal]").first();
               await received.fill("100.00");
@@ -244,7 +249,7 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await remove.last().click();
               await expect(received).toHaveValue("100.00");
               // In suggestion mode, removal must reduce the total rather than create an unintended credit.
-              await go("record-payment?invoice="+unpaid.id);
+              await go("record-payment?advanced=1&invoice="+unpaid.id);
               // go() closes the old Page; recreate every page-bound locator after navigation.
               const suggested=page.locator(".school-content input[inputmode=decimal]").first();
               const initialAmount=(unpaid.balanceMinor/100).toFixed(2);
