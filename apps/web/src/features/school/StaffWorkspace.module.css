@@ -4,20 +4,21 @@
 .title {font-size:clamp(1.5rem,2vw,2rem);font-weight:720;letter-spacing:-.025em;margin:0;line-height:1.35;}
 .toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .actions {display:flex;align-items:center;flex-wrap:wrap;gap:10px;}
-.primary, .secondary, .smallButton { min-height:44px; border-radius:12px; border:1px solid transparent; padding:10px 17px; font:inherit; font-weight:640; cursor:pointer; text-decoration:none; text-align:center; }
-.primary {background:#366f69;color:#fff;border-color:#477d77}
-.primary:hover {background:#417e77}
+.primary, .secondary, .smallButton { min-height:44px; border-radius:var(--radius-control); border:1px solid transparent; padding:10px 17px; font:inherit; font-weight:640; cursor:pointer; text-decoration:none; text-align:center; max-inline-size:100%; overflow-wrap:anywhere; }
+.primary {min-height:48px;border-radius:var(--radius-pill);background:var(--primary);color:var(--on-primary);border-color:transparent}
+.primary:hover {background:color-mix(in srgb,var(--primary) 92%,var(--on-primary))}
 .secondary {background:var(--card);color:var(--ink);border-color:var(--rule)}
 .secondary:hover, .smallButton:hover {background:var(--inset)}
 .primary:disabled,.secondary:disabled {opacity:.5;cursor:wait}
-.smallButton {background:transparent;color:var(--ink);border-color:var(--rule);font-size:.86rem;min-height:38px;padding:6px 11px;}
+.smallButton {background:transparent;color:var(--ink);border-color:var(--rule);font-size:.86rem;min-height:44px;padding:6px 11px;}
 .search {display:flex;align-items:center;gap:10px;min-width:min(100%,260px);flex:1;max-width:550px;}
-.input,.select {width:100%;min-height:46px;border:1px solid var(--rule);background:var(--canvas);color:var(--ink);padding:10px 13px;border-radius:12px;font:inherit; }
-.input:focus-visible,.select:focus-visible,.primary:focus-visible,.secondary:focus-visible,.smallButton:focus-visible {outline:2px solid #599b91;outline-offset:2px}
+.input,.select {width:100%;min-width:0;min-height:48px;border:1px solid var(--field-border);background:var(--canvas);color:var(--ink);padding:10px 13px;border-radius:var(--radius-control);font:inherit; }
+.input:focus-visible,.select:focus-visible,.primary:focus-visible,.secondary:focus-visible,.smallButton:focus-visible {outline:2px solid var(--primary);outline-offset:2px}
 .grid {display:grid;grid-template-columns:minmax(0,1.45fr) minmax(270px,.8fr);gap:18px;align-items:start}
-.card {background:var(--card);border:1px solid var(--rule);border-radius:19px;padding:20px;min-width:0;}
+.card {background:var(--card);border:1px solid var(--rule);border-radius:var(--radius-card);padding:20px;min-width:0;}
 .cardHeader {display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .cardTitle {font-size:1.03rem;font-weight:680;margin:0;letter-spacing:-.006em}
+.title:lang(ar), .cardTitle:lang(ar) {letter-spacing:normal}
 .counts {display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .counter {background:var(--inset);border:1px solid var(--rule);border-radius:999px;padding:7px 11px;font-size:.82rem;color:var(--muted);}
 .counter strong {font-size:.95rem;color:var(--ink);margin-inline-end:5px}
@@ -28,7 +29,7 @@
 .avatar {flex:none;display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:var(--inset);border:1px solid var(--rule);color:var(--ink);font-weight:700;overflow:hidden;}
 .personInfo {display:grid;gap:3px;min-width:0;flex:1;}
 .personName {font-weight:670;overflow-wrap:anywhere;}
-.personMeta {font-size:.82rem;color:var(--muted)}
+.personMeta {font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
 .role {display:inline-flex;border:1px solid var(--rule);padding:5px 9px;border-radius:20px;color:var(--muted);font-size:.77rem;white-space:nowrap}
 .empty {padding:30px 8px;color:var(--muted);text-align:center}
 .info {display:grid;gap:13px}
@@ -45,7 +46,7 @@
 .radioCard:has(input:checked) {border-color:#598d86;background:var(--card)}
 .radioCard input {accent-color:#4d9186}
 .details {border:1px solid var(--rule);border-radius:13px;padding:12px;background:var(--inset)}
-.details summary {cursor:pointer;font-weight:600}
+.details summary {cursor:pointer;font-weight:600;min-block-size:44px;padding-block:10px;overflow-wrap:anywhere}
 .assignmentList {display:grid;gap:12px}
 .assignmentRow {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px;border:1px solid var(--rule);border-radius:14px;background:var(--inset)}
 .assignmentIdentity {min-width:0;display:grid;gap:5px}
