@@ -170,15 +170,15 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             await capture(page,prefix+"overview-expanded");
           }
           await go("invoices");
-          await expect(page.locator('a[href*="invoice='+record.invoice.id+'"]')).toBeVisible();
-          if(s.persona==="admin")for(const row of records)await expect(page.locator('a[href*="invoice='+row.invoice.id+'"]')).toBeVisible();
+          await expect(page.locator('a[href*="/invoices?invoice='+record.invoice.id+'"]')).toBeVisible();
+          if(s.persona==="admin")for(const row of records)await expect(page.locator('a[href*="/invoices?invoice='+row.invoice.id+'"]')).toBeVisible();
           else {
             const foreign=records.find(x=>x.label===(s.record==="A"?"B":"A"))!;
-            await expect(page.locator('a[href*="invoice='+foreign.invoice.id+'"]')).toHaveCount(0);
+            await expect(page.locator('a[href*="/invoices?invoice='+foreign.invoice.id+'"]')).toHaveCount(0);
             await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
           }
           if(width<=430){
-            const row=page.locator('a[href*="invoice='+record.invoice.id+'"]');
+            const row=page.locator('a[href*="/invoices?invoice='+record.invoice.id+'"]');
             const name=row.locator("strong").first();
             await expect(name).toHaveText(record.invoice.studentName);
             const rowBounds=await row.boundingBox(),nameBounds=await name.boundingBox();
@@ -202,7 +202,7 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
           await expect(receiptLink).toHaveCount(1);
           const receiptHref=await receiptLink.getAttribute("href");
-          expect(receiptHref).toBe(root+"receipts?receipt="+visibleReceiptId);
+          expect(receiptHref).toBe(root+"receipts?receipt="+visibleReceiptId+"&invoice="+record.invoice.id);
           if(s.persona==="admin")expect(receiptHref).toContain("receipt="+record.receiptId);
           else expect(receiptHref).not.toContain("receipt="+record.receiptId);
           await receiptLink.click();
