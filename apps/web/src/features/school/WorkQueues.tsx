@@ -224,7 +224,7 @@ export function WorkQueue({locale,queue,asOf}:{locale:Locale;queue:WorkQueueKey;
     <Link className="plain-button" href={`/${locale}/school/home/tasks${query(payload?.asOf??asOf)}`}>{text.back}</Link>
     <AsyncSurface locale={locale} state={current?.error?current.error instanceof ApiResponseError&&[401,403,404].includes(current.error.status)
       ?{kind:"forbidden"}:{kind:"error",retry:()=>setGeneration((count)=>count+1),message:timetableError(locale,current.error)}
-      :payload?{kind:"ready",content:<section className="auth-card">
+      :payload?{kind:"ready",content:<section className="auth-card work-queue-detail">
         <p><bdi dir="ltr">{payload.asOf}</bdi></p>
         {payload.items.length===0&&<p>{text.empty}</p>}
         <ul className="group-list">{payload.items.map((entry)=><li key={entry.id}>

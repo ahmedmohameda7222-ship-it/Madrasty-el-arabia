@@ -47,7 +47,7 @@ function TeacherHome({locale}:{locale:Locale}){
   return <>
     <TodayLessons locale={locale} refresh={refresh} attendanceClasses={assignments.value?.data
       ?.filter(item=>item.kind==="primary").map(item=>item.classId) ?? []} />
-    <TimetableRead locale={locale} result={assignments}>{(rows)=><section className="auth-card">
+    <TimetableRead locale={locale} result={assignments}>{(rows)=><section className="auth-card home-dashboard-card">
       <h2>{text.assignments}</h2>
       {rows.length===0&&<p>{text.noAssignment}</p>}
       <ul className="group-list">{rows.map((row)=><li key={row.id}>
@@ -69,7 +69,7 @@ function GuardianHome({locale}:{locale:Locale}){
     if(!child)return <AsyncSurface locale={locale} state={{kind:"empty"}}/>;
     const classroom=child.currentClass&&(locale==="ar"?child.currentClass.nameAr:child.currentClass.nameDe);
     return <>
-      <section className="auth-card"><ScopeSheet locale={locale} choices={rows.map((row)=>({
+      <section className="home-scope-switcher"><ScopeSheet locale={locale} choices={rows.map((row)=>({
         id:row.id,label:row.displayName,detail:row.currentClass?.code??row.studentNumber,
       }))} selectedId={child.id} select={setSelection}/></section>
       <RoleHero persona="guardian" title={child.displayName} detail={classroom??text.children}
@@ -102,7 +102,7 @@ function DaySchedule({locale,day,child,refresh,attendanceClasses}:{locale:Locale
       action={attendanceClasses?.includes(next.classId)
         ? {href:`/${locale}/school/attendance?class=${next.classId}&date=${day}`,label:text.attendance}
         : {href:`/${locale}/school/more/timetable`,label:text.schedule}} />}
-    <section className="auth-card">
+    <section className="auth-card home-dashboard-card">
       <h2>{text.today}</h2>
       {!lessons.length&&<p>{text.noLessons}</p>}
       <ul className="group-list">{lessons.map((row)=><li className="timetable-session" key={row.id}>
