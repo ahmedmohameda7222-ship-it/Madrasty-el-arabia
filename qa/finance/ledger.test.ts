@@ -219,6 +219,25 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     // Restore the same net cash balance for the subsequent family payment assertions.
     await send("/finance/cashbook","replacement-expense",{...expenseInput,description:"Synthetic replacement expense"});
 
+    // The current month remains payable even when a pause is declared.
+    const currentBeforePause=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${omar.id}`,{token:payer})).payload.data);
+    await fixtureApi(school, "/enrollment-stops", {
+      method:"POST",token:payer,persona:"guardian",key:`${school.run}.pause-future-month`,status:400,
+      body:{studentId:ids.omar,lastAttendanceMonth:clock.nextMonth,duration:"one_month",reason:"Synthetic future pause"},
+    });
+    await fixtureApi(school, "/enrollment-stops", {
+      method:"POST",token:payer,persona:"guardian",key:`${school.run}.pause-indefinite`,status:400,
+      body:{studentId:ids.omar,lastAttendanceMonth:clock.month,duration:"indefinite",reason:"Synthetic indefinite pause"},
+    });
+    const futurePausePreview=invoicePreview.parse(await send("/finance/invoice-previews","pause-preissued-monthly-preview",{
+      ...selection,studentIds:[ids.omar],period:clock.nextMonth,
+    }));
+    const futurePauseBatch=invoiceBatch.parse(await send("/finance/invoice-batches","pause-preissued-monthly",{
+      previewId:futurePausePreview.previewId,revision:futurePausePreview.revision,
+    }));
+    assert.equal(futurePauseBatch.issuedIds.length,1);
+    const preissued=futurePauseBatch.issuedIds[0];
+
     const stop = enrollmentStop.parse((await fixtureApi(school, "/enrollment-stops", {
       method: "POST", token: payer, persona: "guardian", key: `${school.run}.pause-omar`, status: [200, 201],
       body: { studentId: ids.omar, lastAttendanceMonth: clock.month, duration: "one_month", reason: "Synthetic school break" },
@@ -226,6 +245,14 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     assert.equal(stop.startMonth, clock.nextMonth);
     assert.equal(stop.state, "approved");
     assert.equal(stop.canDecide, false);
+    const currentAfterPause=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${omar.id}`,{token:payer})).payload.data);
+    assert.equal(currentAfterPause.state,currentBeforePause.state,"pause does not change the current month");
+    assert.equal(currentAfterPause.balanceMinor,currentBeforePause.balanceMinor);
+    assert.equal(currentAfterPause.revision,currentBeforePause.revision);
+    const cancelledFuture=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${preissued}`,{token:finance})).payload.data);
+    assert.equal(cancelledFuture.state,"cancelled","an unpaid preissued monthly invoice is cancelled without review");
+    assert.equal(cancelledFuture.balanceMinor,0);
+
     assert.equal(stop.endMonthExclusive, clock.nextMonth === "9999-12" ? null : (() => {
       const d = new Date(clock.nextMonth + "-01T00:00:00Z");
       d.setUTCMonth(d.getUTCMonth()+1); return d.toISOString().slice(0,7);
