@@ -4,7 +4,7 @@ import css from "./FinanceWorkspace.module.css";
 import {FinanceDateField,financeDate} from "./FinanceDateField";
 import {AutomaticBilling} from "./AutomaticBilling";
 
-import {useState,type FormEvent} from "react";
+import {useRef,useState,type FormEvent} from "react";
 import {
   billingOptions,billingPupil,feeTariff,feeTariffInput,payerEdit,payerProfile,type Locale,
 } from "@madrasty/contracts";
@@ -28,21 +28,23 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
   const [tab,setTab]=useState<"tariffs"|"payer">(student?"payer":"tariffs");
   const [month,setMonth]=useState(options.schoolMonth),[day,setDay]=useState(String(options.dueDay??1));
   const [amount,setAmount]=useState(""),[revision,setRevision]=useState(0);
-  const [preview,setPreview]=useState<ReturnType<typeof feeTariffInput.parse>>(),[selected,setSelected]=useState(student);
+  const [selected,setSelected]=useState(student),[attempted,setAttempted]=useState(false);
+  const lock=useRef(false);
   const [term,setTerm]=useState(""),[query,setQuery]=useState("");
   const [pending,setPending]=useState(false),[notice,setNotice]=useState(""),[error,setError]=useState("");
   const records=useAcademicPage(tab==="tariffs"?"/finance/tariffs?limit=25":null,tariffs,revision);
   const candidates=useAcademicPage(tab==="payer"&&!selected?`/finance/pupils?limit=25&period=${options.schoolMonth}&q=${encodeURIComponent(query)}`:null,pupils,revision);
   const profile=useTimetableRead(tab==="payer"&&selected?`/finance/children/${selected}/payer`:null,payerProfile,revision);
   const validated=feeTariffInput.safeParse({effectiveFromMonth:month,dueDay:Number(day),lines:[{titleAr:"اشتراك شهري",titleDe:"Monatsbeitrag",amountMinor:options.currency?inputAmountMinor(amount,options.currency):null}]});
-  async function save(){
-    if(!preview||pending)return;
-    setPending(true);setError("");setNotice("");
+  async function save(event:FormEvent){
+    event.preventDefault();setAttempted(true);setError("");setNotice("");
+    if(!validated.success||month<options.schoolMonth||lock.current)return;
+    lock.current=true;setPending(true);
     try{
-      await command("/finance/tariffs","POST",preview,feeTariff);
-      setPreview(undefined);setAmount("");setNotice(text.saved);setRevision((value)=>value+1);
+      await command("/finance/tariffs","POST",validated.data,feeTariff);
+      setAttempted(false);setNotice(text.saved);setRevision((value)=>value+1);
     }catch(problem){setError(timetableError(locale,problem));}
-    finally{setPending(false);}
+    finally{lock.current=false;setPending(false);}
   }
   return <>
     <div className={`${css.tabs} ${css.feeTabs}`}>
@@ -53,20 +55,16 @@ function SettingsForm({locale,options,student}:{locale:Locale;options:Billing;st
       <AutomaticBilling locale={locale}/>
       <h2>{locale==="ar"?"الاشتراك الشهري":"Monatsbeitrag"}</h2>
       {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
-      {preview&&options.currency?<div className="notice auth-form">
-        <p>{text.effective} · <bdi>{financeDate(preview.effectiveFromMonth,locale,"month")}</bdi></p>
-        <p>{text.dueDay} · <bdi>{preview.dueDay}</bdi></p>
-        <FeeLines locale={locale} lines={preview.lines} currency={options.currency}/>
-        <div className="header-actions">
-          <button className="primary-button" type="button" disabled={pending} onClick={()=>void save()}>{pending?text.busy:text.save}</button>
-          <button className="plain-button" type="button" disabled={pending} onClick={()=>setPreview(undefined)}>{text.edit}</button>
-        </div>
-      </div>:<form className="auth-form" onSubmit={(event)=>{event.preventDefault();if(validated.success)setPreview(validated.data);}}>
-        <FinanceDateField locale={locale} label={text.effective} type="month" value={month} min={options.schoolMonth} onChange={(event)=>setMonth(event.target.value)} required/>
-        <label>{text.dueDay}<input type="number" dir="ltr" min={1} max={31} value={day} onChange={(event)=>setDay(event.target.value)} required/></label>
-        <label><span className={css.amountLabel}><span>{locale==="ar"?"الاشتراك الشهري لكل طالب":"Monatsbeitrag pro Schüler"}</span><bdi>{options.currency}</bdi></span><input dir="ltr" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} required/></label>
-        <button className="primary-button" type="submit" disabled={!validated.success||month<options.schoolMonth}>{text.preview}</button>
-      </form>}
+      <form className="auth-form" onSubmit={save} noValidate>
+        <FinanceDateField locale={locale} label={text.effective} type="month" value={month} min={options.schoolMonth} onChange={(event)=>setMonth(event.target.value)} disabled={pending} required aria-invalid={attempted&&(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||month<options.schoolMonth)}/>
+        {attempted&&(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||month<options.schoolMonth)&&<p role="alert">{locale==="ar"?"اختر الشهر الحالي أو شهرًا قادمًا.":"Wähle diesen oder einen zukünftigen Monat."}</p>}
+        <label>{text.dueDay}<input type="number" dir="ltr" min={1} max={31} value={day} disabled={pending} onChange={(event)=>setDay(event.target.value)} required aria-invalid={attempted&&(!Number.isInteger(Number(day))||Number(day)<1||Number(day)>31)}/></label>
+        {attempted&&(!Number.isInteger(Number(day))||Number(day)<1||Number(day)>31)&&<p role="alert">{locale==="ar"?"اختر يومًا من ١ إلى ٣١.":"Gib einen Tag zwischen 1 und 31 ein."}</p>}
+        <label><span className={css.amountLabel}><span>{locale==="ar"?"الاشتراك الشهري لكل طالب":"Monatsbeitrag pro Schüler"}</span><bdi>{options.currency}</bdi></span><input dir="ltr" inputMode="decimal" value={amount} disabled={pending} onChange={e=>setAmount(e.target.value)} required aria-invalid={attempted&&(!options.currency||inputAmountMinor(amount,options.currency)===null)}/></label>
+        {attempted&&(!options.currency||inputAmountMinor(amount,options.currency)===null)&&<p role="alert">{locale==="ar"?"اكتب مبلغ اشتراك صحيحًا أكبر من صفر.":"Gib einen gültigen Monatsbeitrag über 0 ein."}</p>}
+        <p className={css.secondary}>{locale==="ar"?"التغيير يسري من الشهر المختار، ولا يعدل الفواتير الصادرة.":"Die Änderung gilt ab dem gewählten Monat. Ausgestellte Rechnungen bleiben unverändert."}</p>
+        <button className="primary-button" type="submit" disabled={pending}>{pending?text.busy:text.save}</button>
+      </form>
       <AcademicPageItems locale={locale} page={records}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id} className="timetable-day">
         <details><summary>{text.effective} · <bdi>{financeDate(item.effectiveFromMonth,locale,"month")}</bdi></summary>
           <p>{text.dueDay} · {item.dueDay}</p><FeeLines locale={locale} lines={item.lines} currency={item.currency}/>
@@ -91,31 +89,30 @@ function PayerForm({locale,profile,month,refresh}:{locale:Locale;profile:ReturnT
   const text=billingCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
   const current=[...profile.designations].filter(item=>item.effectiveFromMonth<=month).sort((a,b)=>b.effectiveFromMonth.localeCompare(a.effectiveFromMonth)||b.revision-a.revision)[0];
   const [guardian,setGuardian]=useState(current&&profile.choices.some(item=>item.id===current.guardianId)?current.guardianId:""),[effective,setEffective]=useState(month);
-  const [review,setReview]=useState(false),[pending,setPending]=useState(false),[error,setError]=useState("");
-  const chosen=profile.choices.find((item)=>item.id===guardian);
+  const [pending,setPending]=useState(false),[error,setError]=useState("");
+  const lock=useRef(false);
   const input=payerEdit.safeParse({guardianId:guardian,effectiveFromMonth:effective,revision:profile.revision});
   async function save(event:FormEvent){
     event.preventDefault();
-    if(!input.success||pending||effective<month)return;
-    if(!review){setReview(true);return;}
-    setPending(true);setError("");
+    if(lock.current)return;
+    if(!input.success||effective<month){setError(locale==="ar"?"اختر ولي الأمر وشهر السريان الصحيح.":"Wähle einen Elternteil und einen gültigen Monat.");return;}
+    lock.current=true;setPending(true);setError("");
     try{await command(`/finance/children/${profile.studentId}/payer`,"PUT",input.data,payerProfile);refresh();}
     catch(problem){setError(timetableError(locale,problem));}
-    finally{setPending(false);}
+    finally{lock.current=false;setPending(false);}
   }
   return <div className="auth-form">
     <h2><bdi>{profile.studentName}</bdi> · <bdi>{profile.studentNumber}</bdi></h2>
-    {!profile.choices.length?<p>{text.emptyPayer}</p>:<form className="auth-form" onSubmit={(event)=>void save(event)}>
-      {review?<p className="notice"><bdi>{chosen?.displayName}</bdi> · <bdi>{effective}</bdi></p>:<>
-        <label>{text.guardian}<select value={guardian} onChange={(event)=>setGuardian(event.target.value)}>
+    {!profile.choices.length?<p>{text.emptyPayer}</p>:<form className="auth-form" onSubmit={(event)=>void save(event)} noValidate>
+      <>
+        <label>{text.guardian}<select value={guardian} disabled={pending} onChange={(event)=>setGuardian(event.target.value)}>
           <option value="" disabled>{locale==="ar"?"اختر مسؤول السداد":"Zahler auswählen"}</option>
           {profile.choices.map((item)=><option key={item.id} value={item.id}>{item.displayName}{!item.activeAccount?" · "+text.activeLater:""}</option>)}
         </select></label>
-        <FinanceDateField locale={locale} label={text.effective} type="month" min={month} value={effective} onChange={(event)=>setEffective(event.target.value)} required/>
-      </>}
+        <FinanceDateField locale={locale} label={text.effective} type="month" min={month} value={effective} disabled={pending} onChange={(event)=>setEffective(event.target.value)} required/>
+      </>
       <div className="header-actions">
-        <button className="primary-button" type="submit" disabled={pending||!input.success||effective<month}>{pending?text.busy:review?text.save:text.preview}</button>
-        {review&&<button className="plain-button" type="button" disabled={pending} onClick={()=>setReview(false)}>{text.edit}</button>}
+        <button className="primary-button" type="submit" disabled={pending}>{pending?text.busy:text.save}</button>
       </div>
     </form>}
     {error&&<p role="alert">{error}</p>}
