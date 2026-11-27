@@ -19,8 +19,8 @@ type Options=ReturnType<typeof billingOptions.parse>;
 type Receipt=ReturnType<typeof invoiceBatch.parse>;
 type Plan={key:string;preview?:InvoicePreview;error?:string};
 
-export function IssueInvoices({locale,initialStudent,mayConfigureBank}:{locale:Locale;initialStudent?:string;mayConfigureBank:boolean}){
-  const setup=useTimetableRead("/finance/billing-options",billingOptions);
+export function IssueInvoices({locale,initialStudent,mayConfigureBank,initialPeriod}:{locale:Locale;initialStudent?:string;mayConfigureBank:boolean;initialPeriod?:string}){
+  const setup=useTimetableRead(initialPeriod?`/finance/billing-options?period=${initialPeriod}`:"/finance/billing-options",billingOptions);
   return <section className={`${css.workspace} ${css.narrowForm} auth-form`}>
     <h1>{locale==="ar"?"إنشاء فاتورة":"Rechnung erstellen"}</h1>
     <TimetableRead locale={locale} result={setup}>{options=><InvoiceIssuer locale={locale} initial={options} preferred={initialStudent} mayConfigureBank={mayConfigureBank}/>}</TimetableRead>
