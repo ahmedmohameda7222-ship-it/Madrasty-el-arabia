@@ -174,13 +174,14 @@ export async function invoicePdf(item:InvoiceDetail,locale:Locale){
     const titleH=await put(t.invoice,0,first?286:274,C,first?62:38,"#163d36",true);
     const numberY=(first?286:274)+titleH+14;
     const numberH=await put(item.invoiceNumber,0,numberY,Math.floor(C*.62),23,soft);
-    const badgeText=t[item.state],badgeWidth=340;
+    const badgeText=t[item.state];
     const palette=item.state==="paid"?["#e8f4ef","#cce4da","#14665b"]:item.state==="partial"?["#fbf6e8","#e6d4ad","#79571c"]:item.state==="cancelled"?["#f2f4f3","#d5e0dc","#546660"]:["#fbf6e8","#e6d4ad","#79571c"];
-    const status=await measure(badgeText,badgeWidth-28,22,palette[2],false,endAlign);
+    const status=await measure(badgeText,312,22,palette[2],false,endAlign);
+    const badgeWidth=Math.max(140,status.w+40);
     const badgeH=Math.max(56,status.h+24);
     const badgeY=numberY+Math.round((numberH-badgeH)/2);
     await box(C-badgeWidth,badgeY,badgeWidth,badgeH,palette[0],palette[1],20);
-    place(status,x(C-badgeWidth+14,badgeWidth-28),badgeY+Math.round((badgeH-status.h)/2),badgeWidth-28,endAlign);
+    place(status,x(C-badgeWidth, badgeWidth)+Math.round((badgeWidth-status.w)/2),badgeY+Math.round((badgeH-status.h)/2),status.w,"left");
     y=Math.max(numberY+numberH,badgeY+badgeH)+32;
   }
   async function room(height:number){
@@ -237,7 +238,8 @@ export async function invoicePdf(item:InvoiceDetail,locale:Locale){
   y+=30;
   const summaryW=510,summaryOffset=C-summaryW,summaryLabelW=268,summaryValueW=summaryW-summaryLabelW-16;
   const adjusted=item.state!=="cancelled"&&item.allocatedMinor+item.balanceMinor!==item.totalMinor;
-  const totals:[string,string,boolean][]=[[rtl?"إجمالي الفاتورة":"Rechnungsbetrag",m(item.totalMinor),false],[rtl?"المبلغ المدفوع":"Bereits bezahlt",m(-item.allocatedMinor),false]];
+  const totals:[string,string,boolean][]=[[rtl?"إجمالي الفاتورة":"Rechnungsbetrag",m(item.totalMinor),false],[rtl?"المبلغ المدفوع":"Bereits bezahlt",m(item.allocatedMinor===0?0:-item.allocatedMinor),false]];
+  if(item.state==="cancelled")totals.push([rtl?"المبلغ الملغى":"Stornierter Betrag",m(item.totalMinor-item.allocatedMinor===0?0:-(item.totalMinor-item.allocatedMinor)),false]);
   if(adjusted)totals.push([t.adjusted,m(item.allocatedMinor+item.balanceMinor),false]);
   totals.push([t.balance,m(item.balanceMinor),true]);
   const measured=await Promise.all(totals.map(async([label,value,last])=>({last,a:await measure(label,summaryLabelW,last?29:22,last?brand:soft,last),b:await measure(value,summaryValueW,last?29:25,last?brand:body,true,endAlign)})));

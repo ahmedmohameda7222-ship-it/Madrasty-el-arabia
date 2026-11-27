@@ -68,7 +68,10 @@ test("approved layout export samples for visual review",async()=>{
       const allocatedMinor=state==="paid"?4500:state==="partial"?2000:0;
       const balanceMinor=state==="cancelled"?0:4500-allocatedMinor;
       const pdf=await invoicePdf({...invoice,invoiceNumber:"MA-202611-001",studentName:locale==="ar"?"طالب تجريبي":"Muster-Schüler",payerName:locale==="ar"?"ولي أمر تجريبي":"Muster-Elternteil",studentNumber:"DEMO-001",dueDate:"2026-11-05",totalMinor:4500,allocatedMinor,balanceMinor,state,lines:[{titleAr:"اشتراك شهري",titleDe:"Monatsbeitrag",amountMinor:4500}]},locale);
-      assert.match(pdf.toString("latin1"),/\/Type \/Pages \/Count 1\b/);
+      const source=pdf.toString("latin1");
+      assert.match(source,/\/Type \/Pages \/Count 1\b/);
+      assert.ok(!source.includes(actualText("-0,00\u00a0€")));
+      if(state==="cancelled")assert.ok(source.includes(actualText(locale==="ar"?"المبلغ الملغى":"Stornierter Betrag")));
       if(process.env.FINANCE_PDF_ARTIFACTS){await mkdir(process.env.FINANCE_PDF_ARTIFACTS,{recursive:true});await writeFile(join(process.env.FINANCE_PDF_ARTIFACTS,"invoice-"+locale+"-"+state+".pdf"),pdf);}
     }
   }
