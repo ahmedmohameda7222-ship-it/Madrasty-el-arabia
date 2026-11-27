@@ -126,3 +126,16 @@ test("participation pause starts next month and is confirmed directly on both cl
   assert.match(native,/put\("lastAttendanceMonth", todayMonth\)/);
   assert.match(native,/put\("duration", "one_month"\)/);
 });
+
+test("V2 invoice issuing defaults to one pupil and uses an inline payer repair",()=>{
+  const page=source("IssueInvoices.tsx");
+  assert.match(page,/useState<"student"\|"class"\|"school">\("student"\)/);
+  assert.match(page,/<InlinePayerEditor\b/);
+  assert.doesNotMatch(page,/href=\{\x60\$\{root\}\/fee-settings\?student=/);
+  assert.match(page,/readyRows\.length/);
+  assert.match(page,/command\("\/finance\/invoice-batches","POST"/);
+});
+test("V2 daily cash and fee saves do not require a separate preview",()=>{
+  assert.doesNotMatch(source("Cashbook.tsx"),/setPreview\(true\)/);
+  assert.doesNotMatch(source("FeeSettings.tsx"),/setReview\(true\)/);
+});
