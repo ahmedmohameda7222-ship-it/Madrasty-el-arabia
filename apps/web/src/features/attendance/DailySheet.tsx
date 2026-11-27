@@ -87,7 +87,7 @@ export function DailyAttendance({locale,initialClass,initialDate}:{
   }
 
   return <>
-    <section className="auth-card">
+    <section className="auth-card attendance-filters">
       <form className="auth-form" onSubmit={(event)=>{
         event.preventDefault();const next=dateInput||exactDay||"";
         setDate(next);persist({date:next});
@@ -261,7 +261,7 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
     const bulk=value.rows.filter((row)=>row.status===null&&!drafts[row.id]&&!row.confirmedArrivalAt);
     const edits=Object.entries(drafts).map(([rowId,edit])=>({rowId,...edit}));
     const id=value.id;
-    return <section className="auth-card auth-form">
+    return <section className="auth-card auth-form attendance-sheet">
       <div className="header-actions">
         <h2><bdi>{locale==="ar"?value.classroom.nameAr:value.classroom.nameDe}</bdi></h2>
         <bdi dir="ltr">{value.schoolDate}</bdi>
@@ -280,12 +280,12 @@ function Sheet({locale,classId,day,version,update}:{locale:Locale;classId:string
         {!editable&&edits.length>0&&<p role="status">{text.closedDraft}</p>}
         {value.approvedAt&&<bdi>{new Date(value.approvedAt).toLocaleString(locale==="ar"?"ar":"de-DE")}</bdi>}
         {value.state==="open"&&!editable&&!value.canApprove&&value.teachingDay&&<p>{text.readonly}</p>}
-        <ul className="group-list" aria-label={text.tally}>
+        <ul className="group-list attendance-tally" aria-label={text.tally}>
           {Object.entries(value.counts).map(([status,count])=><li key={status} className="group-row">
             <span>{text[status as keyof typeof value.counts]}</span><output>{new Intl.NumberFormat(locale).format(count)}</output>
           </li>)}
         </ul>
-        <ul className="group-list">
+        <ul className="group-list attendance-rows">
           {value.rows.map((row)=>{
             const local=drafts[row.id];
             const race=issues.find((entry)=>entry.rowId===row.id);

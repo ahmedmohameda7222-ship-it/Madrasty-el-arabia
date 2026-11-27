@@ -15,7 +15,7 @@ const copy={
 export function CachedAttendance({locale,entry,edit,error}:{locale:Locale;entry:CachedSheet;
   edit:(row:CachedAttendanceRow,status:AttendanceStatus|null)=>void;error:boolean}){
   const text=copy[locale];
-  return <section className="auth-card auth-form">
+  return <section className="auth-card auth-form attendance-sheet">
     <h2><bdi>{locale==="ar"?entry.classroom.nameAr:entry.classroom.nameDe}</bdi></h2>
     <bdi dir="ltr">{entry.schoolDate}</bdi>
     <p role="status">{text.saved}</p>
@@ -23,7 +23,7 @@ export function CachedAttendance({locale,entry,edit,error}:{locale:Locale;entry:
     <p>{text.pending} · {new Intl.NumberFormat(locale).format(Object.keys(entry.drafts).length)}</p>
     {error&&<p role="alert">{text.error}</p>}
     {entry.readonly&&<p>{text.readonly}</p>}
-    <ul className="group-list">{entry.rows.map((row)=>{
+    <ul className="group-list attendance-rows">{entry.rows.map((row)=>{
       const pending=entry.drafts[row.id];
       const value=pending?pending.status:row.status;
       return <li key={row.id} className="timetable-day">

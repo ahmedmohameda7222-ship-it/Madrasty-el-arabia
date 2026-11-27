@@ -249,6 +249,36 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 
 .timetable-day { padding-block: 12px; border-block-end: 1px solid var(--rule); }
 .timetable-day h2 { font-size: 1.125rem; margin-block-end: 4px; }
+
+/* Attendance: preserve exact counts, row order and existing controls. */
+.attendance-filters, .attendance-sheet { min-inline-size: 0; overflow-wrap: anywhere; padding: clamp(12px, 4vw, 24px); }
+.attendance-filters .auth-form, .attendance-sheet, .attendance-sheet .auth-form,
+.attendance-filters label, .attendance-sheet label { grid-template-columns: minmax(0, 1fr); min-inline-size: 0; }
+.attendance-filters :is(input, select), .attendance-sheet :is(input, select, textarea) {
+  display: block; inline-size: 100%; max-inline-size: 100%; min-inline-size: 0;
+  min-block-size: 48px; border: 1px solid var(--field-border); border-radius: var(--radius-control);
+  padding: 8px; background: var(--canvas); color: var(--ink);
+}
+.attendance-filters input[type=date]::-webkit-date-and-time-value { text-align: start; }
+.attendance-filters select, .attendance-sheet select { text-overflow: ellipsis; }
+.attendance-sheet .header-actions { justify-content: flex-start; }
+.attendance-sheet .header-actions > * { min-inline-size: 0; max-inline-size: 100%; }
+.attendance-filters :is(.plain-button,.primary-button), .attendance-sheet :is(.plain-button,.primary-button) {
+  max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere;
+}
+.attendance-tally, .attendance-rows { min-inline-size: 0; }
+.attendance-tally .group-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: 8px; padding: 10px 12px; min-inline-size: 0;
+}
+.attendance-tally output { font-size: 1.375rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--primary); }
+.attendance-rows > .timetable-day {
+  padding: 12px; min-inline-size: 0; display: grid; grid-template-columns: minmax(0,1fr);
+  gap: 8px; overflow-wrap: anywhere; border-block-end: 0;
+}
+.attendance-rows > .timetable-day > small { color: var(--muted); }
+.attendance-rows > .timetable-day > :is(.notice,.auth-card) { min-inline-size: 0; margin: 0; padding: 12px; }
+
 .timetable-session { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding-block: 8px; }
 .timetable-session small { color: var(--muted); }
 .timetable-session .plain-button { margin-inline-start: auto; }
