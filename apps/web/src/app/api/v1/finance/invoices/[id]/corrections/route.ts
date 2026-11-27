@@ -1,0 +1,10 @@
+import {invoiceCorrectionInput} from "@madrasty/contracts";
+import {academicId,type AcademicIdRoute} from "@/server/academics/route-params";
+import {correctInvoice} from "@/server/finance/invoices";
+import {api,data,readJson} from "@/server/http";
+import {requireActor} from "@/server/identity/actor";
+
+export const POST=api(async(request,context,route:AcademicIdRoute)=>{
+  const actor=await requireActor(request,context);
+  return data(await correctInvoice(actor,await academicId(route),request.headers.get("idempotency-key"),await readJson(request,invoiceCorrectionInput)),201);
+});
