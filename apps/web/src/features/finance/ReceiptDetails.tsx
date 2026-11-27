@@ -13,13 +13,13 @@ import {ConfirmedAt} from "@/ui/RecordValues";
 import {financeAmount,inputAmountMinor} from "./invoice-ui";
 import {InvoicePicker,receiptCopy,type InvoiceCandidate} from "./receipt-ui";
 
-export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:boolean}){
+export function ReceiptDetails({locale,id,staff,returnHref}:{locale:Locale;id:string;staff:boolean;returnHref?:string}){
   const text=receiptCopy[locale],root=`/${locale}/school/more`;
   const [version,setVersion]=useState(0),[notice,setNotice]=useState("");
   const details=useTimetableRead(`/finance/receipts/${id}`,receiptDetail,version);
   return <section className={`${css.workspace} auth-form`}>
     <h1>{text.title}</h1>
-    <Link className="plain-button" href={`${root}/${staff?"receipts":"invoices"}`}>{text.back}</Link>
+    <Link className="plain-button" href={returnHref??`${root}/${staff?"receipts":"invoices"}`}>{text.back}</Link>
     {notice&&<p role="status">{notice}</p>}
     <TimetableRead locale={locale} result={details}>{(item)=>{
       const money=(value:number)=><bdi dir="ltr">{financeAmount(value,item.currency,locale)}</bdi>;
