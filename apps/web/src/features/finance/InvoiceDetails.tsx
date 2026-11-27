@@ -72,7 +72,6 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
         {!item.paymentInstructions&&item.balanceMinor>0&&item.state!=="cancelled"&&<p className={css.secondary}>{locale==="ar"?"السداد نقدًا لدى المدرسة":"Barzahlung bei der Schule"}</p>}
         {item.receiptIds.length>0&&<ul className={css.recordList}>{item.receiptIds.map((id,index)=><li key={id}>
           <Link className={css.recordRow} href={`/${locale}/school/more/receipts?receipt=${id}&invoice=${item.id}${suffix}`}><span>{receiptCopy[locale].open} {index+1}</span><span className={css.chevron} aria-hidden="true"/></Link>
-          {canPost&&item.balanceMinor>0&&item.state!=="cancelled"&&<Link className={`plain-button ${css.invoiceQuickAction}`} href={`/${locale}/school/more/record-payment?invoice=${item.id}&from=list${suffix}`}>{receiptCopy[locale].record}</Link>}
         </li>)}</ul>}
         {item.canInquire&&<StartConversation locale={locale} label={text.ask} target={{kind:"office",id:"accounts"}}
           context={{kind:"invoice",id:item.id}}/>}
@@ -92,7 +91,8 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
       </div></details></div>
       <AcademicPageItems locale={locale} page={list} emptyMessage={locale==="ar"?(staff?"لا توجد فواتير تطابق الاختيار.":"لا توجد فواتير لأطفالك في الفترة المختارة. ستظهر هنا عند إصدارها."):(staff?"Keine Rechnungen für diese Auswahl.":"Hier erscheinen die Rechnungen Ihrer Kinder, sobald sie ausgestellt sind.")}>{(invoices)=><ul className={css.recordList}>
         {invoices.map((item)=><li key={item.id}>
-          <Link className={`${css.recordRow} ${css.invoiceRow}`} href={`${root}?invoice=${item.id}${suffix}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor,item.currency,locale)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
+          <Link className={`${css.recordRow} ${css.invoiceRow}`} href={`${root}?invoice=${item.id}${suffix}`}><span><strong><bdi>{item.studentName}</bdi></strong><small><bdi>{financeDate(item.period,locale,"month")}</bdi> · <bdi>{item.invoiceNumber}</bdi></small></span><span className={css.recordValue}><strong><bdi dir="ltr">{financeAmount(item.balanceMinor>0?item.balanceMinor:item.totalMinor,item.currency,locale)}</bdi></strong><small data-state={item.state}>{text[item.state]}</small></span><span className={css.chevron} aria-hidden="true"/></Link>
+          {canPost&&item.balanceMinor>0&&item.state!=="cancelled"&&<Link className={`plain-button ${css.invoiceQuickAction}`} href={`/${locale}/school/more/record-payment?invoice=${item.id}&from=list${suffix}`}>{receiptCopy[locale].record}</Link>}
         </li>)}
       </ul>}</AcademicPageItems>
     </>}
