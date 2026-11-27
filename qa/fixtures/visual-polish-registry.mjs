@@ -236,7 +236,7 @@ if (!sourceSha) throw new Error("Inventory baseline SHA is missing");
 const scopedFilesHash = createHash("sha256");
 for (const path of scope) {
   const content = readFileSync(path);
-  const normalized = /\.(?:ts|tsx|kt|css|html|md|xml|json|svg|js|mjs)$/.test(path)
+  const normalized = /\.(?:ts|tsx|kt|css|html|md|xml|json|svg|js|mjs|webmanifest|csv)$/.test(path)
     ? content.toString("utf8").replaceAll("\r\n", "\n") : content;
   scopedFilesHash.update(path).update("\0").update(normalized).update("\0");
 }
