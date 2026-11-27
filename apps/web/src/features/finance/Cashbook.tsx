@@ -1,15 +1,17 @@
 "use client";
-import {useRef,useState,type FormEvent} from "react";
+import {useEffect,useRef,useState,type FormEvent} from "react";
 import {z} from "zod";
 import {ApiResponseError} from "@/api/client";
-import {cashbookMonth,cashMovementInput,cashMovementKind,cashMovementReversalInput,type CashbookMonth,type Locale} from "@madrasty/contracts";
+import {cashbookMonth,cashMovementInput,cashMovementKind,cashMovementReversalInput,financeLedgerEntry,financeLedgerChannel,type CashbookMonth,type Locale} from "@madrasty/contracts";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
+import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {useSchoolCommand} from "@/api/commands";
 import {useAccountScope} from "@/ui/AccountScope";
 import {financeAmount,inputAmountMinor} from "./invoice-ui";
 import css from "./FinanceWorkspace.module.css";
 import {FinanceDateField} from "./FinanceDateField";
 
+const ledgerRows=financeLedgerEntry.array();
 const copy={
  ar:{title:"دفتر الخزنة",balance:"رصيد الخزنة الحالي",opening:"رصيد بداية الشهر",closing:"رصيد نهاية الفترة",income:"إيراد إضافي",donation:"تبرع",expense:"مصروف",bank_deposit:"إيداع في البنك",fee:"اشتراك نقدي",void:"تصحيح إيصال",refund:"رد مبلغ",in:"إجمالي المقبوض",out:"المصروفات",deposits:"الإيداعات البنكية",refunds:"المبالغ المرتجعة",corrections:"تصحيحات",month:"الشهر",new:"إضافة حركة",type:"نوع الحركة",date:"التاريخ",amount:"المبلغ",description:"السبب / البيان",save:"حفظ الحركة",review:"مراجعة",edit:"تعديل",saved:"تم تسجيل الحركة",empty:"لا توجد حركات",limited:"يتم عرض آخر ١٠٠٠ حركة.",export:"تحميل CSV"},
  de:{title:"Kassenbuch",balance:"Aktueller Kassenbestand",opening:"Anfangsbestand",closing:"Bestand zum Monatsende",income:"Sonstige Einnahme",donation:"Spende",expense:"Ausgabe",bank_deposit:"Bankeinzahlung",fee:"Barzahlung Schulgebühr",void:"Belegkorrektur",refund:"Erstattung",in:"Einnahmen",out:"Ausgaben",deposits:"Bankeinzahlungen",refunds:"Erstattungen",corrections:"Korrekturen",month:"Monat",new:"Neue Buchung",type:"Art",date:"Datum",amount:"Betrag",description:"Beschreibung / Grund",save:"Buchung speichern",review:"Prüfen",edit:"Bearbeiten",saved:"Buchung gespeichert",empty:"Keine Buchungen",limited:"Die letzten 1.000 Buchungen werden angezeigt.",export:"CSV herunterladen"},
@@ -21,23 +23,30 @@ export function Cashbook({locale,initialMonth}:{locale:Locale;initialMonth?:stri
     <h1>{t.title}</h1>
     <TimetableRead locale={locale} result={result}>{data=><>
       <FinanceDateField className={css.control} locale={locale} label={t.month} type="month" value={month||data.month} max={data.schoolDate.slice(0,7)} onChange={e=>{const next=e.target.value;setMonth(next);const params=new URLSearchParams(window.location.search);if(next)params.set("month",next);else params.delete("month");window.history.replaceState(null,"",window.location.pathname+"?"+params);}}/>
-      <CashbookContents key={data.month} locale={locale} data={data} refresh={()=>update(n=>n+1)}/>
+      <CashbookContents key={data.month} locale={locale} data={data} version={refresh} refresh={()=>update(n=>n+1)}/>
     </>}</TimetableRead>
   </section>;
 }
-function CashbookContents({locale,data,refresh}:{locale:Locale;data:CashbookMonth;refresh:()=>void}){
-  const t=copy[locale],money=(n:number)=>financeAmount(Math.abs(n),data.currency,locale),signed=(n:number)=>(n<0?"−":"+")+money(n);
+function CashbookContents({locale,data,version,refresh}:{locale:Locale;data:CashbookMonth;version:number;refresh:()=>void}){
+  const t=copy[locale],ar=locale==="ar",money=(n:number)=>financeAmount(Math.abs(n),data.currency,locale);
+  const [term,setTerm]=useState(""),[query,setQuery]=useState(""),[channel,setChannel]=useState<""|z.infer<typeof financeLedgerChannel>>("");
+  useEffect(()=>{const timer=setTimeout(()=>setQuery(term.trim()),220);return()=>clearTimeout(timer);},[term]);
+  const ledger=useAcademicPage(`/finance/ledger?limit=25&month=${data.month}${channel?"&channel="+channel:""}${query?"&q="+encodeURIComponent(query):""}`,ledgerRows,version);
   return <>
     <div className={css.balance}><span>{t.balance}</span><strong><bdi>{data.balanceMinor<0?"−":""}{money(data.balanceMinor)}</bdi></strong></div>
     <div className={css.metrics}>{([["in",data.incomeMinor],["out",data.expenseMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div>
     <details className={css.disclosure}><summary>{locale==="ar"?"تفاصيل الشهر":"Monatsdetails"}</summary><div className={css.metrics}>{([["opening",data.openingMinor],["deposits",data.depositsMinor],["refunds",data.refundsMinor],["corrections",data.correctionsMinor],["closing",data.closingMinor]] as const).map(([label,value])=><div key={label}><small>{t[label]}</small><strong><bdi>{value<0?"−":""}{money(value)}</bdi></strong></div>)}</div></details>
     {data.canPost&&<CashMovement locale={locale} data={data} refresh={refresh}/>}
-    <div className="header-actions">{data.entryCount===data.entries.length&&<a className="plain-button" download href={"/api/v1/finance/cashbook/export?month="+data.month}>{t.export}</a>}{data.entryCount<=100&&<a className="plain-button" download href={"/api/v1/finance/cashbook/pdf?month="+data.month+"&locale="+locale}>PDF</a>}</div>
-    {data.entryCount>data.entries.length&&<p>{t.limited}</p>}
-    {data.entries.length===0?<p>{t.empty}</p>:<ul className={css.entries}>{data.entries.map(entry=><li key={entry.id}>
-      <div><strong>{entry.reversalOf?(locale==="ar"?"تصحيح حركة":"Buchungskorrektur"):t[entry.kind]}</strong><small><bdi>{entry.description}</bdi> · <bdi>{entry.date}</bdi></small>{entry.receiptId&&<a href={"/"+locale+"/school/more/receipts?receipt="+entry.receiptId}>{locale==="ar"?"فتح الإيصال":"Beleg öffnen"}</a>}{data.canPost&&entry.canReverse&&<CashCorrection key={entry.id} locale={locale} entry={entry} currency={data.currency} refresh={refresh}/>}</div>
-      <strong className={entry.signedMinor<0?css.negative:css.positive}><bdi>{signed(entry.signedMinor)}</bdi></strong>
-    </li>)}</ul>}
+    <h2>{ar?"سجل الحسابات":"Buchungen"}</h2>
+    <label>{ar?"بحث في الحركات":"Buchungen suchen"}<input type="search" value={term} maxLength={100} onChange={e=>setTerm(e.target.value)}/></label>
+    <label>{ar?"الحساب":"Konto"}<select value={channel} onChange={e=>setChannel(financeLedgerChannel.safeParse(e.target.value).data??"")}><option value="">{ar?"الكل":"Alle"}</option><option value="cash">{ar?"نقدي":"Kasse"}</option><option value="bank">{ar?"البنك":"Bank"}</option><option value="transfer">{ar?"نقل بين الحسابين":"Umbuchungen"}</option></select></label>
+    <details className={css.disclosure}><summary>{ar?"تنزيل دفتر الخزنة":"Kassenbuch herunterladen"}</summary><div className="header-actions">{data.entryCount===data.entries.length&&<a className="plain-button" download href={"/api/v1/finance/cashbook/export?month="+data.month}>{t.export}</a>}{data.entryCount<=100&&<a className="plain-button" download href={"/api/v1/finance/cashbook/pdf?month="+data.month+"&locale="+locale}>PDF</a>}</div>{data.entryCount>data.entries.length&&<p>{ar?"الملف أكبر من الحد المسموح.":"Die Datei überschreitet das Exportlimit."}</p>}</details>
+    <AcademicPageItems locale={locale} page={ledger} emptyMessage={t.empty}>{items=><ul className={css.entries}>{items.map(entry=><li key={entry.id}>
+      <div><strong>{entry.reversalOf?(ar?"تصحيح حركة":"Buchungskorrektur"):entry.kind==="fee"&&entry.channel==="bank"?(ar?"اشتراك بتحويل بنكي":"Schulgebühr per Überweisung"):t[entry.kind]}</strong>
+        <small>{entry.channel==="bank"?(ar?"البنك":"Bank"):entry.channel==="transfer"?(ar?"نقل بين الحسابين":"Umbuchung"):(ar?"الخزنة":"Kasse")} · <bdi>{entry.date}</bdi></small><small><bdi>{entry.description}</bdi></small>
+        {entry.receiptId&&<a href={"/"+locale+"/school/more/receipts?receipt="+entry.receiptId}>{ar?"فتح الإيصال":"Beleg öffnen"}</a>}{data.canPost&&entry.canReverse&&<CashCorrection key={entry.id} locale={locale} entry={entry} currency={entry.currency} refresh={refresh}/>}</div>
+      <strong className={entry.signedMinor<0?css.negative:css.positive}><bdi>{entry.channel==="transfer"?(entry.signedMinor<0?(ar?"إلى البنك ":"Zur Bank "):(ar?"إلى الخزنة ":"Zur Kasse ")):(entry.signedMinor<0?"−":"+")}{financeAmount(Math.abs(entry.signedMinor),entry.currency,locale)}</bdi></strong>
+    </li>)}</ul>}</AcademicPageItems>
   </>;
 }
 function CashMovement({locale,data,refresh}:{locale:Locale;data:CashbookMonth;refresh:()=>void}){

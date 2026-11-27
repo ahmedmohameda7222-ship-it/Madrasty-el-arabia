@@ -16,7 +16,8 @@ const contract = parse(source.toString("utf8"));
 test("the local contract declares the expected API operations with unique identifiers", () => {
   const ids = Object.values(contract.paths).flatMap((entries) => Object.values(entries as Record<string, { operationId?: string }>))
     .flatMap((operation) => operation.operationId ? [operation.operationId] : []);
-  assert.equal(ids.length, 258);
+  assert.equal(ids.length, 259);
+  assert.equal(contract.paths["/finance/ledger"].get.operationId,"listFinanceLedger");
   assert.equal(contract.paths["/finance/invoices/{id}/corrections"].post.operationId,"correctFinanceInvoice");
   assert.equal(contract.paths["/finance/receipts/{id}/refunds"].post.operationId,"refundFinanceReceipt");
   assert.equal(contract.paths["/finance/cashbook/reversals"].post.operationId,"reverseCashbookMovement");

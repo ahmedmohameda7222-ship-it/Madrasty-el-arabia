@@ -362,6 +362,14 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const receiptAfter=(await fixtureApi(school,`/finance/receipts/${paidReplacement.id}`,{token:finance})).payload.data;
     assert.equal(receiptAfter.activeMinor,current.totalMinor-100);
     assert.equal(receiptAfter.remainderMinor,0);
+    const combinedLedger=(await fixtureApi(school,`/finance/ledger?month=${clock.month}&limit=100`,{token:finance})).payload.data;
+    assert.ok(combinedLedger.some((entry:{id:string;channel:string})=>entry.id===refund.id&&entry.channel==="cash"));
+    assert.ok(combinedLedger.some((entry:{channel:string;kind:string})=>entry.channel==="bank"&&entry.kind==="fee"));
+    assert.ok(combinedLedger.some((entry:{channel:string;kind:string})=>entry.channel==="transfer"&&entry.kind==="bank_deposit"));
+    const searched=(await fixtureApi(school,`/finance/ledger?month=${clock.month}&q=Synthetic%20donation&channel=cash`,{token:finance})).payload.data;
+    assert.ok(searched.some((entry:{id:string})=>entry.id===movement.id));
+    await fixtureApi(school,`/finance/ledger?month=${clock.month}`,{token:payer,persona:"guardian",status:403});
+
     const ownAfter=(await fixtureApi(school,`/finance/receipts/${afterRefund.receiptIds[0]}`,{token:payer})).payload.data;
     assert.equal(ownAfter.amountMinor,current.totalMinor);
     assert.equal(ownAfter.refunds[0].amountMinor,100);
