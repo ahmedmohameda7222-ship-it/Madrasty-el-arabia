@@ -1,7 +1,6 @@
 package de.madrasty.app.finance
 
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -21,15 +20,19 @@ import de.madrasty.app.ui.isolate
 internal fun Reconciliation(model: IdentityViewModel, initial: String?, canPost: Boolean,
     record: () -> Unit, open: (String) -> Unit, close: () -> Unit, review: () -> Unit) {
     var state by remember(initial) { mutableStateOf(initial ?: "") }
-    var cashbook by remember { mutableStateOf(false) }
-    FinancePage(R.string.receipt_queue, close) {
+    var cashbook by remember(initial) { mutableStateOf(initial==null) }
+    var showOptions by remember { mutableStateOf(false) }
+    FinancePage(R.string.finance_cash_bank, close) {
         FlowRow {
-            FilterChip(!cashbook,{cashbook=false},label={Text(stringResource(R.string.receipt_queue))})
+            FilterChip(!cashbook,{cashbook=false},label={Text(stringResource(R.string.finance_payment_history))})
             FilterChip(cashbook,{cashbook=true},label={Text(stringResource(R.string.cashbook_title))})
         }
         if(cashbook){CashbookPanel(model)}else{
-        if (canPost) Button(onClick = record) { Text(stringResource(R.string.receipt_record)) }
-        TextButton(onClick=review){Text(stringResource(R.string.stop_review_title))}
+        TextButton(onClick={showOptions=!showOptions}){Text(stringResource(R.string.finance_more_details))}
+        if(showOptions){
+            if(canPost) TextButton(onClick=record){Text(stringResource(R.string.receipt_special))}
+            TextButton(onClick=review){Text(stringResource(R.string.stop_review_title))}
+        }
         var showFilters by remember { mutableStateOf(false) }
         TextButton(onClick={showFilters=!showFilters}) { Text(stringResource(R.string.finance_filters)) }
         if (showFilters) FlowRow {
