@@ -86,9 +86,9 @@ export default async function SchoolPage({ params, searchParams }: {
         {(finance||billing||posting||bank||session.activePersona==="guardian")&&<MoreGroup group="finance">
           <summary>{locale==="ar"?"الحسابات":"Buchhaltung"}</summary>
           <div className="more-rows">
-            {(finance||posting||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/finance-reports`}>{session.activePersona==="guardian"?(locale==="ar"?"مدفوعاتي":"Meine Zahlungen"):(locale==="ar"?"نظرة مالية":"Finanzübersicht")}</Link>}
+            {(finance||posting||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/finance-reports`}>{session.activePersona==="guardian"?(locale==="ar"?"مدفوعاتي":"Meine Zahlungen"):(locale==="ar"?"ملخص الحسابات":"Finanzübersicht")}</Link>}
             {(finance||billing||posting||session.activePersona==="guardian")&&<Link className="more-row" href={`/${locale}/school/more/invoices`}>{locale==="ar"?"الفواتير":"Rechnungen"}</Link>}
-            {(finance||posting)&&<Link className="more-row" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link>}
+            {(finance||posting)&&<Link className="more-row" href={`/${locale}/school/more/receipts?view=cashbook`}>{locale==="ar"?"الخزنة والبنك":"Kasse & Bank"}</Link>}
             {(billing||bank)&&<Link className="more-row" href={`/${locale}/school/more/fee-settings`}>{locale==="ar"?"إعدادات الحسابات":"Einstellungen"}</Link>}
           </div>
         </MoreGroup>}
