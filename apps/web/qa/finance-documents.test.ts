@@ -35,3 +35,27 @@ for(const locale of ["de","ar"] as const){
     assert.ok(source.includes("/ActualText "+actualText((locale==="ar"?"الرقم":"Nummer")+": "+receipt.receiptNumber)));
   });
 }
+
+for(const locale of ["de","ar"] as const){
+  test("professional invoice layout preserves financial content on one A4 page "+locale,async()=>{
+    const source=(await invoicePdf({...invoice,allocatedMinor:2000,balanceMinor:1200,state:"partial"},locale)).toString("latin1");
+    assert.match(source,/\/Type \/Pages \/Count 1\b/);
+    for(const label of locale==="ar"?["بيانات الطالب ومسؤول السداد","بيانات الفاتورة","المبلغ المتبقي","المبلغ المدفوع","البند","المبلغ"]:["Rechnungsempfänger","Rechnungsdaten","Offener Betrag","Bereits bezahlt","Beschreibung","Betrag"]){
+      assert.ok(source.includes("/ActualText "+actualText(label)),label);
+    }
+    assert.ok(source.includes(actualText(invoice.invoiceNumber)));
+    assert.ok(source.includes(actualText(invoice.studentName)));
+  });
+  test("professional invoice handles long names, line items and bank data "+locale,async()=>{
+    const longName="عبد الرحمن أحمد Müller ".repeat(9).trim();
+    const lines=Array.from({length:36},(_,index)=>({titleAr:"اشتراك ومستلزمات مدرسية "+index,titleDe:"Schulmaterial und Unterricht "+index,amountMinor:100}));
+    const item={...invoice,studentName:longName,payerName:longName,kind:"manual" as const,lines,totalMinor:3600,balanceMinor:3600,
+      paymentInstructions:{beneficiary:"Madrasty El Arabia",iban:"DE89370400440532013000",reference:"QA-TRANSFER-001"}};
+    const source=(await invoicePdf(item,locale)).toString("latin1");
+    assert.match(source,/\/Type \/Pages \/Count [2-9]\b/);
+    assert.ok(source.includes(actualText(longName)));
+    assert.ok(source.includes(actualText(locale==="ar"?lines.at(-1)!.titleAr:lines.at(-1)!.titleDe)));
+    assert.ok(source.includes(actualText(item.paymentInstructions.iban)));
+    assert.ok(source.includes(actualText(item.paymentInstructions.reference)));
+  });
+}
