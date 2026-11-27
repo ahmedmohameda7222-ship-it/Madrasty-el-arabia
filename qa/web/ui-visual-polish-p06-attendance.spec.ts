@@ -51,11 +51,28 @@ for (const scene of [
         inset: parseFloat(getComputedStyle(el).paddingInlineStart),
         selectorHeight: el.querySelector("select")!.getBoundingClientRect().height,
       }));
+      const measureReflow = async (state: string) => {
+        const geometry = await page.locator(".school-content").evaluate(root => {
+          const box = root.getBoundingClientRect();
+          const overflow = root.scrollWidth - root.clientWidth;
+          const culprits = [...root.querySelectorAll("*")].filter(el => {
+            if (el.classList.contains("screen-reader-only")) return false;
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && (r.left < box.left - 1 || r.right > box.right + 1);
+          }).slice(0, 15).map(el => ({
+            tag: el.tagName, classes: typeof el.className === "string" ? el.className : "",
+            width: Math.round(el.getBoundingClientRect().width),
+          }));
+          return { overflow, culprits };
+        });
+        if (geometry.overflow > 1) console.log("P06 overflow", JSON.stringify({ locale: scene.locale, state, ...geometry }));
+        expect(geometry.overflow).toBeLessThanOrEqual(1);
+      };
       await page.screenshot({ path: folder + "/ready.png" });
-      expect(await page.locator(".school-content").evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      await measureReflow("normal");
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.screenshot({ path: folder + "/ready-text-200.png" });
-      expect(await page.locator(".school-content").evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      await measureReflow("text-200");
       writeFileSync(folder + "/geometry.json", JSON.stringify({ tallyGeometry, rowGeometry }, null, 2));
       console.log("P06 attendance geometry", JSON.stringify({ locale: scene.locale, tallyGeometry, rowGeometry }));
       expect(tallyGeometry.size).toBeGreaterThanOrEqual(20);

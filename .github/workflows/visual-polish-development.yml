@@ -59,8 +59,10 @@ jobs:
         run: |
           echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
           export LOCALAPPDATA="$RUNNER_TEMP"
+          df -h / /var/lib/docker
+          docker system df
           pwsh -NoProfile -File qa/start-stack.ps1
-      - name: Run existing and added visual checks against disposable fixtures (including P04 hierarchy, P05 staff and P06 attendance)
+      - name: Run existing and added visual checks against disposable fixtures (including P04–P07 visual candidates)
         shell: bash
         run: |
           set -euo pipefail

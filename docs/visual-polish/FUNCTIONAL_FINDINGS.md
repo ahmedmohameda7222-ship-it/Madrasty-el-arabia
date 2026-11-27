@@ -19,3 +19,8 @@ Both browsers in development run 46080379411 stopped before UI tests with sessio
 ### QA-05 — Android signed-out primary action (open)
 
 Run 46080077890, both emulator sizes: 21/22 passed; sign-in visibility assertion failed. The screen uses the loading label while restoring a session. Bounded waiting for the disabled sign-in node was added without removing any original assertions. Confirm via re-run; if visibility still fails after restore, investigate layout and persisted locale/state rather than waive the check.
+
+
+### QA-06 — hosted development runner cold navigation and resource failure
+
+Run 46082187416 Chromium reproduced the existing cold German install navigation failure; all five original P03 cases passed when re-run on the warmed server. WebKit stopped before browser tests with sanitized startup category resource or port conflict. Neither is waived: exact cold startup/navigation investigation and a fresh WebKit run remain required. No authentication or navigation product changes made.
