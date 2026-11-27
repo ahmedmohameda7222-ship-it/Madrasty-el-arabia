@@ -62,6 +62,25 @@ export function mayUse(session: SchoolSession, key: Capability) {
   });
 }
 
+/** Check independent UI capabilities in one actor transaction, preserving input order.
+ * Domain operations must still enforce their own authorization. */
+export async function mayUseMany(session: SchoolSession, keys: readonly Capability[]): Promise<boolean[]> {
+  if (session.activePersona !== "admin" || session.assurance !== "aal2" || keys.length === 0) {
+    return keys.map(() => false);
+  }
+  return withActor({
+    requestId: crypto.randomUUID(), accountId: session.accountId, sessionId: session.sessionId,
+    persona: session.activePersona, assurance: session.assurance,
+  }, async tx => {
+    const rows = await tx<{ allowed: boolean }[]>`
+      select app.has_capability(item.key) as allowed
+      from unnest(${tx.array([...keys])}::text[]) with ordinality as item(key, position)
+      order by item.position
+    `;
+    return rows.map(row => row.allowed === true);
+  });
+}
+
 /** Read the school menu's permissions together using the same policies as the destination routes. */
 export async function schoolMenuAccess(session: SchoolSession, keys: readonly Capability[]) {
   const isAdmin = session.activePersona === "admin";

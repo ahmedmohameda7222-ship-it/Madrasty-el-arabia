@@ -6,8 +6,7 @@ import { z } from "zod";
 import { SchoolHome } from "@/features/school/SchoolHome";
 import { schoolProfile } from "@/server/identity/profile";
 import { webSchoolSession } from "@/server/identity/web-session";
-import { schoolMenuAccess, mayUse } from "@/server/access/capabilities";
-import { mayManageStops } from "@/server/finance/stops";
+import { schoolMenuAccess } from "@/server/access/capabilities";
 import { DailyAttendance } from "@/features/attendance/DailySheet";
 import { Children, Families } from "@/features/school/Families";
 import { InviteWorkspace } from "@/features/identity/Invitations";
@@ -37,14 +36,14 @@ export default async function SchoolPage({ params, searchParams }: {
   }
   const text = dictionary(locale);
   const menuKeys = ["access.manage","school.manage","students.manage","staff.invite","academics.supervise","attendance.supervise","bank.configure","finance.issue","finance.read","finance.post"] as const;
-  const { capabilities, moderation, stopManager } = tab === "more"
+  const { capabilities, moderation, stopManager } = tab === "more" || tab === "students"
     ? await schoolMenuAccess(session, menuKeys)
     : { capabilities: [], moderation: false, stopManager: false };
   const [access, calendar, placement, teacherInvites, academic, attendance, bank, billing, finance, posting] = menuKeys.map(key => capabilities.includes(key));
   const invites = teacherInvites || placement;
-  const families = tab === "students" && await mayUse(session, "students.manage");
+  const families = tab === "students" && placement;
   if (tab === "students" && !families) notFound();
-  const familyAccess=families?await Promise.all([mayUse(session,"finance.issue"),mayUse(session,"finance.read"),mayUse(session,"finance.post"),mayUse(session,"attendance.supervise"),mayUse(session,"academics.supervise"),mayManageStops(session)]):[false,false,false,false,false,false];
+  const familyAccess = families ? [billing, finance, posting, attendance, academic, stopManager] : [false,false,false,false,false,false];
   const welcome=tab==="home"?await schoolProfile(session).catch(()=>null):null;
   return (
     <>

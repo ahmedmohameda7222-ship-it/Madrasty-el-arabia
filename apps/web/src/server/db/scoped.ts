@@ -2,6 +2,7 @@ import "server-only";
 import postgres, { type TransactionSql } from "postgres";
 import type { Persona } from "@madrasty/contracts";
 import { ApiError, type RequestContext } from "@/server/http";
+import { measure } from "@/server/performance";
 
 export type ActorContext = Readonly<RequestContext & {
   accountId: string;
@@ -36,14 +37,14 @@ function database(role:DatabaseRole) {
 
 async function withRole<T>(role:DatabaseRole,work:(tx:Transaction)=>Promise<T>):Promise<T> {
   try {
-    return await database(role).begin(async (tx) => {
+    return await measure("db", () => database(role).begin(async (tx) => {
       const [login] = await tx<{ restricted: boolean }[]>`
         select not (rolsuper or rolbypassrls) as restricted from pg_roles where rolname = session_user
       `;
       if (!login?.restricted) throw new ApiError("unavailable");
       await tx`select set_config('role', ${role}, true), set_config('statement_timeout', '8000ms', true)`;
       return work(tx);
-    }) as T;
+    })) as T;
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
       if (["23505", "23P01", "40001", "40P01"].includes(error.code)) throw new ApiError("conflict");

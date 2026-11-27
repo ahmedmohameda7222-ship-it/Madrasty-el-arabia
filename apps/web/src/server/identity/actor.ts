@@ -2,11 +2,12 @@ import "server-only";
 import { personaSchema } from "@madrasty/contracts";
 import { ApiError, type RequestContext } from "@/server/http";
 import type { ActorContext } from "@/server/db/scoped";
+import { measure } from "@/server/performance";
 import { assertWebMutation, requestCredential, resolveSchoolSession } from "./session";
 
 export async function requireActor(request: Request, context: RequestContext): Promise<ActorContext> {
   const credential = requestCredential(request);
-  const session = await resolveSchoolSession(credential.token);
+  const session = await measure("auth", () => resolveSchoolSession(credential.token));
   const isWrite = !["GET", "HEAD"].includes(request.method);
   if (isWrite && credential.kind === "web") assertWebMutation(request, true);
   const supplied = request.headers.get("x-school-persona");
