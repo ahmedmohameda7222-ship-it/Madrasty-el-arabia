@@ -222,11 +222,11 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     // The current month remains payable even when a pause is declared.
     const currentBeforePause=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${omar.id}`,{token:payer})).payload.data);
     await fixtureApi(school, "/enrollment-stops", {
-      method:"POST",token:payer,persona:"guardian",key:`${school.run}.pause-future-month`,status:400,
+      method:"POST",token:payer,persona:"guardian",key:`${school.run}.pause-future-month`,status:422,
       body:{studentId:ids.omar,lastAttendanceMonth:clock.nextMonth,duration:"one_month",reason:"Synthetic future pause"},
     });
     await fixtureApi(school, "/enrollment-stops", {
-      method:"POST",token:payer,persona:"guardian",key:`${school.run}.pause-indefinite`,status:400,
+      method:"POST",token:payer,persona:"guardian",key:`${school.run}.pause-indefinite`,status:422,
       body:{studentId:ids.omar,lastAttendanceMonth:clock.month,duration:"indefinite",reason:"Synthetic indefinite pause"},
     });
     const futurePausePreview=invoicePreview.parse(await send("/finance/invoice-previews","pause-preissued-monthly-preview",{
