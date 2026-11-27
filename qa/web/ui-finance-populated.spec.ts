@@ -245,13 +245,15 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await expect(received).toHaveValue("100.00");
               // In suggestion mode, removal must reduce the total rather than create an unintended credit.
               await go("record-payment?invoice="+unpaid.id);
-              await expect(received).not.toHaveValue("");
-              const initialAmount=await received.inputValue();
+              // go() closes the old Page; recreate every page-bound locator after navigation.
+              const suggested=page.locator(".school-content input[inputmode=decimal]").first();
+              const initialAmount=(unpaid.balanceMinor/100).toFixed(2);
+              await expect(suggested).toHaveValue(initialAmount);
               await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
               await page.locator(".school-content li").filter({hasText:extra.invoiceNumber}).getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
-              await expect(received).not.toHaveValue(initialAmount);
-              await remove.last().click();
-              await expect(received).toHaveValue(initialAmount);
+              await expect(suggested).toHaveValue(((unpaid.balanceMinor+extra.balanceMinor)/100).toFixed(2));
+              await page.getByRole("button",{name:s.locale==="ar"?"حذف":"Entfernen",exact:true}).last().click();
+              await expect(suggested).toHaveValue(initialAmount);
               const checkbox=page.locator(".school-content input[type=checkbox]").first();
               await checkbox.check();
               const review=page.getByRole("button",{name:s.locale==="ar"?"مراجعة":"Prüfen",exact:true});
