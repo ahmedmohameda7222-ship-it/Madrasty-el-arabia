@@ -293,6 +293,32 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               expect(after.state).toBe("paid");
               expect(after.balanceMinor).toBe(0);
               expect(after.receiptIds).toHaveLength(1);
+              // The browser issues an additional invoice directly and records a real partial refund.
+              await go("issue-invoices?student="+item.studentId+"&period="+clock.month);
+              await page.getByRole("combobox",{name:"نوع الفاتورة",exact:true}).selectOption("manual");
+              await page.getByLabel("البند بالعربي",{exact:true}).fill("نشاط اختباري جديد");
+              await page.getByLabel("البند بالألماني",{exact:true}).fill("QA Zusatzaktivität");
+              await page.locator(".school-content input[inputmode=decimal]").fill("12.34");
+              const issue=page.getByRole("button",{name:"إنشاء فاتورة",exact:true});
+              await expect(issue).toBeEnabled();
+              const issuing=page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname==="/api/v1/finance/invoice-batches");
+              await issue.click();
+              const issued=await issuing;
+              expect(issued.status()).toBe(201);
+              const batch=invoiceBatch.parse((await issued.json()).data);
+              expect(batch.issuedIds).toHaveLength(1);
+              await expect(page.getByRole("heading",{name:"تم إصدار الفواتير",exact:true})).toBeVisible();
+              await go("receipts?receipt="+after.receiptIds[0]);
+              await page.getByText("تسجيل مبلغ مرتجع",{exact:true}).click();
+              await page.getByLabel("المبلغ المرتجع",{exact:true}).fill("1.00");
+              await page.getByLabel("سبب الاسترداد",{exact:true}).fill("QA partial refund");
+              const refunding=page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname.endsWith("/refunds"));
+              await page.getByRole("button",{name:"تأكيد رد المبلغ",exact:true}).click();
+              expect((await refunding).status()).toBe(201);
+              await expect(page.getByText("تم تسجيل رد المبلغ",{exact:true})).toBeVisible();
+              const refunded=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+item.id,actorOptions)).payload.data);
+              expect(refunded.balanceMinor).toBe(100);
+
             }
           }
         }

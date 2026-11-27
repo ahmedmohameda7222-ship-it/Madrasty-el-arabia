@@ -142,7 +142,9 @@ export async function receiptPdf(item:ReceiptDetail,locale:Locale){
   const t=labels[locale],m=(v:number)=>money(v,item.currency,locale);
   const blocks:Block[]=[pair(t.received,date(item.receivedDate,locale)),pair(t.method,t[item.method]),pair(t.receiptAmount,m(item.amountMinor))];
   if(item.scope==="staff")blocks.push(pair(t.status,item.state==="allocated"?t.allocatedState:t[item.state]),pair(t.active,m(item.activeMinor)));
-  blocks.push({...pair(t.applied,m(item.appliedMinor)),bold:true,color:accent},heading(t.allocations));
+  blocks.push({...pair(t.applied,m(item.appliedMinor)),bold:true,color:accent});
+  if(item.refunds?.length){blocks.push(heading(locale==="ar"?"المبالغ المرتجعة":"Erstattungen"));for(const refund of item.refunds)blocks.push(pair(date(refund.refundedDate,locale),m(refund.amountMinor)));}
+  blocks.push(heading(t.allocations));
   for(const a of item.allocations){blocks.push(pair(a.studentName+" · "+a.invoiceNumber+" · "+a.period,m(a.amountMinor)));if(a.reversedAt)blocks.push({text:t.reversed+" · "+date(a.reversedAt,locale),color:muted,size:22});}
   blocks.push({text:t.thanks,color:accent});
   return renderDocument(t.receipt,item.receiptNumber,locale,blocks);
