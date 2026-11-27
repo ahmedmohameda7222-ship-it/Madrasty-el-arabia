@@ -126,17 +126,154 @@ export function imagePdf(pages:Buffer[],textPages:readonly (readonly PdfTextRun[
   return Buffer.concat(chunks);
 }
 
+// Professional invoice layout, approved in the DE/AR A4 prototype.
+// Reuses the existing Unicode extraction layer and font registration; receipts
+// and cashbook PDFs continue using renderDocument unchanged.
 export async function invoicePdf(item:InvoiceDetail,locale:Locale){
-  const t=labels[locale],m=(v:number)=>money(v,item.currency,locale);
-  const blocks:Block[]=[pair(t.status,t[item.state]),pair(t.payer,item.payerName),pair(t.student,item.studentName),pair(t.studentNumber,item.studentNumber),pair(t.period,item.period),pair(t.issued,date(item.issuedAt,locale)),pair(t.due,date(item.dueDate,locale)),heading(t.position),
-    ...item.lines.map(line=>pair(locale==="ar"?line.titleAr:line.titleDe,m(line.amountMinor))),
-    {...pair(t.total,m(item.totalMinor)),bold:true},pair(t.allocated,m(item.allocatedMinor)),{...pair(t.balance,m(item.balanceMinor)),bold:true,color:accent,size:33}];
-  if(item.state!=="cancelled"&&item.allocatedMinor+item.balanceMinor!==item.totalMinor)blocks.push(pair(t.adjusted,m(item.allocatedMinor+item.balanceMinor)));
-  if(item.paymentInstructions&&item.balanceMinor>0&&item.state!=="cancelled"){
-    const i=item.paymentInstructions;blocks.push(heading(t.transfer),pair(t.beneficiary,i.beneficiary),pair("IBAN",i.iban),pair(t.reference,i.reference));
+  const rtl=locale==="ar",t=labels[locale],M=112,R=W-M,C=R-M,bottom=1570;
+  const brand="#14665b",dark="#174e45",body="#203a36",soft="#637772",rule="#d5e0dc";
+  const ltrDate=(s:string)=>new Intl.DateTimeFormat("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"Europe/Berlin"}).format(new Date(s.length===10?s+"T12:00:00Z":s));
+  const month=new Intl.DateTimeFormat(rtl?"ar-EG-u-nu-latn":"de-DE",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(item.period+"-01T12:00:00Z"));
+  const m=(n:number)=>money(n,item.currency,"de");
+  const fontfile=await fontPath();
+  const logo=await readFile(join(process.cwd(),"public","school-192.png")).then(b=>sharp(b).resize(82,82,{fit:"contain"}).png().toBuffer());
+  type Layer={input:Buffer;left:number;top:number};
+  type Page={layers:Layer[];runs:PdfTextRun[]};
+  const pages:Page[]=[];
+  let page:Page={layers:[],runs:[]},y=0;
+  const startAlign=rtl?"right":"left",endAlign=rtl?"left":"right";
+  // Logical horizontal coordinates mirror the complete layout, not just text.
+  const x=(offset:number,width:number)=>rtl?R-offset-width:M+offset;
+  async function measure(text:string,width:number,size:number,color=body,bold=false,align:"left"|"right"=startAlign){
+    const markup='<span foreground="'+color+'">'+(bold?"<b>":"")+esc(text||" ")+(bold?"</b>":"")+"</span>";
+    const {data,info}=await sharp({text:{text:markup,font:"IBM Plex Sans Arabic "+size,fontfile,width:Math.floor(width),align,rgba:true,wrap:"word-char"}}).png().toBuffer({resolveWithObject:true});
+    return {text,data,w:info.width,h:info.height};
   }
-  blocks.push({text:t.thanks,color:accent,gap:20});
-  return renderDocument(t.invoice,item.invoiceNumber,locale,blocks);
+  type Raster=Awaited<ReturnType<typeof measure>>;
+  function place(r:Raster,left:number,top:number,width:number,align:"left"|"right"=startAlign){
+    const px=align==="right"?left+width-r.w:left;
+    if(px<0||top<0||px+r.w>W||top+r.h>H)throw new Error("Invoice layout exceeds A4 page");
+    page.layers.push({input:r.data,left:Math.round(px),top:Math.round(top)});
+    page.runs.push({text:r.text,left:Math.round(px),top:Math.round(top),width:r.w,height:r.h});
+  }
+  async function put(text:string,offset:number,top:number,width:number,size:number,color=body,bold=false,align:"left"|"right"=startAlign){
+    const r=await measure(text,width,size,color,bold,align);place(r,x(offset,width),top,width,align);return r.h;
+  }
+  async function box(offset:number,top:number,width:number,height:number,fill:string,stroke=fill,radius=0){
+    width=Math.round(width);height=Math.round(height);
+    const input=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><rect x="1" y="1" width="'+(width-2)+'" height="'+(height-2)+'" rx="'+radius+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/></svg>')).png().toBuffer();
+    page.layers.push({input,left:Math.round(x(offset,width)),top:Math.round(top)});
+  }
+  async function divider(top:number,offset=0,width=C,color=rule){await box(offset,top,width,3,color);}
+  async function start(first:boolean){
+    page={layers:[],runs:[]};pages.push(page);
+    page.layers.push({input:logo,left:x(0,82),top:112});
+    await put("Madrasty El Arabia",112,116,C-112,32,brand,true);
+    await put(rtl?"إدارة المدرسة والحسابات":"Schulverwaltung · Buchhaltung",112,166,C-112,19,soft);
+    await divider(236);
+    const titleH=await put(t.invoice,0,first?286:274,C,first?62:38,"#163d36",true);
+    const numberY=(first?286:274)+titleH+14;
+    const numberH=await put(item.invoiceNumber,0,numberY,Math.floor(C*.62),23,soft);
+    const badgeText=t[item.state],badgeWidth=340;
+    const palette=item.state==="paid"?["#e8f4ef","#cce4da","#14665b"]:item.state==="partial"?["#fbf6e8","#e6d4ad","#79571c"]:item.state==="cancelled"?["#f2f4f3","#d5e0dc","#546660"]:["#fbf6e8","#e6d4ad","#79571c"];
+    const status=await measure(badgeText,badgeWidth-28,22,palette[2],false,endAlign);
+    const badgeH=Math.max(56,status.h+24);
+    const badgeY=numberY+Math.round((numberH-badgeH)/2);
+    await box(C-badgeWidth,badgeY,badgeWidth,badgeH,palette[0],palette[1],20);
+    place(status,x(C-badgeWidth+14,badgeWidth-28),badgeY+Math.round((badgeH-status.h)/2),badgeWidth-28,endAlign);
+    y=Math.max(numberY+numberH,badgeY+badgeH)+32;
+  }
+  async function room(height:number){
+    if(y+height>bottom)await start(false);
+    if(y+height>bottom)throw new Error("Invoice section exceeds printable area");
+  }
+  await start(true);
+  const heroW=C-72,mainW=Math.floor(heroW*.61),dueW=heroW-mainW-24;
+  const amount=await measure(m(item.balanceMinor),mainW,58,"#0c6151",true);
+  const balanceLabel=await measure(t.balance,mainW,22,"#506a61");
+  const dueLabel=await measure(t.due,dueW,22,"#506a61",false,endAlign);
+  const due=await measure(ltrDate(item.dueDate),dueW,30,body,true,endAlign);
+  const heroH=Math.max(194,balanceLabel.h+amount.h+78,dueLabel.h+due.h+78);
+  await room(heroH);
+  await box(0,y,C,heroH,"#e8f4ef","#cce4da",24);
+  place(balanceLabel,x(36,mainW),y+36,mainW);
+  place(amount,x(36,mainW),y+48+balanceLabel.h,mainW);
+  const dueY=y+Math.round((heroH-dueLabel.h-due.h-10)/2);
+  place(dueLabel,x(C-36-dueW,dueW),dueY,dueW,endAlign);
+  place(due,x(C-36-dueW,dueW),dueY+dueLabel.h+10,dueW,endAlign);
+  y+=heroH+48;
+  const col=Math.floor((C-60)/2);
+  async function details(offset:number,title:string,fields:[string,string][]){
+    let top=y;
+    top+=await put(title,offset,top,col,22,brand,true)+18;
+    for(const [label,value] of fields){
+      top+=await put(label,offset,top,col,19,soft)+4;
+      top+=await put(value,offset,top,col,24,body,true)+14;
+    }
+    return top;
+  }
+  const leftEnd=await details(0,rtl?"بيانات الطالب ومسؤول السداد":"Rechnungsempfänger",[[rtl?t.payer:"Zahler",item.payerName],[t.student,item.studentName],[t.studentNumber,item.studentNumber]]);
+  const rightEnd=await details(col+60,rtl?"بيانات الفاتورة":"Rechnungsdaten",[[t.period,month],[t.issued,ltrDate(item.issuedAt)]]);
+  y=Math.max(leftEnd,rightEnd)+34;
+  const descWidth=Math.floor(C*.64)-40,amountWidth=C-descWidth-76;
+  async function tableHeader(){
+    y+=await put(t.position,0,y,C,22,brand,true)+18;
+    await box(0,y,C,62,dark);
+    await put(rtl?"البند":"Beschreibung",24,y+17,descWidth,21,"#ffffff",true);
+    await put(rtl?"المبلغ":"Betrag",C-24-amountWidth,y+17,amountWidth,21,"#ffffff",true,endAlign);
+    y+=62;
+  }
+  await room(150);await tableHeader();
+  for(const line of item.lines){
+    const desc=await measure(rtl?line.titleAr:line.titleDe,descWidth,24);
+    const amount=await measure(m(line.amountMinor),amountWidth,24,body,false,endAlign);
+    const height=Math.max(desc.h,amount.h)+60;
+    if(y+height>bottom){await start(false);await tableHeader();}
+    if(y+height>bottom)throw new Error("Invoice line exceeds printable area");
+    place(desc,x(24,descWidth),y+30,descWidth);
+    place(amount,x(C-24-amountWidth,amountWidth),y+30,amountWidth,endAlign);
+    y+=height;await divider(y-2);
+  }
+  y+=30;
+  const summaryW=510,summaryOffset=C-summaryW,summaryLabelW=268,summaryValueW=summaryW-summaryLabelW-16;
+  const adjusted=item.state!=="cancelled"&&item.allocatedMinor+item.balanceMinor!==item.totalMinor;
+  const totals:[string,string,boolean][]=[[rtl?"إجمالي الفاتورة":"Rechnungsbetrag",m(item.totalMinor),false],[rtl?"المبلغ المدفوع":"Bereits bezahlt",m(-item.allocatedMinor),false]];
+  if(adjusted)totals.push([t.adjusted,m(item.allocatedMinor+item.balanceMinor),false]);
+  totals.push([t.balance,m(item.balanceMinor),true]);
+  const measured=await Promise.all(totals.map(async([label,value,last])=>({last,a:await measure(label,summaryLabelW,last?29:22,last?brand:soft,last),b:await measure(value,summaryValueW,last?29:25,last?brand:body,true,endAlign)})));
+  const totalH=measured.reduce((n,r)=>n+Math.max(r.a.h,r.b.h)+36,0);
+  await room(totalH);
+  for(const r of measured){
+    if(r.last)await divider(y,summaryOffset,summaryW,brand);
+    place(r.a,x(summaryOffset,summaryLabelW),y+17,summaryLabelW);
+    place(r.b,x(C-summaryValueW,summaryValueW),y+17,summaryValueW,endAlign);
+    y+=Math.max(r.a.h,r.b.h)+36;
+    if(!r.last)await divider(y-2,summaryOffset,summaryW);
+  }
+  if(item.paymentInstructions&&item.balanceMinor>0&&item.state!=="cancelled"){
+    y+=22;
+    const i=item.paymentInstructions;
+    const bankRows:[[string,string],[string,string],[string,string]]=[[t.beneficiary,i.beneficiary],["IBAN",i.iban],[t.reference,i.reference]];
+    const cells=await Promise.all(bankRows.map(async ([label,value])=>({a:await measure(label,300,21,soft),b:await measure(value,C-330,23,body,true,endAlign)})));
+    const blockH=80+cells.reduce((n,r)=>n+Math.max(r.a.h,r.b.h)+22,0);
+    await room(blockH);y+=await put(t.transfer,0,y,C,23,brand,true)+20;
+    for(const r of cells){place(r.a,x(0,300),y,300);place(r.b,x(330,C-330),y,C-330,endAlign);y+=Math.max(r.a.h,r.b.h)+22;}
+  }
+  y+=25;
+  const thanks=await measure(t.thanks,C,23,dark,true),note=await measure(rtl?"تعكس هذه الفاتورة حالة السداد حتى التاريخ الموضح أدناه.":"Diese Rechnung zeigt den Zahlungsstand zum unten angegebenen Datum.",C,21,soft);
+  await room(thanks.h+note.h+42);
+  await divider(y);y+=24;place(thanks,x(0,C),y,C);y+=thanks.h+12;place(note,x(0,C),y,C);
+  const images:Buffer[]=[],runs:PdfTextRun[][]=[];
+  const snapshot=t.snapshot+": "+ltrDate(new Date().toISOString());
+  for(let index=0;index<pages.length;index++){
+    page=pages[index];
+    await divider(1616);
+    await put(snapshot,0,1642,C-200,18,soft);
+    await put(t.page+" "+(index+1)+" / "+pages.length,C-180,1642,180,18,soft,false,endAlign);
+    runs.push(page.runs);
+    images.push(await sharp({create:{width:W,height:H,channels:3,background:"#ffffff"}}).composite(page.layers).jpeg({quality:94,chromaSubsampling:"4:4:4"}).toBuffer());
+  }
+  return imagePdf(images,runs,locale);
 }
 export async function receiptPdf(item:ReceiptDetail,locale:Locale){
   const t=labels[locale],m=(v:number)=>money(v,item.currency,locale);
