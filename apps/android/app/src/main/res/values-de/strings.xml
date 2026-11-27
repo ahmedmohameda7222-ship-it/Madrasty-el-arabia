@@ -675,4 +675,8 @@
     <string name="finance_refund_saved">Erstattung erfasst</string>
     <string name="finance_refund_hint">Nur tatsächlich zurückgezahltes Geld erfassen. Der erstattete Betrag wird auf der Rechnung wieder offen.</string>
     <string name="finance_refund_confirm">Erstattung bestätigen</string>
+    <string name="finance_ledger_search">Buchungen suchen</string>
+    <string name="finance_ledger_cash">Kasse</string>
+    <string name="finance_ledger_bank">Bank</string>
+    <string name="finance_ledger_transfer">Umbuchung</string>
 </resources>

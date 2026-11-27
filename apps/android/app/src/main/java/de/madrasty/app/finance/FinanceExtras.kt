@@ -1,5 +1,6 @@
 package de.madrasty.app.finance
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.FlowRow
@@ -14,6 +15,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import de.madrasty.app.R
+import de.madrasty.app.academics.academicPages
 import de.madrasty.app.academics.academicRead
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.school.Field
@@ -121,12 +123,21 @@ internal fun CashbookPanel(model:IdentityViewModel){
             }
             }
         }
-        for(entry in data.financeRows("entries")) key(entry.getString("id")){
+        var search by remember { mutableStateOf("") }
+        var channel by remember { mutableStateOf("") }
+        Field(R.string.finance_ledger_search,search){search=it.take(100)}
+        val channels=mapOf("" to R.string.fee_all_states,"cash" to R.string.finance_ledger_cash,"bank" to R.string.finance_ledger_bank,"transfer" to R.string.finance_ledger_transfer)
+        FlowRow { for((wire,label) in channels) FilterChip(channel==wire,{channel=wire},label={Text(stringResource(label))}) }
+        val filter=if(channel.isEmpty()) "" else "&channel=$channel"
+        academicPages(model,"/finance/ledger?limit=25&month=${data.getString("month")}&q=${Uri.encode(search.trim())}$filter",refresh){rows->
+        for(entry in rows) key(entry.getString("id")){
             HorizontalDivider()
             if(!entry.isNull("reversalOf"))Text(stringResource(R.string.cashbook_correction))
             Text(isolate(entry.getString("description"))+" · "+isolate(entry.getString("date")))
-            Text(financeMoney(entry.getLong("signedMinor"),currency))
-            if(data.getBoolean("canPost")&&entry.optBoolean("canReverse"))CashMovementCorrection(model,entry,currency){refresh++}
+            val entryCurrency=entry.getString("currency")
+            Text(stringResource(channels.getValue(entry.getString("channel")))+" · "+financeMoney(entry.getLong("signedMinor"),entryCurrency))
+            if(data.getBoolean("canPost")&&entry.optBoolean("canReverse"))CashMovementCorrection(model,entry,entryCurrency){refresh++}
+        }
         }
     }
 }

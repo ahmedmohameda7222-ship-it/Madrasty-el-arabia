@@ -4757,6 +4757,7 @@ components:
       in: query
       schema: { type: string, minLength: 1, maxLength: 2048 }
   schemas:
+    FinanceLedgerEntry: {type: object, required: [id, date, kind, channel, currency, signedMinor, description, actorId, recordedAt, receiptId], properties: {id: {type: string, format: uuid}, date: {type: string, format: date}, kind: {type: string, enum: [fee, void, refund, income, donation, expense, bank_deposit]}, channel: {type: string, enum: [cash, bank, transfer]}, currency: {type: string}, signedMinor: {type: integer}, description: {type: string}, actorId: {type: string, format: uuid}, recordedAt: {type: string, format: date-time}, receiptId: {type: [string, 'null'], format: uuid}, reversalOf: {type: [string, 'null'], format: uuid}, canReverse: {type: boolean}}}
     AccountProfile:
       type: object
       required: [displayName, guardian, children]

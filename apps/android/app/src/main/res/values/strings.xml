@@ -675,4 +675,8 @@
     <string name="finance_refund_saved">تم تسجيل رد المبلغ</string>
     <string name="finance_refund_hint">سجل فقط مبلغًا تم رده بالفعل. الفاتورة المرتبطة تصبح مستحقة بقيمة المبلغ المرتجع.</string>
     <string name="finance_refund_confirm">تأكيد رد المبلغ</string>
+    <string name="finance_ledger_search">بحث في سجل المعاملات</string>
+    <string name="finance_ledger_cash">الخزنة</string>
+    <string name="finance_ledger_bank">البنك</string>
+    <string name="finance_ledger_transfer">تحويل داخلي</string>
 </resources>
