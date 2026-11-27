@@ -1,33 +1,33 @@
 
-.root{max-width:1180px;margin:0 auto;padding:16px 0 38px;display:grid;gap:18px;color:var(--ink)}
-.header{display:grid;gap:7px}.header h1{font-size:clamp(1.35rem,2.5vw,1.95rem);line-height:1.3;margin:0;overflow-wrap:anywhere}
+.root{max-width:1180px;min-width:0;margin:0 auto;padding:16px 0 38px;display:grid;grid-template-columns:minmax(0,1fr);gap:18px;color:var(--ink);overflow-wrap:anywhere}
+.header{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:7px}.header h1{font-size:clamp(1.35rem,2.5vw,1.95rem);line-height:1.3;margin:0;overflow-wrap:anywhere}
 .header p{font-size:.9rem;color:var(--muted);margin:0}.header .classIdentity{font-size:1.04rem;color:var(--ink);overflow-wrap:anywhere}.eyebrow{font-size:.8rem;color:var(--muted);font-weight:600}
 .toolbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
-.back,.action{border:1px solid var(--rule);background:var(--inset);color:var(--ink);border-radius:11px;padding:10px 14px;min-height:44px;font:inherit;font-size:.9rem;font-weight:650;cursor:pointer}
+.back,.action{border:1px solid var(--rule);background:var(--inset);color:var(--ink);border-radius:var(--radius-control);padding:10px 14px;min-height:44px;min-width:0;max-width:100%;font:inherit;font-size:.9rem;font-weight:650;cursor:pointer;overflow-wrap:anywhere;white-space:normal}
 .readonly{display:inline-flex;align-items:center;border:1px solid var(--rule);background:var(--inset);border-radius:99px;padding:6px 11px;color:var(--muted);font-size:.8rem}
-.field{display:grid;gap:7px;font-size:.9rem;font-weight:600;max-width:460px}
-.field input,.field select{border:1px solid var(--rule);border-radius:11px;background:var(--card);color:var(--ink);padding:11px 12px;min-height:44px;font:inherit;min-width:0}
-.classList{display:grid;gap:10px}
-.classCard{display:grid;gap:11px;width:100%;background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:17px;text-align:start;cursor:pointer;color:var(--ink);font:inherit;min-height:112px}
+.field{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;font-size:.9rem;font-weight:600;max-width:min(460px,100%);min-width:0}
+.field input,.field select{border:1px solid var(--field-border);border-radius:var(--radius-control);background:var(--card);color:var(--ink);padding:10px 12px;min-height:48px;font:inherit;min-width:0;width:100%;max-width:100%;text-overflow:ellipsis}
+.classList{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+.classCard{display:grid;gap:11px;width:100%;background:var(--card);border:1px solid var(--rule);border-radius:var(--radius-card);padding:17px;text-align:start;cursor:pointer;color:var(--ink);font:inherit;min-height:112px;min-width:0;overflow-wrap:anywhere}
 .classCard:hover{background:var(--inset)}.classCard>span:not(.classHeadline){font-size:.86rem;color:var(--muted)}
-.classHeadline{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.classHeadline{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;min-width:0}
 .classHeadline strong{font-weight:700;font-size:1rem;overflow-wrap:anywhere}
-.classHeadline span{font-size:.83rem;font-weight:650;flex-shrink:0}
+.classHeadline span{font-size:.83rem;font-weight:650;color:var(--primary);min-width:0}
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.metric{display:grid;align-content:center;gap:10px;padding:16px;border:1px solid var(--rule);border-radius:14px;background:var(--card);min-width:0}
-.metric span{font-size:.84rem;color:var(--muted)}.metric strong{font-size:clamp(1.05rem,1.8vw,1.55rem);font-weight:740;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.attendanceSummary{border:1px solid var(--rule);border-radius:14px;padding:15px;background:var(--card);display:grid;gap:13px}
+.metric{display:grid;align-content:center;gap:10px;padding:16px;border:1px solid var(--rule);border-radius:var(--radius-card);background:var(--card);min-width:0}
+.metric span{font-size:.84rem;color:var(--muted)}.metric strong{font-size:clamp(1.5rem,2.4vw,2rem);font-weight:740;font-variant-numeric:tabular-nums;line-height:1.25;color:var(--primary);overflow-wrap:anywhere}
+.attendanceSummary{border:1px solid var(--rule);border-radius:var(--radius-card);padding:15px;background:var(--card);display:grid;grid-template-columns:minmax(0,1fr);gap:13px;min-width:0}
 .attendanceSummary>strong{font-size:.95rem}
 .chips{display:flex;flex-wrap:wrap;gap:8px}.chips span,.status{display:inline-flex;align-items:center;min-height:30px;padding:5px 10px;border-radius:18px;border:1px solid var(--rule);background:var(--inset);font-size:.83rem;color:var(--ink)}
 .sections{display:flex;gap:8px;flex-wrap:wrap}
-.section,.selected{font:inherit;font-size:.87rem;font-weight:650;border-radius:11px;padding:10px 13px;min-height:44px;cursor:pointer;border:1px solid var(--rule);background:var(--inset);color:var(--ink)}
-.selected{border-color:var(--ink);background:var(--card)}
-.sectionBody,.panel{border:1px solid var(--rule);border-radius:16px;background:var(--card);padding:17px;display:grid;gap:14px;min-width:0}
+.section,.selected{font:inherit;font-size:.87rem;font-weight:650;border-radius:var(--radius-pill);padding:10px 13px;min-height:44px;min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal;cursor:pointer;border:1px solid var(--rule);background:var(--inset);color:var(--ink)}
+.selected{border-color:var(--primary);background:var(--selection);color:var(--selection-ink)}
+.sectionBody,.panel{border:1px solid var(--rule);border-radius:var(--radius-card);background:var(--card);padding:17px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}
 .sectionBody h2,.panel h2{font-size:1.06rem;margin:0}
-.list{display:grid;gap:9px}
-.pupilRow{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--rule);border-radius:12px;background:var(--inset);padding:12px}
+.list{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:9px}
+.pupilRow{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--rule);border-radius:var(--radius-inset);background:var(--inset);padding:12px;min-width:0}
 .pupilName{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.pupilName small{color:var(--muted)}
-.topic{padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--inset);display:grid;gap:9px;overflow-wrap:anywhere}
+.topic{padding:14px;border:1px solid var(--rule);border-radius:var(--radius-inset);background:var(--inset);display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:9px;overflow-wrap:anywhere}
 .topicTitle{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .topicTitle strong{font-size:.96rem}.topicTitle span,.topic p{color:var(--muted);font-size:.87rem}
 .topic p{margin:0;line-height:1.6}.topic p b{color:var(--ink)}
