@@ -268,6 +268,22 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await expect(page.getByRole("button",{name:s.locale==="ar"?"تأكيد":"Bestätigen",exact:true})).toBeVisible();
               await capture(page,prefix+"payment-review");
             }
+            if(s.locale==="ar"&&width===1280){
+              const item=records.find(x=>x.label==="C")!.invoice;
+              await go("record-payment?invoice="+item.id);
+              const amount=page.locator(".school-content input[inputmode=decimal]");
+              const confirm=page.getByRole("button",{name:"تأكيد السداد",exact:true});
+              await amount.fill("0");
+              await confirm.click();
+              await expect(page.getByText("اكتب مبلغًا أكبر من صفر ولا يتجاوز المتبقي.",{exact:true})).toBeVisible();
+              await amount.fill((item.balanceMinor/100).toFixed(2));
+              await confirm.click();
+              await expect(page.getByRole("heading",{name:"تم تسجيل السداد",exact:true})).toBeVisible();
+              const after=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+item.id,actorOptions)).payload.data);
+              expect(after.state).toBe("paid");
+              expect(after.balanceMinor).toBe(0);
+              expect(after.receiptIds).toHaveLength(1);
+            }
           }
         }
       }finally{await context.close();}
