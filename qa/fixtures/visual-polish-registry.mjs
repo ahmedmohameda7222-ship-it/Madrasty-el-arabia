@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, posix } from "node:path";
+import { normalizeRegistrySource } from "./visual-polish-fingerprint.mjs";
 
 const requireWeb = createRequire(new URL("../../apps/web/package.json", import.meta.url));
 const ts = requireWeb("typescript");
@@ -236,8 +237,7 @@ if (!sourceSha) throw new Error("Inventory baseline SHA is missing");
 const scopedFilesHash = createHash("sha256");
 for (const path of scope) {
   const content = readFileSync(path);
-  const normalized = /\.(?:ts|tsx|kt|css|html|md|xml|json|svg|js|mjs|webmanifest|csv)$/.test(path)
-    ? content.toString("utf8").replaceAll("\r\n", "\n") : content;
+  const normalized = normalizeRegistrySource(path, content);
   scopedFilesHash.update(path).update("\0").update(normalized).update("\0");
 }
 const sourceFingerprint = scopedFilesHash.digest("hex");

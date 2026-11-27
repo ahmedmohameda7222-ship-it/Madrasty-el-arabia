@@ -11,7 +11,7 @@ permissions:
   contents: read
 concurrency:
   group: visual-polish-development-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   static:
     runs-on: ubuntu-latest
@@ -27,6 +27,7 @@ jobs:
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
       - run: node --test qa/screenshot-audit-policy.test.mjs qa/qa-overlay-policy.test.mjs qa/finance-mobile-ux.test.mjs
+      - run: node --test qa/fixtures/visual-polish-fingerprint.test.mjs
       - run: node qa/fixtures/visual-polish-registry.mjs --check
       - run: pnpm check:types
       - run: pnpm build:web
