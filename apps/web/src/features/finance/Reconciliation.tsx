@@ -16,8 +16,7 @@ export function Reconciliation({locale,enabled,initialState}:{locale:Locale;enab
   const page=useAcademicPage(`/finance/receipts?limit=25${selected.success?"&state="+selected.data:""}`,receipts,0);
   return <section className={`${css.workspace} auth-form`}>
     <h1>{locale==="ar"?"المدفوعات":"Zahlungen"}</h1>
-    {enabled&&<Link className="primary-button" href={`${root}/record-payment`}>{text.record}</Link>}
-    <details className={css.disclosure}><summary>{locale==="ar"?"المزيد":"Weitere Optionen"}</summary><Link className="plain-button" href={`${root}/stop-reviews`}>{locale==="ar"?"تسويات التوقف":"Gebührenkorrekturen"}</Link></details>
+    <details className={css.disclosure}><summary>{locale==="ar"?"المزيد":"Weitere Optionen"}</summary>{enabled&&<Link className="plain-button" href={`${root}/record-payment?advanced=1`}>{locale==="ar"?"تسجيل دفعة استثنائية":"Sonderzahlung erfassen"}</Link>}<Link className="plain-button" href={`${root}/stop-reviews`}>{locale==="ar"?"تسويات التوقف":"Gebührenkorrekturen"}</Link></details>
     <label>{locale==="ar"?"الحالة":"Status"}<select value={state} onChange={(event)=>setState(receiptState.safeParse(event.target.value).data??"")}>
       <option value="">{text.all}</option>
       {receiptState.options.map((one)=><option key={one} value={one}>{text[one]}</option>)}
