@@ -14,6 +14,11 @@ for(const scenario of [
     const school=schoolFixtures();
     const samples:{tab:string;iteration:number;navigationMs:number}[]=[];
     const api:{path:string;status:number;timing:string}[]=[];
+    const errors:string[]=[];
+    page.setDefaultTimeout(10_000);
+    page.setDefaultNavigationTimeout(20_000);
+    page.on("pageerror",error=>{errors.push(error.message);console.error("Browser runtime error:",error.message);});
+    page.on("console",message=>{if(message.type()==="error")console.error("Browser console:",message.text());});
     try{
       await school.seed();
       const admin=await school.bearer("admin","admin");
@@ -34,20 +39,24 @@ for(const scenario of [
       for(let iteration=0;iteration<2;iteration++)for(const tab of [scenario.tab,"messages","calendar","more","home"]){
         const link=page.locator('.school-nav > a[href*="/school/'+tab+'"]');
         await expect(link).toBeVisible();
+        console.log(`Navigation ${scenario.persona} ${iteration} ${tab}`);
         const started=performance.now();
-        await link.click();
+        await link.click({timeout:10_000});
         await expect(page).toHaveURL(new RegExp("/school/"+tab+"(?:\\?.*)?$"));
         await expect(link).toHaveAttribute("aria-current","page");
         await expect(main).toBeVisible();
         await expect(main.locator(".school-route-loading")).toHaveCount(0);
-        samples.push({tab,iteration,navigationMs:Math.round(performance.now()-started)});
         await expect(main.locator('[data-async-state="loading"]')).toHaveCount(0,{timeout:30_000});
+        samples.push({tab,iteration,navigationMs:Math.round(performance.now()-started)});
         await expect(main.locator('[data-async-state="error"],[data-async-state="forbidden"]')).toHaveCount(0);
       }
+      expect(errors,"uncaught browser errors").toEqual([]);
+    }finally{
       mkdirSync("qa-artifacts/performance",{recursive:true});
       writeFileSync("qa-artifacts/performance/navigation-"+scenario.persona+"-"+testInfo.project.name+".json",JSON.stringify({
-        head:process.env.GITHUB_SHA??"local",environment:"isolated synthetic QA (Next dev)",viewport:390,scenario,samples,api
+        head:process.env.GITHUB_SHA??"local",environment:"isolated synthetic QA (Next dev)",viewport:390,scenario,samples,api,errors
       },null,2)+"\n");
-    }finally{await school.close();}
+      await school.close();
+    }
   });
 }

@@ -28,7 +28,11 @@ jobs:
       - run: pnpm build:web
   performance-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
     steps:
       - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
@@ -42,22 +46,30 @@ jobs:
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
       - run: pwsh -NoProfile -File qa/start-stack.ps1
-      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Measure protected APIs and mobile navigation
         shell: bash
         run: |
           set -euo pipefail
-          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-performance.log" 2>&1 &
+          QA_SCREENSHOTS_ONLY=1 pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-performance.log" 2>&1 &
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
           pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/performance/api-baseline.test.ts
-          pnpm qa:web --project=chromium --project=webkit ui-performance.spec.ts ui-navigation-pending.spec.ts ui-work-queues-ready.spec.ts
+          pnpm qa:web --project=${{ matrix.browser }} ui-performance.spec.ts ui-navigation-pending.spec.ts ui-work-queues-ready.spec.ts
+      - name: Print browser/server failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          grep -E 'Error:|Warning:|API request failed|GET /|POST /' "$RUNNER_TEMP/madrasty-performance.log" | tail -n 100 || true
+          find "$RUNNER_TEMP/MadrastyBuild/qa-supabase/playwright" -name error-context.md -exec cat {} \; || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: performance-evidence
-          path: qa-artifacts/performance/
+          name: performance-evidence-${{ matrix.browser }}
+          path: |
+            qa-artifacts/performance/
+            ${{ runner.temp }}/MadrastyBuild/qa-supabase/playwright/**/error-context.md
           if-no-files-found: warn
   domain-regression:
     runs-on: ubuntu-latest
