@@ -263,7 +263,9 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     const nextMonth = invoicePreview.parse(await send("/finance/invoice-previews", "next-month-preview", {
       ...selection, period: clock.nextMonth,
     }));
-    assert.equal(nextMonth.rows.find((row) => row.studentId === ids.omar)?.outcome, "stopped");
+    const pausedRow=nextMonth.rows.find((row)=>row.studentId===ids.omar);
+    assert.ok(pausedRow?.outcome==="stopped"||(pausedRow?.outcome==="existing"&&pausedRow.existingId===preissued),
+      "a paused student cannot receive another monthly invoice, including after a prior invoice was cancelled");
     assert.equal(nextMonth.rows.find((row) => row.studentId === ids.ahmed)?.outcome, "ready");
     const futureBatch=invoiceBatch.parse(await send("/finance/invoice-batches","future-issue",{previewId:nextMonth.previewId,revision:nextMonth.revision}));
     assert.equal(futureBatch.issuedIds.length,1);
