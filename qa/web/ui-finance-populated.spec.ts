@@ -91,7 +91,11 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
       const token=await school.bearer(s.actor,s.persona);
       const context=await browser.newContext({...(browser.browserType().name()==="webkit"?devices["iPhone 13"]:{}),baseURL:localOrigin,locale:s.locale==="ar"?"ar-EG":"de-DE"});
       try{
-        await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+        await context.addCookies([
+          {name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},
+          // Browser writes use the same CSRF contract as an ordinary signed-in web session.
+          {name:"madrasty-csrf",value:randomUUID().replaceAll("-","")+randomUUID().replaceAll("-",""),url:localOrigin,sameSite:"Lax"},
+        ]);
         let page=await context.newPage();
         const record=records.find(x=>x.label===s.record)!;
         const actorOptions={token,persona:s.persona,locale:s.locale};
@@ -277,7 +281,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await confirm.click();
               await expect(page.getByText("اكتب مبلغًا أكبر من صفر ولا يتجاوز المتبقي.",{exact:true})).toBeVisible();
               await amount.fill((item.balanceMinor/100).toFixed(2));
+              const posted=page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname==="/api/v1/finance/receipts");
               await confirm.click();
+              const response=await posted;
+              expect(response.status(),"browser receipt write").toBe(201);
               await expect(page.getByRole("heading",{name:"تم تسجيل السداد",exact:true})).toBeVisible();
               const after=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+item.id,actorOptions)).payload.data);
               expect(after.state).toBe("paid");
