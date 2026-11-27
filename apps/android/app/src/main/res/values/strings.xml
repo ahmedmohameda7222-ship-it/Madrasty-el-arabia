@@ -664,4 +664,5 @@
     <string name="receipt_special">تسجيل دفعة استثنائية</string>
     <string name="finance_cash_bank">الخزنة والبنك</string>
     <string name="finance_payment_history">سجل المدفوعات</string>
+    <string name="stop_next_month_only">التوقف للشهر القادم فقط. رسوم الشهر الحالي لا تتغير.</string>
 </resources>
