@@ -60,7 +60,7 @@ jobs:
           echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
           export LOCALAPPDATA="$RUNNER_TEMP"
           pwsh -NoProfile -File qa/start-stack.ps1
-      - name: Run existing and added visual checks against disposable fixtures (including P04 hierarchy and P05 staff)
+      - name: Run existing and added visual checks against disposable fixtures (including P04 hierarchy, P05 staff and P06 attendance)
         shell: bash
         run: |
           set -euo pipefail
@@ -69,4 +69,8 @@ jobs:
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
           pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; import {setUpCalendar} from "./qa/fixtures/calendar"; (async()=>{const school=schoolFixtures();try{await school.seed();await setUpCalendar(school,await school.bearer("admin","admin"));}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
-          pnpm exec playwright test --config qa/visual-polish.config.ts --browser ${{ matrix.browser }}
+          if ! pnpm exec playwright test --config qa/visual-polish.config.ts --browser ${{ matrix.browser }}; then
+            echo 'Full suite failed; separately diagnose the original P03 routes on the warmed development runtime. The original failure remains a failed job.'
+            pnpm exec playwright test --config qa/visual-polish.config.ts --browser ${{ matrix.browser }} --grep 'public entry|public identity form|guardian settings and profile' || true
+            exit 1
+          fi
