@@ -99,7 +99,7 @@ export async function correctInvoice(actor:ActorContext,id:string,key:string|nul
   const result=await commitCommand(actor,"finance.invoice.correct",key,hashCommand({id,...input}),{
     authorize:async tx=>{
       await requireCapability(tx,actor,"finance.issue");
-      const [row]=await tx<{allowed:boolean}[]>`select app.finance_invoice_visible(${id}) as allowed`;
+      const [row]=await tx<{allowed:boolean}[]>`select exists(select 1 from app.invoice_correction_options(${id})) as allowed`;
       if(!row.allowed)throw new ApiError("not_found");
     },
     mutate:async tx=>{
