@@ -100,3 +100,7 @@ test("normal invoice payments use one submit and keep advanced allocation separa
   assert.match(simple,/role="alert"/);
   assert.match(source("Reconciliation.tsx"), /record-payment\?advanced=1/);
 });
+
+test("finance date controls are visible and never transparent required inputs",()=>{
+  assert.doesNotMatch(source("FinanceWorkspace.module.css"), /\.dateControl>input[^{]*\{[^}]*opacity:0/);
+});
