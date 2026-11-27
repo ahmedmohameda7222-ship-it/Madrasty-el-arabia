@@ -61,7 +61,19 @@ jobs:
           export LOCALAPPDATA="$RUNNER_TEMP"
           df -h / /var/lib/docker
           docker system df
-          pwsh -NoProfile -File qa/start-stack.ps1
+          if ! pwsh -NoProfile -File qa/start-stack.ps1; then
+            # Emit fixed classifications only. The raw local startup log may contain credentials.
+            log="$RUNNER_TEMP/MadrastyBuild/qa-supabase/start.log"
+            if [ -f "$log" ]; then
+              for category in 'no space left' 'address already in use' 'port is already allocated' 'out of memory'; do
+                if grep -Fqi "$category" "$log"; then printf 'QA startup matched: %s\n' "$category"; fi
+              done
+            fi
+            df -h / /var/lib/docker
+            free -m
+            ss -ltn | awk 'NR==1 || $4 ~ /:(4300|55420|55421|55422|55424)$/'
+            exit 1
+          fi
       - name: Run existing and added visual checks against disposable fixtures (including P04–P07 visual candidates)
         shell: bash
         run: |
