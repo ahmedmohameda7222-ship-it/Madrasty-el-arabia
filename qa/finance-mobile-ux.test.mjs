@@ -28,7 +28,7 @@ test("Android finance lists use Material list items and advanced report filters 
   assert.match(readFileSync(new URL("FinanceExtras.kt",android),"utf8"), /if \(addMovement\)/);
 });
 test("overview payment action is capability-gated", () => {
-  assert.match(source("FinanceOverview.tsx"), /canPost&&<Link[^>]*record-payment/);
+  assert.match(source("FinanceOverview.tsx"), /canPost&&<Link[^>]*invoices/);
 });
 
 test("monthly billing has one owner and one page heading", () => {
@@ -86,4 +86,17 @@ test("cashbook corrections are explicit, permission-gated and use an append-only
   const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FinanceExtras.kt",import.meta.url),"utf8");
   assert.match(native,/entry\.optBoolean\("canReverse"\)/);
   assert.match(native,/\/finance\/cashbook\/reversals/);
+});
+
+test("normal invoice payments use one submit and keep advanced allocation separate",()=>{
+  const page=source("RecordPayment.tsx");
+  assert.match(page,/function SimpleInvoicePayment/);
+  const simple=page.slice(page.indexOf("function SimpleInvoicePayment"),page.indexOf("function PaymentForm"));
+  assert.match(simple,/verified:true/);
+  assert.match(simple,/invoiceRevision:initial.revision/);
+  assert.match(simple,/command\("\/finance\/receipts","POST"/);
+  assert.doesNotMatch(simple,/type="checkbox"|setPreview|InvoicePicker/);
+  assert.match(simple,/type="date"/);
+  assert.match(simple,/role="alert"/);
+  assert.match(source("Reconciliation.tsx"), /record-payment\?advanced=1/);
 });
