@@ -665,4 +665,14 @@
     <string name="finance_cash_bank">الخزنة والبنك</string>
     <string name="finance_payment_history">سجل المدفوعات</string>
     <string name="stop_next_month_only">التوقف للشهر القادم فقط. رسوم الشهر الحالي لا تتغير.</string>
+    <string name="finance_invoice_correction">تصحيح الفاتورة</string>
+    <string name="finance_replacement_open">فتح الفاتورة البديلة</string>
+    <string name="finance_cancel_hint">إلغاء المطالبة بالمبلغ مع الاحتفاظ بالفاتورة الأصلية. لا يتم رد أي مبلغ بهذه العملية.</string>
+    <string name="finance_cancel_invoice">تأكيد إلغاء الفاتورة</string>
+    <string name="finance_reissue_hint">فاتورة جديدة بنفس البنود والمبلغ والشهر مع مسؤول السداد المحدد الآن لهذا الشهر.</string>
+    <string name="finance_reissue_invoice">إصدار فاتورة بديلة</string>
+    <string name="finance_refund_action">تسجيل مبلغ مرتجع</string>
+    <string name="finance_refund_saved">تم تسجيل رد المبلغ</string>
+    <string name="finance_refund_hint">سجل فقط مبلغًا تم رده بالفعل. الفاتورة المرتبطة تصبح مستحقة بقيمة المبلغ المرتجع.</string>
+    <string name="finance_refund_confirm">تأكيد رد المبلغ</string>
 </resources>
