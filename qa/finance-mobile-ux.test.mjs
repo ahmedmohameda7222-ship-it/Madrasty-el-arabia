@@ -67,7 +67,7 @@ test("payer readiness on the overview is limited to authorized billing staff",()
   assert.match(overview,/canIssue\?"\/finance\/automatic-billing":null/);
   assert.match(overview,/payerIssues\.length/);
   const route=readFileSync(new URL("../apps/web/src/app/[locale]/school/more/finance-reports/page.tsx",import.meta.url),"utf8");
-  assert.match(route,/\[read,post,issue\]=await mayUseMany\(session,\["finance.read","finance.post","finance.issue"\]\)/);
+  assert.match(route,/\[read,post,issue,bank\]=await mayUseMany\(session,\["finance.read","finance.post","finance.issue","bank.configure"\]\)/);
   assert.match(route,/canIssue=issue/);
   assert.match(route,/canIssue=\{canIssue\}/);
 });
