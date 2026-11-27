@@ -35,6 +35,7 @@ async function seedFinance(school: FixtureSchool) {
     {pupil:ids.omar,amount:3200,paid:1200,label:"B",ar:"كتب مدرسية",de:"Schulbücher"},
     {pupil:ids.ahmed,amount:5100,paid:0,label:"C",ar:"مواد تعليمية",de:"Lernmaterial"},
     {pupil:ids.other,amount:7000,paid:0,label:"D",ar:"نشاط مدرسي",de:"Schulaktivität"},
+    {pupil:ids.ahmed,amount:1700,paid:0,label:"E",ar:"أدوات مدرسية",de:"Schulbedarf"},
   ];
   const records=[];
   for(const row of cases){
@@ -244,8 +245,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await received.fill("100.00");
               await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
               const partial=records.find(x=>x.label==="B")!.invoice;
-              await expect(page.locator(".school-content li").filter({hasText:partial.invoiceNumber})).toBeVisible();
-              const extra=records.find(x=>x.label==="D")!.invoice;
+              await expect(page.locator(".school-content li").filter({hasText:partial.invoiceNumber})).toHaveCount(0);
+              const unrelated=records.find(x=>x.label==="D")!.invoice;
+              await expect(page.locator(".school-content li").filter({hasText:unrelated.invoiceNumber})).toHaveCount(0);
+              const extra=records.find(x=>x.label==="E")!.invoice;
               const option=page.locator(".school-content li").filter({hasText:extra.invoiceNumber});
               await option.getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
               await expect(received).toHaveValue("100.00");
