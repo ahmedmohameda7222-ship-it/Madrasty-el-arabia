@@ -7,10 +7,12 @@ import {mayUse} from "@/server/access/capabilities";
 import {webSchoolSession} from "@/server/identity/web-session";
 
 export default async function PaymentPage({params,searchParams}:{
-  params:Promise<{locale:Locale}>;searchParams:Promise<{invoice?:string}>;
+  params:Promise<{locale:Locale}>;searchParams:Promise<{invoice?:string;advanced?:string}>;
 }){
   const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
   if(!await mayUse(session,"finance.post"))notFound();
-  return <RecordPayment locale={locale} invoice={z.uuid().safeParse(query.invoice).data}/>;
+  const invoice=z.uuid().safeParse(query.invoice).data;
+  if(!invoice&&query.advanced!=="1")redirect(`/${locale}/school/more/invoices`);
+  return <RecordPayment locale={locale} invoice={invoice} advanced={query.advanced==="1"}/>;
 }
