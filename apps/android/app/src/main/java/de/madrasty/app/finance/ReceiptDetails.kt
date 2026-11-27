@@ -27,6 +27,7 @@ import de.madrasty.app.ui.ConfirmedAt
 import de.madrasty.app.ui.isolate
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 
 @Composable
 internal fun ReceiptDetails(model: IdentityViewModel, id: String, invoice: (String) -> Unit, close: () -> Unit) {
@@ -40,6 +41,7 @@ internal fun ReceiptDetails(model: IdentityViewModel, id: String, invoice: (Stri
             ReceiptDocument(item, invoice)
             if (item.getString("scope") == "staff" && item.getBoolean("canPost")) {
                 key(item.getInt("revision"), refresh) {
+                    if (item.getLong("activeMinor") > 0L) ReceiptRefundPanel(model, item) { notice = R.string.finance_refund_saved; refresh++ }
                     ReceiptActions(model, item) { message -> notice = message; refresh++ }
                 }
             }
@@ -64,6 +66,12 @@ private fun ReceiptDocument(item: JSONObject, invoice: (String) -> Unit) {
         }
     }
     MoneyFact(R.string.fee_allocated, item.getLong("appliedMinor"), currency)
+    item.optJSONArray("refunds")?.let { refunds ->
+        for (index in 0 until refunds.length()) {
+            val refund = refunds.getJSONObject(index)
+            Text(stringResource(R.string.finance_report_refund)+" · "+isolate(refund.getString("refundedDate"))+" · "+financeMoney(refund.getLong("amountMinor"),currency))
+        }
+    }
     Text(stringResource(R.string.receipt_allocations), style = MaterialTheme.typography.titleMedium)
     for (entry in item.financeRows("allocations")) {
         HorizontalDivider()
@@ -149,9 +157,9 @@ private fun ReceiptActions(model: IdentityViewModel, item: JSONObject, changed: 
         if (active.isNotEmpty()) FilterChip(current == ReceiptAction.Unapply, { action = ReceiptAction.Unapply }, label = {
             Text(stringResource(ReceiptAction.Unapply.title))
         })
-        FilterChip(current == ReceiptAction.Void, { action = ReceiptAction.Void }, label = { Text(stringResource(ReceiptAction.Void.title)) })
+        if ((item.optJSONArray("refunds")?.length() ?: 0) == 0) FilterChip(current == ReceiptAction.Void, { action = ReceiptAction.Void }, label = { Text(stringResource(ReceiptAction.Void.title)) })
         when (current) {
-            ReceiptAction.Allocate -> AllocationEditor(model, item.getInt("revision"), currency, open, drafts, { drafts = it }) { proposal = it }
+            ReceiptAction.Allocate -> AllocationEditor(model, item.getInt("revision"), currency, open, item.financeRows("allocations").firstOrNull()?.getString("invoiceId") ?: item.string("suggestedInvoiceId"), drafts, { drafts = it }) { proposal = it }
             ReceiptAction.Unapply, ReceiptAction.Void ->
                 ReversalEditor(current, item.getInt("revision"), currency, open, active, ids, { ids = it }, reason, { reason = it }) { proposal = it }
             null -> Unit
@@ -161,7 +169,7 @@ private fun ReceiptActions(model: IdentityViewModel, item: JSONObject, changed: 
 
 @Composable
 private fun AllocationEditor(
-    model: IdentityViewModel, revision: Int, currency: String, remainder: Long,
+    model: IdentityViewModel, revision: Int, currency: String, remainder: Long, payerAnchor: String?,
     drafts: List<ApplyRow>, change: (List<ApplyRow>) -> Unit, preview: (LedgerPreview) -> Unit,
 ) {
     val amounts = drafts.map { financeMinor(it.amount, currency, it.invoice.getLong("balanceMinor")) }
@@ -174,7 +182,7 @@ private fun AllocationEditor(
         }
         TextButton(onClick = { change(drafts.filterIndexed { i, _ -> i != index }) }) { Text(stringResource(R.string.fee_remove_line)) }
     }
-    if (drafts.size < 100) ReceiptInvoicePicker(model, currency, drafts.map { it.invoice.getString("id") }.toSet()) { candidate ->
+    if (drafts.size < 100) ReceiptInvoicePicker(model, currency, drafts.map { it.invoice.getString("id") }.toSet(), payerAnchor = payerAnchor ?: drafts.firstOrNull()?.invoice?.getString("id")) { candidate ->
         val default = minOf(candidate.getLong("balanceMinor"), (remainder - total).coerceAtLeast(0))
         change(drafts + ApplyRow(candidate, financePlainAmount(default, currency)))
     }
@@ -216,4 +224,48 @@ private fun ReversalEditor(
         val after = if (action == ReceiptAction.Void) 0 else remainder + rows.sumOf { it.getLong("amountMinor") }
         preview(LedgerPreview(input, balances, after))
     }) { Text(stringResource(R.string.fee_preview)) }
+}
+
+@Composable
+private fun ReceiptRefundPanel(model: IdentityViewModel, item: JSONObject, changed: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    TextButton(onClick = { expanded = !expanded }) { Text(stringResource(R.string.finance_refund_action)) }
+    if (!expanded) return
+    val options = academicRead("/finance/receipt-options", 0) { model.financeObject(it) }
+    AsyncSurface(options) { setup ->
+        val currency = item.getString("currency")
+        val today = setup.getString("schoolDate")
+        val active = item.financeRows("allocations").filter { it.isNull("reversedAt") }
+        var selection by remember { mutableStateOf(active.firstOrNull()?.getString("id")) }
+        val target = active.firstOrNull { it.getString("id") == selection }
+        val maximum = target?.getLong("amountMinor") ?: item.getLong("remainderMinor")
+        var amount by remember(selection) { mutableStateOf(financePlainAmount(maximum, currency)) }
+        var date by remember { mutableStateOf(today) }
+        var reason by remember { mutableStateOf("") }
+        var bankReference by remember { mutableStateOf("") }
+        val cashReference = remember { "CASH-REFUND-" + UUID.randomUUID() }
+        val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
+        Text(stringResource(R.string.finance_refund_hint))
+        for (entry in active) {
+            val id = entry.getString("id")
+            FilterChip(selection == id, { selection = id }, label = { Text(receiptInvoiceLabel(entry)) })
+        }
+        if (item.getLong("remainderMinor") > 0L) FilterChip(selection == null, { selection = null }, label = { Text(stringResource(R.string.receipt_remainder)) })
+        Field(R.string.finance_amount, amount) { amount = it.take(24) }
+        Field(R.string.receipt_date, date) { date = financeDigits(it).take(10) }
+        Field(R.string.receipt_reason, reason) { reason = it.take(500) }
+        val bank = item.getString("method") == "bank"
+        if (bank) Field(R.string.receipt_reference, bankReference) { bankReference = it.take(160) }
+        val reference = if (bank) bankReference.trim() else cashReference
+        val minor = financeMinor(amount, currency, maximum)
+        val ready = minor != null && minor > 0L && validFinanceDate(date) && date >= item.getString("receivedDate") && date <= today &&
+            reason.trim().length >= 3 && reference.isNotEmpty() && reference.none { it.isISOControl() || Character.getType(it) == Character.FORMAT.toInt() }
+        Submit(ready, R.string.finance_refund_confirm, success = null) {
+            val input = JSONObject().put("revision", item.getInt("revision")).put("amountMinor", minor)
+                .put("refundedDate", date).put("externalRefundRef", reference).put("reason", reason.trim()).put("verified", true)
+            selection?.let { input.put("allocationId", it) }
+            model.schoolCommand(attempts, "/finance/receipts/${item.getString("id")}/refunds", "POST", input)
+            changed()
+        }
+    }
 }

@@ -665,4 +665,18 @@
     <string name="finance_cash_bank">Kasse &amp; Bank</string>
     <string name="finance_payment_history">Zahlungsverlauf</string>
     <string name="stop_next_month_only">Die Pause gilt nur für den nächsten Monat. Der Beitrag für diesen Monat bleibt unverändert.</string>
+    <string name="finance_invoice_correction">Rechnung korrigieren</string>
+    <string name="finance_replacement_open">Ersatzrechnung öffnen</string>
+    <string name="finance_cancel_hint">Die Forderung wird storniert. Die ursprüngliche Rechnung bleibt erhalten. Es wird kein Geld erstattet.</string>
+    <string name="finance_cancel_invoice">Rechnung stornieren</string>
+    <string name="finance_reissue_hint">Neue Rechnung mit denselben Positionen, demselben Betrag und Monat und dem aktuell hinterlegten Zahler.</string>
+    <string name="finance_reissue_invoice">Ersatzrechnung erstellen</string>
+    <string name="finance_refund_action">Erstattung erfassen</string>
+    <string name="finance_refund_saved">Erstattung erfasst</string>
+    <string name="finance_refund_hint">Nur tatsächlich zurückgezahltes Geld erfassen. Der erstattete Betrag wird auf der Rechnung wieder offen.</string>
+    <string name="finance_refund_confirm">Erstattung bestätigen</string>
+    <string name="finance_ledger_search">Buchungen suchen</string>
+    <string name="finance_ledger_cash">Kasse</string>
+    <string name="finance_ledger_bank">Bank</string>
+    <string name="finance_ledger_transfer">Umbuchung</string>
 </resources>

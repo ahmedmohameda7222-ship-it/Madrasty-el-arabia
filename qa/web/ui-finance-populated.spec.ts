@@ -35,6 +35,7 @@ async function seedFinance(school: FixtureSchool) {
     {pupil:ids.omar,amount:3200,paid:1200,label:"B",ar:"كتب مدرسية",de:"Schulbücher"},
     {pupil:ids.ahmed,amount:5100,paid:0,label:"C",ar:"مواد تعليمية",de:"Lernmaterial"},
     {pupil:ids.other,amount:7000,paid:0,label:"D",ar:"نشاط مدرسي",de:"Schulaktivität"},
+    {pupil:ids.ahmed,amount:1700,paid:0,label:"E",ar:"أدوات مدرسية",de:"Schulbedarf"},
   ];
   const records=[];
   for(const row of cases){
@@ -170,15 +171,15 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             await capture(page,prefix+"overview-expanded");
           }
           await go("invoices");
-          await expect(page.locator('a[href*="invoice='+record.invoice.id+'"]')).toBeVisible();
-          if(s.persona==="admin")for(const row of records)await expect(page.locator('a[href*="invoice='+row.invoice.id+'"]')).toBeVisible();
+          await expect(page.locator('a[href*="/invoices?invoice='+record.invoice.id+'"]')).toBeVisible();
+          if(s.persona==="admin")for(const row of records)await expect(page.locator('a[href*="/invoices?invoice='+row.invoice.id+'"]')).toBeVisible();
           else {
             const foreign=records.find(x=>x.label===(s.record==="A"?"B":"A"))!;
-            await expect(page.locator('a[href*="invoice='+foreign.invoice.id+'"]')).toHaveCount(0);
+            await expect(page.locator('a[href*="/invoices?invoice='+foreign.invoice.id+'"]')).toHaveCount(0);
             await expect(page.locator(".school-content input[type=search]")).toHaveCount(0);
           }
           if(width<=430){
-            const row=page.locator('a[href*="invoice='+record.invoice.id+'"]');
+            const row=page.locator('a[href*="/invoices?invoice='+record.invoice.id+'"]');
             const name=row.locator("strong").first();
             await expect(name).toHaveText(record.invoice.studentName);
             const rowBounds=await row.boundingBox(),nameBounds=await name.boundingBox();
@@ -202,7 +203,7 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
           const receiptLink=page.locator('.school-content a[href*="/receipts?receipt="]');
           await expect(receiptLink).toHaveCount(1);
           const receiptHref=await receiptLink.getAttribute("href");
-          expect(receiptHref).toBe(root+"receipts?receipt="+visibleReceiptId);
+          expect(receiptHref).toBe(root+"receipts?receipt="+visibleReceiptId+"&invoice="+record.invoice.id);
           if(s.persona==="admin")expect(receiptHref).toContain("receipt="+record.receiptId);
           else expect(receiptHref).not.toContain("receipt="+record.receiptId);
           await receiptLink.click();
@@ -244,8 +245,10 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await received.fill("100.00");
               await page.getByRole("button",{name:s.locale==="ar"?"+ اختيار فاتورة (اختياري)":"+ Rechnung auswählen (optional)",exact:true}).click();
               const partial=records.find(x=>x.label==="B")!.invoice;
-              await expect(page.locator(".school-content li").filter({hasText:partial.invoiceNumber})).toBeVisible();
-              const extra=records.find(x=>x.label==="D")!.invoice;
+              await expect(page.locator(".school-content li").filter({hasText:partial.invoiceNumber})).toHaveCount(0);
+              const unrelated=records.find(x=>x.label==="D")!.invoice;
+              await expect(page.locator(".school-content li").filter({hasText:unrelated.invoiceNumber})).toHaveCount(0);
+              const extra=records.find(x=>x.label==="E")!.invoice;
               const option=page.locator(".school-content li").filter({hasText:extra.invoiceNumber});
               await option.getByRole("button",{name:s.locale==="ar"?"اختيار الفاتورة":"Rechnung auswählen",exact:true}).click();
               await expect(received).toHaveValue("100.00");
@@ -290,6 +293,32 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               expect(after.state).toBe("paid");
               expect(after.balanceMinor).toBe(0);
               expect(after.receiptIds).toHaveLength(1);
+              // The browser issues an additional invoice directly and records a real partial refund.
+              await go("issue-invoices?student="+item.studentId+"&period="+clock.month);
+              await page.getByRole("combobox",{name:"نوع الفاتورة",exact:true}).selectOption("manual");
+              await page.getByLabel("البند بالعربي",{exact:true}).fill("نشاط اختباري جديد");
+              await page.getByLabel("البند بالألماني",{exact:true}).fill("QA Zusatzaktivität");
+              await page.locator(".school-content input[inputmode=decimal]").fill("12.34");
+              const issue=page.getByRole("button",{name:"إنشاء فاتورة",exact:true});
+              await expect(issue).toBeEnabled();
+              const issuing=page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname==="/api/v1/finance/invoice-batches");
+              await issue.click();
+              const issued=await issuing;
+              expect(issued.status()).toBe(201);
+              const batch=invoiceBatch.parse((await issued.json()).data);
+              expect(batch.issuedIds).toHaveLength(1);
+              await expect(page.getByRole("heading",{name:"تم إصدار الفواتير",exact:true})).toBeVisible();
+              await go("receipts?receipt="+after.receiptIds[0]);
+              await page.getByText("تسجيل مبلغ مرتجع",{exact:true}).click();
+              await page.getByLabel("المبلغ المرتجع",{exact:true}).fill("1.00");
+              await page.getByLabel("سبب الاسترداد",{exact:true}).fill("QA partial refund");
+              const refunding=page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname.endsWith("/refunds"));
+              await page.getByRole("button",{name:"تأكيد رد المبلغ",exact:true}).click();
+              expect((await refunding).status()).toBe(201);
+              await expect(page.getByText("تم تسجيل رد المبلغ",{exact:true})).toBeVisible();
+              const refunded=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+item.id,actorOptions)).payload.data);
+              expect(refunded.balanceMinor).toBe(100);
+
             }
           }
         }

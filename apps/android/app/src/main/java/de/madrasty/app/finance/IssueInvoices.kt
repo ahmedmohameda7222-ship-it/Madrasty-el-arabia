@@ -1,5 +1,6 @@
 package de.madrasty.app.finance
 
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -52,8 +53,8 @@ private fun InvoiceIssueForm(
     val firstMonth = initial.getString("period")
     var month by remember(firstMonth) { mutableStateOf(firstMonth) }
     var manual by remember { mutableStateOf(false) }
-    var explicit by remember(initialStudent) { mutableStateOf(initialStudent != null) }
-    var missing by remember { mutableStateOf(true) }
+    var explicit by remember(initialStudent) { mutableStateOf(true) }
+    var missing by remember { mutableStateOf(false) }
     var selected by remember(initialStudent) { mutableStateOf(listOfNotNull(initialStudent)) }
     var classId by remember { mutableStateOf<String?>(null) }
     var dueDate by remember { mutableStateOf("") }
@@ -77,7 +78,7 @@ private fun InvoiceIssueForm(
     }
     if (stale) Text(stringResource(R.string.fee_stale))
     if (prepared != null) {
-        InvoiceIssueReview(prepared, feeSettings, invoice)
+        InvoiceIssueReview(model, prepared, firstMonth, feeSettings, invoice) { preview = null; refresh++ }
         TextButton(onClick = { preview = null }) { Text(stringResource(R.string.fee_edit)) }
         val eligible = prepared.financeRows("rows").any { it.getString("outcome") == "ready" }
         Submit(eligible, R.string.fee_confirm, success = null) {
@@ -103,10 +104,10 @@ private fun InvoiceIssueForm(
     Field(R.string.fee_month, month) {
         month = financeDigits(it).take(7)
         classId = null
-        selected = emptyList()
+        preview = null
     }
     Row {
-        FilterChip(!manual, { manual = false; selected = listOfNotNull(initialStudent) }, label = {
+        FilterChip(!manual, { manual = false; explicit = true; selected = listOfNotNull(initialStudent) }, label = {
             Text(stringResource(R.string.fee_monthly))
         })
         FilterChip(manual, { manual = true; explicit = true; selected = listOfNotNull(initialStudent) }, label = {
@@ -121,8 +122,11 @@ private fun InvoiceIssueForm(
             Text(stringResource(R.string.finance_bank_empty))
             configureBank?.let { TextButton(onClick = it) { Text(stringResource(R.string.finance_bank)) } }
         }
-        InvoiceClassFilter(settings.financeRows("classes"), classId) { classId = it; selected = emptyList() }
-        if (!manual) FilterChip(explicit, { explicit = !explicit }, label = { Text(stringResource(R.string.fee_pick_pupils)) })
+        if (!manual) FlowRow {
+            FilterChip(explicit, { explicit = true; classId = null }, label = { Text(stringResource(R.string.fee_pick_pupils)) })
+            FilterChip(!explicit, { explicit = false }, label = { Text(stringResource(R.string.fee_classes)) })
+        }
+        if (!explicit) InvoiceClassFilter(settings.financeRows("classes"), classId) { classId = it }
         if (explicit) {
             if (!manual) FilterChip(missing, { missing = !missing }, label = { Text(stringResource(R.string.fee_missing)) })
             Text(stringResource(R.string.fee_selected, selected.size))
@@ -132,9 +136,7 @@ private fun InvoiceIssueForm(
                 FilterChip(id in selected, {
                     selected = when {
                         id in selected -> selected - id
-                        manual -> listOf(id)
-                        selected.size < 1000 -> selected + id
-                        else -> selected
+                        else -> listOf(id)
                     }
                 }, label = { Text(pupilFinanceLabel(pupil)) })
             }
@@ -143,8 +145,8 @@ private fun InvoiceIssueForm(
         if (manual) FeeLineFields(lines, { lines = it }, currency)
         val manualLines = if (manual) feeLineInput(lines, currency) else null
         val ready = (!explicit || selected.isNotEmpty()) && (!manual || selected.size == 1 && manualLines != null) &&
-            (dueDate.isEmpty() || validFinanceDate(dueDate))
-        Submit(ready, R.string.fee_preview, success = null) {
+            (dueDate.isEmpty() || (validFinanceDate(dueDate) && dueDate >= "$month-01"))
+        Submit(ready, if (explicit) R.string.fee_confirm else R.string.fee_preview, success = null) {
             val input = JSONObject().put("period", month).put("kind", if (manual) "manual" else "monthly")
             classId?.let { input.put("classId", it) }
             if (dueDate.isNotEmpty()) input.put("dueDate", dueDate)
@@ -155,7 +157,19 @@ private fun InvoiceIssueForm(
             }
             stale = false
             receipt = null
-            preview = model.financeObject("/finance/invoice-previews", input)
+            val calculated = model.financeObject("/finance/invoice-previews", input)
+            preview = calculated
+            if (explicit && calculated.financeRows("rows").singleOrNull()?.getString("outcome") == "ready") {
+                val confirm = JSONObject().put("previewId", calculated.getString("previewId")).put("revision", calculated.getInt("revision"))
+                val result = model.schoolCommand(attempts, "/finance/invoice-batches", "POST", confirm)
+                receipt = calculated.getString("period") to result
+                preview = null
+                if (manual) {
+                    source = null
+                    lines = listOf(DraftFeeLine())
+                }
+                refresh++
+            }
         }
     }
 }
@@ -176,7 +190,7 @@ private fun InvoiceClassFilter(classes: List<JSONObject>, classId: String?, chan
 
 @Composable
 private fun InvoiceIssueReview(
-    preview: JSONObject, feeSettings: (String?) -> Unit, invoice: (String?, String?) -> Unit,
+    model: IdentityViewModel, preview: JSONObject, firstMonth: String, feeSettings: (String?) -> Unit, invoice: (String?, String?) -> Unit, repaired: () -> Unit,
 ) {
     Text(stringResource(R.string.fee_preview) + " · " + isolate(preview.getString("period")), style = MaterialTheme.typography.titleLarge)
     val rows = preview.financeRows("rows")
@@ -193,7 +207,7 @@ private fun InvoiceIssueReview(
             Text(stringResource(R.string.fee_total) + " · " + financeMoney(row.getLong("totalMinor"), currency))
         }
         if (outcome in setOf("payer_missing", "payer_inactive")) {
-            TextButton(onClick = { feeSettings(row.getString("studentId")) }) { Text(stringResource(R.string.fee_payer)) }
+            InlineIssuePayer(model, row.getString("studentId"), preview.getString("period"), firstMonth, repaired)
         }
         if (outcome == "tariff_missing") {
             TextButton(onClick = { feeSettings(null) }) { Text(stringResource(R.string.fee_tariffs)) }
@@ -201,6 +215,34 @@ private fun InvoiceIssueReview(
         row.string("existingId")?.let { id ->
             TextButton(onClick = { invoice(id, null) }) { Text(stringResource(R.string.fee_open_invoice)) }
         }
+    }
+}
+
+@Composable
+private fun InlineIssuePayer(model: IdentityViewModel, studentId: String, month: String, firstMonth: String, repaired: () -> Unit) {
+    var editing by remember(studentId) { mutableStateOf(false) }
+    if (!editing) {
+        TextButton(onClick = { editing = true }) { Text(stringResource(R.string.fee_payer)) }
+        return
+    }
+    val read = academicRead("/finance/children/$studentId/payer", 0) { model.financeObject(it) }
+    AsyncSurface(read) { profile ->
+        val choices = profile.financeRows("choices").filter { it.getBoolean("activeAccount") }
+        var payer by remember(profile) { mutableStateOf(choices.singleOrNull()?.getString("id")) }
+        val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
+        if (choices.isEmpty()) Text(stringResource(R.string.fee_payer_missing))
+        else {
+            for (choice in choices) {
+                val id = choice.getString("id")
+                FilterChip(payer == id, { payer = id }, label = { Text(isolate(choice.getString("displayName"))) })
+            }
+            Submit(payer != null && month >= firstMonth, success = null) {
+                val input = JSONObject().put("guardianId", payer).put("effectiveFromMonth", month).put("revision", profile.getInt("revision"))
+                model.schoolCommand(attempts, "/finance/children/$studentId/payer", "PUT", input)
+                repaired()
+            }
+        }
+        TextButton(onClick = { editing = false }) { Text(stringResource(R.string.fee_edit)) }
     }
 }
 

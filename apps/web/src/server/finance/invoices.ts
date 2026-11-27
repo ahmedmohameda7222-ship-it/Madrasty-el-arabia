@@ -1,7 +1,7 @@
 import "server-only";
 import {
   invoiceBatch,invoiceDetail,invoicePreview,invoicePreviewRow,invoiceSummary,previewOutcome,billingMonth,schoolDateSchema,
-  type invoiceConfirm,type invoicePreviewInput,type invoiceQuery,
+  invoiceCorrectionInput,invoiceCorrectionResult,type invoiceConfirm,type invoicePreviewInput,type invoiceQuery,
 } from "@madrasty/contracts";
 import {z} from "zod";
 import {requireCapability} from "@/server/access/policies";
@@ -67,7 +67,8 @@ export function loadInvoice(actor:ActorContext,id:string){
     const [row]=await tx`select ${fields(tx)},lines,payment_instructions as "paymentInstructions",issue_instructions as "issueInstructions",
       receipt_ids as "receiptIds",can_inquire as "canInquire" from app.invoice_rows(${id},null,null,null,true)`;
     if(!row)throw new ApiError("not_found");
-    return invoiceDetail.parse(row);
+    const [correction]=await tx`select can_cancel as "canCancel",can_reissue as "canReissue",replacement_id as "replacementId",cancellation_reason as reason from app.invoice_correction_options(${id})`;
+    return invoiceDetail.parse({...row,correction});
   });
 }
 export function listInvoices(actor:ActorContext,input:z.infer<typeof invoiceQuery>){
@@ -91,4 +92,27 @@ export function listInvoices(actor:ActorContext,input:z.infer<typeof invoiceQuer
     const items=rows.slice(0,input.limit),end=items.at(-1);
     return {items,nextCursor:rows.length>input.limit&&end?Buffer.from(JSON.stringify(position.parse(end))).toString("base64url"):undefined};
   });
+}
+
+const correctedInvoice=invoiceCorrectionResult.extend({studentId:z.uuid(),payerId:z.uuid(),period:billingMonth,dueDate:schoolDateSchema});
+export async function correctInvoice(actor:ActorContext,id:string,key:string|null,input:z.infer<typeof invoiceCorrectionInput>){
+  const result=await commitCommand(actor,"finance.invoice.correct",key,hashCommand({id,...input}),{
+    authorize:async tx=>{
+      await requireCapability(tx,actor,"finance.issue");
+      const [row]=await tx<{allowed:boolean}[]>`select exists(select 1 from app.invoice_correction_options(${id})) as allowed`;
+      if(!row.allowed)throw new ApiError("not_found");
+    },
+    mutate:async tx=>{
+      const [row]=await tx`select id,student_id as "studentId",payer_id as "payerId",period,due_date as "dueDate",revision
+        from app.correct_invoice(${id},${input.revision},${input.kind},${input.kind==="cancel"?input.reason:null})`;
+      if(!row)throw new ApiError("stale_revision");
+      const changed=correctedInvoice.parse(row);
+      if(input.kind==="reissue")await appendEvents(tx,[{type:"invoice.issued",aggregateId:changed.id,actorId:actor.accountId,
+        payload:{invoiceId:changed.id,studentId:changed.studentId,payerId:changed.payerId,period:changed.period,dueDate:changed.dueDate,revision:changed.revision}}]);
+      await appendAudit(tx,{action:input.kind==="cancel"?"finance.invoice_cancelled":"finance.invoice_reissued",aggregateId:id,
+        metadata:{revision:input.revision,replacementId:input.kind==="reissue"?changed.id:null}});
+      return invoiceCorrectionResult.parse(changed);
+    }
+  });
+  return result.data;
 }

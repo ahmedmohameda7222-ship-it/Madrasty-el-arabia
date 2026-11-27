@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  receiptMutation,receiptOptions,receiptPayerDetail,receiptPosting,receiptStaffDetail,receiptSummary,
+  receiptMutation,receiptOptions,receiptPayerDetail,receiptPosting,receiptStaffDetail,receiptSummary,receiptRefundInput,receiptRefundResult,
   type receiptQuery,type recordReceiptInput,
 } from "@madrasty/contracts";
 import {z} from "zod";
@@ -51,12 +51,14 @@ export function loadReceipt(actor:ActorContext,id:string){
         applied_minor::float8 as "appliedMinor",allocations
         from app.receipt_payer_document(${id})`;
       if(!row)throw new ApiError("not_found");
-      return receiptPayerDetail.parse({...row,scope:"payer"});
+      const [refunds]=await tx`select app.receipt_refund_details(${id}) as refunds`;
+      return receiptPayerDetail.parse({...row,scope:"payer",refunds:refunds.refunds});
     }
     const [row]=await tx`select ${summary(tx)},external_ref as "externalReceiptRef",suggested_invoice_id as "suggestedInvoiceId",
       allocations,history,can_post as "canPost" from app.receipt_staff_rows(${id},null,null,null,1,true)`;
     if(!row)throw new ApiError("not_found");
-    return receiptStaffDetail.parse({...row,scope:"staff"});
+    const [refunds]=await tx`select app.receipt_refund_details(${id}) as refunds`;
+    return receiptStaffDetail.parse({...row,scope:"staff",refunds:refunds.refunds});
   });
 }
 
@@ -106,4 +108,29 @@ export async function recordReceipt(actor:ActorContext,key:string|null,input:z.i
     },
   });
   return recorded.data;
+}
+
+export async function refundReceipt(actor:ActorContext,id:string,key:string|null,input:z.infer<typeof receiptRefundInput>){
+  const result=await commitCommand(actor,"finance.receipt.refund",key,hashCommand({id,...input}),{
+    authorize:tx=>requireReceiptPosting(tx,actor,id),
+    mutate:async tx=>{
+      const [row]=await tx`select id,revision,reversal_posting as "reversalPosting",allocation_posting as "allocationPosting"
+        from app.record_receipt_refund(${id},${input.revision},${input.allocationId??null},${input.refundedDate}::date,
+          ${input.amountMinor}::bigint,${input.externalRefundRef},${input.reason},${input.verified})`;
+      if(!row)throw new ApiError("stale_revision");
+      const changed=receiptRefundResult.parse(row);
+      // The physical refund and allocation journal are already committed atomically within this transaction.
+      // Notify the affected payer using the existing immutable posting events.
+      for(const value of [row.reversalPosting,row.allocationPosting]){
+        if(value===null)continue;
+        const posting=receiptPosting.parse(value);
+        const items=posting.items.map(({balanceMinor,...item})=>item);
+        await appendEvent(tx,{type:posting.kind==="unapply"?"payment.reversed":"payment.recorded",aggregateId:id,actorId:actor.accountId,
+          payload:{...posting,items}});
+      }
+      await appendAudit(tx,{action:"finance.receipt_refunded",aggregateId:id,metadata:{refundId:changed.id,revision:changed.revision,amountMinor:input.amountMinor}});
+      return changed;
+    }
+  });
+  return result.data;
 }

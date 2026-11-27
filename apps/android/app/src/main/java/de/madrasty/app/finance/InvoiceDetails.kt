@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -19,6 +21,8 @@ import de.madrasty.app.academics.academicRead
 import de.madrasty.app.comms.StartConversation
 import de.madrasty.app.identity.IdentityViewModel
 import de.madrasty.app.school.Field
+import de.madrasty.app.school.Submit
+import de.madrasty.app.school.schoolCommand
 import de.madrasty.app.ui.AsyncSurface
 import de.madrasty.app.ui.ConfirmedAt
 import de.madrasty.app.ui.isolate
@@ -31,17 +35,21 @@ internal fun InvoiceDetails(
 ) {
     FinancePage(R.string.fee_invoices, close) {
         if (id != null) {
-            val details = academicRead("/finance/invoices/$id", model.attendanceNetworkRevision) { model.financeObject(it) }
-            AsyncSurface(details) { item -> InvoiceDocument(model, item, thread, receipt, payment) }
+            var refresh by remember(id) { mutableIntStateOf(0) }
+            val details = academicRead("/finance/invoices/$id", model.attendanceNetworkRevision + refresh) { model.financeObject(it) }
+            AsyncSurface(details) { item ->
+                InvoiceDocument(model, item, thread, receipt, payment)
+                key(item.getInt("revision")) { InvoiceCorrectionPanel(model, item, open) { refresh++ } }
+            }
         } else {
             if(issue!=null) Button(onClick=issue){Text(stringResource(R.string.fee_issue))}
-            InvoiceList(model, student, period, open)
+            InvoiceList(model, student, period, open, payment)
         }
     }
 }
 
 @Composable
-private fun InvoiceList(model: IdentityViewModel, student: String?, period: String?, open: (String) -> Unit) {
+private fun InvoiceList(model: IdentityViewModel, student: String?, period: String?, open: (String) -> Unit, payment: ((String) -> Unit)?) {
     var month by remember(period) { mutableStateOf(period.orEmpty()) }
     var state by remember { mutableStateOf("") }
     Field(R.string.fee_month, month) { month = financeDigits(it).take(7) }
@@ -65,10 +73,13 @@ private fun InvoiceList(model: IdentityViewModel, student: String?, period: Stri
             FinanceRecordRow(
                 title = isolate(item.getString("studentName")),
                 subtitle = isolate(item.getString("period")) + " · " + isolate(item.getString("invoiceNumber")),
-                amount = financeMoney(item.getLong("balanceMinor"), item.getString("currency")),
+                amount = financeMoney(item.getLong("balanceMinor").takeIf { it > 0L } ?: item.getLong("totalMinor"), item.getString("currency")),
                 status = stringResource(stateLabel),
                 onClick = { open(item.getString("id")) },
             )
+            if (payment != null && item.getLong("balanceMinor") > 0L && item.getString("state") != "cancelled") {
+                TextButton(onClick = { payment(item.getString("id")) }) { Text(stringResource(R.string.receipt_record)) }
+            }
         }
     }
 }
@@ -110,3 +121,34 @@ private val invoiceStates = mapOf(
     "unpaid" to R.string.fee_unpaid, "partial" to R.string.fee_partial,
     "paid" to R.string.fee_paid, "cancelled" to R.string.fee_cancelled,
 )
+
+@Composable
+private fun InvoiceCorrectionPanel(model: IdentityViewModel, item: JSONObject, openInvoice: (String) -> Unit, refresh: () -> Unit) {
+    val options = item.optJSONObject("correction") ?: return
+    var expanded by remember { mutableStateOf(false) }
+    var reason by remember { mutableStateOf("") }
+    val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
+    TextButton(onClick = { expanded = !expanded }) { Text(stringResource(R.string.finance_invoice_correction)) }
+    if (!expanded) return
+    options.optString("reason").takeIf { !options.isNull("reason") && it.isNotBlank() }?.let { Text(isolate(it)) }
+    options.optString("replacementId").takeIf { !options.isNull("replacementId") && it.isNotBlank() }?.let { id ->
+        TextButton(onClick = { openInvoice(id) }) { Text(stringResource(R.string.finance_replacement_open)) }
+    }
+    if (options.optBoolean("canCancel")) {
+        Text(stringResource(R.string.finance_cancel_hint))
+        Field(R.string.receipt_reason, reason) { reason = it.take(500) }
+        Submit(reason.trim().length >= 3, R.string.finance_cancel_invoice, success = null) {
+            model.schoolCommand(attempts, "/finance/invoices/${item.getString("id")}/corrections", "POST",
+                JSONObject().put("kind", "cancel").put("revision", item.getInt("revision")).put("reason", reason.trim()))
+            refresh()
+        }
+    }
+    if (options.optBoolean("canReissue")) {
+        Text(stringResource(R.string.finance_reissue_hint))
+        Submit(true, R.string.finance_reissue_invoice, success = null) {
+            val result = model.schoolCommand(attempts, "/finance/invoices/${item.getString("id")}/corrections", "POST",
+                JSONObject().put("kind", "reissue").put("revision", item.getInt("revision")))
+            openInvoice(result.getString("id"))
+        }
+    }
+}

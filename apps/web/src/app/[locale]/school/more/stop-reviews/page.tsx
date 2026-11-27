@@ -1,3 +1,4 @@
+import {FinanceNavigation} from "@/features/finance/FinanceNavigation";
 import { presentationParams } from "@/server/identity/ui-locale";
 import {notFound,redirect} from "next/navigation";
 import {z} from "zod";
@@ -11,7 +12,7 @@ export default async function StopReviewsPage({params,searchParams}:{
 }){
   const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
-  const [read,post]=await mayUseMany(session,["finance.read","finance.post"]);
+  const [read,post,issue,bank]=await mayUseMany(session,["finance.read","finance.post","finance.issue","bank.configure"]);
   if(!read&&!post)notFound();
-  return <StopReview locale={locale} id={z.uuid().safeParse(query.review).data}/>;
+  return <><FinanceNavigation locale={locale} section="cash" read={read} post={post} issue={issue} bank={bank}/><StopReview locale={locale} id={z.uuid().safeParse(query.review).data}/></>;
 }

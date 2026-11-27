@@ -159,7 +159,7 @@ private fun PaymentForm(model: IdentityViewModel, setup: JSONObject, initial: JS
         Field(R.string.receipt_allocation_amount,row.second){value->updateRows(rows.mapIndexed{i,r->if(i==index)r.first to value.take(24) else r})}
         TextButton(onClick={updateRows(rows.filterIndexed{i,_->i!=index})}){Text(stringResource(R.string.fee_remove_line))}
     }
-    TextButton(onClick={choose=payerAnchor!=null||!choose;payerAnchor=null}){Text(stringResource(R.string.receipt_optional_invoice))}
+    TextButton(onClick={val anchor=rows.firstOrNull()?.first?.getString("id");choose=payerAnchor!=anchor||!choose;payerAnchor=anchor}){Text(stringResource(R.string.receipt_optional_invoice))}
     if(rows.isNotEmpty())TextButton(onClick={val id=rows.first().first.getString("id");choose=!choose||payerAnchor!=id;payerAnchor=id}){Text(stringResource(R.string.receipt_same_payer))}
     if(choose)androidx.compose.runtime.key(payerAnchor){ReceiptInvoicePicker(model,currency,rows.map{it.first.getString("id")}.toSet(),payerAnchor = payerAnchor){ invoice->
         updateRows(rows+(invoice to financePlainAmount(invoice.getLong("balanceMinor"),currency)))

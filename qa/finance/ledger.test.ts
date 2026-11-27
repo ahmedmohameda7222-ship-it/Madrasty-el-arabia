@@ -299,6 +299,20 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       const samePayer=(await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${omar.id}&limit=100`,{token:finance,persona:"admin"})).payload.data;
       assert.ok(samePayer.some((row:{id:string})=>row.id===omar.id));
       assert.ok(!samePayer.some((row:{id:string})=>row.id===first[0].id),"unrelated payer must not appear in the scoped selection");
+      const unrelated=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${first[0].id}`,{token:finance})).payload.data);
+      const own=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${omar.id}`,{token:finance})).payload.data);
+      const beforeMixed=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+      await fixtureApi(school,"/finance/receipts",{token:finance,persona:"admin",method:"POST",key:school.run+".mixed-payer",status:422,body:{
+        externalReceiptRef:school.run+"-MIXED",method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:200,verified:true,allocations:[
+          {invoiceId:own.id,invoiceRevision:own.revision,amountMinor:100},
+          {invoiceId:unrelated.id,invoiceRevision:unrelated.revision,amountMinor:100}
+        ]
+      }});
+      const afterMixed=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+      assert.equal(afterMixed.balanceMinor,beforeMixed.balanceMinor,"invalid mixed-payer payment rolls back atomically");
+      assert.equal((await fixtureApi(school,`/finance/invoices/${own.id}`,{token:finance})).payload.data.balanceMinor,own.balanceMinor);
+      assert.equal((await fixtureApi(school,`/finance/invoices/${unrelated.id}`,{token:finance})).payload.data.balanceMinor,unrelated.balanceMinor);
+
       await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
       const again=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
       assert.deepEqual(again.map((row:{id:string})=>row.id),first.map((row:{id:string})=>row.id));
@@ -308,6 +322,60 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     }
     const historical = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(historical.balanceMinor, 3200);
+    // Cancellation and explicit replacement retain the original document and never reissue automatically.
+    const originalInvoice=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${future.id}`,{token:finance})).payload.data);
+    const correctionPath=`/finance/invoices/${originalInvoice.id}/corrections`;
+    const cancellation={kind:"cancel",revision:originalInvoice.revision,reason:"Synthetic billing correction"};
+    await fixtureApi(school,correctionPath,{token:payer,persona:"guardian",method:"POST",key:school.run+".forbidden-cancel",body:cancellation,status:403});
+    const cancelled=await send(correctionPath,"cancel-invoice",cancellation);
+    assert.deepEqual(await send(correctionPath,"cancel-invoice",cancellation),cancelled);
+    const old=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${originalInvoice.id}`,{token:payer})).payload.data);
+    assert.equal(old.state,"cancelled");
+    assert.equal(old.balanceMinor,0);
+    const replacement=await send(correctionPath,"replace-invoice",{kind:"reissue",revision:old.revision});
+    assert.notEqual(replacement.id,old.id);
+    const current=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${replacement.id}`,{token:payer})).payload.data);
+    assert.equal(current.totalMinor,originalInvoice.totalMinor);
+    assert.equal(current.state,"unpaid");
+    assert.equal(current.period,originalInvoice.period);
+    await fixtureApi(school,correctionPath,{token:finance,persona:"admin",method:"POST",key:school.run+".duplicate-reissue",body:{kind:"reissue",revision:old.revision},status:409});
+    const oldAgain=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${originalInvoice.id}`,{token:payer})).payload.data);
+    assert.equal(oldAgain.state,"cancelled");
+    const paidReplacement=receiptMutation.parse(await send("/finance/receipts","replacement-payment",{
+      externalReceiptRef:school.run+"-REPLACEMENT-CASH",method:"cash",receivedDate:clock.day,currency:current.currency,
+      amountMinor:current.totalMinor,verified:true,allocations:[{invoiceId:current.id,invoiceRevision:current.revision,amountMinor:current.totalMinor}]
+    }));
+    const cashBeforeRefund=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    const refundPath=`/finance/receipts/${paidReplacement.id}/refunds`;
+    const refundInput={revision:paidReplacement.revision,allocationId:paidReplacement.items[0].allocationId,amountMinor:100,
+      refundedDate:clock.day,externalRefundRef:school.run+"-REFUND-1",reason:"Synthetic partial cash refund",verified:true};
+    await fixtureApi(school,refundPath,{token:payer,persona:"guardian",method:"POST",key:school.run+".forbidden-refund",body:refundInput,status:403});
+    const refund=await send(refundPath,"partial-refund",refundInput);
+    assert.deepEqual(await send(refundPath,"partial-refund",refundInput),refund);
+    const afterRefund=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${current.id}`,{token:payer})).payload.data);
+    assert.equal(afterRefund.balanceMinor,100);
+    assert.equal(afterRefund.allocatedMinor,current.totalMinor-100);
+    const cashAfterRefund=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    assert.equal(cashAfterRefund.balanceMinor,cashBeforeRefund.balanceMinor-100);
+    assert.ok(cashAfterRefund.entries.some((entry:{id:string;receiptId:string;signedMinor:number;kind:string})=>
+      entry.id===refund.id&&entry.receiptId===paidReplacement.id&&entry.signedMinor===-100&&entry.kind==="refund"));
+    const receiptAfter=(await fixtureApi(school,`/finance/receipts/${paidReplacement.id}`,{token:finance})).payload.data;
+    assert.equal(receiptAfter.activeMinor,current.totalMinor-100);
+    assert.equal(receiptAfter.remainderMinor,0);
+    const combinedLedger=(await fixtureApi(school,`/finance/ledger?month=${clock.month}&limit=100`,{token:finance})).payload.data;
+    assert.ok(combinedLedger.some((entry:{id:string;channel:string})=>entry.id===refund.id&&entry.channel==="cash"));
+    assert.ok(combinedLedger.some((entry:{channel:string;kind:string})=>entry.channel==="bank"&&entry.kind==="fee"));
+    assert.ok(combinedLedger.some((entry:{channel:string;kind:string})=>entry.channel==="transfer"&&entry.kind==="bank_deposit"));
+    const searched=(await fixtureApi(school,`/finance/ledger?month=${clock.month}&q=Synthetic%20donation&channel=cash`,{token:finance})).payload.data;
+    assert.ok(searched.some((entry:{id:string})=>entry.id===movement.id));
+    await fixtureApi(school,`/finance/ledger?month=${clock.month}`,{token:payer,persona:"guardian",status:403});
+
+    const ownAfter=(await fixtureApi(school,`/finance/receipts/${afterRefund.receiptIds[0]}`,{token:payer})).payload.data;
+    assert.equal(ownAfter.amountMinor,current.totalMinor);
+    assert.equal(ownAfter.refunds[0].amountMinor,100);
+    await fixtureApi(school,refundPath,{token:finance,persona:"admin",method:"POST",key:school.run+".stale-refund",body:refundInput,status:409});
+
+
   } finally {
     await school.close();
   }

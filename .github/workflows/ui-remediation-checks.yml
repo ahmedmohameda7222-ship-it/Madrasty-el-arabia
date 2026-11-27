@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple')) }}
+    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple' || github.head_ref == 'feat/finance-v2-workspace-2026-11-27')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -37,7 +37,7 @@ jobs:
         run: pnpm build:web
 
   browser-fixture:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple')) }}
+    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple' || github.head_ref == 'feat/finance-v2-workspace-2026-11-27')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 55
     env:
@@ -94,7 +94,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
   browser-cross-platform:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple')) }}
+    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple' || github.head_ref == 'feat/finance-v2-workspace-2026-11-27')) }}
     needs: browser-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -128,7 +128,7 @@ jobs:
           pnpm exec playwright test --config qa/ui-compatibility.config.ts
 
   finance-ios-webkit:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple')) }}
+    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple' || github.head_ref == 'feat/finance-v2-workspace-2026-11-27')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:

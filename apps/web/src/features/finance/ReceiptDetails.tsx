@@ -3,8 +3,8 @@
 import css from "./FinanceWorkspace.module.css";
 
 import Link from "next/link";
-import {useState,type FormEvent} from "react";
-import {receiptAllocationInput,receiptDetail,receiptMutation,receiptReversalInput,type Locale,type ReceiptStaffDetail} from "@madrasty/contracts";
+import {useRef,useState,type FormEvent} from "react";
+import {receiptAllocationInput,receiptDetail,receiptMutation,receiptReversalInput,receiptRefundInput,receiptRefundResult,receiptOptions,type Locale,type ReceiptStaffDetail} from "@madrasty/contracts";
 import {ApiResponseError} from "@/api/client";
 import {useSchoolCommand} from "@/api/commands";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
@@ -13,13 +13,13 @@ import {ConfirmedAt} from "@/ui/RecordValues";
 import {financeAmount,inputAmountMinor} from "./invoice-ui";
 import {InvoicePicker,receiptCopy,type InvoiceCandidate} from "./receipt-ui";
 
-export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:boolean}){
+export function ReceiptDetails({locale,id,staff,returnHref}:{locale:Locale;id:string;staff:boolean;returnHref?:string}){
   const text=receiptCopy[locale],root=`/${locale}/school/more`;
   const [version,setVersion]=useState(0),[notice,setNotice]=useState("");
   const details=useTimetableRead(`/finance/receipts/${id}`,receiptDetail,version);
   return <section className={`${css.workspace} auth-form`}>
     <h1>{text.title}</h1>
-    <Link className="plain-button" href={`${root}/${staff?"receipts":"invoices"}`}>{text.back}</Link>
+    <Link className="plain-button" href={returnHref??`${root}/${staff?"receipts":"invoices"}`}>{text.back}</Link>
     {notice&&<p role="status">{notice}</p>}
     <TimetableRead locale={locale} result={details}>{(item)=>{
       const money=(value:number)=><bdi dir="ltr">{financeAmount(value,item.currency,locale)}</bdi>;
@@ -36,6 +36,7 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
           {item.suggestedInvoiceId&&<Link href={`${root}/invoices?invoice=${item.suggestedInvoiceId}`}>{text.forInvoice}</Link>}
         </>}
         <p>{text.applied} · {money(item.appliedMinor)}</p>
+        {!!item.refunds?.length&&<div className={css.panel}><h3>{locale==="ar"?"المبالغ المرتجعة":"Erstattungen"}</h3>{item.refunds.map(refund=><p key={refund.id}><bdi>{refund.refundedDate}</bdi> · {money(refund.amountMinor)}</p>)}</div>}
         <h3>{text.allocations}</h3>
         <ul className="group-list">{item.allocations.map((allocation)=><li key={allocation.id} className="timetable-day">
           <p><bdi>{allocation.studentName}</bdi> · <bdi>{allocation.studentNumber}</bdi> · <bdi>{allocation.period}</bdi></p>
@@ -45,7 +46,8 @@ export function ReceiptDetails({locale,id,staff}:{locale:Locale;id:string;staff:
           {allocation.reason&&<p><bdi>{allocation.reason}</bdi></p>}
         </li>)}</ul>
         {item.scope==="staff"&&<>
-          {item.canPost&&<ReceiptActions key={item.revision} locale={locale} item={item} refresh={(message)=>{setNotice(message);setVersion((n)=>n+1);}}/>}
+          {item.canPost&&item.activeMinor>0&&<RefundSection key={"refund:"+item.revision} locale={locale} item={item} refresh={(message)=>{setNotice(message);setVersion(n=>n+1);}}/>}
+          {item.canPost&&<details className={css.disclosure}><summary>{locale==="ar"?"تصحيح تسجيل السداد":"Zahlungsbuchung korrigieren"}</summary><ReceiptActions key={item.revision} locale={locale} item={item} refresh={(message)=>{setNotice(message);setVersion((n)=>n+1);}}/></details>}
           <details className={css.disclosure}><summary>{text.history}</summary><ul className="group-list">{item.history.map((entry)=><li key={entry.revision}>
             <p>{entry.kind==="record"?text.recorded:entry.kind==="allocate"?text.allocateEvent:entry.kind==="unapply"?text.reversed:entry.kind==="refund"?text.refund:text.voidEvent}</p>
             <ConfirmedAt locale={locale} value={entry.postedAt}/>
@@ -128,9 +130,9 @@ function ReceiptActions({locale,item,refresh}:{locale:Locale;item:ReceiptStaffDe
       <div className="header-actions">
         {item.remainderMinor>0&&<button type="button" className="plain-button" aria-pressed={tab==="allocate"} onClick={()=>choose("allocate")}>{text.allocate}</button>}
         {active.length>0&&<button type="button" className="plain-button" aria-pressed={tab==="unapply"} onClick={()=>choose("unapply")}>{text.unapply}</button>}
-        <button type="button" className="plain-button" aria-pressed={tab==="void_receipt"} onClick={()=>choose("void_receipt")}>{text.void_receipt}</button>
+        {!item.refunds?.length&&<button type="button" className="plain-button" aria-pressed={tab==="void_receipt"} onClick={()=>choose("void_receipt")}>{text.void_receipt}</button>}
       </div>
-      {tab==="allocate"&&item.remainderMinor>0&&<InvoicePicker locale={locale} currency={currency} exclude={rows.map((row)=>row.invoice.id)}
+      {tab==="allocate"&&item.remainderMinor>0&&<InvoicePicker locale={locale} currency={currency} payerInvoice={item.allocations[0]?.invoiceId??item.suggestedInvoiceId??rows[0]?.invoice.id} exclude={rows.map((row)=>row.invoice.id)}
         onPick={(invoice)=>setRows((list)=>[...list,{invoice,amount:amountText(Math.min(invoice.balanceMinor,item.remainderMinor-total))}])}/>}
       {(tab!=="allocate"||item.remainderMinor>0)&&<form className="auth-form" onSubmit={review}>
         {tab==="allocate"?rows.map((row,index)=><div key={row.invoice.id} className="timetable-day">
@@ -150,4 +152,52 @@ function ReceiptActions({locale,item,refresh}:{locale:Locale;item:ReceiptStaffDe
       </form>}
     </>}
   </div>;
+}
+
+function RefundSection({locale,item,refresh}:{locale:Locale;item:ReceiptStaffDetail;refresh:(message:string)=>void}){
+  const [open,setOpen]=useState(false),ar=locale==="ar";
+  const options=useTimetableRead(open?"/finance/receipt-options":null,receiptOptions);
+  return <details className={css.disclosure} open={open} onToggle={e=>setOpen(e.currentTarget.open)}>
+    <summary>{ar?"تسجيل مبلغ مرتجع":"Erstattung erfassen"}</summary>
+    {open&&<TimetableRead locale={locale} result={options}>{setup=><RefundForm locale={locale} item={item} today={setup.schoolDate} refresh={refresh}/>}</TimetableRead>}
+  </details>;
+}
+function RefundForm({locale,item,today,refresh}:{locale:Locale;item:ReceiptStaffDetail;today:string;refresh:(message:string)=>void}){
+  const ar=locale==="ar",command=useSchoolCommand(useAccountScope().persona),lock=useRef(false),cashRef=useRef("CASH-REFUND-"+crypto.randomUUID());
+  const active=item.allocations.filter(a=>!a.reversedAt),initial=active[0];
+  const [selected,setSelected]=useState(initial?.id??""),[amount,setAmount]=useState(initial?financeAmount(initial.amountMinor,item.currency).split(" ")[0]:""),
+    [date,setDate]=useState(today),[reason,setReason]=useState(""),[reference,setReference]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState(""),[attempted,setAttempted]=useState(false);
+  const target=active.find(a=>a.id===selected),maximum=target?.amountMinor??item.remainderMinor;
+  const minor=inputAmountMinor(amount,item.currency,maximum);
+  const input=receiptRefundInput.safeParse({revision:item.revision,allocationId:target?.id,amountMinor:minor,refundedDate:date,externalRefundRef:item.method==="cash"?cashRef.current:reference,reason,verified:true});
+  async function save(e:FormEvent){
+    e.preventDefault();setAttempted(true);setError("");
+    if(lock.current||!input.success||date<item.receivedDate||date>today)return;
+    lock.current=true;setBusy(true);
+    try{
+      await command(`/finance/receipts/${item.id}/refunds`,"POST",input.data,receiptRefundResult);
+      refresh(ar?"تم تسجيل رد المبلغ":"Erstattung erfasst");
+    }catch(problem){
+      if(problem instanceof ApiResponseError&&problem.status===409)setError(ar?"البيانات اتغيرت. حدّث الإيصال أو راجع مرجع العملية.":"Daten wurden geändert. Beleg oder Buchungsreferenz prüfen.");
+      else if(problem instanceof ApiResponseError&&problem.status===422)setError(ar?"تعذر رد المبلغ. راجع الرصيد والتخصيص؛ تسويات التوقف لها مسار مستقل.":"Erstattung nicht möglich. Prüfe Kassenbestand und Zuordnung. Teilnahmepausen haben eine eigene Gebührenkorrektur.");
+      else setError(timetableError(locale,problem));
+    }finally{lock.current=false;setBusy(false);}
+  }
+  return <form className="auth-form" noValidate onSubmit={save}>
+    <p>{ar?"سجل هذه العملية فقط بعد رد المبلغ بالفعل. الفاتورة المرتبطة ترجع مستحقة بقيمة المبلغ المرتجع.":"Nur nach tatsächlich erfolgter Rückzahlung erfassen. Der erstattete Betrag wird auf der zugehörigen Rechnung wieder offen."}</p>
+    <p>{item.method==="cash"?(ar?"رد نقدي من الخزنة":"Barauszahlung aus der Kasse"):(ar?"رد بتحويل بنكي":"Bankerstattung")}</p>
+    {active.length>0&&<label>{ar?"الفاتورة":"Rechnung"}<select value={selected} disabled={busy} onChange={e=>{
+      const id=e.target.value,a=active.find(x=>x.id===id);setSelected(id);setAmount(financeAmount(a?.amountMinor??item.remainderMinor,item.currency).split(" ")[0]);
+    }}>{active.map(a=><option key={a.id} value={a.id}>{a.studentName} · {a.invoiceNumber} · {financeAmount(a.amountMinor,item.currency,locale)}</option>)}
+    {item.remainderMinor>0&&<option value="">{ar?"مبلغ غير مخصص":"Nicht zugeordneter Betrag"}</option>}</select></label>}
+    <label>{ar?"المبلغ المرتجع":"Erstattungsbetrag"}<input inputMode="decimal" dir="ltr" value={amount} disabled={busy} aria-invalid={attempted&&minor===null} onChange={e=>setAmount(e.target.value)}/></label>
+    {attempted&&minor===null&&<p role="alert">{ar?"اكتب مبلغًا صحيحًا لا يتجاوز المبلغ المتاح.":"Gib einen gültigen Betrag bis zum verfügbaren Betrag ein."}</p>}
+    <label>{ar?"تاريخ الاسترداد":"Erstattungsdatum"}<input type="date" min={item.receivedDate} max={today} value={date} disabled={busy} onChange={e=>setDate(e.target.value)}/></label>
+    {attempted&&(!date||date<item.receivedDate||date>today)&&<p role="alert">{ar?"اختر تاريخًا صحيحًا.":"Wähle ein gültiges Datum."}</p>}
+    {item.method==="bank"&&<label>{ar?"مرجع التحويل":"Buchungsreferenz"}<input value={reference} maxLength={160} disabled={busy} onChange={e=>setReference(e.target.value)}/></label>}
+    <label>{ar?"سبب الاسترداد":"Erstattungsgrund"}<textarea value={reason} maxLength={500} disabled={busy} onChange={e=>setReason(e.target.value)}/></label>
+    {attempted&&!input.success&&minor!==null&&<p role="alert">{ar?"راجع التاريخ والسبب ومرجع التحويل.":"Prüfe Datum, Grund und Buchungsreferenz."}</p>}
+    {error&&<p role="alert">{error}</p>}
+    <button className="primary-button" disabled={busy}>{busy?(ar?"جاري التسجيل…":"Wird gespeichert…"):(ar?"تأكيد رد المبلغ":"Erstattung bestätigen")}</button>
+  </form>;
 }
