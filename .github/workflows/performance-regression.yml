@@ -26,3 +26,63 @@ jobs:
           pnpm install --frozen-lockfile
       - run: pnpm check:types
       - run: pnpm build:web
+  performance-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - name: Measure protected APIs and mobile navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-performance.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file-if-exists=qa/.env.local --test qa/performance/api-baseline.test.ts
+          pnpm qa:web --project=chromium --project=webkit ui-performance.spec.ts ui-navigation-pending.spec.ts ui-work-queues-ready.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-evidence
+          path: qa-artifacts/performance/
+          if-no-files-found: warn
+  domain-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Verify domain authorization and behavior against isolated QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-performance-domain.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 15 http://127.0.0.1:4300/api/v1/health
+          for suite in contracts school policy academics communication finance; do
+            pnpm "qa:$suite"
+          done

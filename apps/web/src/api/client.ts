@@ -21,21 +21,21 @@ export async function requestApi<T>(path: `/${string}`, schema: ZodType<T>, opti
   const write = !["GET","HEAD"].includes((options?.method ?? "GET").toUpperCase());
   if (write) readFlights.invalidate();
   try {
-  const response = await fetch(`/api/v1${path}`, {
-    ...options,
-    cache: "no-store",
-    credentials: "same-origin",
-  });
-  const body: unknown = await response.json().catch(() => undefined);
-  if (!response.ok) {
-    const decoded = errorEnvelope.safeParse(body);
-    if (!decoded.success) {
-      throw new ApiResponseError(response.status, "unavailable", "error.unavailable");
+    const response = await fetch(`/api/v1${path}`, {
+      ...options,
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+    const body: unknown = await response.json().catch(() => undefined);
+    if (!response.ok) {
+      const decoded = errorEnvelope.safeParse(body);
+      if (!decoded.success) {
+        throw new ApiResponseError(response.status, "unavailable", "error.unavailable");
+      }
+      const { code, messageKey, fields, requestId } = decoded.data.error;
+      throw new ApiResponseError(response.status, code, messageKey, fields, requestId);
     }
-    const { code, messageKey, fields, requestId } = decoded.data.error;
-    throw new ApiResponseError(response.status, code, messageKey, fields, requestId);
-  }
-  return successEnvelope(schema).parse(body);
+    return successEnvelope(schema).parse(body);
   } finally {
     if (write) readFlights.invalidate();
   }
