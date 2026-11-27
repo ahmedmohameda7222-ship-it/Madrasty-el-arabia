@@ -3,7 +3,7 @@
 import { useEffect,useState,type ReactNode } from "react";
 import type { z } from "zod";
 import type { CurriculumOffering,Locale } from "@madrasty/contracts";
-import { ApiResponseError,requestApi } from "@/api/client";
+import { ApiResponseError,requestApi,requestInitialRead } from "@/api/client";
 import { timetableError } from "@/features/school/timetable/shared";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
@@ -21,7 +21,10 @@ export function useAcademicPage<T>(path:`/${string}`|null,schema:z.ZodType<T[]>,
   useEffect(()=>{
     if(!path)return;
     const abort=new AbortController();
-    requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}}).then(
+    const read=refresh===0&&retry===0
+      ? requestInitialRead(scope,path,schema,persona,abort.signal)
+      : requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}});
+    read.then(
       ({data,meta})=>{if(!abort.signal.aborted){setRead({scope,refresh,items:data,cursor:meta?.nextCursor});if(retainOnRefreshError)setNotice(undefined);}},
       (error)=>{if(!abort.signal.aborted){if(retainOnRefreshError&&!denied(error)){setRead(old=>old?.scope===scope&&old.items?old:{scope,refresh,error});setNotice({scope,error});}else setRead({scope,refresh,error});}},
     );
