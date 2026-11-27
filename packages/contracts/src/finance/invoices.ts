@@ -62,6 +62,7 @@ export const invoiceSummary=z.object({
 export const invoiceDetail=invoiceSummary.extend({
   lines:invoiceLines,paymentInstructions:transferInstructions.nullable(),issueInstructions:transferInstructions.nullable(),
   receiptIds:id.array(),canInquire:z.boolean(),
+  correction:z.object({canCancel:z.boolean(),canReissue:z.boolean(),replacementId:id.nullable(),reason:z.string().nullable()}).optional(),
 });
 export type InvoicePreview=z.infer<typeof invoicePreview>;
 export type InvoiceDetail=z.infer<typeof invoiceDetail>;
@@ -73,3 +74,9 @@ export const autoBillingUpdate=autoBillingSettings.pick({enabled:true,startMonth
 export const automaticBillingInput=z.object({enabled:z.boolean(),startMonth:billingMonth,revision:z.int().positive()}).strict();
 export const financePayerIssue=z.object({studentId:id,studentName:z.string(),studentNumber:z.string(),reason:z.enum(["payer_missing","payer_unreachable"])});
 export const automaticBillingSettings=automaticBillingInput.extend({schoolMonth:billingMonth,missingPayers:z.int().nonnegative(),payerIssues:financePayerIssue.array()});
+
+export const invoiceCorrectionInput=z.discriminatedUnion("kind",[
+  z.object({kind:z.literal("cancel"),revision:revisionSchema,reason:z.string().trim().min(3).max(500)}).strict(),
+  z.object({kind:z.literal("reissue"),revision:revisionSchema}).strict(),
+]);
+export const invoiceCorrectionResult=z.object({id,revision:revisionSchema});
