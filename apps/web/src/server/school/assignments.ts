@@ -129,12 +129,13 @@ async function assignment(tx: Transaction, id: string) {
   return assignmentSchema.parse(row);
 }
 
-async function delegates(tx: Transaction, id: string) {
+async function delegates(tx: Transaction, ids: readonly string[]) {
+  if (!ids.length) return [];
   return substituteSchema.array().parse(await tx`
     select d.id,d.staff_id as "staffId",d.assignment_id as "assignmentId",d.effective_from::text as "from",
       d.effective_until::text as "untilExclusive", d.capabilities,d.revision,d.revoked_at is not null as revoked,p.display_name as "staffName"
     from app.substitute_assignment d join app.staff_profile p on p.id=d.staff_id
-    where d.assignment_id = ${id} order by d.effective_from,d.id`);
+    where d.assignment_id = any(${tx.array([...ids])}::uuid[]) order by d.effective_from,d.id`);
 }
 
 export function listAssignments(ctx: ActorContext, id: string) {
@@ -143,9 +144,16 @@ export function listAssignments(ctx: ActorContext, id: string) {
     await editor(ctx,tx);
     await classRecord(tx,id);
     const rows = assignmentSchema.array().parse(await tx`${assigned(tx)} where t.class_id = ${id} order by t.effective_from,t.id`);
-    const output = [];
-    for (const row of rows) output.push(assignmentWithSubstitutesSchema.parse({ ...row, substitutes: await delegates(tx,row.id) }));
-    return output;
+    const substitutes = await delegates(tx, rows.map(row => row.id));
+    const byAssignment = new Map<string, typeof substitutes>();
+    for (const substitute of substitutes) {
+      const group = byAssignment.get(substitute.assignmentId);
+      if (group) group.push(substitute);
+      else byAssignment.set(substitute.assignmentId, [substitute]);
+    }
+    return rows.map(row => assignmentWithSubstitutesSchema.parse({
+      ...row, substitutes: byAssignment.get(row.id) ?? [],
+    }));
   });
 }
 
@@ -252,7 +260,7 @@ export function addSubstitute(ctx: ActorContext, id: string, key: string | null,
         (assignment_id,staff_id,effective_from,effective_until,capabilities)
         values (${id},${input.staffId},${input.from}::date,${input.untilExclusive}::date,${tx.array(input.capabilities)}::text[]) returning id`;
       await tx`update app.teaching_assignment set revision=revision+1 where id=${id}`;
-      const delegate = (await delegates(tx,id)).find((row) => row.id===created.id);
+      const delegate = (await delegates(tx,[id])).find((row) => row.id===created.id);
       if (!delegate) throw new ApiError("internal");
       await appendAudit(tx,{ action:"school.substitute_assigned", aggregateId:created.id, metadata:{ assignmentId:id } });
       return delegate;

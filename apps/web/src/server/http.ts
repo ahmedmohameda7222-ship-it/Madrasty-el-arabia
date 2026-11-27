@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { errorCodes, errorMessageKeys, type ErrorCode, type ErrorEnvelope } from "@madrasty/contracts";
 import type { ZodType } from "zod";
+import { withRequestTiming } from "./performance";
 
 export class ApiError extends Error {
   constructor(
@@ -28,7 +29,7 @@ export function problem(error: ApiError, context: RequestContext) {
 export function api<Extra extends unknown[]>(
   handle: (request: Request, ctx: RequestContext, ...extra: Extra) => Response | Promise<Response>,
 ) {
-  return async (request: Request, ...extra: Extra) => {
+  return (request: Request, ...extra: Extra) => withRequestTiming(async finish => {
     const requestId = randomUUID();
     let response: Response;
     try {
@@ -42,8 +43,9 @@ export function api<Extra extends unknown[]>(
     }
     response.headers.set("Cache-Control", "private, no-store");
     response.headers.set("X-Request-Id", requestId);
+    response.headers.set("Server-Timing", finish());
     return response;
-  };
+  });
 }
 
 type JsonReviver = (key: string, value: unknown, context?: { source?: string }) => unknown;

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Locale } from "@madrasty/contracts";
 import type { ZodType } from "zod";
-import { ApiResponseError, requestApi } from "@/api/client";
+import { ApiResponseError, requestApi, requestInitialRead } from "@/api/client";
 import { dictionary, localizedError } from "@/i18n";
 import { useAccountScope } from "@/ui/AccountScope";
 import { AsyncSurface } from "@/ui/AsyncSurface";
@@ -49,7 +49,10 @@ export function useTimetableRead<T>(path: `/${string}` | null, schema: ZodType<T
   useEffect(()=>{
     if(!path)return;
     const abort=new AbortController();
-    requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}}).then(
+    const read=refresh===0&&attempt===0
+      ? requestInitialRead(scope,path,schema,persona,abort.signal)
+      : requestApi(path,schema,{signal:abort.signal,headers:{"X-School-Persona":persona}});
+    read.then(
       (reply)=>{if(!abort.signal.aborted)setValue({scope,data:reply.data,confirmedAt:new Date().toISOString()});},
       (error)=>{
         if(abort.signal.aborted)return;

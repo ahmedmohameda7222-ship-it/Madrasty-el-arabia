@@ -5,7 +5,7 @@ import {z} from "zod";
 import type {Locale} from "@madrasty/contracts";
 import css from "@/features/finance/FinanceWorkspace.module.css";
 import {FeeSettings} from "@/features/finance/FeeSettings";
-import {mayUse} from "@/server/access/capabilities";
+import { mayUseMany} from "@/server/access/capabilities";
 import {webSchoolSession} from "@/server/identity/web-session";
 
 export default async function FeeSettingsPage({params,searchParams}:{
@@ -13,7 +13,7 @@ export default async function FeeSettingsPage({params,searchParams}:{
 }){
   const [{locale},query,session]=await Promise.all([presentationParams(params),searchParams,webSchoolSession()]);
   if(!session)redirect(`/${locale}/account/sign-in`);
-  const [billing,bank]=await Promise.all([mayUse(session,"finance.issue"),mayUse(session,"bank.configure")]);
+  const [billing,bank]=await mayUseMany(session,["finance.issue","bank.configure"]);
   if(!billing&&!bank)notFound();
   return <div className={`${css.workspace} ${css.narrowForm} auth-form`}>
     <h1>{locale==="ar"?"إعدادات الحسابات":"Buchhaltung – Einstellungen"}</h1>

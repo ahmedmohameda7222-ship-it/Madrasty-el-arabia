@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { localeSchema } from "@madrasty/contracts";
 import { z } from "zod";
 import { webSchoolSession } from "@/server/identity/web-session";
-import { mayUse, mayProvisionAdmin } from "@/server/access/capabilities";
+import { mayUseMany, mayProvisionAdmin } from "@/server/access/capabilities";
 import { StaffAssignments } from "@/features/school/StaffAssignments";
 import { StaffWorkspace } from "@/features/school/StaffWorkspace";
 import { StaffProvisionOnly } from "@/features/school/StaffProvisionOnly";
@@ -15,9 +15,7 @@ export default async function AssignmentPage({ params, searchParams }: {
   const locale = localeSchema.safeParse(route.locale);
   if (!locale.success) notFound();
   if (!session) redirect(`/${locale.data}/account/sign-in`);
-  const [office, academic, staffManagement] = await Promise.all([
-    mayUse(session, "school.manage"), mayUse(session, "academics.supervise"), mayUse(session, "staff.invite")
-  ]);
+  const [office, academic, staffManagement] = await mayUseMany(session,["school.manage","academics.supervise","staff.invite"]);
   if (!office && !academic && !staffManagement) notFound();
   // Invitation managers can provision a teacher, not manage assignments or school data.
   if (!office && !academic) return <StaffProvisionOnly locale={locale.data} />;

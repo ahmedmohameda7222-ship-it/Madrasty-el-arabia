@@ -801,3 +801,6 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 
 /* Permission errors keep the three composer controls in their normal positions. */
 .comms-media-error{grid-column:1/-1;margin:0;overflow-wrap:anywhere;font-size:.85rem}
+
+/* Static route fallbacks follow the presentation language, including device-local overrides. */
+html[lang="de"] .route-loading-ar, html[lang="ar"] .route-loading-de { display: none; }

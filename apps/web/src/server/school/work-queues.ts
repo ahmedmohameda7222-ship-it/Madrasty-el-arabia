@@ -49,6 +49,27 @@ async function schoolDate(tx: Transaction, requested?: string) {
   return date;
 }
 
+/** Batch the normal read path; preserve individual error isolation if any projection fails. */
+async function countWorkQueues(tx:Transaction,eligible:readonly WorkQueueKey[],asOf:string) {
+  if(!eligible.length)return new Map<WorkQueueKey,number>();
+  try {
+    const rows=await tx.savepoint(scoped=>scoped<{key:WorkQueueKey;count:number}[]>`
+      select candidate.key, case when candidate.legacy then
+        (select count(*)::int from app.work_queue_items(candidate.key,${asOf}::date))
+        else (select count(*)::int from app.dashboard_work_queue_items(candidate.key,${asOf}::date))
+      end as count
+      from unnest(${scoped.array([...eligible])}::text[],
+        ${scoped.array(eligible.map(key=>schoolQueueKeySchema.safeParse(key).success))}::boolean[])
+        with ordinality as candidate(key,legacy,ord)
+      order by candidate.ord
+    `);
+    return new Map(rows.map(row=>[row.key,row.count]));
+  } catch {
+    // The existing per-queue savepoints still distinguish unavailable from zero.
+    return new Map<WorkQueueKey,number>();
+  }
+}
+
 export async function readWorkQueues(actor: ActorContext, asOf?: string) {
   return withActor(actor,async(tx)=>{
     const date=await schoolDate(tx,asOf);
@@ -57,11 +78,12 @@ export async function readWorkQueues(actor: ActorContext, asOf?: string) {
       return workQueuesSchema.parse({asOf:null,today:null,timezone:null,setupRequired:true,mayConfigure:setup.allowed,queues:[]});
     }
     const eligible=actor.persona==="admin"?(await visibleKeys(tx)).filter(key=>key!=="noncontinuation_requests"):[];
+    const counts=await countWorkQueues(tx,eligible,date.asOf);
     const queues=[];
     for(const key of eligible){
       const target={key,route:`/school/home/queues/${key}`,filters:{asOf:date.asOf}};
       try{
-        const count=await tx.savepoint(async scoped=>{
+        const count=counts.get(key)??await tx.savepoint(async scoped=>{
           const [result]=await scoped<{count:number}[]>`select count(*)::int as count from ${source(scoped,key,date.asOf)}`;
           return result.count;
         });
