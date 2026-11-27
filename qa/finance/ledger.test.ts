@@ -341,6 +341,32 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     await fixtureApi(school,correctionPath,{token:finance,persona:"admin",method:"POST",key:school.run+".duplicate-reissue",body:{kind:"reissue",revision:old.revision},status:409});
     const oldAgain=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${original.id}`,{token:payer})).payload.data);
     assert.equal(oldAgain.state,"cancelled");
+    const paidReplacement=receiptMutation.parse(await send("/finance/receipts","replacement-payment",{
+      externalReceiptRef:school.run+"-REPLACEMENT-CASH",method:"cash",receivedDate:clock.day,currency:current.currency,
+      amountMinor:current.totalMinor,verified:true,allocations:[{invoiceId:current.id,invoiceRevision:current.revision,amountMinor:current.totalMinor}]
+    }));
+    const cashBeforeRefund=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    const refundPath=`/finance/receipts/${paidReplacement.id}/refunds`;
+    const refundInput={revision:paidReplacement.revision,allocationId:paidReplacement.items[0].allocationId,amountMinor:100,
+      refundedDate:clock.day,externalRefundRef:school.run+"-REFUND-1",reason:"Synthetic partial cash refund",verified:true};
+    await fixtureApi(school,refundPath,{token:payer,persona:"guardian",method:"POST",key:school.run+".forbidden-refund",body:refundInput,status:403});
+    const refund=await send(refundPath,"partial-refund",refundInput);
+    assert.deepEqual(await send(refundPath,"partial-refund",refundInput),refund);
+    const afterRefund=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${current.id}`,{token:payer})).payload.data);
+    assert.equal(afterRefund.balanceMinor,100);
+    assert.equal(afterRefund.allocatedMinor,current.totalMinor-100);
+    const cashAfterRefund=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+    assert.equal(cashAfterRefund.balanceMinor,cashBeforeRefund.balanceMinor-100);
+    assert.ok(cashAfterRefund.entries.some((entry:{id:string;receiptId:string;signedMinor:number;kind:string})=>
+      entry.id===refund.id&&entry.receiptId===paidReplacement.id&&entry.signedMinor===-100&&entry.kind==="refund"));
+    const receiptAfter=(await fixtureApi(school,`/finance/receipts/${paidReplacement.id}`,{token:finance})).payload.data;
+    assert.equal(receiptAfter.activeMinor,current.totalMinor-100);
+    assert.equal(receiptAfter.remainderMinor,0);
+    const ownAfter=(await fixtureApi(school,`/finance/receipts/${afterRefund.receiptIds[0]}`,{token:payer})).payload.data;
+    assert.equal(ownAfter.amountMinor,current.totalMinor);
+    assert.equal(ownAfter.refunds[0].amountMinor,100);
+    await fixtureApi(school,refundPath,{token:finance,persona:"admin",method:"POST",key:school.run+".stale-refund",body:refundInput,status:409});
+
 
   } finally {
     await school.close();
