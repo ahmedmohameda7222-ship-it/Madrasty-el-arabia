@@ -29,7 +29,7 @@ for (const scenario of scenarios) {
       await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
       mkdirSync("qa-artifacts/ui-after", {recursive:true});
       const routes = scenario.persona === "admin"
-        ? ["finance-reports","invoices","receipts","receipts?view=cashbook","record-payment","issue-invoices","fee-settings"]
+        ? ["finance-reports","invoices","receipts","receipts?view=cashbook","record-payment?advanced=1","issue-invoices","fee-settings"]
         : ["finance-reports","invoices"];
       for (const route of routes) {
         for (const [width,theme] of [[390,"light"],[320,"dark"],[430,"light"],[1280,"light"]] as const) {
@@ -53,7 +53,7 @@ for (const scenario of scenarios) {
           if(route==="finance-reports"&&scenario.persona==="admin"){
             await page.getByText(scenario.locale==="ar"?"تصفية التقرير":"Bericht filtern",{exact:true}).click();
           }
-          if(["issue-invoices","record-payment","fee-settings","receipts?view=cashbook"].includes(route)||(route==="finance-reports"&&scenario.persona==="admin")){
+          if(["issue-invoices","record-payment?advanced=1","fee-settings","receipts?view=cashbook"].includes(route)||(route==="finance-reports"&&scenario.persona==="admin")){
             const fields=page.locator('.school-content input:is([type=date],[type=month]):visible');
             await expect(fields.first(),route+" must render a date field").toBeVisible();
             expect(await fields.count()).toBeGreaterThan(0);
@@ -96,7 +96,7 @@ for (const scenario of scenarios) {
             await expect(payer).toBeInViewport();
             await page.screenshot({path:"qa-artifacts/ui-after/finance-action-"+scenario.actor+"-"+scenario.locale+"-fee-settings-"+width+"-"+theme+".png",animations:"disabled"});
           }
-          if(route==="issue-invoices"||route==="record-payment"){
+          if(route==="issue-invoices"||route==="record-payment?advanced=1"){
             const action=page.locator(".school-content button[type=submit].primary-button").last();
             await action.scrollIntoViewIfNeeded();
             await expect(action).toBeInViewport();
