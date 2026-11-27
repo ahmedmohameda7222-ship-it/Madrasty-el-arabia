@@ -4,7 +4,7 @@ import { schoolFixtures } from "../fixtures/school";
 import { localOrigin } from "../support/target";
 
 for(const width of [768,1024,1280]){
-  test("single admin student search panel is balanced at "+width+"px rather than occupying half a desktop grid",async({page,context})=>{
+  test("admin student and family directory is balanced at "+width+"px rather than occupying half a desktop grid",async({page,context})=>{
     const school=schoolFixtures();
     try {
       await school.seed();
@@ -12,17 +12,18 @@ for(const width of [768,1024,1280]){
       await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
       await page.setViewportSize({width,height:900});
       await page.goto("/ar/school/students");
-      const panel=page.locator(".school-content .calendar-layout > section.auth-card");
+      const panel=page.locator(".school-content > .family-workspace");
       await expect(panel).toHaveCount(1);
       await expect(panel).toBeVisible({timeout:30000});
-      await expect(panel.locator(".group-list, [data-async-state='empty']").first()).toBeVisible({timeout:30000});
+      await expect(panel.getByRole("searchbox")).toBeVisible();
+      await expect(panel.locator(".family-directory-list .family-list, .family-directory-list [data-async-state='empty']").first()).toBeVisible({timeout:30000});
       const measured=await panel.evaluate(el=>{
         const card=el.getBoundingClientRect();
         const content=document.querySelector(".school-content")!.getBoundingClientRect();
         return {width:card.width,leftGap:card.left-content.left,rightGap:content.right-card.right};
       });
       expect(measured.width,"single-list card must not be half-width").toBeGreaterThanOrEqual(Math.min(600,width-110));
-      expect(measured.width,"forms must remain readable").toBeLessThanOrEqual(800);
+      expect(measured.width,"directory must remain within its 52rem reading rail").toBeLessThanOrEqual(832);
       expect(Math.abs(measured.leftGap-measured.rightGap),"one card must be centered").toBeLessThanOrEqual(36);
       mkdirSync("qa-artifacts/ui-after",{recursive:true});
       await page.screenshot({path:"qa-artifacts/ui-after/UIX11-admin-ar-students-"+width+"-ready.png",animations:"disabled"});

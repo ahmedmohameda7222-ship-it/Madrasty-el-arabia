@@ -17,7 +17,9 @@ for(const scenario of [
       await page.goto("/"+scenario.locale+"/school/"+scenario.route);
       const trigger=page.locator(".school-content .auth-card > button.plain-button").first();
       await expect(trigger).toBeVisible({timeout:30_000});
-      const dialog=page.locator("dialog.scope-sheet");
+      const dialog=page.locator(".school-content dialog.scope-sheet:not(.app-settings-sheet)");
+      await expect(dialog).toHaveCount(1);
+      await expect(page.locator("dialog.app-settings-sheet")).toHaveCount(1);
       await expect(dialog).toBeAttached();
       await expect(dialog).not.toBeVisible();
       for(let attempt=0;attempt<2;attempt++){

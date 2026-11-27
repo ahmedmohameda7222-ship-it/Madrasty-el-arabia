@@ -11,7 +11,10 @@ test("web iOS viewport and Android Compose shell retain existing native safe-are
   expect(layout).toMatch(/width:\s*"device-width"/);
   expect(layout).toMatch(/initialScale:\s*1/);
   expect(layout).not.toMatch(/maximumScale|userScalable|user-scalable=no/);
-  expect(layout).toMatch(/dir=\{result\.data === "ar" \? "rtl" : "ltr"\}/);
+  expect(layout).toMatch(/const locale\s*=\s*await resolveUiLocale\(result\.data\)/);
+  expect(layout).toMatch(/lang=\{locale\} dir=\{locale === "ar" \? "rtl" : "ltr"\}/);
+  const presentation=readFileSync("apps/web/src/ui/PresentationLanguage.tsx","utf8");
+  expect(presentation).toMatch(/document\.documentElement\.dir\s*=\s*locale\s*===\s*"ar"\s*\?\s*"rtl"\s*:\s*"ltr"/);
   expect(css).toMatch(/\.school-shell[^\{]*\{[^}]*block-size:\s*100vh;\s*block-size:\s*100dvh;/);
   expect(css).toMatch(/env\(safe-area-inset-top\)/);
   expect(css).toMatch(/env\(safe-area-inset-bottom\)/);

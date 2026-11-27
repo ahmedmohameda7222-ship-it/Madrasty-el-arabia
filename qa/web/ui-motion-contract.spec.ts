@@ -8,7 +8,15 @@ const source=readFileSync("apps/web/src/app/school.css","utf8").replace(/\/\*[\s
 test("whole-web motion CSS has no forbidden keyframes, all-transitions or zero-scale entrances",()=>{
   expect(source).not.toMatch(/transition\s*:\s*all\b/i);
   expect(source).not.toMatch(/scale\(\s*0(?:\.0+)?\s*\)/i);
-  expect([...source.matchAll(/@keyframes\s+([\w-]+)/g)].map((m)=>m[1])).toEqual(["pulse"]);
+  expect([...source.matchAll(/@keyframes\s+([\w-]+)/g)].map((m)=>m[1])).toEqual(["pulse","comms-send-in"]);
+  // The explicitly scoped chat/menu entrance is brief and non-repeating, and only runs when motion is allowed.
+  const chatMotion=source.split("\n").filter(line=>/animation:\s*comms-send-in\b/.test(line));
+  expect(chatMotion).toHaveLength(3);
+  for(const rule of chatMotion){
+    expect(rule).toMatch(/@media\s*\(prefers-reduced-motion:\s*no-preference\)/);
+    expect(rule).toMatch(/animation:\s*comms-send-in\s+(?:140|160)ms\s+ease-out\s+both/);
+    expect(rule).not.toMatch(/infinite/);
+  }
   expect(source).toMatch(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{\s*\.skeleton-row span\s*\{\s*animation:\s*pulse/);
   expect(source).not.toMatch(/\.more-rows\s*\{[^}]*animation:/);
   expect(source).toMatch(/@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)\s*\{/);
