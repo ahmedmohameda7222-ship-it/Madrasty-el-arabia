@@ -4,7 +4,7 @@ import css from "./FinanceWorkspace.module.css";
 import {FinanceDateField} from "./FinanceDateField";
 
 import Link from "next/link";
-import {useState,type FormEvent} from "react";
+import {useRef,useState,type FormEvent} from "react";
 import {invoiceDetail,receiptMutation,receiptOptions,recordReceiptInput,type Locale} from "@madrasty/contracts";
 import {useSchoolCommand} from "@/api/commands";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
@@ -13,16 +13,69 @@ import {billingCopy,financeAmount,inputAmountMinor} from "./invoice-ui";
 import {InvoicePicker,receiptCopy,type InvoiceCandidate} from "./receipt-ui";
 
 type Options=ReturnType<typeof receiptOptions.parse>;
-export function RecordPayment({locale,invoice}:{locale:Locale;invoice?:string}){
+export function RecordPayment({locale,invoice,advanced=false}:{locale:Locale;invoice?:string;advanced?:boolean}){
   const text=receiptCopy[locale],options=useTimetableRead("/finance/receipt-options",receiptOptions);
   const selected=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail);
   return <section className={`${css.workspace} ${css.narrowForm} auth-form`}>
     <h1>{text.record}</h1>
-    <Link className="plain-button" href={`/${locale}/school/more/receipts`}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link>
+    <Link className="plain-button" href={`/${locale}/school/more/${invoice?"invoices?invoice="+invoice:advanced?"receipts":"invoices"}`}>{locale==="ar"?"رجوع":"Zurück"}</Link>
     <TimetableRead locale={locale} result={options}>{(value)=>invoice?
-      <TimetableRead locale={locale} result={selected}>{(target)=><PaymentForm locale={locale} options={value} initial={target}/>}</TimetableRead>:
+      <TimetableRead locale={locale} result={selected}>{(target)=>advanced?<PaymentForm key={target.id} locale={locale} options={value} initial={target}/>:<SimpleInvoicePayment key={target.id} locale={locale} options={value} initial={target}/>}</TimetableRead>:
       <PaymentForm locale={locale} options={value}/>}</TimetableRead>
   </section>;
+}
+
+
+function SimpleInvoicePayment({locale,options,initial}:{locale:Locale;options:Options;initial:InvoiceCandidate}){
+  const ar=locale==="ar",text=receiptCopy[locale],{persona}=useAccountScope(),command=useSchoolCommand(persona);
+  const currency=initial.currency,root=`/${locale}/school/more`;
+  const [method,setMethod]=useState<"cash"|"bank">(options.cashEnabled?"cash":"bank");
+  const [date,setDate]=useState(options.schoolDate),[reference,setReference]=useState("");
+  const [amount,setAmount]=useState(financeAmount(initial.balanceMinor,currency).split(" ")[0]);
+  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[attempted,setAttempted]=useState(false);
+  const [receipt,setReceipt]=useState<ReturnType<typeof receiptMutation.parse>>();
+  const submitting=useRef(false),cashReference=useRef<string|null>(null);
+  const received=inputAmountMinor(amount,currency,Math.min(initial.balanceMinor,20000000000000));
+  const amountError=received===null||received<=0?(ar?"اكتب مبلغًا أكبر من صفر ولا يتجاوز المتبقي.":"Gib einen Betrag über null und höchstens den offenen Betrag ein."):"";
+  const dateError=!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>options.schoolDate?(ar?"اختر تاريخ استلام صحيحًا، لا يتجاوز اليوم.":"Wähle ein gültiges Eingangsdatum bis heute."):"";
+  const referenceError=method==="bank"&&(!reference.trim()||/[\p{Cc}\p{Cf}]/u.test(reference))?(ar?"اكتب مرجع العملية من كشف البنك.":"Gib die Buchungsreferenz vom Kontoauszug ein."):"";
+  const unavailable=initial.balanceMinor<=0||initial.state==="cancelled"||currency!==options.currency;
+  async function submit(event:FormEvent){
+    event.preventDefault();
+    if(submitting.current||receipt||unavailable)return;
+    setAttempted(true);setError("");
+    if(amountError||dateError||referenceError||received===null)return;
+    cashReference.current??="CASH-"+crypto.randomUUID();
+    const input=recordReceiptInput.safeParse({externalReceiptRef:method==="cash"?cashReference.current:reference,method,receivedDate:date,currency,amountMinor:received,allocations:[{invoiceId:initial.id,invoiceRevision:initial.revision,amountMinor:received}],verified:true});
+    if(!input.success){setError(ar?"راجع بيانات الدفع الظاهرة وحاول مرة أخرى.":"Bitte prüfe die sichtbaren Zahlungsdaten und versuche es erneut.");return;}
+    submitting.current=true;setBusy(true);
+    try{setReceipt(await command("/finance/receipts","POST",input.data,receiptMutation));}
+    catch(problem){setError(timetableError(locale,problem));}
+    finally{submitting.current=false;setBusy(false);}
+  }
+  if(receipt){
+    const balance=receipt.items.find(item=>item.invoiceId===initial.id)?.balanceMinor;
+    return <div className="notice auth-form" role="status">
+      <h2>{ar?"تم تسجيل السداد":"Zahlung erfasst"}</h2>
+      {balance!==undefined&&<><p>{balance===0?(ar?"مدفوعة بالكامل":"Bezahlt"):(ar?"مدفوعة جزئيًا":"Teilweise bezahlt")}</p><p>{ar?"المتبقي":"Offener Betrag"} · <bdi>{financeAmount(balance,currency,locale)}</bdi></p></>}
+      <Link className="primary-button" href={root+"/invoices?invoice="+initial.id}>{ar?"عرض الفاتورة":"Rechnung ansehen"}</Link>
+    </div>;
+  }
+  if(unavailable)return <p role="status">{ar?"لا يمكن تسجيل سداد لهذه الفاتورة. راجع حالتها أو العملة.":"Für diese Rechnung kann keine Zahlung erfasst werden. Prüfe Status und Währung."}</p>;
+  return <form className="auth-form" noValidate onSubmit={submit}>
+    <p><strong><bdi>{initial.studentName}</bdi></strong> · <bdi>{initial.invoiceNumber}</bdi></p>
+    <div className={css.balance}><small>{ar?"المبلغ المتبقي":"Offener Betrag"}</small><strong><bdi>{financeAmount(initial.balanceMinor,currency,locale)}</bdi></strong></div>
+    <label className={css.amountInput}><span className={css.amountLabel}>{ar?"المبلغ المستلم":"Erhaltener Betrag"} <bdi>{currency}</bdi></span><input value={amount} inputMode="decimal" dir="ltr" maxLength={22} disabled={busy} aria-invalid={attempted&&!!amountError} onChange={event=>setAmount(event.target.value)}/></label>
+    {attempted&&amountError&&<p role="alert">{amountError}</p>}
+    {options.cashEnabled&&<label>{ar?"طريقة الدفع":"Zahlungsart"}<select value={method} disabled={busy} onChange={event=>setMethod(event.target.value==="cash"?"cash":"bank")}><option value="cash">{text.cash}</option><option value="bank">{text.bank}</option></select></label>}
+    {!options.cashEnabled&&<p>{text.bank}</p>}
+    {method==="bank"&&<><label>{ar?"مرجع التحويل البنكي":"Buchungsreferenz"}<input value={reference} maxLength={160} disabled={busy} aria-invalid={attempted&&!!referenceError} onChange={event=>setReference(event.target.value)}/></label>{attempted&&referenceError&&<p role="alert">{referenceError}</p>}</>}
+    <label>{text.received}<input type="date" dir="ltr" value={date} max={options.schoolDate} disabled={busy} aria-invalid={attempted&&!!dateError} onChange={event=>setDate(event.target.value)}/></label>
+    {attempted&&dateError&&<p role="alert">{dateError}</p>}
+    {error&&<p role="alert">{error}</p>}
+    <div className={css.formAction}><button type="submit" className="primary-button" disabled={busy}>{busy?(ar?"جاري التسجيل…":"Wird gespeichert…"):(ar?"تأكيد السداد":"Zahlung bestätigen")}</button></div>
+    <details className={css.disclosure}><summary>{ar?"خيارات أخرى":"Weitere Optionen"}</summary><Link className="plain-button" href={root+"/record-payment?advanced=1&invoice="+initial.id}>{ar?"سداد عدة فواتير أو مبلغ زائد":"Mehrere Rechnungen oder Überzahlung"}</Link></details>
+  </form>;
 }
 
 function PaymentForm({locale,options,initial}:{locale:Locale;options:Options;initial?:InvoiceCandidate}){

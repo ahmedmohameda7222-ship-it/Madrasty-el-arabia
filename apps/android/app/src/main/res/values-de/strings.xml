@@ -654,4 +654,14 @@
     <string name="cashbook_correction_reason">Grund der Korrektur</string>
     <string name="cashbook_correction_confirm">Korrektur bestätigen</string>
     <string name="cashbook_cancel_correction">Abbrechen</string>
+    <string name="receipt_confirm_payment">Zahlung bestätigen</string>
+    <string name="receipt_received_amount">Erhaltener Betrag</string>
+    <string name="receipt_simple_invalid_amount">Gib einen Betrag über null und höchstens den offenen Betrag ein.</string>
+    <string name="receipt_simple_invalid_date">Wähle ein gültiges Eingangsdatum bis heute.</string>
+    <string name="receipt_simple_invalid_reference">Gib die Buchungsreferenz vom Kontoauszug ein.</string>
+    <string name="receipt_simple_unavailable">Für diese Rechnung kann keine Zahlung erfasst werden. Prüfe Status und Währung.</string>
+    <string name="receipt_simple_advanced">Mehrere Rechnungen oder Überzahlung</string>
+    <string name="receipt_special">Sonderzahlung erfassen</string>
+    <string name="finance_cash_bank">Kasse &amp; Bank</string>
+    <string name="finance_payment_history">Zahlungsverlauf</string>
 </resources>

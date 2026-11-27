@@ -31,16 +31,78 @@ internal fun RecordPayment(
     model: IdentityViewModel, invoiceId: String?, openReceipt: (String) -> Unit, openQueue: () -> Unit, close: () -> Unit,
 ) {
     FinancePage(R.string.receipt_record, close) {
-        TextButton(onClick = openQueue) { Text(stringResource(R.string.receipt_queue)) }
+        if(invoiceId == null) TextButton(onClick = openQueue) { Text(stringResource(R.string.receipt_queue)) }
+        var advanced by remember(invoiceId) { mutableStateOf(false) }
         val options = academicRead("/finance/receipt-options", 0) { model.financeObject(it) }
         AsyncSurface(options) { setup ->
             if (invoiceId == null) PaymentForm(model, setup, null, openReceipt)
             else {
                 val invoice = academicRead("/finance/invoices/$invoiceId", 0) { model.financeObject(it) }
-                AsyncSurface(invoice) { selected -> PaymentForm(model, setup, selected, openReceipt) }
+                AsyncSurface(invoice) { selected ->
+                    if(advanced) PaymentForm(model,setup,selected,openReceipt)
+                    else SimpleInvoicePayment(model,setup,selected,openReceipt){advanced=true}
+                }
             }
         }
     }
+}
+
+
+@Composable
+private fun SimpleInvoicePayment(model: IdentityViewModel, setup: JSONObject, initial: JSONObject, openReceipt: (String) -> Unit, openAdvanced: () -> Unit) {
+    val currency=initial.getString("currency")
+    val today=setup.getString("schoolDate")
+    val outstanding=initial.getLong("balanceMinor")
+    val attempts=remember(initial.getString("id")){mutableMapOf<String,Pair<String,String>>()}
+    var method by remember {mutableStateOf(if(setup.getBoolean("cashEnabled")) "cash" else "bank")}
+    var date by remember(today){mutableStateOf(today)}
+    var reference by remember {mutableStateOf("")}
+    val cashReference=remember(initial.getString("id")){"CASH-"+UUID.randomUUID()}
+    var amount by remember(initial.getString("id")){mutableStateOf(financePlainAmount(outstanding,currency))}
+    var result by remember(initial.getString("id")){mutableStateOf<JSONObject?>(null)}
+    val receipt=result
+    if(receipt!=null){
+        Text(stringResource(R.string.receipt_recorded))
+        val items=receipt.optJSONArray("items")
+        val item=(0 until (items?.length()?:0)).mapNotNull{items?.optJSONObject(it)}.firstOrNull{it.optString("invoiceId")==initial.getString("id")}
+        item?.let{
+            val balance=it.getLong("balanceMinor")
+            FinanceBalanceCard(stringResource(if(balance==0L)R.string.fee_paid else R.string.fee_partial),financeMoney(balance,currency))
+        }
+        TextButton(onClick={openReceipt(receipt.getString("id"))}){Text(stringResource(R.string.receipt_open))}
+        return
+    }
+    if(outstanding<=0L||initial.getString("state")=="cancelled"||currency!=setup.getString("currency")){
+        Text(stringResource(R.string.receipt_simple_unavailable))
+        return
+    }
+    Text(receiptInvoiceLabel(initial))
+    FinanceBalanceCard(stringResource(R.string.fee_balance),financeMoney(outstanding,currency))
+    Field(R.string.receipt_received_amount,amount){amount=it.take(24)}
+    val minor=financeMinor(amount,currency,minOf(outstanding,20_000_000_000_000L))
+    if(minor==null||minor<=0L)Text(stringResource(R.string.receipt_simple_invalid_amount))
+    if(setup.getBoolean("cashEnabled")){
+        FlowRow {
+            FilterChip(method=="cash",{method="cash"},label={Text(stringResource(R.string.receipt_cash))})
+            FilterChip(method=="bank",{method="bank"},label={Text(stringResource(R.string.receipt_bank))})
+        }
+    }else Text(stringResource(R.string.receipt_bank))
+    val ref=if(method=="cash")cashReference else reference.trim()
+    val refValid=ref.isNotEmpty()&&ref.none{it.isISOControl()||Character.getType(it)==Character.FORMAT.toInt()}
+    if(method=="bank"){
+        Field(R.string.receipt_reference,reference){reference=it.take(160)}
+        if(!refValid)Text(stringResource(R.string.receipt_simple_invalid_reference))
+    }
+    Field(R.string.receipt_date,date){date=financeDigits(it).take(10)}
+    val dateValid=validFinanceDate(date)&&date>="1900-01-01"&&date<=today
+    if(!dateValid)Text(stringResource(R.string.receipt_simple_invalid_date))
+    val ready=minor!=null&&minor>0L&&refValid&&dateValid
+    Submit(ready,R.string.receipt_confirm_payment,success=null){
+        val input=JSONObject().put("externalReceiptRef",ref).put("receivedDate",date).put("method",method).put("currency",currency).put("amountMinor",minor).put("verified",true)
+            .put("allocations",JSONArray().put(JSONObject().put("invoiceId",initial.getString("id")).put("invoiceRevision",initial.getInt("revision")).put("amountMinor",minor)))
+        result=model.schoolCommand(attempts,"/finance/receipts","POST",input)
+    }
+    TextButton(onClick=openAdvanced){Text(stringResource(R.string.receipt_simple_advanced))}
 }
 
 @Composable

@@ -21,8 +21,8 @@ export default async function ReceiptsPage({params,searchParams}:{
   if(!read&&!post)notFound();
   if(id)return <ReceiptDetails locale={locale} id={id} staff/>;
   const root=`/${locale}/school/more/receipts`,cash=query.view==="cashbook";
-  return <div className="auth-form"><nav className={css.tabs} aria-label={locale==="ar"?"المدفوعات":"Zahlungen"}>
-    <Link className="plain-button" aria-current={!cash?"page":undefined} href={root}>{locale==="ar"?"المدفوعات":"Zahlungen"}</Link>
-    <Link className="plain-button" aria-current={cash?"page":undefined} href={root+"?view=cashbook"}>{locale==="ar"?"دفتر الخزنة":"Kassenbuch"}</Link>
+  return <div className="auth-form"><nav className={css.tabs} aria-label={locale==="ar"?"الخزنة والبنك":"Kasse & Bank"}>
+    <Link className="plain-button" aria-current={!cash?"page":undefined} href={root}>{locale==="ar"?"سجل المدفوعات":"Zahlungsverlauf"}</Link>
+    <Link className="plain-button" aria-current={cash?"page":undefined} href={root+"?view=cashbook"}>{locale==="ar"?"الخزنة":"Kasse"}</Link>
   </nav>{cash?<Cashbook locale={locale}/>:<Reconciliation locale={locale} enabled={post} initialState={receiptState.safeParse(query.state).data}/>}</div>;
 }

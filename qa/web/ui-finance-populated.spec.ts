@@ -91,7 +91,11 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
       const token=await school.bearer(s.actor,s.persona);
       const context=await browser.newContext({...(browser.browserType().name()==="webkit"?devices["iPhone 13"]:{}),baseURL:localOrigin,locale:s.locale==="ar"?"ar-EG":"de-DE"});
       try{
-        await context.addCookies([{name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"}]);
+        await context.addCookies([
+          {name:"madrasty-session",value:token,url:localOrigin,httpOnly:true,sameSite:"Lax"},
+          // Browser writes use the same CSRF contract as an ordinary signed-in web session.
+          {name:"madrasty-csrf",value:randomUUID().replaceAll("-","")+randomUUID().replaceAll("-",""),url:localOrigin,sameSite:"Lax"},
+        ]);
         let page=await context.newPage();
         const record=records.find(x=>x.label===s.record)!;
         const actorOptions={token,persona:s.persona,locale:s.locale};
@@ -230,6 +234,11 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
             if(width===320||width===390){
               const unpaid=records.find(x=>x.label==="C")!.invoice;
               await go("record-payment?invoice="+unpaid.id);
+              await expect(page.getByRole("button",{name:s.locale==="ar"?"تأكيد السداد":"Zahlung bestätigen",exact:true})).toBeEnabled();
+              await expect(page.locator(".school-content input[type=checkbox]")).toHaveCount(0);
+              await expect(page.locator(".school-content input[inputmode=decimal]")).toHaveCount(1);
+              await capture(page,prefix+"simple-payment");
+              await go("record-payment?advanced=1&invoice="+unpaid.id);
               // A manually entered cash amount must not be overwritten when an invoice is selected.
               const received=page.locator(".school-content input[inputmode=decimal]").first();
               await received.fill("100.00");
@@ -244,7 +253,7 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await remove.last().click();
               await expect(received).toHaveValue("100.00");
               // In suggestion mode, removal must reduce the total rather than create an unintended credit.
-              await go("record-payment?invoice="+unpaid.id);
+              await go("record-payment?advanced=1&invoice="+unpaid.id);
               // go() closes the old Page; recreate every page-bound locator after navigation.
               const suggested=page.locator(".school-content input[inputmode=decimal]").first();
               const initialAmount=(unpaid.balanceMinor/100).toFixed(2);
@@ -262,6 +271,25 @@ test("populated finance: actual synthetic invoices, receipts, balance, PDF links
               await review.click();
               await expect(page.getByRole("button",{name:s.locale==="ar"?"تأكيد":"Bestätigen",exact:true})).toBeVisible();
               await capture(page,prefix+"payment-review");
+            }
+            if(s.locale==="ar"&&width===1280){
+              const item=records.find(x=>x.label==="C")!.invoice;
+              await go("record-payment?invoice="+item.id);
+              const amount=page.locator(".school-content input[inputmode=decimal]");
+              const confirm=page.getByRole("button",{name:"تأكيد السداد",exact:true});
+              await amount.fill("0");
+              await confirm.click();
+              await expect(page.getByText("اكتب مبلغًا أكبر من صفر ولا يتجاوز المتبقي.",{exact:true})).toBeVisible();
+              await amount.fill((item.balanceMinor/100).toFixed(2));
+              const posted=page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname==="/api/v1/finance/receipts");
+              await confirm.click();
+              const response=await posted;
+              expect(response.status(),"browser receipt write").toBe(201);
+              await expect(page.getByRole("heading",{name:"تم تسجيل السداد",exact:true})).toBeVisible();
+              const after=invoiceDetail.parse((await fixtureApi(school,"/finance/invoices/"+item.id,actorOptions)).payload.data);
+              expect(after.state).toBe("paid");
+              expect(after.balanceMinor).toBe(0);
+              expect(after.receiptIds).toHaveLength(1);
             }
           }
         }

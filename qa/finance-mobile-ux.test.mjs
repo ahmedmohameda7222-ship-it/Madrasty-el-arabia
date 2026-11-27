@@ -28,7 +28,7 @@ test("Android finance lists use Material list items and advanced report filters 
   assert.match(readFileSync(new URL("FinanceExtras.kt",android),"utf8"), /if \(addMovement\)/);
 });
 test("overview payment action is capability-gated", () => {
-  assert.match(source("FinanceOverview.tsx"), /canPost&&<Link[^>]*record-payment/);
+  assert.match(source("FinanceOverview.tsx"), /canPost&&<Link[^>]*invoices/);
 });
 
 test("monthly billing has one owner and one page heading", () => {
@@ -67,7 +67,8 @@ test("payer readiness on the overview is limited to authorized billing staff",()
   assert.match(overview,/canIssue\?"\/finance\/automatic-billing":null/);
   assert.match(overview,/payerIssues\.length/);
   const route=readFileSync(new URL("../apps/web/src/app/[locale]/school/more/finance-reports/page.tsx",import.meta.url),"utf8");
-  assert.match(route,/mayUse\(session,"finance.issue"\)/);
+  assert.match(route,/\[read,post,issue\]=await mayUseMany\(session,\["finance.read","finance.post","finance.issue"\]\)/);
+  assert.match(route,/canIssue=issue/);
   assert.match(route,/canIssue=\{canIssue\}/);
 });
 
@@ -86,4 +87,30 @@ test("cashbook corrections are explicit, permission-gated and use an append-only
   const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/FinanceExtras.kt",import.meta.url),"utf8");
   assert.match(native,/entry\.optBoolean\("canReverse"\)/);
   assert.match(native,/\/finance\/cashbook\/reversals/);
+});
+
+test("normal invoice payments use one submit and keep advanced allocation separate",()=>{
+  const page=source("RecordPayment.tsx");
+  assert.match(page,/function SimpleInvoicePayment/);
+  const simple=page.slice(page.indexOf("function SimpleInvoicePayment"),page.indexOf("function PaymentForm"));
+  assert.match(simple,/verified:true/);
+  assert.match(simple,/invoiceRevision:initial.revision/);
+  assert.match(simple,/command\("\/finance\/receipts","POST"/);
+  assert.doesNotMatch(simple,/type="checkbox"|setPreview|InvoicePicker/);
+  assert.match(simple,/type="date"/);
+  assert.match(simple,/role="alert"/);
+  assert.match(source("Reconciliation.tsx"), /record-payment\?advanced=1/);
+});
+
+test("finance date controls are visible and never transparent required inputs",()=>{
+  assert.doesNotMatch(source("FinanceWorkspace.module.css"), /\.dateControl>input[^{]*\{[^}]*opacity:0/);
+});
+
+test("native invoice payments also use a single confirmation and revision-checked allocation",()=>{
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/RecordPayment.kt",import.meta.url),"utf8");
+  const simple=native.slice(native.indexOf("private fun SimpleInvoicePayment("),native.indexOf("private fun PaymentForm("));
+  assert.match(simple,/Submit\(ready,R.string.receipt_confirm_payment/);
+  assert.match(simple,/put\("invoiceRevision",initial.getInt\("revision"\)\)/);
+  assert.match(simple,/put\("verified",true\)/);
+  assert.doesNotMatch(simple,/receipt_confirmed_external|fee_preview|ReceiptInvoicePicker/);
 });

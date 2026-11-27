@@ -15,12 +15,12 @@ import {TransferDetails} from "./TransferDetails";
 import {receiptCopy} from "./receipt-ui";
 
 const rows=invoiceSummary.array();
-export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=false,staff=true}:{locale:Locale;staff?:boolean;invoice?:string;student?:string;period?:string;canPost:boolean;canIssue?:boolean}){
+export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=false,staff=true,initialState}:{locale:Locale;staff?:boolean;invoice?:string;student?:string;period?:string;canPost:boolean;canIssue?:boolean;initialState?:"open"}){
   const text=billingCopy[locale],root=`/${locale}/school/more/invoices`;
-  const [month,setMonth]=useState(period??""),[state,setState]=useState(""),[query,setQuery]=useState(""),[search,setSearch]=useState("");
+  const [month,setMonth]=useState(period??""),[state,setState]=useState<string>(initialState??""),[query,setQuery]=useState(""),[search,setSearch]=useState("");
   const valid=billingMonth.safeParse(month),filter=invoiceState.safeParse(state);
   const details=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail);
-  const list=useAcademicPage(invoice?null:`/finance/invoices?limit=25${valid.success?"&period="+valid.data:""}${student?"&studentId="+student:""}${filter.success?"&state="+filter.data:""}${query?"&q="+encodeURIComponent(query):""}`,rows,0);
+  const list=useAcademicPage(invoice?null:`/finance/invoices?limit=25${valid.success?"&period="+valid.data:""}${student?"&studentId="+student:""}${state==="open"?"&state=open":filter.success?"&state="+filter.data:""}${query?"&q="+encodeURIComponent(query):""}`,rows,0);
   return <section className={`${css.workspace} auth-form`}>
     <h1>{text.invoices}</h1>
     {invoice?<><Link className="plain-button" href={root}>{text.back}</Link>
@@ -64,10 +64,10 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
         <label><span className={css.searchLabel}>{text.search}</span><input type="search" value={search} maxLength={100} onChange={e=>setSearch(e.target.value)}/></label>
         <button className="plain-button" type="submit">{text.find}</button>
       </form>}
-      <details className={css.disclosure}><summary>{locale==="ar"?"تصفية":"Filter"}</summary><div className="header-actions">
+      <details className={css.disclosure} open={initialState==="open"?true:undefined}><summary>{locale==="ar"?"تصفية":"Filter"}</summary><div className="header-actions">
         <FinanceDateField locale={locale} label={text.period} type="month" value={month} onChange={(event)=>setMonth(event.target.value)}/>
         <label>{text.status}<select value={state} onChange={(event)=>setState(event.target.value)}>
-          <option value="">{text.allStates}</option>{invoiceState.options.map((key)=><option value={key} key={key}>{text[key]}</option>)}
+          <option value="">{text.allStates}</option><option value="open">{locale==="ar"?"غير مدفوعة بالكامل":"Offene Rechnungen"}</option>{invoiceState.options.map((key)=><option value={key} key={key}>{text[key]}</option>)}
         </select></label>
       </div></details>
       <AcademicPageItems locale={locale} page={list} emptyMessage={locale==="ar"?(staff?"لا توجد فواتير تطابق الاختيار.":"لا توجد فواتير لأطفالك في الفترة المختارة. ستظهر هنا عند إصدارها."):(staff?"Keine Rechnungen für diese Auswahl.":"Hier erscheinen die Rechnungen Ihrer Kinder, sobald sie ausgestellt sind.")}>{(invoices)=><ul className={css.recordList}>
