@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
+import {mkdir,writeFile} from "node:fs/promises";
+import {join} from "node:path";
 import {invoicePdf,receiptPdf} from "../src/server/finance/documents";
 import type {InvoiceDetail,ReceiptDetail} from "@madrasty/contracts";
 
@@ -48,9 +50,9 @@ for(const locale of ["de","ar"] as const){
   });
   test("professional invoice handles long names, line items and bank data "+locale,async()=>{
     const longName="عبد الرحمن أحمد Müller ".repeat(9).trim();
-    const lines=Array.from({length:36},(_,index)=>({titleAr:"اشتراك ومستلزمات مدرسية "+index,titleDe:"Schulmaterial und Unterricht "+index,amountMinor:100}));
-    const item={...invoice,studentName:longName,payerName:longName,kind:"manual" as const,lines,totalMinor:3600,balanceMinor:3600,
-      paymentInstructions:{beneficiary:"Madrasty El Arabia",iban:"DE89370400440532013000",reference:"QA-TRANSFER-001"}};
+    const lines=Array.from({length:20},(_,index)=>({titleAr:"اشتراك ومستلزمات مدرسية "+index,titleDe:"Schulmaterial und Unterricht "+index,amountMinor:100}));
+    const item={...invoice,studentName:longName,payerName:longName,kind:"manual" as const,lines,totalMinor:2000,balanceMinor:2000,
+      paymentInstructions:{bankVersionId:id,beneficiary:"Madrasty El Arabia",iban:"DE89370400440532013000",reference:"QA-TRANSFER-001",amountMinor:2000,currency:"EUR",bankChanged:false}};
     const source=(await invoicePdf(item,locale)).toString("latin1");
     assert.match(source,/\/Type \/Pages \/Count [2-9]\b/);
     assert.ok(source.includes(actualText(longName)));
@@ -59,3 +61,15 @@ for(const locale of ["de","ar"] as const){
     assert.ok(source.includes(actualText(item.paymentInstructions.reference)));
   });
 }
+
+test("approved layout export samples for visual review",async()=>{
+  for(const locale of ["de","ar"] as const){
+    for(const state of ["unpaid","partial","paid","cancelled"] as const){
+      const allocatedMinor=state==="paid"?4500:state==="partial"?2000:0;
+      const balanceMinor=state==="cancelled"?0:4500-allocatedMinor;
+      const pdf=await invoicePdf({...invoice,invoiceNumber:"MA-202611-001",studentName:locale==="ar"?"طالب تجريبي":"Muster-Schüler",payerName:locale==="ar"?"ولي أمر تجريبي":"Muster-Elternteil",studentNumber:"DEMO-001",dueDate:"2026-11-05",totalMinor:4500,allocatedMinor,balanceMinor,state,lines:[{titleAr:"اشتراك شهري",titleDe:"Monatsbeitrag",amountMinor:4500}]},locale);
+      assert.match(pdf.toString("latin1"),/\/Type \/Pages \/Count 1\b/);
+      if(process.env.FINANCE_PDF_ARTIFACTS){await mkdir(process.env.FINANCE_PDF_ARTIFACTS,{recursive:true});await writeFile(join(process.env.FINANCE_PDF_ARTIFACTS,"invoice-"+locale+"-"+state+".pdf"),pdf);}
+    }
+  }
+});
