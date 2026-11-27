@@ -547,7 +547,7 @@ private fun SchoolSettings(model:IdentityViewModel,session:SchoolSession,state:S
         SettingsGroup(R.string.settings_group_finance) {
             if(rights.receiptViewer||rights.persona==Persona.Guardian)OpenPage(state,WorkspacePage.FinanceReport(),if(rights.persona==Persona.Guardian)R.string.finance_my_payments else R.string.finance_report_title)
             if(rights.invoiceViewer)OpenPage(state,WorkspacePage.Invoices(),R.string.fee_invoices)
-            if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.receipt_queue)
+            if(rights.receiptViewer)OpenPage(state,WorkspacePage.Receipts(),R.string.finance_cash_bank)
             if(rights.billing)OpenPage(state,WorkspacePage.FeeSettings(),R.string.fee_settings)
             else if(rights.bank)OpenPage(state,WorkspacePage.Bank,R.string.fee_settings)
         }
