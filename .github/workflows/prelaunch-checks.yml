@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/feat/communication-center-2026-11-25' }}
 jobs:
   build-web:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple' || github.head_ref == 'feat/finance-v2-workspace-2026-11-27')) }}
+    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'fix/finance-end-to-end-audit-2026-11-27' || github.head_ref == 'fix/finance-invoice-first-2026-11-27' || github.head_ref == 'fix/pause-next-month-simple' || github.head_ref == 'feat/finance-v2-workspace-2026-11-27' || github.head_ref == 'feat/professional-invoice-pdf-2026-11-27')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,7 +28,15 @@ jobs:
       - name: Check TypeScript
         run: pnpm check:types
       - name: Render synthetic invoice and receipt PDFs in both locales
+        env:
+          FINANCE_PDF_ARTIFACTS: ${{ runner.temp }}/finance-pdf-visual
         run: pnpm --filter @madrasty/web exec node --conditions=react-server --import tsx --test qa/finance-documents.test.ts
+      - name: Preserve synthetic PDF visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: invoice-pdf-visual
+          path: ${{ runner.temp }}/finance-pdf-visual/*.pdf
+          retention-days: 7
       - name: Check dashboard wire states
         run: pnpm exec tsx --test --test-name-pattern="dashboard wire contract" qa/contracts/api.test.ts
       - name: Verify retired administrative features
