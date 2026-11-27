@@ -29,3 +29,29 @@ jobs:
           git diff --unified=0 -- docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json > "$RUNNER_TEMP/registry.diff"
           wc -c "$RUNNER_TEMP/registry.diff"
           head -c 100000 "$RUNNER_TEMP/registry.diff"
+
+      - name: Reproduce Windows checkout line endings and test fingerprint normalization
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const fs=require("fs"),p="apps/web/public/manifest.webmanifest";fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace(/\r?\n/g,"\r\n"))'
+          node qa/fixtures/visual-polish-registry.mjs
+          head -n 4 docs/visual-polish/SCENES.json
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("qa/fixtures/visual-polish-registry.mjs")
+          text=p.read_text()
+          old="(?:ts|tsx|kt|css|html|md|xml|json|svg|js|mjs)"
+          new="(?:ts|tsx|kt|css|html|md|xml|json|svg|js|mjs|webmanifest|csv)"
+          assert text.count(old)==1
+          p.write_text(text.replace(old,new))
+          PY
+          node qa/fixtures/visual-polish-registry.mjs
+          head -n 4 docs/visual-polish/SCENES.json
+          cp docs/visual-polish/SCENES.json "$RUNNER_TEMP/normalized-scenes.json"
+          cp docs/visual-polish/ELEMENTS.json "$RUNNER_TEMP/normalized-elements.json"
+          node -e 'const fs=require("fs");for(const p of ["apps/web/public/manifest.webmanifest","apps/web/public/templates/family-import.csv","apps/web/public/templates/family-import-groups.csv"])fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace(/\r\n/g,"\n"))'
+          node qa/fixtures/visual-polish-registry.mjs
+          cmp docs/visual-polish/SCENES.json "$RUNNER_TEMP/normalized-scenes.json"
+          cmp docs/visual-polish/ELEMENTS.json "$RUNNER_TEMP/normalized-elements.json"
+          echo "Normalized manifest and CSV produce identical registry bytes with LF and CRLF."
