@@ -22,7 +22,12 @@ export const receiptReversalInput=z.discriminatedUnion("kind",[
   z.object({kind:z.literal("void_receipt"),revision:revisionSchema,reason:reversalReason}).strict(),
 ]).refine((value)=>value.kind!=="unapply"||new Set(value.allocationIds).size===value.allocationIds.length,{path:["allocationIds"]});
 export const receiptQuery=pageQuerySchema.extend({state:receiptState.optional()});
+export const receiptRefundEntry=z.object({id,amountMinor:positive,refundedDate:schoolDateSchema});
+export const receiptRefundInput=z.object({revision:revisionSchema,allocationId:id.optional(),amountMinor:positive,refundedDate:schoolDateSchema,
+  externalRefundRef:externalReference,reason:reversalReason,verified:z.literal(true)}).strict();
+export const receiptRefundResult=z.object({id,revision:revisionSchema});
 const receiptCommon=z.object({id,receiptNumber:text,method,receivedDate:schoolDateSchema,currency,recordedAt:dateTime});
+
 export const receiptSummary=receiptCommon.extend({
   amountMinor:positive,activeMinor:nonnegative,appliedMinor:nonnegative,remainderMinor:nonnegative,state:receiptState,revision:revisionSchema,
 });
@@ -34,10 +39,10 @@ const postingKind=z.enum(["record","allocate","unapply","void_receipt"]);
 const historyItem=z.object({revision:revisionSchema,kind:z.enum([...postingKind.options,"refund"]),reason:text.nullable(),postedAt:dateTime});
 export const receiptStaffDetail=receiptSummary.extend({
   scope:z.literal("staff"),externalReceiptRef:externalReference,suggestedInvoiceId:id.nullable(),
-  allocations:allocation.array(),history:historyItem.array(),canPost:z.boolean(),
+  allocations:allocation.array(),history:historyItem.array(),canPost:z.boolean(),refunds:receiptRefundEntry.array().optional(),
 });
 export const receiptPayerDetail=receiptCommon.extend({
-  scope:z.literal("payer"),amountMinor:nonnegative,appliedMinor:nonnegative,allocations:allocation.array(),
+  scope:z.literal("payer"),amountMinor:nonnegative,appliedMinor:nonnegative,allocations:allocation.array(),refunds:receiptRefundEntry.array().optional(),
 });
 export const receiptDetail=z.discriminatedUnion("scope",[receiptStaffDetail,receiptPayerDetail]);
 export const receiptPostingItem=z.object({
