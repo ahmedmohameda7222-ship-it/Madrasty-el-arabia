@@ -101,7 +101,7 @@ internal fun CashbookPanel(model:IdentityViewModel){
         if(data.getBoolean("canPost")){
             val attempts=remember{mutableMapOf<String,Pair<String,String>>()}
             val kinds=mapOf("income" to R.string.cashbook_income,"donation" to R.string.cashbook_donation,"expense" to R.string.cashbook_expense,"bank_deposit" to R.string.cashbook_deposit)
-            var kind by remember{mutableStateOf("income")}
+            var kind by remember{mutableStateOf("expense")}
             var day by remember{mutableStateOf(data.getString("schoolDate"))}
             var amount by remember{mutableStateOf("")}
             var reason by remember{mutableStateOf("")}
@@ -113,7 +113,9 @@ internal fun CashbookPanel(model:IdentityViewModel){
             Field(R.string.finance_amount,amount){amount=it.take(24)}
             Field(R.string.cashbook_description,reason){reason=it.take(500)}
             val minor=financeMinor(amount,currency,100_000_000_000_000)
-            Submit(minor!=null&&validFinanceDate(day)&&day<=data.getString("schoolDate")&&reason.trim().length>=3){
+            val outgoing=kind=="expense"||kind=="bank_deposit"
+            if(outgoing) Text(stringResource(R.string.cashbook_balance)+" · "+financeMoney(data.getLong("balanceMinor"),currency))
+            Submit(minor!=null&&(!outgoing||minor<=data.getLong("balanceMinor"))&&validFinanceDate(day)&&day<=data.getString("schoolDate")&&reason.trim().length>=3){
                 model.schoolCommand(attempts,"/finance/cashbook","POST",JSONObject().put("date",day).put("kind",kind).put("amountMinor",minor).put("description",reason.trim()))
                 amount="";reason="";addMovement=false;refresh++
             }
