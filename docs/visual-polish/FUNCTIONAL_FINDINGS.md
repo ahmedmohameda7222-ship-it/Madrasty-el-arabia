@@ -10,3 +10,12 @@ These observations are recorded separately from visual polish. File paths are re
 | QA-03 | Development-runner Chromium public install navigation did not advance; WebKit invitation/recovery and guardian preferences/profile navigations were interrupted by navigation to the preceding page. | GitHub development run 46079621892; Chromium 39/40, WebKit 38/40; all 29 added P04 checks passed in each. | Reproduce on a compiled production candidate with identical loopback fixtures, without weakening the navigation assertions. |
 
 The local suite results above do not establish product regressions. App behavior and existing assertions were preserved.
+
+
+### QA-04 — Production-build fixture bootstrap incompatibility (open)
+
+Both browsers in development run 46080379411 stopped before UI tests with session HTTP 500. Production mode also requires verified database TLS and secure __Host- cookies; the established isolated loopback fixtures use development-mode cookies. Continue using the guarded dev fixture for visual tests; do not weaken production security to make QA pass. Production-mode evidence requires a suitably isolated TLS/HTTPS fixture environment.
+
+### QA-05 — Android signed-out primary action (open)
+
+Run 46080077890, both emulator sizes: 21/22 passed; sign-in visibility assertion failed. The screen uses the loading label while restoring a session. Bounded waiting for the disabled sign-in node was added without removing any original assertions. Confirm via re-run; if visibility still fails after restore, investigate layout and persisted locale/state rather than waive the check.

@@ -22,6 +22,9 @@ class SignInVisualTest {
         compose.onNode(hasText(activity.getString(R.string.email))).assertIsDisplayed()
         compose.onNode(hasText(activity.getString(R.string.password))).assertIsDisplayed()
         compose.onNode(hasText(activity.getString(R.string.show_password)) and hasClickAction()).assertIsDisplayed()
+        // The real activity restores its session asynchronously. During restoration the
+        // same button has the loading label, so await the settled signed-out state.
+        compose.waitUntil(15_000) { compose.onAllNodes(hasText(activity.getString(R.string.sign_in)) and isNotEnabled()).fetchSemanticsNodes().isNotEmpty() }
         signIn.assertIsDisplayed().assertIsNotEnabled().assertHeightIsAtLeast(48.dp)
     }
 }

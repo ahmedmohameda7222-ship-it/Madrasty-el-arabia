@@ -60,13 +60,11 @@ jobs:
           echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
           export LOCALAPPDATA="$RUNNER_TEMP"
           pwsh -NoProfile -File qa/start-stack.ps1
-      - name: Build current production web candidate
-        run: pnpm build:web
       - name: Run existing and added visual checks against disposable fixtures
         shell: bash
         run: |
           set -euo pipefail
-          pwsh -NoProfile -File qa/local.ps1 -Serve -Production > "$RUNNER_TEMP/madrasty-visual-web.log" 2>&1 &
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-visual-web.log" 2>&1 &
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
