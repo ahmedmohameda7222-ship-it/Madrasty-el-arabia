@@ -16,7 +16,7 @@ export default async function EmailActionPage({ params, searchParams }: {
   if (action !== "recover" && action !== "email" && action !== "activate") notFound();
   const token = typeof values.token_hash === "string" ? values.token_hash : undefined;
   return (
-    <main className="public-page"><SchoolHeader locale={locale} />
+    <main className="public-page entry-page entry-identity"><SchoolHeader locale={locale} />
       <EmailAction locale={locale} action={action} token={token} />
     </main>
   );

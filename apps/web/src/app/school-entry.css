@@ -137,3 +137,52 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+.entry-identity > .more-back-link {
+  margin-block: 12px 0;
+}
+
+.entry-identity > .auth-card,
+.identity-card {
+  min-inline-size: 0;
+  padding: clamp(16px, 5vw, 28px);
+  box-shadow: var(--shadow-raised);
+}
+
+.entry-identity > .auth-card h1,
+.identity-card h3,
+.identity-card bdi {
+  overflow-wrap: anywhere;
+}
+
+.entry-identity > .auth-card > [role="alert"] {
+  margin-block-start: 16px;
+  padding: 12px;
+  border-inline-start: 3px solid var(--coral);
+  border-radius: var(--radius-inset);
+  background: var(--inset);
+}
+
+.identity-card .auth-form {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.identity-card .auth-form > h3 {
+  margin: 0;
+}
+
+.identity-card .auth-form + .auth-form {
+  border-block-start: 1px solid var(--rule);
+  padding-block-start: 16px;
+}
+
+.identity-card :is(select, textarea) {
+  min-block-size: 48px;
+  min-inline-size: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+  color: var(--ink);
+}

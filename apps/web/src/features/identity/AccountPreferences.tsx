@@ -63,7 +63,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
   return <>
     <h1>{labels.title}</h1>
     <div className="calendar-layout">
-      <section className="auth-card">
+      <section className="auth-card identity-card">
         <LanguageSettings locale={locale}/>
         <form className="auth-form" onSubmit={save} aria-busy={pending}>
           <label>{labels.mail}<select value={value.correspondenceLocale}
@@ -85,7 +85,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
           {feedback && <p role={feedback.failed ? "alert" : "status"}>{feedback.message}</p>}
         </form>
       </section>
-      <section className="auth-card">
+      <section className="auth-card identity-card">
         <PushPreferences locale={locale}/>
         <Link className="plain-button" href={`/${locale}/account/security`}>{labels.security}</Link>
       </section>

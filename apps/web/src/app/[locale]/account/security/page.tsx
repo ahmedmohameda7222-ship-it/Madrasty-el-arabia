@@ -10,7 +10,7 @@ export default async function SecurityPage({ params }: { params: Promise<{ local
   const [{ locale }, session] = await Promise.all([presentationParams(params), webSchoolSession()]);
   if (!session) redirect(`/${locale}/account/sign-in`);
   return (
-    <main className="public-page"><SchoolHeader locale={locale} />
+    <main className="public-page entry-page entry-identity"><SchoolHeader locale={locale} />
       {(session.activePersona !== "admin" || session.assurance === "aal2") && <MoreBackLink locale={locale} />}
       <AccountSecurity locale={locale} persona={session.activePersona} assured={session.assurance === "aal2"} />
     </main>

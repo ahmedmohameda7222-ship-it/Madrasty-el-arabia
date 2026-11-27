@@ -11,7 +11,7 @@ export default async function StaffAccessPage({ params }: { params: Promise<{ lo
   const [{ locale }, session] = await Promise.all([presentationParams(params), webSchoolSession()]);
   if (!session) redirect(`/${locale}/account/sign-in`);
   if (!await mayProvisionAdmin(session)) notFound();
-  return <main className="public-page"><SchoolHeader locale={locale} />
+  return <main className="public-page entry-page entry-identity"><SchoolHeader locale={locale} />
     <MoreBackLink locale={locale} />
     <StaffAccess locale={locale} ownAccount={session.accountId} />
   </main>;

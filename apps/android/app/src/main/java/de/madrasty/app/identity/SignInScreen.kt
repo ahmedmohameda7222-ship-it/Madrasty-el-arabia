@@ -7,13 +7,17 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -331,31 +337,65 @@ private fun SignInScreen(model: IdentityViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
-    Column(
-        Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    Box(
+        modifier = Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.TopCenter,
     ) {
-        InterfaceSettingsAction()
-        Image(painterResource(R.drawable.school_seal), null, Modifier.size(64.dp))
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(R.string.sign_in), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
-        OutlinedTextField(email, { email = it }, label = { Text(stringResource(R.string.email)) },
-            modifier = Modifier.fillMaxWidth(), singleLine = true, enabled = !model.pending,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
-        OutlinedTextField(password, { password = it }, label = { Text(stringResource(R.string.password)) },
-            modifier = Modifier.fillMaxWidth(), singleLine = true, enabled = !model.pending,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = { TextButton(onClick = { visible = !visible }) {
-                Text(stringResource(if (visible) R.string.hide_password else R.string.show_password))
-            } })
-        model.failure?.let { Text(stringResource(it), Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
-        Button(
-            onClick = { model.signIn(email, password); password = ""; visible = false },
-            enabled = !model.pending && email.isNotBlank() && password.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(if (model.pending) R.string.loading else R.string.sign_in)) }
-        RecoveryLink()
+        Column(
+            modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            InterfaceSettingsAction()
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Image(painterResource(R.drawable.school_seal), null, Modifier.size(52.dp))
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+            }
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 2.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.sign_in),
+                        Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                    OutlinedTextField(
+                        email, { email = it }, label = { Text(stringResource(R.string.email)) },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, enabled = !model.pending,
+                        shape = MaterialTheme.shapes.small,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    )
+                    OutlinedTextField(
+                        password, { password = it }, label = { Text(stringResource(R.string.password)) },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, enabled = !model.pending,
+                        shape = MaterialTheme.shapes.small,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            TextButton(onClick = { visible = !visible }) {
+                                Text(stringResource(if (visible) R.string.hide_password else R.string.show_password))
+                            }
+                        },
+                    )
+                    model.failure?.let { Text(stringResource(it), Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                    Button(
+                        onClick = { model.signIn(email, password); password = ""; visible = false },
+                        enabled = !model.pending && email.isNotBlank() && password.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) { Text(stringResource(if (model.pending) R.string.loading else R.string.sign_in)) }
+                }
+            }
+            RecoveryLink()
+        }
     }
 }
 

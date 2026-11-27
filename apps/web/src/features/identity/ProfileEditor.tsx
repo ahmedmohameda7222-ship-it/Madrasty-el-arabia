@@ -26,14 +26,14 @@ export function ProfileEditor({locale,initial}:{locale:Locale;initial:AccountPro
   const optional=(form:FormData,key:string)=>String(form.get(key)??"").trim()||null;
   return <>
     <h1>{text.title}</h1>
-    <section className="auth-card"><h2>{text.mine}</h2>{profile.displayName&&<p><bdi>{profile.displayName}</bdi></p>}
+    <section className="auth-card identity-card"><h2>{text.mine}</h2>{profile.displayName&&<p><bdi>{profile.displayName}</bdi></p>}
     {profile.guardian&&<form key={version} className="auth-form" onSubmit={e=>void save(e,f=>({kind:"guardian",revision:profile.guardian!.revision,birthDate:optional(f,"birth"),phone:optional(f,"phone"),emergencyAddress:optional(f,"address")}))}>
       <label>{text.birth}<input name="birth" type="date" min="1900-01-01" max={new Date().toISOString().slice(0,10)} defaultValue={profile.guardian.birthDate??""}/></label>
       <label>{text.phone}<input name="phone" type="tel" dir="ltr" maxLength={48} defaultValue={profile.guardian.phone??""}/></label>
       <label>{text.address}<textarea name="address" rows={2} maxLength={500} defaultValue={profile.guardian.emergencyAddress??""}/></label>
       <button className="primary-button" disabled={busy}>{text.save}</button>
     </form>}</section>
-    {profile.guardian&&<section className="auth-card"><h2>{text.children}</h2>{profile.children.map(child=><form className="auth-form" key={child.id+":"+version} onSubmit={e=>void save(e,f=>({kind:"child",id:child.id,revision:child.revision,displayName:String(f.get("name")??""),birthDate:optional(f,"birth")}))}>
+    {profile.guardian&&<section className="auth-card identity-card"><h2>{text.children}</h2>{profile.children.map(child=><form className="auth-form" key={child.id+":"+version} onSubmit={e=>void save(e,f=>({kind:"child",id:child.id,revision:child.revision,displayName:String(f.get("name")??""),birthDate:optional(f,"birth")}))}>
       <h3><bdi>{child.displayName}</bdi></h3>
       <label>{text.name}<input name="name" required maxLength={200} defaultValue={child.displayName}/></label>
       <label>{text.birth}<input name="birth" type="date" min="1900-01-01" max={new Date().toISOString().slice(0,10)} defaultValue={child.birthDate??""}/></label>

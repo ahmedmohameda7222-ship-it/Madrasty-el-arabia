@@ -10,5 +10,5 @@ export const metadata: Metadata = { referrer: "no-referrer", robots: { index: fa
 export default async function Invite({ params }: { params: Promise<{ locale: string }> }) {
   const locale = localeSchema.safeParse((await presentationParams(params)).locale);
   if (!locale.success) notFound();
-  return <main className="public-page"><SchoolHeader locale={locale.data} /><InvitationLanding locale={locale.data} /></main>;
+  return <main className="public-page entry-page entry-identity"><SchoolHeader locale={locale.data} /><InvitationLanding locale={locale.data} /></main>;
 }
