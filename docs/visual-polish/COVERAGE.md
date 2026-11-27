@@ -1,6 +1,6 @@
 # Scene evidence ledger — incomplete
 
-Source registry fingerprint: `31ec3359be11f0263eaea7b310447baf263719c3cd2b069c6074406a0170b05c`. Source discovery includes 129 scenes. This document maps exact scene IDs to specifically observed runtime evidence; the registry itself remains discovery-only. A row is **PARTIAL** if a narrow test case ran or an attempted test reached the scene, not if its entire required matrix is audited. **OPEN** means no specific evidence is recorded here, not that the feature is missing. No scene is marked complete. For each scene, the full `requiredVariants`, query parameters, source predicates and element variants in SCENES/ELEMENTS and the master plan still apply. Hosted screenshots/traces are kept within disposable runners and have not been independently reviewed; neither screenshots nor test counts close a scene. Existing local evidence from earlier checkpoints stays in STATUS.md. Physical device and owner visual approval are open.
+Source registry fingerprint: `24e255241f40de1efd19ac0073382ef4f44ae319100cd9d9d35933139c8d7373`. Source discovery includes 129 scenes. This document maps exact scene IDs to specifically observed runtime evidence; the registry itself remains discovery-only. A row is **PARTIAL** if a narrow test case ran or an attempted test reached the scene, not if its entire required matrix is audited. **OPEN** means no specific evidence is recorded here, not that the feature is missing. No scene is marked complete. For each scene, the full `requiredVariants`, query parameters, source predicates and element variants in SCENES/ELEMENTS and the master plan still apply. Hosted screenshots/traces are kept within disposable runners and have not been independently reviewed; neither screenshots nor test counts close a scene. Existing local evidence from earlier checkpoints stays in STATUS.md. Physical device and owner visual approval are open.
 
 | Scene ID | Phase | Route / screen | State | Narrow evidence / remaining work |
 | --- | --- | --- | --- | --- |
@@ -10,7 +10,7 @@ Source registry fingerprint: `31ec3359be11f0263eaea7b310447baf263719c3cd2b069c60
 | WR-003 | P03 | /[locale]/account/security/[action] | PARTIAL | AR/DE recover form and missing-token email/activation; warmed P03 diagnostic passed (46082187416 Chromium); valid/expired/replayed/submitting/success open. |
 | WR-004 | P03 | /[locale]/account/security | OPEN | No specifically verified state recorded in this ledger. |
 | WR-005 | P03 | /[locale]/account/sign-in | PARTIAL | Public DE 390 light and AR 320 dark sign-in fields, reveal/remask/autofill in warmed P03 diagnostic (46082187416 Chromium); other states open. |
-| WR-006 | P08 | /[locale]/directory | OPEN | No specifically verified state recorded in this ledger. |
+| WR-006 | P08 | /[locale]/directory | PARTIAL | Guardian contact picker and full searchable directory original regression passed (46083875529 WebKit); all roles, terminal states and visual matrix open. |
 | WR-007 | P03 | /[locale]/install | PARTIAL | DE 390 and AR 320 iPhone/Android instructions in warm P03 diagnostic (46082187416 Chromium); cold DE failure open; APK ready/download and desktop open. |
 | WR-008 | P03 | /[locale]/invite | PARTIAL | AR/DE missing-token invitation terminal state (warm 46082187416 Chromium); valid/expired/activation open. |
 | WEB-[locale]-layout | P11 | /[locale] | OPEN | No specifically verified state recorded in this ledger. |
@@ -46,22 +46,22 @@ Source registry fingerprint: `31ec3359be11f0263eaea7b310447baf263719c3cd2b069c60
 | WR-036 | P08 | /[locale]/school/more/message-reports | OPEN | No specifically verified state recorded in this ledger. |
 | WR-037 | P08 | /[locale]/school/more/news | OPEN | No specifically verified state recorded in this ledger. |
 | WR-038 | P08 | /[locale]/school/more/notifications | OPEN | No specifically verified state recorded in this ledger. |
-| WR-039 | P07 | /[locale]/school/more/oversight | PARTIAL | New synthetic published-vs-draft and class/pupil navigation test pending 46083680556; no audited coverage. |
+| WR-039 | P07 | /[locale]/school/more/oversight | PARTIAL | Read-only class/pupil/announced-only exam and return navigation executed in both browsers (46083680556); DE 200% overflow and AR hierarchy RED. Candidate 8df95bd pending rerun; full visual/device matrix open. |
 | WR-040 | P10 | /[locale]/school/more/receipts | OPEN | No specifically verified state recorded in this ledger. |
 | WR-041 | P10 | /[locale]/school/more/record-payment | OPEN | No specifically verified state recorded in this ledger. |
 | WR-042 | P07 | /[locale]/school/more/reports | OPEN | No specifically verified state recorded in this ledger. |
 | WR-043 | P10 | /[locale]/school/more/stop-reviews | OPEN | No specifically verified state recorded in this ledger. |
 | WR-044 | P09 | /[locale]/school/more/timetable | OPEN | No specifically verified state recorded in this ledger. |
-| WR-045 | P05 | /[locale]/school/students/import | OPEN | No specifically verified state recorded in this ledger. |
+| WR-045 | P05 | /[locale]/school/students/import | PARTIAL | Family import tested in 22-case family suite (46083875529 Chromium); all import error and permission variants/visual review open. |
 | WR-046 | P03 | /[locale]/staff/access | PARTIAL | Guardian DE 320 denied 404 in warm P03 diagnostic (46082187416 Chromium); authorized controls/roles/save/error open. |
 | WR-047 | P05 | /[locale]/staff/invitations | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-auth/android/callback-route | P03 | /auth/android/callback | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-download/android-route | P03 | /download/android | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-install-route | P03 | /install | OPEN | No specifically verified state recorded in this ledger. |
 | TAB-1 | P04 | /[locale]/school/home | PARTIAL | Admin DE 390, guardian AR 320, teacher DE 390 light/AR 320 dark, teacher-other DE 320 dark/substitute AR 390 light. Real API assignment/lesson comparison and navigation in 46081553330 both browsers; full role/theme/device/fixture and native coverage open. |
-| TAB-2 | P05 | /[locale]/school/students | OPEN | No specifically verified state recorded in this ledger. |
-| TAB-3 | P06 | /[locale]/school/attendance | PARTIAL | Teacher DE 390/AR 320 configured open sheet, exact counts and rows reached (46082187416 Chromium); RED 200% reflow/geometry. Candidate pending 46083680556. |
-| TAB-4 | P05 | /[locale]/school/children | OPEN | No specifically verified state recorded in this ledger. |
+| TAB-2 | P05 | /[locale]/school/students | PARTIAL | Family wizard/import and guardian-related UI regression suite 22/22 (46083875529 Chromium); entire element/state matrix and matched visual review open. |
+| TAB-3 | P06 | /[locale]/school/attendance | PARTIAL | Configured attendance tally and selectors at DE 390/AR 320 including 200% reflow both browsers (46083680556); original ready/offline-conflict UI passed (46083875529 Chromium). Full variants open. |
+| TAB-4 | P05 | /[locale]/school/children | PARTIAL | Guardian children and family workflows tested in 22-case family suite (46083875529 Chromium); full state matrix open. |
 | TAB-5 | P08 | /[locale]/school/messages | OPEN | No specifically verified state recorded in this ledger. |
 | TAB-6 | P09 | /[locale]/school/calendar | OPEN | No specifically verified state recorded in this ledger. |
 | TAB-7 | P04 | /[locale]/school/more | PARTIAL | Admin/admin-two/office/finance/supervisor/teacher/substitute/guardian-ar/guardian-de in DE 390 light and AR 320 dark; keyboard disclosures, visible rows, focus, reflow, checked route subsets (46081553330 both browsers); full expected capability inventory, destination clicks, dual-role and guardian-other open. |
