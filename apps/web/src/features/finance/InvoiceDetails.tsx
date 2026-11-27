@@ -4,11 +4,15 @@ import css from "./FinanceWorkspace.module.css";
 import {FinanceDateField,financeDate} from "./FinanceDateField";
 
 import Link from "next/link";
-import {useEffect,useState} from "react";
-import {billingMonth,invoiceDetail,invoiceState,invoiceSummary,type Locale} from "@madrasty/contracts";
+import {useEffect,useRef,useState,type FormEvent} from "react";
+import {useRouter} from "next/navigation";
+import {useSchoolCommand} from "@/api/commands";
+import {useAccountScope} from "@/ui/AccountScope";
+import {ApiResponseError} from "@/api/client";
+import {billingMonth,invoiceDetail,invoiceState,invoiceSummary,invoiceCorrectionInput,invoiceCorrectionResult,type InvoiceDetail,type Locale} from "@madrasty/contracts";
 import {AcademicPageItems,useAcademicPage} from "@/features/academics/shared";
 import {StartConversation} from "@/features/comms/StartConversation";
-import {TimetableRead,useTimetableRead} from "@/features/school/timetable/shared";
+import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {ConfirmedAt} from "@/ui/RecordValues";
 import {billingCopy,FeeLines,financeAmount} from "./invoice-ui";
 import {TransferDetails} from "./TransferDetails";
@@ -38,7 +42,8 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
     if(next!==window.location.pathname+window.location.search)window.history.replaceState(null,"",next);
   },[context,invoice]);
 
-  const details=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail);
+  const [revision,setRevision]=useState(0);
+  const details=useTimetableRead(invoice?`/finance/invoices/${invoice}`:null,invoiceDetail,revision);
   const list=useAcademicPage(invoice?null:`/finance/invoices?limit=25${valid.success?"&period="+valid.data:""}${student?"&studentId="+student:""}${state==="open"?"&state=open":filter.success?"&state="+filter.data:""}${query?"&q="+encodeURIComponent(query):""}`,rows,0);
   return <section className={`${css.workspace} auth-form`}>
     <h1>{text.invoices}</h1>
@@ -73,6 +78,7 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
         {item.receiptIds.length>0&&<ul className={css.recordList}>{item.receiptIds.map((id,index)=><li key={id}>
           <Link className={css.recordRow} href={`/${locale}/school/more/receipts?receipt=${id}&invoice=${item.id}${suffix}`}><span>{receiptCopy[locale].open} {index+1}</span><span className={css.chevron} aria-hidden="true"/></Link>
         </li>)}</ul>}
+        {staff&&canIssue&&item.correction&&<InvoiceCorrection key={item.id+":"+item.revision} locale={locale} item={item} root={root} suffix={suffix} refresh={()=>setRevision(n=>n+1)}/>}
         {item.canInquire&&<StartConversation locale={locale} label={text.ask} target={{kind:"office",id:"accounts"}}
           context={{kind:"invoice",id:item.id}}/>}
         <ConfirmedAt locale={locale} value={item.issuedAt}/>
@@ -97,4 +103,43 @@ export function InvoiceDetails({locale,invoice,student,period,canPost,canIssue=f
       </ul>}</AcademicPageItems>
     </>}
   </section>;
+}
+
+function InvoiceCorrection({locale,item,root,suffix,refresh}:{locale:Locale;item:InvoiceDetail;root:string;suffix:string;refresh:()=>void}){
+  const ar=locale==="ar",command=useSchoolCommand(useAccountScope().persona),router=useRouter(),lock=useRef(false);
+  const [reason,setReason]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState(""),[attempted,setAttempted]=useState(false);
+  const correction=item.correction;
+  if(!correction)return null;
+  async function submit(event:FormEvent,kind:"cancel"|"reissue"){
+    event.preventDefault();setAttempted(true);setError("");
+    if(lock.current)return;
+    const input=invoiceCorrectionInput.safeParse(kind==="cancel"?{kind,revision:item.revision,reason}:{kind,revision:item.revision});
+    if(!input.success)return;
+    lock.current=true;setBusy(true);
+    try{
+      const changed=await command(`/finance/invoices/${item.id}/corrections`,"POST",input.data,invoiceCorrectionResult);
+      if(kind==="reissue")router.push(root+"?invoice="+changed.id+suffix);
+      else refresh();
+    }catch(problem){
+      if(problem instanceof ApiResponseError&&problem.status===409)setError(ar?"الفاتورة اتغيرت. حدّث الصفحة قبل إعادة المحاولة.":"Die Rechnung wurde geändert. Bitte aktualisieren.");
+      else setError(timetableError(locale,problem));
+    }finally{lock.current=false;setBusy(false);}
+  }
+  return <details className={css.disclosure}>
+    <summary>{ar?"تصحيح الفاتورة":"Rechnung korrigieren"}</summary>
+    {correction.reason&&<p>{ar?"سبب الإلغاء":"Stornogrund"} · <bdi>{correction.reason}</bdi></p>}
+    {correction.replacementId&&<Link className="plain-button" href={root+"?invoice="+correction.replacementId+suffix}>{ar?"فتح الفاتورة البديلة":"Ersatzrechnung öffnen"}</Link>}
+    {correction.canCancel&&<form className="auth-form" noValidate onSubmit={event=>void submit(event,"cancel")}>
+      <p>{ar?"سيتم إلغاء المطالبة بالمبلغ مع الاحتفاظ بالفاتورة الأصلية. لا يتم رد أي مبلغ بهذه العملية.":"Die Forderung wird storniert. Die ursprüngliche Rechnung bleibt erhalten. Es wird kein Geld erstattet."}</p>
+      <label>{ar?"سبب الإلغاء":"Stornogrund"}<textarea value={reason} disabled={busy} maxLength={500} aria-invalid={attempted&&reason.trim().length<3} onChange={event=>setReason(event.target.value)}/></label>
+      {attempted&&reason.trim().length<3&&<p role="alert">{ar?"اكتب سببًا من ٣ حروف على الأقل.":"Gib einen Grund mit mindestens 3 Zeichen ein."}</p>}
+      <button className="primary-button" disabled={busy}>{ar?"تأكيد إلغاء الفاتورة":"Rechnung stornieren"}</button>
+    </form>}
+    {correction.canReissue&&<form className="auth-form" onSubmit={event=>void submit(event,"reissue")}>
+      <p>{ar?"إصدار فاتورة جديدة بنفس البنود والمبلغ والشهر، باستخدام مسؤول السداد المحدد الآن لذلك الشهر.":"Neue Rechnung mit denselben Positionen, demselben Betrag und Monat, aber mit dem aktuell für diesen Monat hinterlegten Zahler."}</p>
+      <button className="primary-button" disabled={busy}>{ar?"إصدار فاتورة بديلة":"Ersatzrechnung erstellen"}</button>
+    </form>}
+    {!correction.canCancel&&!correction.canReissue&&!correction.replacementId&&<p>{ar?"التصحيح غير متاح. راجع السداد أو تسويات الاشتراك أولًا.":"Korrektur nicht möglich. Prüfe zuerst Zahlungen oder Gebührenkorrekturen."}</p>}
+    {error&&<p role="alert">{error}</p>}
+  </details>;
 }
