@@ -50,7 +50,7 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
     {...common,kind,studentIds:[studentId],chargeSourceId:manualKey,lineItems:formatFeeLines(lines,current?.currency??null)});
   const key=month.success&&dueOK&&validTarget&&proposed.success?JSON.stringify(proposed.data):"";
   useEffect(()=>{
-    if(!key||receipt||fixing||busy)return;
+    if(!key||receipt||fixing)return;
     const controller=new AbortController();
     const timer=setTimeout(()=>{
       void requestApi("/finance/invoice-previews",invoicePreview,{method:"POST",headers:webHeaders(persona),body:key,signal:controller.signal})
@@ -58,18 +58,21 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         .catch(problem=>{if(!controller.signal.aborted)setPlan({key,error:timetableError(locale,problem)});});
     },250);
     return ()=>{clearTimeout(timer);controller.abort();};
-  },[key,persona,locale,refresh,receipt,fixing,busy]);
+  },[key,persona,locale,refresh,receipt,fixing]);
   const preview=plan?.key===key?plan.preview:undefined;
   const readyRows=preview?.rows.filter(row=>row.outcome==="ready")??[];
   const blockers=preview?.rows.filter(row=>row.outcome!=="ready")??[];
   const total=readyRows.reduce((n,row)=>n+row.totalMinor,0);
   const currency=readyRows[0]?.currency??current?.currency;
+  const missingPayer=scope==="student"?blockers.find(row=>row.outcome==="payer_missing"||row.outcome==="payer_inactive"):undefined;
   const title=scope==="student"?(ar?"إنشاء فاتورة":"Rechnung erstellen"):`${readyRows.length} ${ar?"فاتورة إصدار":"Rechnungen erstellen"}`;
-  function invalidate(){setPlan(undefined);setError("");setAttempted(false);}
+  function invalidate(){setError("");setAttempted(false);}
   function reset(){setReceipt(undefined);setStudentId("");setPicked(undefined);setScope("student");setClass("");setChoosing(true);setLines([emptyFeeLine()]);setManualKey(crypto.randomUUID());invalidate();setRefresh(n=>n+1);}
   async function issue(event:FormEvent){
     event.preventDefault();setAttempted(true);setError("");
-    if(locked.current||!key||!preview||!readyRows.length||fixing)return;
+    if(locked.current||fixing)return;
+    if(missingPayer){setFixing(missingPayer.studentId);return;}
+    if(!key||!preview||!readyRows.length)return;
     locked.current=true;setBusy(true);
     try{
       const response=await command("/finance/invoice-batches","POST",{previewId:preview.previewId,revision:preview.revision},invoiceBatch);
@@ -106,12 +109,12 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
             <AcademicPageItems locale={locale} page={students}>{choices=><ul className={css.recordList}>{choices.map(item=><li key={item.id}><button className="plain-button" type="button" onClick={()=>{invalidate();setPicked(item);setStudentId(item.id);setChoosing(false);}}>{item.studentName} · {item.studentNumber}</button></li>)}</ul>}</AcademicPageItems>
           </>}
         </div>}
-        <FinanceDateField locale={locale} label={t.period} type="month" value={period} required onChange={e=>{invalidate();setPeriod(e.target.value);setDueDate("");setClass("");}} aria-invalid={attempted&&!month.success}/>
+        <FinanceDateField locale={locale} label={t.period} type="month" value={period} required onChange={e=>{invalidate();setPeriod(e.target.value);setDueDate("");}} aria-invalid={attempted&&!month.success}/>
         <details className={css.disclosure}><summary>{ar?"تاريخ الاستحقاق (اختياري)":"Fälligkeit ändern (optional)"}</summary><FinanceDateField locale={locale} label={t.due} type="date" value={dueDate} onChange={e=>{invalidate();setDueDate(e.target.value);}} aria-invalid={attempted&&!dueOK}/></details>
         {kind==="manual"&&<FeeLinesEditor locale={locale} lines={lines} update={next=>{invalidate();setLines(next);}} currency={current?.currency??null} busy={busy}/>}
       </fieldset>
       {!key&&<p role={attempted?"alert":"status"}>{!month.success?(ar?"اختر شهرًا صحيحًا.":"Wähle einen gültigen Monat."):!validTarget?(scope==="class"?(ar?"اختر الفصل.":"Wähle eine Klasse."):(ar?"اختر الطالب.":"Wähle einen Schüler.")):!dueOK?(ar?"اختر تاريخ استحقاق داخل الشهر المحدد.":"Wähle ein Fälligkeitsdatum im gewählten Monat."):(ar?"أكمل وصف الرسوم والمبلغ.":"Ergänze Beschreibung und gültigen Betrag.")}</p>}
-      {key&&!preview&&!plan?.error&&<p role="status">{ar?"جاري حساب الفواتير…":"Rechnungen werden berechnet…"}</p>}
+      {key&&!preview&&!(plan?.key===key&&plan.error)&&<p role="status">{ar?"جاري حساب الفواتير…":"Rechnungen werden berechnet…"}</p>}
       {key&&plan?.key===key&&plan.error&&<div role="alert"><p>{plan.error}</p><button className="plain-button" type="button" onClick={()=>{setPlan(undefined);setRefresh(n=>n+1);}}>{ar?"إعادة المحاولة":"Erneut versuchen"}</button></div>}
       {preview&&<div className={css.panel}>
         <h2>{ar?"ملخص الإصدار":"Zusammenfassung"}</h2>
@@ -122,13 +125,13 @@ function InvoiceIssuer({locale,initial,preferred,mayConfigureBank}:{locale:Local
         {!readyRows.length&&!blockers.length&&<p>{ar?"لا يوجد طلاب لهذا الاختيار.":"Keine Schüler für diese Auswahl."}</p>}
       </div>}
       {error&&<p role="alert">{error}</p>}
-      <div className={css.formAction}><button type="submit" className="primary-button" disabled={busy||!!fixing||!!key&&!preview}>{busy?t.busy:title}</button></div>
+      <div className={css.formAction}><button type="submit" className="primary-button" disabled={busy||!!fixing||!!key&&(!preview||!readyRows.length&&!missingPayer)}>{busy?t.busy:missingPayer?(ar?"تحديد مسؤول السداد":"Zahler festlegen"):title}</button></div>
     </form>
     {blockers.map(row=><div key={row.studentId} className={css.panel}>
       <strong>{row.studentName}</strong><p>{t[row.outcome]}</p>
       {row.existingId&&<Link className="plain-button" href={`${root}/invoices?invoice=${row.existingId}&period=${period}`}>{t.open}</Link>}
       {(row.outcome==="payer_missing"||row.outcome==="payer_inactive")&&(fixing===row.studentId?<InlinePayerEditor locale={locale} studentId={row.studentId} schoolMonth={initial.schoolMonth} period={period} close={()=>setFixing(undefined)} saved={()=>{setFixing(undefined);setPlan(undefined);setRefresh(n=>n+1);}}/>:
-        <button type="button" className="plain-button" disabled={busy||!!fixing} onClick={()=>setFixing(row.studentId)}>{ar?"تحديد مسؤول السداد":"Zahler festlegen"}</button>)}
+        missingPayer?null:<button type="button" className="plain-button" disabled={busy||!!fixing} onClick={()=>setFixing(row.studentId)}>{ar?"تحديد مسؤول السداد":"Zahler festlegen"}</button>)}
       {row.outcome==="tariff_missing"&&<p>{ar?"حدد الاشتراك الشهري في إعدادات الحسابات قبل الإصدار.":"Lege zuerst den Monatsbeitrag in den Buchhaltungseinstellungen fest."}</p>}
       {row.outcome==="bank_missing"&&mayConfigureBank&&<p>{ar?"حدد حساب التحصيل في الإعدادات.":"Richte das Zahlungskonto in den Einstellungen ein."}</p>}
     </div>)}
@@ -146,14 +149,14 @@ function PayerFields({locale,profile,schoolMonth,period,close,saved}:{locale:Loc
   const lock=useRef(false);
   async function save(e:FormEvent){e.preventDefault();if(lock.current)return;
     if(period<schoolMonth){setError(ar?"لا يمكن تعديل مسؤول السداد لشهر سابق.":"Der Zahler kann nicht rückwirkend geändert werden.");return;}
-    const input=payerEdit.safeParse({guardianId:guardian,effectiveFromMonth:schoolMonth,revision:profile.revision});
+    const input=payerEdit.safeParse({guardianId:guardian,effectiveFromMonth:period,revision:profile.revision});
     if(!input.success||!active.some(item=>item.id===guardian)){setError(ar?"اختر ولي أمر حسابه مفعل.":"Wähle einen Elternteil mit aktivem Konto.");return;}
     lock.current=true;setBusy(true);setError("");
     try{await command(`/finance/children/${profile.studentId}/payer`,"PUT",input.data,payerProfile);saved();}
     catch(problem){setError(timetableError(locale,problem));}finally{lock.current=false;setBusy(false);}
   }
   return <form className="auth-form" onSubmit={save} noValidate>
-    <h3>{ar?"مسؤول السداد":"Zahler"}</h3>
+    <h3>{ar?"مسؤول السداد":"Zahler"} · {financeDate(period,locale,"month")}</h3>
     {!active.length?<p role="status">{ar?"لا يوجد ولي أمر مرتبط بحساب مفعل. اربط ولي الأمر وفعّل حسابه من ملف الطالب.":"Kein verknüpfter Elternteil mit aktivem Konto. Verknüpfe und aktiviere das Konto im Schülerprofil."}</p>:
       <label>{ar?"ولي الأمر":"Elternteil"}<select value={guardian} disabled={busy} onChange={e=>setGuardian(e.target.value)}><option value="">{ar?"اختر":"Auswählen"}</option>{profile.choices.map(item=><option key={item.id} value={item.id} disabled={!item.activeAccount}>{item.displayName}{!item.activeAccount?(ar?" · غير مفعل":" · Konto inaktiv"):""}</option>)}</select></label>}
     {error&&<p role="alert">{error}</p>}
