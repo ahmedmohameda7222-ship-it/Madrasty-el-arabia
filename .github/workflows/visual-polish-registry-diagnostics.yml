@@ -1,0 +1,31 @@
+name: Visual registry regeneration diagnostics
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-registry-diagnostics.yml"]
+permissions:
+  contents: read
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Regenerate and report discovery registry differences
+        shell: bash
+        run: |
+          set -euo pipefail
+          node qa/fixtures/visual-polish-registry.mjs
+          node qa/fixtures/visual-polish-registry.mjs --check
+          git diff --stat -- docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json
+          git diff --unified=0 -- docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json > "$RUNNER_TEMP/registry.diff"
+          wc -c "$RUNNER_TEMP/registry.diff"
+          head -c 100000 "$RUNNER_TEMP/registry.diff"
