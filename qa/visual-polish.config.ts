@@ -6,7 +6,7 @@ loadEnvFile("qa/.env.local");
 
 export default defineConfig({
   testDir: "./web",
-  testMatch: "ui-visual-polish-foundation.spec.ts",
+  testMatch: "ui-visual-polish-*.spec.ts",
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 30_000 },

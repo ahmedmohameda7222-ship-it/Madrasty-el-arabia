@@ -23,7 +23,7 @@ export default async function SignIn({ params, searchParams }: {
   const destination = safe && candidate ? candidate : safeSchoolResourceReturn(locale,candidate)??home;
   const refreshable = jar.has("__Host-madrasty-refresh") || jar.has("madrasty-refresh");
   return (
-    <main className="public-page">
+    <main className="public-page entry-page entry-sign-in">
       <SchoolHeader locale={locale} />
       {android === "1" && <p className="notice">{locale === "ar"
         ? "افتح رابط المتابعة في التطبيق على الجهاز اللي بدأت منه، أو سجّل الدخول هنا."

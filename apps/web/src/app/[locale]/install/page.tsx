@@ -22,7 +22,7 @@ const copy={
 };
 export default async function InstallSchoolApp({params}:{params:Promise<{locale:Locale}>}){
   const {locale}=await presentationParams(params),text=copy[locale],release=androidRelease();
-  return <main className="public-page">
+  return <main className="public-page entry-page entry-install">
     <SchoolHeader locale={locale}/>
     <section className="auth-card auth-form"><h1>{text.title}</h1>
       <h2>{text.ios}</h2>

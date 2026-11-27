@@ -1,0 +1,139 @@
+.entry-page .school-header {
+  min-block-size: 68px;
+  border-block-end: 1px solid var(--rule);
+}
+
+.entry-page .brand {
+  min-inline-size: 0;
+  flex-wrap: nowrap;
+}
+
+.entry-page .brand img,
+.entry-page .header-actions {
+  flex: none;
+}
+
+.entry-page .brand span {
+  overflow-wrap: anywhere;
+}
+
+.entry-landing {
+  display: grid;
+  gap: 12px;
+  margin-block-start: 24px;
+  padding: clamp(20px, 6vw, 36px);
+  border-radius: var(--radius-hero);
+  background: var(--admin);
+  color: white;
+  box-shadow: var(--shadow-raised);
+}
+
+.entry-landing h1 {
+  margin-block-end: 12px;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.entry-landing .primary-button {
+  background: white;
+  color: var(--on-hero-accent);
+}
+
+.entry-landing .plain-button {
+  min-block-size: 48px;
+  border: 1px solid rgb(255 255 255 / 50%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 10%);
+  color: white;
+}
+
+.entry-landing a:focus-visible {
+  outline-color: white;
+}
+
+@media (min-width: 34rem) {
+  .entry-landing {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .entry-landing h1 {
+    grid-column: 1 / -1;
+  }
+}
+
+.entry-sign-in > .auth-card,
+.entry-install > .auth-card {
+  padding: clamp(16px, 5vw, 28px);
+  box-shadow: var(--shadow-raised);
+}
+
+.entry-sign-in .auth-form {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+  margin-block-start: 20px;
+}
+
+.entry-sign-in .auth-form > label {
+  font-size: .9375rem;
+  font-weight: 600;
+}
+
+.entry-sign-in .auth-form > label:not(:first-child) {
+  margin-block-start: 8px;
+}
+
+.entry-sign-in .password-controls button {
+  min-block-size: 48px;
+}
+
+.entry-sign-in > a {
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 8px;
+  font-weight: 600;
+}
+
+.entry-install > .auth-card {
+  min-inline-size: 0;
+  gap: 12px;
+}
+
+.entry-install h1 {
+  overflow-wrap: anywhere;
+}
+
+.entry-install h2 {
+  margin-block-start: 8px;
+}
+
+.entry-install ol {
+  margin: 0;
+  padding: 12px 16px;
+  padding-inline-start: 36px;
+  border-radius: var(--radius-inset);
+  background: var(--inset);
+}
+
+.entry-install li + li {
+  margin-block-start: 8px;
+}
+
+.entry-install li::marker {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.entry-install .primary-button {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.entry-install details > summary {
+  display: list-item;
+  min-block-size: 44px;
+  align-content: center;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+}

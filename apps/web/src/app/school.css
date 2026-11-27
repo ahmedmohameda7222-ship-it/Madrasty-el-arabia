@@ -3,6 +3,7 @@
 @import "@fontsource/ibm-plex-sans-arabic/700.css";
 
 @import "./school-tokens.css";
+@import "./school-entry.css";
 
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
