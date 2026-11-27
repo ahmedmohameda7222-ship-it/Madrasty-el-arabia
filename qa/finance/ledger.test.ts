@@ -299,6 +299,20 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
       const samePayer=(await fixtureApi(school,`/finance/invoices?state=open&payerInvoice=${omar.id}&limit=100`,{token:finance,persona:"admin"})).payload.data;
       assert.ok(samePayer.some((row:{id:string})=>row.id===omar.id));
       assert.ok(!samePayer.some((row:{id:string})=>row.id===first[0].id),"unrelated payer must not appear in the scoped selection");
+      const unrelated=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${first[0].id}`,{token:finance})).payload.data);
+      const own=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${omar.id}`,{token:finance})).payload.data);
+      const beforeMixed=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+      await fixtureApi(school,"/finance/receipts",{token:finance,persona:"admin",method:"POST",key:school.run+".mixed-payer",status:422,body:{
+        externalReceiptRef:school.run+"-MIXED",method:"cash",receivedDate:clock.day,currency:"EUR",amountMinor:200,verified:true,allocations:[
+          {invoiceId:own.id,invoiceRevision:own.revision,amountMinor:100},
+          {invoiceId:unrelated.id,invoiceRevision:unrelated.revision,amountMinor:100}
+        ]
+      }});
+      const afterMixed=(await fixtureApi(school,"/finance/cashbook",{token:finance})).payload.data;
+      assert.equal(afterMixed.balanceMinor,beforeMixed.balanceMinor,"invalid mixed-payer payment rolls back atomically");
+      assert.equal((await fixtureApi(school,`/finance/invoices/${own.id}`,{token:finance})).payload.data.balanceMinor,own.balanceMinor);
+      assert.equal((await fixtureApi(school,`/finance/invoices/${unrelated.id}`,{token:finance})).payload.data.balanceMinor,unrelated.balanceMinor);
+
       await fixtureApi(school,"/internal/dispatch",{method:"POST",token:process.env.SCHOOL_WORKER_SECRET});
       const again=(await fixtureApi(school,`/finance/invoices?studentId=${ids.other}&period=${clock.month}`,{token:finance})).payload.data;
       assert.deepEqual(again.map((row:{id:string})=>row.id),first.map((row:{id:string})=>row.id));
