@@ -105,3 +105,12 @@ test("normal invoice payments use one submit and keep advanced allocation separa
 test("finance date controls are visible and never transparent required inputs",()=>{
   assert.doesNotMatch(source("FinanceWorkspace.module.css"), /\.dateControl>input[^{]*\{[^}]*opacity:0/);
 });
+
+test("native invoice payments also use a single confirmation and revision-checked allocation",()=>{
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/RecordPayment.kt",import.meta.url),"utf8");
+  const simple=native.slice(native.indexOf("private fun SimpleInvoicePayment("),native.indexOf("private fun PaymentForm("));
+  assert.match(simple,/Submit\(ready,R.string.receipt_confirm_payment/);
+  assert.match(simple,/put\("invoiceRevision",initial.getInt\("revision"\)\)/);
+  assert.match(simple,/put\("verified",true\)/);
+  assert.doesNotMatch(simple,/receipt_confirmed_external|fee_preview|ReceiptInvoicePicker/);
+});
