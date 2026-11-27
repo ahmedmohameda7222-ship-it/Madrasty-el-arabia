@@ -1,6 +1,6 @@
 # Visual Polish — durable checkpoint
 
-Updated 2026-11-27. Local branch `visual-polish/premium`. Product baseline `b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a`. Planning commit `1b015542e5ccec579b6e3f097b3246ba15ae97e7`. P02 presentation candidate `101a4e1594218e55f821ef6066ed198b25452dbb` plus native QA `191ef2e`. Current P03 identity candidate `7221bd00b43a1bb8a89b21141307df17636553ba`. Product changes are presentation-only.
+Updated 2026-11-27. Local branch `visual-polish/premium`. Product baseline `b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a`. Planning commit `1b015542e5ccec579b6e3f097b3246ba15ae97e7`. P02 presentation candidate `101a4e1594218e55f821ef6066ed198b25452dbb` plus native QA `191ef2e`. Current P03 identity candidate `7221bd00b43a1bb8a89b21141307df17636553ba`. Current P04 presentation candidate `f5a1cdaba08c3caea6e870f5e48f9b079b04c74a`. Product changes are presentation-only.
 
 ## GitHub baseline
 
@@ -14,7 +14,7 @@ Fetched GitHub main at `b90fab0b`, the same product tree used in the planning co
 | P01 Premium visual language and approval prototype | BYPASSED PER OWNER | Owner explicitly requested direct P02 work. Forest and warm neutral palette, role-specific hero colors, high-emphasis capsules, and translucent iOS-style navigation were selected from the saved spec. |
 | P02 Foundation, shared components and platform shell | IN PROGRESS | Candidate committed locally. Focused browser interaction tests, web/Android builds, and matched native instrumentation passed. Full web regression and the wider matrix are still open. |
 | P03 Public entry, identity, security and device states | IN PROGRESS | Welcome, sign-in and install polished in `51c10fa`. Two mobile cases passed each in Chromium and WebKit. Public identity states, settings/profile access and native sign-in were polished in `7221bd0`. Authenticated security, valid invitation and advanced device-state matrices remain open. |
-| P04 Home dashboards, More, work queues | NOT STARTED | Three role homes and More sampled for shared P02 changes. |
+| P04 Home dashboards, More, work queues | IN PROGRESS | Larger Admin metrics with 200% reflow, compact Guardian scope picker, and softer queue rows. The two role checks and all seven queue URLs passed at the recorded German and Arabic phone widths. |
 | P05 Students, families, staff and school setup | NOT STARTED | Pending. |
 | P06 Attendance and offline | NOT STARTED | Pending. |
 | P07 Academics and class oversight | NOT STARTED | Pending. |
@@ -64,4 +64,13 @@ Fetched GitHub main at `b90fab0b`, the same product tree used in the planning co
 
 ## Resume
 
-Reconcile P00 matrix and fixture follow-ups. Verify remaining P03 variants. P04 dashboard work starts with a targeted test of Admin metric size and Guardian picker density, preserving existing actions. See [functional and QA findings](FUNCTIONAL_FINDINGS.md) for failure classification. GitHub and CI release work follow local review. No polish commits have been pushed, merged, or deployed.
+Reconcile P00 matrix and fixture follow-ups. Verify remaining P03 variants. Resume P04 with Teacher and native dashboards, all role/capability variants of More, and Arabic/dark/negative/paginated queue cases. Continue P05 through P13 in order once those checks are resolved. The active local preview remains at http://127.0.0.1:4300. See [functional and QA findings](FUNCTIONAL_FINDINGS.md) for failure classification. GitHub and CI release work follow local review. The owner’s 5% usage checkpoint was reached. Prepare the dedicated GitHub branch for handoff. The release remains pending final local and CI checks and approval.
+
+
+## P04 verification and open items
+
+- The new phone tests failed on the original 27.2 px Admin count and 24 px Guardian picker padding, then passed after the visual changes. The candidate preserves the existing task destination and returns focus after selecting the current child. At 200% type, the Admin metric grid stayed within its own width.
+- Chromium rendered all seven queue URLs at 390 px German using actual API responses and verified each displayed row count and the existing date-preserving back link. These captures represent the observed populated or empty cases. Local evidence is in `qa-artifacts/visual-polish/P04/`.
+- Live Edge at 390 px verified Admin home, the task overview, the populated class-assignment queue, and keyboard navigation to the original assignments destination. The live preview was restarted on the same port after Next.js automatically restarted its worker at the memory threshold.
+- The last combined Chromium run passed 9/11, including the three P04 tests. German install navigation and guardian profile navigation were intermittent under the dev server in that run. The component tests for entry and identity had passed individually in Chromium and WebKit. Keep the aggregate pending and investigate it on a stable server. No original test assertions were changed.
+- Android 22/22 instrumentation evidence is for the latest native source in `7221bd0`. P04 changes only web presentation. All 15 screenshot/overlay policy checks passed, and the diff has no changes under contracts, Supabase, server/API implementation, or Finance V2 presentation/PDF.
