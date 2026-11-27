@@ -1,6 +1,6 @@
 # Visual Polish — durable checkpoint
 
-Updated 2026-11-27. Local branch `visual-polish/premium`. Product baseline `b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a`. Planning commit `1b015542e5ccec579b6e3f097b3246ba15ae97e7`. P02 candidate `101a4e1594218e55f821ef6066ed198b25452dbb`. The product changes in this candidate are confined to web CSS and native Compose presentation.
+Updated 2026-11-27. Local branch `visual-polish/premium`. Product baseline `b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a`. Planning commit `1b015542e5ccec579b6e3f097b3246ba15ae97e7`. P02 presentation candidate `101a4e1594218e55f821ef6066ed198b25452dbb` plus native QA `191ef2e`. Current P03 public entry candidate `51c10faf9a801e4ffef4d96c95355f99c8c0d1ff`. Product changes are presentation-only.
 
 ## GitHub baseline
 
@@ -10,10 +10,10 @@ Fetched GitHub main at `b90fab0b`, the same product tree used in the planning co
 
 | Phase | State | Evidence |
 | --- | --- | --- |
-| P00 Baseline, coverage contract and visual audit | IN PROGRESS | 129 scene entries with route and native source references, 544 files and 35,472 element candidates. The manual state, locale, capability and platform matrix and timed baselines remain open. |
+| P00 Baseline, coverage contract and visual audit | IN PROGRESS | 129 scene entries with route and native source references, 545 files and 35,473 element candidates. The manual state, locale, capability and platform matrix and timed baselines remain open. |
 | P01 Premium visual language and approval prototype | BYPASSED PER OWNER | Owner explicitly requested direct P02 work. Forest and warm neutral palette, role-specific hero colors, high-emphasis capsules, and translucent iOS-style navigation were selected from the saved spec. |
-| P02 Foundation, shared components and platform shell | IN PROGRESS | Candidate committed locally. Focused browser interaction tests and web/Android builds passed. Full local regression and matched Android instrumentation are in progress. |
-| P03 Public entry, identity, security and device states | NOT STARTED | Public sign-in and MFA were used to open the live synthetic preview. |
+| P02 Foundation, shared components and platform shell | IN PROGRESS | Candidate committed locally. Focused browser interaction tests, web/Android builds, and matched native instrumentation passed. Full web regression and the wider matrix are still open. |
+| P03 Public entry, identity, security and device states | IN PROGRESS | Welcome, sign-in and install polished in `51c10fa`. Two mobile cases passed each in Chromium and WebKit. More identity variants are next. |
 | P04 Home dashboards, More, work queues | NOT STARTED | Three role homes and More sampled for shared P02 changes. |
 | P05 Students, families, staff and school setup | NOT STARTED | Pending. |
 | P06 Attendance and offline | NOT STARTED | Pending. |
@@ -42,11 +42,17 @@ Fetched GitHub main at `b90fab0b`, the same product tree used in the planning co
 | `pnpm exec playwright test --config qa/ui-remediation.config.ts ui-native-foundation ui-native-controls ui-header ui-bottom-nav ui-scope-sheet ui-more-back ui-motion-contract` | 11 passed in Chromium. |
 | `pnpm exec playwright test --config qa/visual-polish.config.ts` | RED on unchanged Admin hero geometry (24 px against 28 px minimum). Three cases passed after P02, including UI navigation, settings focus, More disclosure, theme and RTL, and the opaque accessibility fallback. |
 | `pnpm exec playwright test --config qa/visual-polish.config.ts --browser webkit` | Three cases passed. Windows Playwright WebKit with emulated viewport and UA. |
-| `pnpm qa:android` | Two Android package/link policy tests passed. Kotlin unit tests and debug APK build passed before the last Android presentation adjustments. |
+| `pnpm qa:android` | Two Android package/link policy tests passed. Kotlin unit tests, debug APK and instrumentation APK build passed after the P02 presentation changes. |
 | `:app:assembleDebug :app:assembleDebugAndroidTest` | Candidate and native instrumented test compiled in the local SDK. |
 | Live laptop QA | Edge at 390 px DE and 320 px AR. Opened settings, changed presentation language, returned focus on close, expanded accounting and followed its invoice link. Restored German and left the signed-in synthetic Admin preview open on home. |
 | Full Chromium UI remediation suite | Running locally. |
-| Android emulator | WHPX acceleration verified. API 35 image and instrumented before/after comparison pending. |
+| Android emulator | API 35, 1080×2340 at 440 dpi (approximately 393dp). P02 scope selection, navigation and hero action passed 2/2 on baseline in capture mode. Candidate assertions failed on the unmodified 40dp button, then passed 2/2 with the 48dp candidate. Full native suite passed 21/21 at this checkpoint. Matched native evidence in `qa-artifacts/visual-polish/P02/android-emulator/` with before, RED and after logs. |
+
+## P03 public entry checks
+
+- German light at 390 px and Arabic dark at 320 px passed in Chromium and WebKit. Verified exact sign-in and install navigation, autofill attributes, LTR credential values and password reveal/remask. The welcome rectangle failed the new visual assertion on the baseline and met the radius requirement after the change. Matched Chromium screens in `qa-artifacts/visual-polish/P03/`.
+- Live Edge at 390 px showed the welcome panel, iOS installation guidance, Android APK unavailable state and sign-in form. The signed-in Admin preview is still running separately.
+- MFA, recovery and activation, invite variants, preferences, profile, access controls and the device matrix remain open for the P03 phase.
 
 ## Findings and decisions
 
@@ -58,4 +64,4 @@ Fetched GitHub main at `b90fab0b`, the same product tree used in the planning co
 
 ## Resume
 
-Continue the full local Chromium regression and native emulator checks, compare the matched shell screenshots, and reconcile outstanding P00 state coverage. The next screen-specific phase is P03. GitHub and CI release work follow local review. No polish commits have been pushed, merged, or deployed.
+Continue the full local Chromium regression and native emulator checks, compare the matched shell screenshots, and reconcile outstanding P00 state coverage. Finish P03 states after the verified welcome/sign-in/install slice. See [functional and QA findings](FUNCTIONAL_FINDINGS.md) for failure classification. GitHub and CI release work follow local review. No polish commits have been pushed, merged, or deployed.
