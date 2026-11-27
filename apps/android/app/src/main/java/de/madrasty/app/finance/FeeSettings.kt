@@ -69,31 +69,16 @@ private fun TariffEditor(model: IdentityViewModel, options: JSONObject) {
     var month by remember(firstMonth) { mutableStateOf(firstMonth) }
     var day by remember { mutableStateOf(options.string("dueDay") ?: "1") }
     var amount by remember { mutableStateOf("") }
-    var preview by remember { mutableStateOf<JSONObject?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
-    val prepared = preview
-    if (prepared == null) {
-        Field(R.string.fee_effective, month) { month = financeDigits(it).take(7) }
-        Field(R.string.fee_due_day, day) { day = financeDigits(it).take(2) }
-        Field(R.string.fee_monthly,amount){amount=it.take(24)}
-        val due = day.toIntOrNull()
-        val items = feeLineInput(listOf(DraftFeeLine("اشتراك شهري","Monatsbeitrag",amount)), currency)
-        Button(
-            enabled = validBillingMonth(month) && month >= firstMonth && due != null && due in 1..31 && items != null,
-            onClick = { preview = JSONObject().put("effectiveFromMonth", month).put("dueDay", due).put("lines", items) },
-        ) { Text(stringResource(R.string.fee_preview)) }
-    } else if (currency != null) {
-        Text(stringResource(R.string.fee_effective) + " · " + isolate(prepared.getString("effectiveFromMonth")))
-        Text(stringResource(R.string.fee_due_day) + " · " + isolate(prepared.getString("dueDay")))
-        FeeLineSummary(prepared.financeRows("lines"), currency)
-        TextButton(onClick = { preview = null }) { Text(stringResource(R.string.fee_edit)) }
-        Submit(true) {
-            model.schoolCommand(attempts, "/finance/tariffs", "POST", prepared)
-            preview = null
-            amount = ""
-            refresh++
-        }
+    Field(R.string.fee_effective, month) { month = financeDigits(it).take(7) }
+    Field(R.string.fee_due_day, day) { day = financeDigits(it).take(2) }
+    Field(R.string.fee_monthly, amount) { amount = it.take(24) }
+    val due = day.toIntOrNull()
+    val items = feeLineInput(listOf(DraftFeeLine("اشتراك شهري", "Monatsbeitrag", amount)), currency)
+    Submit(validBillingMonth(month) && month >= firstMonth && due != null && due in 1..31 && items != null) {
+        model.schoolCommand(attempts, "/finance/tariffs", "POST", JSONObject().put("effectiveFromMonth", month).put("dueDay", due).put("lines", items))
+        refresh++
     }
     if (refresh > 0) Text(stringResource(R.string.saved))
     HorizontalDivider()
@@ -114,24 +99,17 @@ private fun PayerEditor(model: IdentityViewModel, profile: JSONObject, firstMont
         ?.getString("guardianId")
     var guardian by remember { mutableStateOf(current?.takeIf { id -> choices.any { it.getString("id") == id } }) }
     var month by remember(firstMonth) { mutableStateOf(firstMonth) }
-    var review by remember { mutableStateOf(false) }
     val attempts = remember { mutableMapOf<String, Pair<String, String>>() }
     Text(pupilFinanceLabel(profile), style = MaterialTheme.typography.titleLarge)
     if (choices.isEmpty()) Text(stringResource(R.string.fee_payer_missing))
-    else if (!review) {
+    else {
         for (choice in choices) {
             val id = choice.getString("id")
             val note = if (choice.getBoolean("activeAccount")) "" else " · " + stringResource(R.string.fee_payer_inactive)
             FilterChip(guardian == id, { guardian = id }, label = { Text(isolate(choice.getString("displayName")) + note) })
         }
         Field(R.string.fee_effective, month) { month = financeDigits(it).take(7) }
-        Button(onClick = { review = true }, enabled = guardian != null && validBillingMonth(month) && month >= firstMonth) {
-            Text(stringResource(R.string.fee_preview))
-        }
-    } else {
-        Text(isolate(choices.first { it.getString("id") == guardian }.getString("displayName")) + " · " + isolate(month))
-        TextButton(onClick = { review = false }) { Text(stringResource(R.string.fee_edit)) }
-        Submit(true) {
+        Submit(guardian != null && validBillingMonth(month) && month >= firstMonth) {
             val input = JSONObject().put("guardianId", guardian).put("effectiveFromMonth", month).put("revision", profile.getInt("revision"))
             model.schoolCommand(attempts, "/finance/children/${profile.getString("studentId")}/payer", "PUT", input)
             changed()
