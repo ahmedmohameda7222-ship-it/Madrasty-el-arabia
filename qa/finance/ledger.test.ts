@@ -322,6 +322,26 @@ test("issued fees, payer privacy and checked receipts affect one child and prese
     }
     const historical = invoiceDetail.parse((await fixtureApi(school, `/finance/invoices/${omar.id}`, { token: payer })).payload.data);
     assert.equal(historical.balanceMinor, 3200);
+    // Cancellation and explicit replacement retain the original document and never reissue automatically.
+    const original=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${future.id}`,{token:finance})).payload.data);
+    const correctionPath=`/finance/invoices/${original.id}/corrections`;
+    const cancellation={kind:"cancel",revision:original.revision,reason:"Synthetic billing correction"};
+    await fixtureApi(school,correctionPath,{token:payer,persona:"guardian",method:"POST",key:school.run+".forbidden-cancel",body:cancellation,status:403});
+    const cancelled=await send(correctionPath,"cancel-invoice",cancellation);
+    assert.deepEqual(await send(correctionPath,"cancel-invoice",cancellation),cancelled);
+    const old=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${original.id}`,{token:payer})).payload.data);
+    assert.equal(old.state,"cancelled");
+    assert.equal(old.balanceMinor,0);
+    const replacement=await send(correctionPath,"replace-invoice",{kind:"reissue",revision:old.revision});
+    assert.notEqual(replacement.id,old.id);
+    const current=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${replacement.id}`,{token:payer})).payload.data);
+    assert.equal(current.totalMinor,original.totalMinor);
+    assert.equal(current.state,"unpaid");
+    assert.equal(current.period,original.period);
+    await fixtureApi(school,correctionPath,{token:finance,persona:"admin",method:"POST",key:school.run+".duplicate-reissue",body:{kind:"reissue",revision:old.revision},status:409});
+    const oldAgain=invoiceDetail.parse((await fixtureApi(school,`/finance/invoices/${original.id}`,{token:payer})).payload.data);
+    assert.equal(oldAgain.state,"cancelled");
+
   } finally {
     await school.close();
   }
