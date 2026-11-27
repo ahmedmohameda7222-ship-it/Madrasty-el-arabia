@@ -1,6 +1,7 @@
 "use client";
-import {useState,type FormEvent} from "react";
+import {useRef,useState,type FormEvent} from "react";
 import {z} from "zod";
+import {ApiResponseError} from "@/api/client";
 import {cashbookMonth,cashMovementInput,cashMovementKind,cashMovementReversalInput,type CashbookMonth,type Locale} from "@madrasty/contracts";
 import {TimetableRead,timetableError,useTimetableRead} from "@/features/school/timetable/shared";
 import {useSchoolCommand} from "@/api/commands";
@@ -40,27 +41,37 @@ function CashbookContents({locale,data,refresh}:{locale:Locale;data:CashbookMont
   </>;
 }
 function CashMovement({locale,data,refresh}:{locale:Locale;data:CashbookMonth;refresh:()=>void}){
-  const t=copy[locale],command=useSchoolCommand(useAccountScope().persona);
-  const [open,setOpen]=useState(false),[kind,setKind]=useState<z.infer<typeof cashMovementKind>>("expense"),[date,setDate]=useState(data.schoolDate),[amount,setAmount]=useState(""),[description,setDescription]=useState(""),[preview,setPreview]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
-  const input=cashMovementInput.safeParse({kind,date,amountMinor:inputAmountMinor(amount,data.currency,100000000000000),description});
+  const t=copy[locale],ar=locale==="ar",command=useSchoolCommand(useAccountScope().persona);
+  const [open,setOpen]=useState(false),[kind,setKind]=useState<z.infer<typeof cashMovementKind>>("expense"),[date,setDate]=useState(data.schoolDate),[amount,setAmount]=useState(""),[description,setDescription]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState(""),[attempted,setAttempted]=useState(false);
+  const lock=useRef(false);
+  const minor=inputAmountMinor(amount,data.currency,100000000000000);
+  const input=cashMovementInput.safeParse({kind,date,amountMinor:minor,description});
+  const outgoing=kind==="expense"||kind==="bank_deposit";
+  const amountError=minor===null?(ar?"اكتب مبلغًا أكبر من صفر.":"Gib einen Betrag über 0 ein."):outgoing&&minor>data.balanceMinor?(ar?"المبلغ أكبر من رصيد الخزنة الحالي.":"Der Betrag ist höher als der aktuelle Kassenbestand."):"";
+  const dateError=!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>data.schoolDate?(ar?"اختر تاريخًا صحيحًا حتى اليوم.":"Wähle ein gültiges Datum bis heute."):"";
+  const noteError=description.trim().length<3?(ar?"اكتب وصفًا من ٣ حروف على الأقل.":"Gib eine Beschreibung mit mindestens 3 Zeichen ein."):"";
   async function save(e:FormEvent){
-    e.preventDefault();if(!input.success||busy||date>data.schoolDate)return;
-    if(!preview){setPreview(true);return;}
-    setBusy(true);setError("");
-    try{await command("/finance/cashbook","POST",input.data,z.object({id:z.uuid()}));setOpen(false);setPreview(false);setAmount("");setDescription("");setMessage(t.saved);refresh();}
-    catch(e){setError(timetableError(locale,e));}finally{setBusy(false);}
+    e.preventDefault();setAttempted(true);setError("");
+    if(!input.success||lock.current||amountError||dateError||noteError)return;
+    lock.current=true;setBusy(true);
+    try{await command("/finance/cashbook","POST",input.data,z.object({id:z.uuid()}));setOpen(false);setAmount("");setDescription("");setAttempted(false);setMessage(t.saved);refresh();}
+    catch(problem){setError(problem instanceof ApiResponseError&&problem.status===422?(ar?"تعذر حفظ الحركة. راجع الرصيد الحالي والبيانات وحاول مرة أخرى.":"Buchung nicht gespeichert. Prüfe Kassenbestand und Angaben, dann versuche es erneut."):timetableError(locale,problem));refresh();}
+    finally{lock.current=false;setBusy(false);}
   }
   return <div className={css.panel}>
     {message&&<p role="status">{message}</p>}
-    {!open?<button className="primary-button" type="button" onClick={()=>{setOpen(true);setMessage("");}}>{t.new}</button>:<form className="auth-form" onSubmit={save}>
+    {!open?<button className="primary-button" type="button" onClick={()=>{setOpen(true);setMessage("");}}>{t.new}</button>:<form className="auth-form" onSubmit={save} noValidate>
+      <label>{t.type}<select value={kind} disabled={busy} onChange={e=>setKind(cashMovementKind.parse(e.target.value))}>{cashMovementKind.options.map(k=><option key={k} value={k}>{t[k]}</option>)}</select></label>
+      {outgoing&&<p>{ar?"المتاح في الخزنة":"Verfügbar in der Kasse"} · <bdi>{financeAmount(Math.max(0,data.balanceMinor),data.currency,locale)}</bdi></p>}
+      <label>{t.amount}<input inputMode="decimal" dir="ltr" value={amount} disabled={busy} aria-invalid={attempted&&!!amountError} onChange={e=>setAmount(e.target.value)}/></label>
+      {attempted&&amountError&&<p role="alert">{amountError}</p>}
+      <label>{t.description}<textarea value={description} maxLength={500} disabled={busy} aria-invalid={attempted&&!!noteError} onChange={e=>setDescription(e.target.value)}/></label>
+      {attempted&&noteError&&<p role="alert">{noteError}</p>}
+      <FinanceDateField locale={locale} label={t.date} type="date" max={data.schoolDate} value={date} disabled={busy} aria-invalid={attempted&&!!dateError} onChange={e=>setDate(e.target.value)}/>
+      {attempted&&dateError&&<p role="alert">{dateError}</p>}
+      {kind==="bank_deposit"&&<p>{ar?"نقل نقدي للبنك، وليس إيرادًا جديدًا.":"Umbuchung zur Bank, keine neue Einnahme."}</p>}
       {error&&<p role="alert">{error}</p>}
-      {preview?<><p>{t[kind]} · <bdi>{date}</bdi> · <bdi>{financeAmount(input.data?.amountMinor??0,data.currency,locale)}</bdi></p><p>{description}</p></>:<>
-        <label>{t.type}<select value={kind} onChange={e=>setKind(cashMovementKind.parse(e.target.value))}>{cashMovementKind.options.map(k=><option key={k} value={k}>{t[k]}</option>)}</select></label>
-        <FinanceDateField locale={locale} label={t.date} type="date" max={data.schoolDate} value={date} onChange={e=>setDate(e.target.value)}/>
-        <label>{t.amount}<input inputMode="decimal" dir="ltr" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
-        <label>{t.description}<textarea value={description} maxLength={500} onChange={e=>setDescription(e.target.value)}/></label>
-      </>}
-      <div className="header-actions"><button className="primary-button" disabled={!input.success||busy||date>data.schoolDate}>{preview?t.save:t.review}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>preview?setPreview(false):setOpen(false)}>{preview?t.edit:(locale==="ar"?"إلغاء":"Abbrechen")}</button></div>
+      <div className="header-actions"><button className="primary-button" disabled={busy}>{busy?(ar?"جارٍ الحفظ…":"Wird gespeichert…"):t.save}</button><button type="button" className="plain-button" disabled={busy} onClick={()=>{setOpen(false);setAttempted(false);setError("");}}>{ar?"إلغاء":"Abbrechen"}</button></div>
     </form>}
   </div>;
 }
