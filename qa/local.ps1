@@ -1,5 +1,7 @@
 [CmdletBinding()]
-param([switch]$Serve, [switch]$PreviousRelease)
+param([switch]$Serve, [switch]$PreviousRelease, [switch]$Production)
+
+if ($Production -and (-not $Serve -or $PreviousRelease)) { throw 'Production QA requires -Serve on the current isolated checkout.' }
 
 $ErrorActionPreference = 'Stop'
 $qaProject = 'madrasty_final_qa'
@@ -52,7 +54,10 @@ if ($Serve) {
     $port = 4310
   }
   Push-Location $webRoot
-  try { pnpm --filter @madrasty/web exec next dev --webpack --hostname 127.0.0.1 --port $port }
+  try {
+    if ($Production) { pnpm --filter @madrasty/web exec next start --hostname 127.0.0.1 --port $port }
+    else { pnpm --filter @madrasty/web exec next dev --webpack --hostname 127.0.0.1 --port $port }
+  }
   finally { Pop-Location }
   exit $LASTEXITCODE
 }
