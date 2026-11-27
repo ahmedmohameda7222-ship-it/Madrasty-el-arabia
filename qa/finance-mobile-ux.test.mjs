@@ -114,3 +114,15 @@ test("native invoice payments also use a single confirmation and revision-checke
   assert.match(simple,/put\("verified",true\)/);
   assert.doesNotMatch(simple,/receipt_confirmed_external|fee_preview|ReceiptInvoicePicker/);
 });
+
+test("participation pause starts next month and is confirmed directly on both clients",()=>{
+  const web=source("StopRequest.tsx");
+  assert.doesNotMatch(web,/setPreview|setLast|type="month"/);
+  assert.match(web,/lastAttendanceMonth:month/);
+  assert.match(web,/duration:"one_month"/);
+  assert.match(web,/command\("\/enrollment-stops","POST"/);
+  const native=readFileSync(new URL("../apps/android/app/src/main/java/de/madrasty/app/finance/StopRequest.kt",import.meta.url),"utf8");
+  assert.doesNotMatch(native,/var review|fee_preview|var last/);
+  assert.match(native,/put\("lastAttendanceMonth", todayMonth\)/);
+  assert.match(native,/put\("duration", "one_month"\)/);
+});
