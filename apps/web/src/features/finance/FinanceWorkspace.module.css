@@ -164,8 +164,8 @@
   .invoiceBalance{padding:.9rem}
 }
 
-.financeNav{display:flex;align-items:center;gap:.3rem;min-inline-size:0;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:.3rem;margin-block:.6rem 1rem}
-.financeNav a{display:flex;align-items:center;justify-content:center;flex:1;min-inline-size:0;min-block-size:44px;padding:.35rem .4rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;text-align:center;color:var(--ink);line-height:1.2;overflow-wrap:anywhere}
+.financeNav{display:flex;flex-wrap:wrap;align-items:stretch;gap:.3rem;min-inline-size:0;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:.3rem;margin-block:.6rem 1rem}
+.financeNav a{display:flex;align-items:center;justify-content:center;flex:1 0 auto;min-inline-size:44px;max-inline-size:100%;min-block-size:44px;padding:.35rem .4rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;text-align:center;color:var(--ink);line-height:1.2;white-space:normal;overflow-wrap:normal;word-break:normal}
 .financeNav a[aria-current=page]{background:var(--primary);color:var(--on-primary,#fff)}
 .financeNav a.settingsNav{flex:0 0 44px}
 .financeNav a:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
