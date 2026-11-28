@@ -98,12 +98,25 @@ for (const scene of cases) {
       expect(schoolBank.parse((await fixtureApi(school, "/finance/bank", { token: admin, persona: "admin" })).payload.data)).toEqual(settings);
 
       const guardian = await school.bearer("guardian-de", "guardian");
+      const deniedApi = await fixtureApi(school, "/finance/bank", { token: guardian, persona: "guardian", status: 403 });
+      expect(deniedApi.payload.error.code).toBe("forbidden");
       const denied = await browser.newContext({ viewport: { width: scene.width, height: 844 }, colorScheme: scene.theme });
       try {
         await denied.addCookies([{ name: "madrasty-session", value: guardian, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
         const restricted = await denied.newPage();
-        expect((await restricted.goto(localOrigin + route))?.status()).toBe(404);
+        // The pre-existing school/loading.tsx may stream before notFound(),
+        // so the document status can be 200. Assert the real terminal denial,
+        // noindex, no protected controls, unchanged URL and API 403 separately.
+        const deniedDocument = await restricted.goto(localOrigin + route);
+        expect([200, 404]).toContain(deniedDocument?.status());
+        await expect(restricted).toHaveURL(localOrigin + route);
+        const unavailable = restricted.locator("[data-generic-not-found]");
+        await expect(unavailable).toBeVisible();
+        await expect(unavailable.getByRole("heading", { name: scene.locale === "de" ? "Seite nicht gefunden" : "الصفحة غير موجودة", exact: true })).toBeVisible();
+        await expect(restricted.locator('meta[name="robots"][content*="noindex"]').first()).toHaveAttribute("content", /noindex/);
         await expect(restricted.getByLabel(scene.iban, { exact: true })).toHaveCount(0);
+        await expect(restricted.getByRole("heading", { name: scene.current, exact: true })).toHaveCount(0);
+        console.log("P10 bank denial", JSON.stringify({ locale: scene.locale, documentStatus: deniedDocument?.status(), apiStatus: deniedApi.response.status }));
         await restricted.screenshot({ path: folder + "/bank-denied.png" });
       } finally { await denied.close(); }
       console.log("P10 bank geometry", JSON.stringify({ locale: scene.locale, initial, ready, large }));
