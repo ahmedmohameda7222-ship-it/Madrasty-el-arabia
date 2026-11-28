@@ -84,6 +84,34 @@ for (const scene of [
       await page.screenshot({ path: folder + "/ready-text-200.png" });
       await measureReflow("text-200");
       await checkFilterSpacing("text-200");
+      if (scene.locale === "de") {
+        const heading = page.getByRole("heading", { name: "Anwesenheit", level: 1, exact: true });
+        await expect(heading).toBeVisible();
+        const wrapping = await heading.evaluate(el => {
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          const breaks: number[] = [];
+          let letters = 0, prior: number | undefined;
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            const text = node.textContent ?? "";
+            for (let i = 0; i < text.length; i++) {
+              if (text[i] === "\u00ad") continue;
+              const range = document.createRange();
+              range.setStart(node, i);
+              range.setEnd(node, i + 1);
+              const rect = Array.from(range.getClientRects()).filter(rect => rect.width > 0).at(-1);
+              if (!rect) throw new Error("Missing attendance heading glyph geometry");
+              const top = Math.round(rect.top);
+              if (prior !== undefined && prior !== top) breaks.push(letters);
+              prior = top;
+              letters++;
+            }
+          }
+          return { text: el.textContent?.replaceAll("\u00ad", ""), breaks };
+        });
+        expect(wrapping.text).toBe("Anwesenheit");
+        console.log("P06 attendance heading breaks", JSON.stringify(wrapping));
+        expect(wrapping.breaks.filter(index => ![2, 4, 7].includes(index))).toEqual([]);
+      }
       writeFileSync(folder + "/geometry.json", JSON.stringify({ tallyGeometry, rowGeometry }, null, 2));
       console.log("P06 attendance geometry", JSON.stringify({ locale: scene.locale, tallyGeometry, rowGeometry }));
       expect(tallyGeometry.size).toBeGreaterThanOrEqual(20);

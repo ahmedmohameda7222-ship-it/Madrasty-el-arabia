@@ -47,7 +47,7 @@ export default async function SchoolPage({ params, searchParams }: {
   const welcome=tab==="home"?await schoolProfile(session).catch(()=>null):null;
   return (
     <>
-      {tab!=="messages"&&tab!=="students"&&<h1>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="calendar" ? (locale==="ar"?"التقويم":"Kalender") : text[tab as Exclude<Tab,"calendar">]}</h1>}
+      {tab!=="messages"&&tab!=="students"&&<h1 aria-label={tab==="attendance"&&locale==="de"?text.attendance:undefined}>{tab==="home" ? <>{locale==="ar"?"مرحبًا":"Hallo"}{welcome?.displayName&&<>{locale==="ar"?"، ":", "}<bdi>{welcome.displayName}</bdi></>}</> : tab==="calendar" ? (locale==="ar"?"التقويم":"Kalender") : tab==="attendance"&&locale==="de"?text.attendance.replace("Anwesenheit","An\u00adwe\u00adsen\u00adheit"):text[tab as Exclude<Tab,"calendar">]}</h1>}
       {tab==="messages"&&<CommunicationHub locale={locale} thread={z.uuid().safeParse(search.thread).data} section={search.section}/>}
       {tab==="calendar"&&<SchoolPublishing locale={locale} kind="event" embedded selected={z.uuid().safeParse(search.item).data} create={search.add==="1"}/>}
       {tab === "home" && <SchoolHome locale={locale} asOf={schoolDateSchema.safeParse(search.asOf).data} />}
