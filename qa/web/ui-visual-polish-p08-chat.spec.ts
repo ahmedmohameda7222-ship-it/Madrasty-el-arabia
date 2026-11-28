@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { schoolFixtures } from "../fixtures/school";
 import { fixtureApi } from "../support/api";
-import { localOrigin } from "../support/target";
+import { fixtureEmail, localOrigin } from "../support/target";
 
 for (const scene of [
   { locale: "de", width: 390, theme: "light", mic: "Sprachnachricht aufnehmen", attach: "Anhang hinzufügen", contact: "Kontaktinformationen", close: "Schließen" },
@@ -41,7 +41,7 @@ for (const scene of [
         : url.pathname.includes("/threads") ? "threads" : null;
       if (endpoint) record({ event: "api", endpoint, status: response.status(), method: response.request().method() });
     });
-    await context.tracing.start({ screenshots: true, snapshots: true });
+    let tracing = false;
     try {
       await school.seed();
       mark("seeded");
@@ -60,7 +60,21 @@ for (const scene of [
         await fixtureApi(school, `/threads/${thread}/messages`, { token, persona, method: "POST", key: id, status: 201, body: { clientMessageId: id, body } });
       }
       mark("messages-created");
-      await context.addCookies([{ name: "madrasty-session", value: guardian, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
+      // The inbox marks incoming messages as read, so this is not a read-only
+      // fixture. Use the existing real web sign-in endpoint on the guarded
+      // synthetic origin; it issues the session AND matching CSRF cookie.
+      // Do not seed an access cookie alone or bypass the mutation guard.
+      const login = await context.request.post(localOrigin + "/api/v1/auth/sign-in", {
+        headers: { Origin: localOrigin },
+        data: { email: fixtureEmail(school.run, "guardian-de"), password: school.password },
+      });
+      expect(login.status(), "synthetic web sign-in must succeed").toBe(200);
+      const cookies = await context.cookies(localOrigin);
+      expect(cookies.some(cookie => cookie.name === "madrasty-session" && cookie.httpOnly), "web session cookie issued").toBe(true);
+      expect(cookies.some(cookie => cookie.name === "madrasty-csrf" && !cookie.httpOnly && /^[a-f0-9]{64}$/.test(cookie.value)), "web CSRF cookie issued").toBe(true);
+      mark("web-session-and-csrf-issued");
+      await context.tracing.start({ screenshots: true, snapshots: true });
+      tracing = true;
       await page.setViewportSize({ width: scene.width, height: 844 });
       await page.emulateMedia({ colorScheme: scene.theme, reducedMotion: "reduce" });
       expect((await page.goto(`/${scene.locale}/school/messages`))?.status()).toBe(200);
@@ -166,7 +180,7 @@ for (const scene of [
     } finally {
       mark("trace-stop-start");
       try {
-        await context.tracing.stop({ path: folder + "/trace.zip" });
+        if (tracing) await context.tracing.stop({ path: folder + "/trace.zip" });
         mark("trace-stop-end");
       } finally {
         await school.close();
