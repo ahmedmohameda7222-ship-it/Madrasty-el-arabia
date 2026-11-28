@@ -225,7 +225,7 @@ private fun SchoolShellNavigation(
     val badgeText = if (unreadMessages > 99) "99+" else unreadMessages.toString()
     val badgeStyle = MaterialTheme.typography.labelSmall
     val badgeLayout = measurer.measure(AnnotatedString(badgeText), style = badgeStyle, softWrap = false, maxLines = 1)
-    val badgeWidth = with(density) { badgeLayout.size.width.toDp() }
+    val badgeWidth = with(density) { badgeLayout.size.width.toDp() } + 2.dp
     val badgeHeight = with(density) { badgeLayout.size.height.toDp() } + 1.dp
     val minimums = labelLayouts.mapIndexed { index, layout ->
         with(density) {
@@ -282,7 +282,12 @@ private fun SchoolShellNavigation(
                                         verticalAlignment = Alignment.CenterVertically) {
                                         SchoolIcon(tab.icon, tint)
                                         Badge(Modifier.semantics { contentDescription = unreadLabel }) {
-                                            Text(badgeText, Modifier.heightIn(min = badgeHeight), style = badgeStyle,
+                                            // Use the same annotated paragraph path as TextMeasurer.
+                                            // A fixed intrinsic text box avoids reconstructing the
+                                            // String Text semantics paragraph at its parent's max width.
+                                            Text(AnnotatedString(badgeText),
+                                                Modifier.width(badgeWidth).heightIn(min = badgeHeight),
+                                                style = badgeStyle, textAlign = TextAlign.Center,
                                                 softWrap = false, maxLines = 1)
                                         }
                                     }
