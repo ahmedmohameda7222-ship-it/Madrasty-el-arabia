@@ -24,6 +24,30 @@ for(const scene of [
       document.addEventListener("click",event=>{
         if(event.target instanceof Element&&event.target.closest(".comms-send-button"))log("primary-click");
       },true);
+      // Observe the actual audio constructor and resume boundary. These
+      // wrappers forward to the real implementation and rethrow unchanged.
+      // No audio device, fake AudioContext, or success is supplied by the test.
+      if(window.AudioContext){
+        const Original=window.AudioContext;
+        const resume=Original.prototype.resume;
+        if(typeof resume==="function"){
+          Original.prototype.resume=function(this:AudioContext){
+            log("audio-resume-enter");
+            try{
+              const pending=Reflect.apply(resume,this,[]) as Promise<void>;
+              void pending.then(()=>log("audio-resume-resolved"),error=>log("audio-resume-rejected-"+(error instanceof Error?error.name:"unknown")));
+              return pending;
+            }catch(error){log("audio-resume-threw-"+(error instanceof Error?error.name:"unknown"));throw error;}
+          };
+        }
+        window.AudioContext=new Proxy(Original,{construct(target,args,newTarget){
+          log("audio-constructor-enter");
+          try{
+            const value=Reflect.construct(target,args,newTarget);
+            log("audio-constructor-returned");return value;
+          }catch(error){log("audio-constructor-threw-"+(error instanceof Error?error.name:"unknown"));throw error;}
+        }});
+      }
       if(!navigator.mediaDevices){log("mediaDevices-missing");return;}
       Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>{
         document.documentElement.dataset.qaMicrophone="requested";
