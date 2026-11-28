@@ -55,7 +55,7 @@ Source registry fingerprint: `eeea6dc24bf772bb86df0c985a7ea47a91689293062b39bfdc
 | WR-045 | P05 | /[locale]/school/students/import | PARTIAL | Family import tested in 22-case family suite (46083875529 Chromium); all import error and permission variants/visual review open. |
 | WR-046 | P03 | /[locale]/staff/access | PARTIAL | Guardian DE 320 denied 404 in warm P03 diagnostic (46082187416 Chromium); authorized controls/roles/save/error open. |
 | WR-047 | P05 | /[locale]/staff/invitations | OPEN | No specifically verified state recorded in this ledger. |
-| WR-048 | P03 | /[locale] generic not-found boundary | OPEN | Chromium production RED 46097617645 confirmed missing localized headings, original denial 404 unchanged. Candidate runtime evidence pending. |
+| WR-048 | P03 | /[locale] generic not-found boundary | OPEN | Production RED 46097617645 4/4 new DE/AR cases fail localized headings, original denial 404/no protected form retained. Generic presentation candidate 0aaa53e, actual runtime evidence pending. |
 | WEB-auth/android/callback-route | P03 | /auth/android/callback | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-download/android-route | P03 | /download/android | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-install-route | P03 | /install | OPEN | No specifically verified state recorded in this ledger. |
@@ -89,7 +89,7 @@ Source registry fingerprint: `eeea6dc24bf772bb86df0c985a7ea47a91689293062b39bfdc
 | WEB-open-receipt | P03 | /[locale]/open/receipt/[id] | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-open-fee_stop | P03 | /[locale]/open/fee_stop/[id] | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-offline-attendance | P06 | /offline/attendance.html | OPEN | No specifically verified state recorded in this ledger. |
-| AN-001 | P04/P05/P06/P08/P09 | Tabs | PARTIAL | Hosted API35 Foundation/Communication component evidence; 46095386608 adaptive shell screenshots show intact school title and visually readable nav labels, but FoundationVisualTest still reports clipped Start/الرئيسية at both scales/sizes and unread badge is visibly cropped at 200%. Follow-up 3fc08f6 run 46096081990: title/all nav labels pass, 16 home screenshots independently show intact 99+ but semantics paragraph reports parent-width overflow; 3ac5c0a uses measured annotated paragraph and 8b81b81 strengthens identity/glyph bounds, fresh 46097067043 pending. Live authenticated native/TLS and physical device matrix remain open. |
+| AN-001 | P04/P05/P06/P08/P09 | Tabs | PARTIAL | 46097067043 both 320dp and 393dp 24/24 normal + 5/5 200%, title/nav/badge whole-word and glyph bounds, all destinations selected/clickable and 48dp checks passed. 36 shell/home/scope/signed-out screenshots reviewed; DE scope choose/close labels appear Arabic, new localized assertion pending. Live authenticated native/TLS, actual full route content, matched and physical-device matrix open. |
 | AN-002 | P03 | Account | OPEN | No specifically verified state recorded in this ledger. |
 | AN-003 | P03 | Profile | OPEN | No specifically verified state recorded in this ledger. |
 | AN-004 | P03 | Security | OPEN | No specifically verified state recorded in this ledger. |

@@ -126,6 +126,11 @@ class FoundationVisualTest {
         capture("home")
         compose.onNodeWithText(resources.getString(R.string.choose_scope)).performClick()
         compose.onNodeWithText(isolate(alternate)).assertIsDisplayed()
+        if (!baseline) {
+            // Sheet strings must follow the selected UI language, not the dialog window default.
+            compose.onNodeWithText(resources.getString(R.string.choose)).assertIsDisplayed()
+            compose.onNodeWithText(resources.getString(R.string.close)).assertIsDisplayed()
+        }
         capture("scope")
         compose.onNodeWithText(isolate(alternate)).performClick()
         compose.onNodeWithText(isolate(alternate)).assertIsDisplayed()

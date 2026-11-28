@@ -46,7 +46,7 @@ jobs:
           bash -n qa/visual-polish-production-tls.sh
           node --check qa/support/visual-production-proxy.mjs
           bash qa/visual-polish-production-tls.sh
-      - name: Build and verify the original P03 journeys against real HTTPS
+      - name: Build and verify P03 identity and generic denial against real HTTPS
         shell: bash
         run: |
           set -euo pipefail
