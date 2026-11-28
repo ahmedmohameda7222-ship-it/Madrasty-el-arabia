@@ -92,6 +92,7 @@ jobs:
             P10-finance-domain)
               # The populated browser suite modifies payer revisions. The ledger
               # suite must start with its own disposable school and revision zero.
+              pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; (async()=>{const school=schoolFixtures();try{await school.seed();}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
               pnpm qa:finance
               ;;
             P11-P12-navigation-motion)
