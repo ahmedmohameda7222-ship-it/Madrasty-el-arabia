@@ -19,6 +19,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
@@ -36,17 +37,30 @@ class FoundationVisualTest {
 
     @Test fun adminGermanLight() = verify("de", false, Persona.Admin)
     @Test fun guardianArabicDark() = verify("ar", true, Persona.Guardian)
+    @Test fun teacherGermanDark() = verify("de", true, Persona.Teacher)
+    @Test fun teacherArabicLight() = verify("ar", false, Persona.Teacher)
 
     private fun verify(language: String, dark: Boolean, persona: Persona) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
+        InstrumentationRegistry.getArguments().getString("visualPolishFontScale")?.toFloat()?.let { expected ->
+            assertEquals(expected, context.resources.configuration.fontScale, 0.05f)
+        }
         val baseline = InstrumentationRegistry.getArguments().getString("visualPolishBaseline") == "true"
         val arabic = language == "ar"
         val resources = context.createConfigurationContext(Configuration(context.resources.configuration).apply {
             setLocale(Locale.forLanguageTag(language))
         }).resources
-        val title = if (arabic) "مدرسة تجريبية" else "Aufgaben der Schule"
-        val action = if (arabic) "افتح بيانات الطفل" else "Aufgaben öffnen"
+        val title = when (persona) {
+            Persona.Admin -> if (arabic) "مهام المدرسة" else "Aufgaben der Schule"
+            Persona.Teacher -> if (arabic) "حصص اليوم" else "Unterricht heute"
+            Persona.Guardian -> if (arabic) "مدرسة تجريبية" else "Meine Kinder"
+        }
+        val action = when (persona) {
+            Persona.Admin -> if (arabic) "افتح المهام" else "Aufgaben öffnen"
+            Persona.Teacher -> if (arabic) "افتح الحضور" else "Anwesenheit öffnen"
+            Persona.Guardian -> if (arabic) "افتح بيانات الطفل" else "Kind ansehen"
+        }
         val alternate = if (arabic) "الفصل الثاني" else "Zweite Klasse"
         val detail = if (arabic) "٣ مهام مفتوحة" else "3 offene Aufgaben"
         val destination = if (arabic) "عرض تجريبي" else "Testansicht"
@@ -81,7 +95,8 @@ class FoundationVisualTest {
                         selectScope = { id -> scope = choices.single { it.id == id } },
                     ) { tab ->
                         if (tab == SchoolTab.Home) {
-                            RoleHero(persona, title, detail, action) { selected = SchoolTab.More }
+                            if (persona == Persona.Admin) AdminRoleHero(title, detail, action, listOf(alternate)) { selected = SchoolTab.More }
+                            else RoleHero(persona, title, detail, action) { selected = SchoolTab.More }
                         } else {
                             Text(destination)
                         }
@@ -109,7 +124,7 @@ class FoundationVisualTest {
         capture("scope")
         compose.onNodeWithText(isolate(alternate)).performClick()
         compose.onNodeWithText(isolate(alternate)).assertIsDisplayed()
-        val heroAction = compose.onNodeWithText(action)
+        val heroAction = compose.onNodeWithText(action).performScrollTo()
         if (!baseline) heroAction.assertHeightIsAtLeast(48.dp)
         heroAction.performClick()
         compose.onNodeWithText(destination).assertIsDisplayed()
