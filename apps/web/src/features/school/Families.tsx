@@ -351,6 +351,7 @@ function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
     : record.data ? { kind: "ready", content: <>
       <h2><bdi>{record.data.displayName}</bdi></h2>
       <p>{copy[locale].number} <bdi dir="ltr">{record.data.studentNumber}</bdi></p>
+      <div className="guardian-child-actions">
       <Link className="plain-button" href={childLink("more/timetable","child")}>
         {locale === "ar" ? "الجدول الأسبوعي" : "Wochenplan"}
       </Link>
@@ -367,6 +368,7 @@ function ChildDetail({ locale, id }: { locale: Locale; id: string }) {
       <Link className="plain-button" href={childLink("more/enrollment-stops","student")}>{locale==="ar"?"وقف القيد":"Teilnahmepause"}</Link>
       <Link className="plain-button" href={childLink("more/news")}>{locale==="ar"?"أخبار المدرسة":"Schulnachrichten"}</Link>
       <Link className="plain-button" href={`${school}/calendar`}>{locale==="ar"?"تقويم الأحداث":"Veranstaltungskalender"}</Link>
+      </div>
       {record.data.currentClass && <p><bdi dir="ltr">{record.data.currentClass.code}</bdi> · <bdi>{locale === "ar" ? record.data.currentClass.nameAr : record.data.currentClass.nameDe}</bdi></p>}
     </> } : { kind: "initialLoading" }} />;
 }

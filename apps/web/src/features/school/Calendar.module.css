@@ -272,3 +272,12 @@
  .day .number,.day .todayNumber{align-self:center}
  .todayNumber{min-inline-size:min(21px,100%);max-inline-size:100%;inline-size:auto;min-block-size:21px;block-size:auto;padding:0;line-height:1.2}
 }
+/* Preserve a seven-column month while giving compact viewports 44px hit areas.
+   The card extends into the page gutters, with the heading/legend still inset. */
+@media(max-width:389px){
+ .calendarCard{margin-inline:calc(2px - var(--page-inset));padding-inline:0}
+ .calendarCard .monthHead,.calendarCard .legend,.calendarCard .hint{margin-inline:12px}
+ .weekHead,.calendarGrid{column-gap:1px}
+ .daySelected{box-shadow:inset 0 0 0 2px var(--c-accent)}
+ .day:focus-visible{outline-offset:-3px}
+}

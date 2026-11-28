@@ -933,3 +933,12 @@ html[lang="de"] .route-loading-ar, html[lang="ar"] .route-loading-de { display: 
 .comms-calendar-actions{flex-wrap:wrap}
 .comms-calendar-actions>.comms-segments{flex:1 1 12rem}
 .comms-calendar-actions .comms-segments button{min-inline-size:0;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
+
+/* Separate existing child actions without changing their order or destinations. */
+.guardian-child-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px;margin-block:12px;min-inline-size:0}
+/* At 320px, seven 44px hit areas need the page's inline gutters. Keep the
+   month heading and all other content inset, with focus visible inside cells. */
+@media(max-width:352px){
+ .school-shell[data-view="calendar"] .comms-calendar .school-month-grid{margin-inline:calc(3px - var(--page-inset));column-gap:1px}
+ .school-shell[data-view="calendar"] .comms-calendar .school-month-grid>button:focus-visible{outline-offset:-3px}
+}
