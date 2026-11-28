@@ -19,8 +19,9 @@ async function geometry(page: Page) {
       const r = el.getBoundingClientRect();
       return { w: r.width, h: r.height, within: r.left >= box.left - 1 && r.right <= box.right + 1 };
     });
+    const culprits=[...root.querySelectorAll("*")].filter(el=>{const r=el.getBoundingClientRect();return r.width>0 && !el.classList.contains("screen-reader-only") && (r.left<box.left-1 || r.right>box.right+1 || el.scrollWidth>el.clientWidth+1 && getComputedStyle(el).overflowX==="visible");}).slice(0,20).map(el=>({tag:el.tagName,classes:typeof el.className==="string"?el.className:"",width:Math.round(el.getBoundingClientRect().width),scroll:el.scrollWidth,client:el.clientWidth}));
     return { count: targets.length, overflow: Math.max(root.scrollWidth - root.clientWidth, document.documentElement.scrollWidth - innerWidth),
-      minWidth: Math.min(...targets.map(t => t.w)), minHeight: Math.min(...targets.map(t => t.h)), within: targets.every(t => t.within) };
+      minWidth: Math.min(...targets.map(t => t.w)), minHeight: Math.min(...targets.map(t => t.h)), within: targets.every(t => t.within), culprits };
   });
 }
 for (const scene of cases) {
@@ -118,6 +119,8 @@ for (const scene of cases) {
       });
       console.log("P10 bank heading breaks", JSON.stringify({locale:scene.locale,headingBreaks}));
       await bank.screenshot({ path: folder + "/bank-review-text-200.png" });
+      await panel.scrollIntoViewIfNeeded();
+      await bank.screenshot({ path: folder + "/bank-review-actions-text-200.png" });
       for (const action of await panel.getByRole("button").all()) {
         await action.scrollIntoViewIfNeeded();
         await expect(action).toBeInViewport();

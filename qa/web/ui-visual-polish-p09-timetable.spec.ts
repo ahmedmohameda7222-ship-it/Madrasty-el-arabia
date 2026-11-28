@@ -49,7 +49,7 @@ for (const scene of scenes) for(const locale of ["de","ar"] as const) {
       const query="/school/timetable?classId="+apple.id;
       let week=timetableWeekSchema.parse((await fixtureApi(school,query,{token:admin,persona:"admin"})).payload.data);
       if(!week.slots.length){
-        const draft={assignmentId:offering.id,roomId:room.id,weekday:clock.weekday,start:540,end:600,from:clock.startsOn,untilExclusive:clock.endsExclusive};
+        const draft={assignmentId:offering.id,subjectId:offering.subjectId,roomId:room.id,weekday:clock.weekday,start:540,end:600,from:clock.startsOn,untilExclusive:clock.endsExclusive};
         const preview=timetablePreviewSchema.parse((await fixtureApi(school,"/school/timetable/preview",{token:admin,persona:"admin",method:"POST",body:{yearId:year.id,slots:[draft]}})).payload.data);
         expect(preview.canSave).toBe(true);
         expect(preview.entries[0]?.slot).toBeTruthy();
