@@ -1,0 +1,60 @@
+name: Visual polish P05/P09 child and calendar source sync
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-calendar-child-sync.yml"]
+permissions:
+  contents: read
+jobs:
+  regenerate:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Apply measured child action spacing and narrow calendar targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,re,json
+          from pathlib import Path
+          changes=json.loads("[{\"path\":\"apps/web/src/features/school/Families.tsx\",\"sha\":\"e0a287197b439ffcd63cd8993efcda6eb18ef2cb\",\"pairs\":[[\"      <Link className=\\\"plain-button\\\" href={childLink(\\\"more/timetable\\\",\\\"child\\\")}>\",\"      <div className=\\\"guardian-child-actions\\\">\\n      <Link className=\\\"plain-button\\\" href={childLink(\\\"more/timetable\\\",\\\"child\\\")}>\"],[\"      <Link className=\\\"plain-button\\\" href={`${school}/calendar`}>{locale===\\\"ar\\\"?\\\"تقويم الأحداث\\\":\\\"Veranstaltungskalender\\\"}</Link>\",\"      <Link className=\\\"plain-button\\\" href={`${school}/calendar`}>{locale===\\\"ar\\\"?\\\"تقويم الأحداث\\\":\\\"Veranstaltungskalender\\\"}</Link>\\n      </div>\"]]},{\"path\":\"apps/web/src/app/school.css\",\"sha\":\"469da472ac0e6c7aee27e3e4d485207f1ff0dec7\",\"pairs\":[[\".comms-calendar-actions .comms-segments button{min-inline-size:0;white-space:normal;overflow-wrap:anywhere;hyphens:auto}\",\".comms-calendar-actions .comms-segments button{min-inline-size:0;white-space:normal;overflow-wrap:anywhere;hyphens:auto}\\n\\n/* Separate existing child actions without changing their order or destinations. */\\n.guardian-child-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px;margin-block:12px;min-inline-size:0}\\n/* At 320px, seven 44px hit areas need the page's inline gutters. Keep the\\n   month heading and all other content inset, with focus visible inside cells. */\\n@media(max-width:352px){\\n .school-shell[data-view=\\\"calendar\\\"] .comms-calendar .school-month-grid{margin-inline:calc(3px - var(--page-inset));column-gap:1px}\\n .school-shell[data-view=\\\"calendar\\\"] .comms-calendar .school-month-grid>button:focus-visible{outline-offset:-3px}\\n}\"]]},{\"path\":\"apps/web/src/features/school/Calendar.module.css\",\"sha\":\"d752bb1cdb98b18b7d713509033b44d1339ea73e\",\"pairs\":[[\" .todayNumber{min-inline-size:min(21px,100%);max-inline-size:100%;inline-size:auto;min-block-size:21px;block-size:auto;padding:0;line-height:1.2}\\n}\",\" .todayNumber{min-inline-size:min(21px,100%);max-inline-size:100%;inline-size:auto;min-block-size:21px;block-size:auto;padding:0;line-height:1.2}\\n}\\n/* Preserve a seven-column month while giving compact viewports 44px hit areas.\\n   The card extends into the page gutters, with the heading/legend still inset. */\\n@media(max-width:389px){\\n .calendarCard{margin-inline:calc(2px - var(--page-inset));padding-inline:0}\\n .calendarCard .monthHead,.calendarCard .legend,.calendarCard .hint{margin-inline:12px}\\n .weekHead,.calendarGrid{column-gap:1px}\\n .daySelected{box-shadow:inset 0 0 0 2px var(--c-accent)}\\n .day:focus-visible{outline-offset:-3px}\\n}\"]]}]")
+          for change in changes:
+              name=change["path"]
+              assert subprocess.check_output(["git","hash-object",name],text=True).strip()==change["sha"], "Unexpected source precondition: "+name
+              p=Path(name)
+              source=p.read_text()
+              for old,new in change["pairs"]:
+                  assert source.count(old)==1, name
+                  source=source.replace(old,new)
+              p.write_text(source)
+          PY
+          node qa/fixtures/visual-polish-registry.mjs
+          node qa/fixtures/visual-polish-registry.mjs --check
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          registry=json.loads(Path("docs/visual-polish/SCENES.json").read_text())
+          p=Path("docs/visual-polish/COVERAGE.md")
+          source,n=re.subn(r"Source registry fingerprint: `[0-9a-f]{64}`", "Source registry fingerprint: `"+registry["sourceFingerprint"]+"`",p.read_text())
+          assert n==1
+          p.write_text(source)
+          PY
+          git add -- apps/web/src/features/school/Families.tsx apps/web/src/app/school.css apps/web/src/features/school/Calendar.module.css docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json docs/visual-polish/COVERAGE.md
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' apps/web/src/features/school/Families.tsx apps/web/src/app/school.css apps/web/src/features/school/Calendar.module.css docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json docs/visual-polish/COVERAGE.md | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(visual): separate child shortcuts and expand compact month hit areas"
+          git push origin HEAD:refs/heads/visual-polish/premium
