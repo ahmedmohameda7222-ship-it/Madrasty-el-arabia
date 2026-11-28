@@ -2,7 +2,7 @@ name: Visual polish - matched production navigation performance
 on:
   push:
     branches: ["visual-polish/premium"]
-    paths: [".github/workflows/visual-polish-matched-performance-development.yml"]
+    paths: [".github/workflows/visual-polish-matched-performance-production.yml", "qa/visual-polish-performance/matched.spec.ts", "qa/visual-polish-performance.config.ts", "qa/visual-polish-performance/report.mjs"]
   workflow_dispatch:
 permissions:
   contents: read
