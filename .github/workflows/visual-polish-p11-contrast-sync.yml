@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - name: Confirm baseline contrast failure
+      - name: Confirm baseline contrast failure with normalized CSS hex values
         run: |
           if node --test qa/visual-polish-contrast.test.mjs; then
             echo "Expected measured baseline contrast failure was not reproduced"

@@ -8,7 +8,7 @@ function palette(source, selector) {
   const start = source.indexOf(selector);
   assert.notEqual(start, -1, "Missing " + selector);
   const body = source.slice(start + selector.length, source.indexOf("}", start));
-  return Object.fromEntries([...body.matchAll(/(--[a-z-]+):\s*(#[0-9a-f]{6})(?![0-9a-f])/gi)].map(match => [match[1], match[2]]));
+  return Object.fromEntries([...body.matchAll(/(--[a-z-]+):\s*(#[0-9a-f]{6}|#[0-9a-f]{3})(?![0-9a-f])/gi)].map(match => [match[1], match[2].length === 4 ? "#" + [...match[2].slice(1)].map(ch => ch + ch).join("") : match[2]]));
 }
 function luminance(color) {
   assert.match(color ?? "", /^#[0-9a-f]{6}$/i);
