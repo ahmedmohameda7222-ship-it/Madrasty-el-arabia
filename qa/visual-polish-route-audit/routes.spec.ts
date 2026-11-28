@@ -14,6 +14,7 @@ if(process.env.GITHUB_ACTIONS!=="true"||process.env.GITHUB_REF!=="refs/heads/vis
 const actors=[
   {actor:"admin",persona:"admin"},{actor:"teacher",persona:"teacher"},{actor:"guardian-de",persona:"guardian"}
 ] as const;
+const attendanceReview="/school/more/attendance";
 const safeRoutes=new Set([
   "/account/preferences","/account/profile","/account/security","/directory","/school/home","/school/students",
   "/school/attendance","/school/children","/school/messages","/school/calendar","/school/more","/school/home/tasks",
@@ -61,6 +62,15 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
       for(const path of ["/directory","/school/more/notifications"])routes.set(path,"/"+locale+path);
       if(scene.persona==="guardian")for(const childPage of ["attendance","excuse"]){
         routes.set("/school/children/:child/"+childPage,"/"+locale+"/school/children/"+ids.ahmed+"/"+childPage);
+      }
+      const teacherReviewAdvertised = routes.has(attendanceReview);
+      if (scene.persona === "teacher") {
+        expect(routes.has("/school/attendance"), "daily teacher attendance remains in navigation").toBe(true);
+        if (teacherReviewAdvertised !== (stage === "baseline")) {
+          failures.push({ route: attendanceReview, category: "teacher-attendance-review-advertisement" });
+        }
+        // Keep measuring the protected direct route after the approved menu correction.
+        routes.set(attendanceReview, "/" + locale + attendanceReview);
       }
       expect(routes.size).toBeGreaterThanOrEqual(10);
       await page.close();
@@ -116,10 +126,19 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
           await screen.screenshot({path:folder+"/"+key+"-text-200.png"});
           const destination=new URL(screen.url()).pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi,":id").slice(3);
           const denied=await screen.locator("[data-generic-not-found]").count()>0 || stockNotFound;
-          const state={route,destination,status:reply?.status(),denied,normal,large,reads:[...reads.entries()].sort((a,b)=>a[0].localeCompare(b[0]))};
+          const status=reply?.status();
+          const teacherReviewProbe=scene.persona==="teacher"&&route===attendanceReview;
+          const state={route,destination,status,denied,normal,large,
+            ...(teacherReviewProbe?{advertised:teacherReviewAdvertised}:{}),
+            reads:[...reads.entries()].sort((a,b)=>a[0].localeCompare(b[0]))};
           rows.push(state);
           console.log("Visual route survey",JSON.stringify(state));
-          if(reply?.status()!==200||denied)failures.push({route,category:"advertised-route-unavailable"});
+          if(teacherReviewProbe){
+            // A streamed not-found may have sent HTTP 200 before rendering denial.
+            if(!denied||(status!==200&&status!==404)||destination!==attendanceReview){
+              failures.push({route,category:"teacher-attendance-review-guard-changed"});
+            }
+          }else if(status!==200||denied)failures.push({route,category:"advertised-route-unavailable"});
           if([...normal.states,...large.states].some(s=>s==="error"||s==="forbidden"))failures.push({route,category:"async-terminal"});
           if(normal.overflow>1||large.overflow>1)failures.push({route,category:"horizontal-overflow"});
           // P07: actual teacher scope pickers are full-width interactive controls,

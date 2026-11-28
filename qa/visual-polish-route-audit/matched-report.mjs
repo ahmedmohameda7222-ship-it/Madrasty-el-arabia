@@ -17,7 +17,7 @@ const read=(stage,role,locale)=>{
   }
   return a;
 };
-const pairs=[],mismatches=[];
+const pairs=[],mismatches=[],approvedMenuChanges=[];
 for(const role of ["admin","teacher","guardian"])for(const locale of ["de","ar"]){
   const before=read("baseline",role,locale), after=read("candidate",role,locale);
   if(before.fixtureId!==after.fixtureId||before.width!==after.width)throw Error("Unmatched fixture or width");
@@ -25,8 +25,12 @@ for(const role of ["admin","teacher","guardian"])for(const locale of ["de","ar"]
   if(before.rows.length!==after.rows.length)throw Error("Unmatched advertised route count "+role+" "+locale);
   for(const b of after.rows){
     const a=map.get(b.route);if(!a)throw Error("Unmatched advertised route "+b.route);
-    const parity=a.destination===b.destination&&a.status===b.status&&a.denied===b.denied;
-    if(!parity)mismatches.push({role,locale,route:b.route,before:{destination:a.destination,status:a.status,denied:a.denied},after:{destination:b.destination,status:b.status,denied:b.denied}});
+    const teacherReview=role==="teacher"&&b.route==="/school/more/attendance";
+    const accessParity=a.destination===b.destination&&a.status===b.status&&a.denied===b.denied;
+    const approvedMenuChange=teacherReview&&a.advertised===true&&b.advertised===false&&a.denied&&b.denied;
+    const parity=accessParity&&(teacherReview?approvedMenuChange:a.advertised===b.advertised);
+    if(approvedMenuChange&&accessParity)approvedMenuChanges.push({role,locale,route:b.route,baselineAdvertised:true,candidateAdvertised:false,directAccessDenied:true});
+    if(!parity)mismatches.push({role,locale,route:b.route,before:{destination:a.destination,status:a.status,denied:a.denied,advertised:a.advertised},after:{destination:b.destination,status:b.status,denied:b.denied,advertised:b.advertised}});
     pairs.push({role,locale,route:b.route,before:{normal:a.normal.overflow,large:a.large.overflow,denied:a.denied},after:{normal:b.normal.overflow,large:b.large.overflow,denied:b.denied},parity});
   }
 }
@@ -36,7 +40,7 @@ const result={browser,baselineSha:process.env.BASELINE_SHA,candidateSha:process.
   fixedOverflow:pairs.filter(p=>overflow(p,"before")&&!overflow(p,"after")).length,
   introducedOverflow:pairs.filter(p=>!overflow(p,"before")&&overflow(p,"after")).length,
   existingDenied:pairs.filter(p=>p.before.denied&&p.after.denied).map(({role,locale,route})=>({role,locale,route})),
-  mismatches,pairs,scope:"Initial advertised route renderings only; not full matched scene/element/state matrix or independent visual acceptance."};
+  mismatches,approvedMenuChanges,pairs,scope:"Initial advertised routes and one protected direct-route probe only; not full matched scene/element/state matrix or independent visual acceptance."};
 writeFileSync(join(root,"matched-"+browser+".json"),JSON.stringify(result,null,2));
 console.log("Matched route survey",JSON.stringify({...result,pairs:undefined}));
 if(mismatches.length||result.introducedOverflow)process.exitCode=1;
