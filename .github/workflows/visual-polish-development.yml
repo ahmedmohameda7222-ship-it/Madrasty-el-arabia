@@ -107,6 +107,7 @@ jobs:
             qa-artifacts/visual-polish/P07/**/dashboard.png
             qa-artifacts/visual-polish/P07/**/dashboard-text-200.png
             qa-artifacts/visual-polish/P08/**/chat.png
+            qa-artifacts/visual-polish/P09/timetable-*/**/timetable-*.png
             qa-artifacts/visual-polish/P09/**/calendar.png
             qa-artifacts/visual-polish/P09/**/calendar-text-200.png
             qa-artifacts/visual-polish/P10/bank-*/**/bank-*.png

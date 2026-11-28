@@ -8,7 +8,7 @@ if (process.env.GITHUB_ACTIONS !== "true" || process.env.GITHUB_REF !== "refs/he
     !process.env.NODE_EXTRA_CA_CERTS) throw new Error("Production visual QA requires the disposable TLS fixture.");
 export default defineConfig({
   testDir: "./web",
-  testMatch: ["ui-visual-polish-entry.spec.ts", "ui-visual-polish-identity.spec.ts", "ui-visual-polish-not-found.spec.ts", "ui-visual-polish-p10-bank.spec.ts"],
+  testMatch: ["ui-visual-polish-entry.spec.ts", "ui-visual-polish-identity.spec.ts", "ui-visual-polish-not-found.spec.ts", "ui-visual-polish-p10-bank.spec.ts", "ui-visual-polish-p09-timetable.spec.ts"],
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 30_000 },
