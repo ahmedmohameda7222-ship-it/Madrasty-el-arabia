@@ -65,6 +65,10 @@ test("chat applies accessible tokens to the placeholder and the sent-message foc
   assert.match(school, /\.comms-message\[data-own=true\] \.comms-message-actions>summary:focus-visible\s*\{[^}]*outline-color:\s*var\(--on-primary\)/);
 });
 
+test("timetable stops translation on keyboard focus as well as on hover in reduced motion", () => {
+  assert.match(timetable, /@media\s*\(prefers-reduced-motion:reduce\)\s*\{\s*\.classCard\s*\{\s*transition:none\s*\}\s*\.classCard:hover,\.classCard:focus-visible\s*\{\s*transform:none/);
+});
+
 const placeholderRules = [
   ["conversation search", school, ".comms-hub .inbox-search input::placeholder", "--muted"],
   ["contact search", school, ".comms-search::placeholder", "--muted"],

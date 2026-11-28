@@ -97,7 +97,7 @@
  .toolbar label {min-inline-size:0;flex:1 1 100%}
  .editor,.pickerPanel {border-radius:16px}
 }
-@media (prefers-reduced-motion:reduce) {.classCard {transition:none}.classCard:hover {transform:none}}
+@media (prefers-reduced-motion:reduce) {.classCard {transition:none}.classCard:hover,.classCard:focus-visible {transform:none}}
 
 /* Preserve the entire week and every action at enlarged text sizes. */
 .page{grid-template-columns:minmax(0,1fr);min-inline-size:0;max-inline-size:100%}

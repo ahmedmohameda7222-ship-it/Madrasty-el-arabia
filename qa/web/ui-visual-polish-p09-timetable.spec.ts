@@ -86,6 +86,12 @@ for (const scene of scenes) for(const locale of ["de","ar"] as const) {
         const classButton=view.getByRole("button").filter({hasText:locale==="ar"?apple.nameAr:apple.nameDe});
         await expect(classButton).toBeVisible();
         await view.screenshot({path:folder+"/timetable-classes.png"});
+        await view.keyboard.press("Tab");
+        await classButton.focus();
+        await expect(classButton).toBeFocused();
+        await expect(classButton).toHaveCSS("outline-style","solid");
+        await expect(classButton).toHaveCSS("transform","none");
+        await view.screenshot({path:folder+"/timetable-classes-keyboard-reduced-motion.png"});
         await classButton.click();
       }else if(scene.persona==="guardian") {
         await expect(view.getByLabel(w.child,{exact:true})).toHaveValue(ids.ahmed);
