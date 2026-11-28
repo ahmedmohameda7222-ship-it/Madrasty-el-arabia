@@ -29,6 +29,7 @@ jobs:
       - run: node --test qa/screenshot-audit-policy.test.mjs qa/qa-overlay-policy.test.mjs qa/finance-mobile-ux.test.mjs
       - run: node --test qa/fixtures/visual-polish-fingerprint.test.mjs
       - run: node --test qa/visual-polish-contrast.test.mjs
+      - run: node --test qa/visual-polish-evidence.test.mjs
       - run: node qa/fixtures/visual-polish-registry.mjs --check
       - run: pnpm check:types
       - run: pnpm build:web
@@ -95,6 +96,8 @@ jobs:
         with:
           name: visual-polish-synthetic-geometry-${{ matrix.browser }}-${{ github.sha }}
           path: |
+            qa-artifacts/visual-polish/P03/security-*/**/security.png
+            qa-artifacts/visual-polish/P03/security-*/**/security-text-200.png
             qa-artifacts/visual-polish/P06/**/ready.png
             qa-artifacts/visual-polish/P06/**/ready-text-200.png
             qa-artifacts/visual-polish/P07/**/class-list.png
