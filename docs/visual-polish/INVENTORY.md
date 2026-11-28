@@ -53,6 +53,7 @@ All paths prefixed by `/[locale]` with ar/de. Role hints are not permission chan
 | WR-045 | P05 | `/school/students/import` | Allowed | Template download, upload, parsing, preview, invalid rows, job status and completion. | `apps/web/src/app/[locale]/school/students/import/page.tsx` | OPEN |
 | WR-046 | P03 | `/staff/access` | Allowed | Capability controls, roles, permissions, effective dates, save, denied. | `apps/web/src/app/[locale]/staff/access/page.tsx` | OPEN |
 | WR-047 | P05 | `/staff/invitations` | Allowed | Teacher/staff invitation, list/detail, batch status, resend and expired/bounced. | `apps/web/src/app/[locale]/staff/invitations/page.tsx` | OPEN |
+| WR-048 | P03 | `/[locale]` not-found boundary | Generic 404 (missing or denied) | Same non-disclosing localized presentation, AR/DE, light/dark, 200% reflow; no permission or status changes. | `apps/web/src/app/[locale]/not-found.tsx` | OPEN |
 
 ### Dynamic tabs (expand, do not count as just one page)
 | ID | Phase | Tab | Role | Scenes |

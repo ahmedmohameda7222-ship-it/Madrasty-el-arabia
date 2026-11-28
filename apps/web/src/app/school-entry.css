@@ -186,3 +186,31 @@
   background: var(--canvas);
   color: var(--ink);
 }
+
+/* Generic terminal presentation follows the document language and system theme.
+   No resource-specific message or navigation is added to the 404 boundary. */
+.entry-not-found {
+  margin-block-start: max(24px, 8vh);
+  padding: clamp(16px, 5vw, 32px);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-raised);
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.entry-not-found-code {
+  display: inline-block;
+  margin-block-end: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  background: var(--inset);
+  color: var(--muted);
+  font-size: .875rem;
+  font-weight: 700;
+}
+.entry-not-found h1 { margin-block-end: 8px; }
+.entry-not-found h1 + p { color: var(--muted); }
+.entry-not-found-ar { display: none; }
+html[lang="ar"] .entry-not-found-de { display: none; }
+html[lang="ar"] .entry-not-found-ar { display: block; }
