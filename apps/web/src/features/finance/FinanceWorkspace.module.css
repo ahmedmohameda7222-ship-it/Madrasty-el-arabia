@@ -174,3 +174,8 @@
 .workspace [aria-invalid=true]{border-color:#b63838;outline:1px solid #b63838}
 .workspace [role=alert]{color:var(--danger,#b63838);overflow-wrap:anywhere}
 .invoiceQuickAction{margin:.25rem .75rem .65rem;display:flex;justify-content:center}
+
+/* A review notice is not a neutral action surface: retain the existing
+   semantic primary/disabled tokens instead of the generic notice background. */
+.bankReview :global(.primary-button):not(:disabled){background:var(--primary);color:var(--on-primary)}
+.bankReview :global(.primary-button):disabled{background:var(--inset);color:var(--muted)}

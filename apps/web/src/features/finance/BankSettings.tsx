@@ -40,7 +40,7 @@ export function BankSettings({locale}:{locale:Locale}){
   const [version,setVersion]=useState(0),[receipt,setReceipt]=useState<string>();
   const settings=useTimetableRead("/finance/bank",schoolBank,version);
   return <section className={`${css.workspace} auth-form`}>
-    <h1>{labels.title}</h1>
+    <h1 aria-label={labels.title}>{locale==="de"?labels.title.replace("Zahlungskonto","Zah\u00adlungs\u00adkon\u00adto"):labels.title}</h1>
     {receipt&&<p role="status">{labels.saved} · <bdi dir="ltr">{receipt}</bdi></p>}
     <TimetableRead locale={locale} result={settings}>{(value)=><BankEditor key={value.revision} locale={locale} settings={value}
       saved={(masked)=>{setReceipt(masked);setVersion((current)=>current+1);}}
@@ -109,14 +109,14 @@ function BankEditor({locale,settings,saved,reload}:{locale:Locale;settings:Setti
   }
 
   return <div className="auth-form">
-    <h2>{text.current}</h2>
+    <h2 aria-label={text.current}>{locale==="de"?text.current.replace("Zahlungskonto","Zah\u00adlungs\u00adkon\u00adto"):text.current}</h2>
     {settings.active?<section className="timetable-day auth-form">
       <CopyValue locale={locale} label={fields.beneficiary} value={settings.active.beneficiary}/>
       <CopyValue locale={locale} label={fields.iban} value={settings.active.iban} display={displayIban(settings.active.iban)}/>
       <ConfirmedAt locale={locale} value={settings.active.effectiveAt}/>
     </section>:<p>{text.empty}</p>}
     {error&&<p role="alert">{error}</p>}
-    {proposal?<section className="notice auth-form">
+    {proposal?<section className={`${css.bankReview} notice auth-form`}>
       <h2>{text.review}</h2>
       <dl className="auth-form">
         <div><dt>{fields.beneficiary}</dt><dd dir="auto">{proposal.beneficiary}</dd></div>
@@ -137,7 +137,7 @@ function BankEditor({locale,settings,saved,reload}:{locale:Locale;settings:Setti
       </form>}
       <button type="button" className="plain-button" disabled={busy} onClick={()=>{setProposal(undefined);closeVerification();setError("");}}>{text.edit}</button>
     </section>:<form className="auth-form" onSubmit={(event)=>void review(event)}>
-      <h2>{text.propose}</h2>
+      <h2 aria-label={text.propose}>{locale==="de"?text.propose.replace("Zahlungskonto","Zah\u00adlungs\u00adkon\u00adto"):text.propose}</h2>
       <label>{fields.beneficiary}<input dir="auto" value={beneficiary} maxLength={140} required disabled={busy}
         onChange={(event)=>setBeneficiary(event.target.value)}/></label>
       <label>{fields.iban}<input dir="ltr" value={iban} maxLength={80} autoCapitalize="characters" required disabled={busy}
