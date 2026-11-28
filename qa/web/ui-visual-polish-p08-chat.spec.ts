@@ -11,13 +11,17 @@ for (const scene of [
 ] as const) {
   test(`P08 direct chat material and retained draft ${scene.locale}`, async ({ page, context, browser }) => {
     const school = schoolFixtures();
+    const started = Date.now();
+    const mark = (stage: string) => console.log("P08 stage", JSON.stringify({ locale: scene.locale, engine: browser.browserType().name(), stage, elapsedMs: Date.now() - started }));
     const folder = `qa-artifacts/visual-polish/P08/chat-${scene.locale}-${scene.width}/${browser.browserType().name()}`;
     mkdirSync(folder, { recursive: true });
     await context.tracing.start({ screenshots: true, snapshots: true });
     try {
       await school.seed();
+      mark("seeded");
       const guardian = await school.bearer("guardian-de", "guardian");
       const teacher = await school.bearer("teacher", "teacher");
+      mark("sessions-bound");
       const contacts = (await fixtureApi(school, "/directory", { token: guardian })).payload.data;
       const target = contacts.find((c: { displayName: string }) => c.displayName === "يوسف عبد الرحمن محمود")?.target;
       expect(target).toBeTruthy();
@@ -28,18 +32,21 @@ for (const scene of [
         const id = randomUUID();
         await fixtureApi(school, `/threads/${thread}/messages`, { token, persona, method: "POST", key: id, status: 201, body: { clientMessageId: id, body } });
       }
+      mark("messages-created");
       await context.addCookies([{ name: "madrasty-session", value: guardian, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
       await page.setViewportSize({ width: scene.width, height: 844 });
       await page.emulateMedia({ colorScheme: scene.theme, reducedMotion: "reduce" });
       expect((await page.goto(`/${scene.locale}/school/messages`))?.status()).toBe(200);
       const row = page.locator(".comms-thread-row").filter({ has: page.locator("small", { hasText: incoming }) });
       await expect(row).toBeVisible({ timeout: 20000 });
+      mark("thread-row-visible");
       await row.click();
       await expect.poll(() => new URL(page.url()).searchParams.get("thread")).toBe(thread);
       const own = page.locator(".comms-message[data-own=true]").filter({ hasText: outgoing });
       const other = page.locator(".comms-message[data-own=false]").filter({ hasText: incoming });
       await expect(own).toBeVisible();
       await expect(other).toBeVisible();
+      mark("both-messages-visible");
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       const shape = async (item: typeof own) => item.evaluate(el => {
         const css = getComputedStyle(el);
@@ -56,6 +63,7 @@ for (const scene of [
       const attach = composer.getByRole("button", { name: scene.attach, exact: true });
       await expect(mic).toBeVisible();
       await expect(attach).toBeVisible();
+      mark("composer-controls-visible");
       // Read both boxes in the same rendering snapshot; separate locator calls can
       // straddle a polling rerender. Still fail if either control is absent.
       const boxes = await composer.evaluate((el, labels) => {
@@ -73,18 +81,23 @@ for (const scene of [
       const attachBox = boxes.attach!;
       expect(Math.min(micBox.width, micBox.height, attachBox.width, attachBox.height)).toBeGreaterThanOrEqual(44);
       expect(scene.locale === "de" ? micBox.x > attachBox.x : micBox.x < attachBox.x).toBe(true);
+      mark("composer-geometry-read");
       await page.screenshot({ path: folder + "/chat.png" });
+      mark("chat-image-captured");
       await input.fill("QA retained draft");
       await expect(mic).toHaveCount(0);
       await expect(composer.locator(".comms-send-button")).toBeEnabled();
+      mark("draft-entered");
       await profile.click();
       const dialog = page.getByRole("dialog", { name: scene.contact });
       await expect(dialog).toBeVisible();
+      mark("contact-dialog-visible");
       await page.screenshot({ path: folder + "/contact.png" });
       await dialog.getByRole("button", { name: scene.close, exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(profile).toBeFocused();
       await expect(input).toHaveValue("QA retained draft");
+      mark("draft-retained-and-focus-restored");
       await input.fill("");
       await expect(mic).toBeVisible();
       expect(new URL(page.url()).searchParams.get("thread")).toBe(thread);
@@ -100,8 +113,14 @@ for (const scene of [
       expect(scene.locale === "de" ? ownShape.bottomRight < ownShape.bottomLeft : ownShape.bottomLeft < ownShape.bottomRight).toBe(true);
       expect(scene.locale === "de" ? otherShape.bottomLeft < otherShape.bottomRight : otherShape.bottomRight < otherShape.bottomLeft).toBe(true);
     } finally {
-      await context.tracing.stop({ path: folder + "/trace.zip" });
-      await school.close();
+      mark("trace-stop-start");
+      try {
+        await context.tracing.stop({ path: folder + "/trace.zip" });
+        mark("trace-stop-end");
+      } finally {
+        await school.close();
+        mark("fixture-closed");
+      }
     }
   });
 }
