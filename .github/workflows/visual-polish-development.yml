@@ -1,4 +1,5 @@
 name: Visual polish - isolated development QA
+# Bank review contrast and timetable coverage retained in the complete visual suite.
 on:
   workflow_dispatch:
   push:

@@ -1,4 +1,4 @@
-name: Visual polish - isolated production identity and finance QA
+name: Visual polish - isolated production identity, timetable and finance QA
 on:
   push:
     branches: ["visual-polish/premium"]
@@ -48,7 +48,7 @@ jobs:
           bash -n qa/visual-polish-production-tls.sh
           node --check qa/support/visual-production-proxy.mjs
           bash qa/visual-polish-production-tls.sh
-      - name: Build and verify P03 identity and generic denial against real HTTPS
+      - name: Build and verify P03, P09 and P10 journeys against real HTTPS
         shell: bash
         run: |
           set -euo pipefail
