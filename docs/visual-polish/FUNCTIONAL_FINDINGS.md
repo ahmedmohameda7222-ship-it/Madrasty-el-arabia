@@ -33,3 +33,5 @@ Run 46082187416 Chromium reproduced the existing cold German install navigation 
 - QA-07 follow-up: first clean-domain diagnostic 46085666230 failed at initial bearer login because the actor fixture had not been seeded. Corrected the workflow to seed actors first. The stale-revision hypothesis still needs verification.
 
 - QA-07 fresh seeded isolated domain run 46085891983 passed all original finance assertions. The reused-fixture ordering is confirmed as the discriminating factor in this diagnostic. No financial rules changed. QA-03 signed-out production build original public suite passed 4/4 per browser (46085892025); dev first-click/interrupted direct navigations and authenticated production test setup remain open.
+
+- QA-08: P08 Arabic attachment geometry snapshot intermittent on reused dev runner (46086031725 Chromium: boundingBox null after visible check; WebKit previous timeout). Both engines have also passed the full Arabic interaction case on same source. Diagnose transient DOM replacement around composer polling, do not waive or silently retry assertions.

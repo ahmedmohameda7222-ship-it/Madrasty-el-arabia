@@ -1,0 +1,47 @@
+name: P10 isolated finance presentation and registry synchronization
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-p10-sync.yml"]
+permissions:
+  contents: read
+jobs:
+  regenerate:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Apply exact CSS replacements and regenerate registries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          file=Path("apps/web/src/features/finance/FinanceWorkspace.module.css")
+          content=file.read_text()
+          for old,new in json.loads(r'''[[".balance{display:grid;gap:.4rem;padding:1.3rem;border-radius:18px;",".balance{display:grid;grid-template-columns:minmax(0,1fr);gap:.4rem;padding:1.3rem;border-radius:var(--radius-card);min-inline-size:0;"],[".balance strong{font-size:clamp(1.6rem,4vw,2.3rem);font-variant-numeric:tabular-nums}",".balance strong{font-size:clamp(1.875rem,4vw,2.3rem);font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.25}"],[".invoiceBalance{display:grid;justify-items:center;text-align:center;gap:.45rem;background:var(--card);border-radius:18px;padding:1.1rem}",".invoiceBalance{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:.45rem;background:var(--card);border-radius:var(--radius-card);padding:1.1rem;min-inline-size:0;overflow-wrap:anywhere}"],[".invoiceBalance strong{font-size:clamp(1.75rem,5vw,2.35rem);font-variant-numeric:tabular-nums}",".invoiceBalance strong{font-size:clamp(1.875rem,5vw,2.35rem);font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.25}"]]'''):
+              assert content.count(old)==1, "Unexpected CSS precondition"
+              content=content.replace(old,new)
+          file.write_text(content)
+          PY
+          node qa/fixtures/visual-polish-registry.mjs
+          node qa/fixtures/visual-polish-registry.mjs --check
+          git add -- apps/web/src/features/finance/FinanceWorkspace.module.css docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' apps/web/src/features/finance/FinanceWorkspace.module.css docs/visual-polish/SCENES.json docs/visual-polish/ELEMENTS.json | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Polish finance balance surfaces and monetary typography"
+          git push origin HEAD:refs/heads/visual-polish/premium
