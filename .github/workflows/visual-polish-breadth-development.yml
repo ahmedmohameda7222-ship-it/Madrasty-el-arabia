@@ -27,6 +27,8 @@ jobs:
             browser: chromium
           - slice: P10-finance
             browser: webkit
+          - slice: P10-finance-domain
+            browser: webkit
           - slice: P11-P12-navigation-motion
             browser: chromium
     env:
@@ -86,6 +88,10 @@ jobs:
               ;;
             P10-finance)
               pnpm exec playwright test --config qa/ui-finance-ios.config.ts
+              ;;
+            P10-finance-domain)
+              # The populated browser suite modifies payer revisions. The ledger
+              # suite must start with its own disposable school and revision zero.
               pnpm qa:finance
               ;;
             P11-P12-navigation-motion)
