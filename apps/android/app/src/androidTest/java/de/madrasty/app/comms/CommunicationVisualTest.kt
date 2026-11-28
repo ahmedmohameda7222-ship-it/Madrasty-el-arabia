@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.View
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.*
@@ -164,6 +166,7 @@ class CommunicationVisualTest {
         val app=instrumentation.targetContext.applicationContext as Application
         val store=ViewModelStore()
         lateinit var model:IdentityViewModel
+        lateinit var clipboardHost:View
         instrumentation.runOnMainSync{
             model=ViewModelProvider(store,ViewModelProvider.AndroidViewModelFactory.getInstance(app))[IdentityViewModel::class.java]
         }
@@ -175,6 +178,8 @@ class CommunicationVisualTest {
         try{
             compose.setContent{
                 val context=LocalContext.current
+                val view=LocalView.current
+                SideEffect{clipboardHost=view}
                 val localized=remember(context){context.createConfigurationContext(Configuration(context.resources.configuration).apply{setLocale(Locale.GERMAN)})}
                 CompositionLocalProvider(LocalContext provides localized,LocalConfiguration provides localized.resources.configuration,
                     LocalLayoutDirection provides LayoutDirection.Ltr){
@@ -191,10 +196,15 @@ class CommunicationVisualTest {
             compose.onNodeWithText("Antworten").assertDoesNotExist()
             compose.onNodeWithText(body,substring=true).performTouchInput{longClick()}
             compose.onNodeWithText("Antworten").assertIsDisplayed()
+            val focusedBeforeCopy=compose.runOnIdle{clipboardHost.hasWindowFocus()}
             compose.onNodeWithText("Text kopieren").performClick()
             compose.runOnIdle{
                 val clipboard=app.getSystemService(ClipboardManager::class.java)
-                assertTrue(clipboard.primaryClip?.getItemAt(0)?.text?.toString()==body)
+                val clip=clipboard.primaryClip
+                assertTrue(
+                    "Clipboard mismatch (focus before copy=$focusedBeforeCopy, focus at read=${clipboardHost.hasWindowFocus()}, clip present=${clip!=null})",
+                    clip?.getItemAt(0)?.text?.toString()==body,
+                )
                 clipboard.clearPrimaryClip()
             }
         }finally{instrumentation.runOnMainSync{store.clear()}}
