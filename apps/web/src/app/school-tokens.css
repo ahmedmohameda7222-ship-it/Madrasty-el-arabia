@@ -46,17 +46,20 @@
 /* The system branch also covers public pages without a saved theme. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-canvas: #111a18;
-  --surface-card: #1c2925;
-  --surface-inset: #25342e;
-  --text-primary: #f2f6f2;
-  --text-secondary: #b2c1b8;
-  --separator: #3a4c43;
-  --field-border: #869b90;
+  --surface-canvas: #000000;
+  --surface-card: #1c1c1c;
+  --surface-inset: #262626;
+  --text-primary: #ffffff;
+  --text-secondary: #b8b8b8;
+  --separator: #3b3b3b;
+  --field-border: #8e8e8e;
   --action: #a1e0c6;
   --on-action: #13362b;
-  --selection: #29483b;
+  --selection: #303030;
   --selection-ink: #c8efdd;
+  --admin: var(--surface-card);
+  --teacher: var(--surface-card);
+  --guardian: var(--surface-card);
   --scrim: rgb(0 0 0 / 62%);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 18%), 0 12px 28px rgb(0 0 0 / 24%);
 }
@@ -64,17 +67,20 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --surface-canvas: #111a18;
-    --surface-card: #1c2925;
-    --surface-inset: #25342e;
-    --text-primary: #f2f6f2;
-    --text-secondary: #b2c1b8;
-    --separator: #3a4c43;
-    --field-border: #869b90;
+    --surface-canvas: #000000;
+    --surface-card: #1c1c1c;
+    --surface-inset: #262626;
+    --text-primary: #ffffff;
+    --text-secondary: #b8b8b8;
+    --separator: #3b3b3b;
+    --field-border: #8e8e8e;
     --action: #a1e0c6;
     --on-action: #13362b;
-    --selection: #29483b;
+    --selection: #303030;
     --selection-ink: #c8efdd;
+    --admin: var(--surface-card);
+    --teacher: var(--surface-card);
+    --guardian: var(--surface-card);
     --scrim: rgb(0 0 0 / 62%);
     --shadow-raised: 0 2px 6px rgb(0 0 0 / 18%), 0 12px 28px rgb(0 0 0 / 24%);
   }

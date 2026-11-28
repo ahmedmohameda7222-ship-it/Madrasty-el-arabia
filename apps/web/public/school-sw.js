@@ -1,4 +1,4 @@
-const attendanceShellCache = "madrasty-attendance-shell-v1";
+const attendanceShellCache = "madrasty-attendance-shell-v2";
 const shell = "/offline/attendance.html";
 const publicAssets = [shell,"/offline/attendance.css","/offline/attendance.mjs","/attendance-vault.mjs","/school-192.png"];
 

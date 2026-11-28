@@ -10,11 +10,13 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import de.madrasty.app.comms.expireChatCameraFiles
 import de.madrasty.app.comms.isSchoolPushIntent
@@ -65,6 +67,11 @@ class MainActivity : ComponentActivity() {
                 "dark" -> true
                 "light" -> false
                 else -> isSystemInDarkTheme()
+            }
+            SideEffect {
+                val systemBars = WindowCompat.getInsetsController(window, window.decorView)
+                systemBars.isAppearanceLightStatusBars = !darkMode
+                systemBars.isAppearanceLightNavigationBars = !darkMode
             }
             InterfaceLanguageProvider(language,{selected->
                 if(selected=="ar"||selected=="de"){

@@ -24,3 +24,18 @@ Each of the 14 installed HIG skills is represented below. A confirmation applies
 Relevant Android verification includes Material 3 theme roles, native settings sheets and linear progress, RTL labels, 200% font scaling, scoped touch targets and chat actions. The exact Android run passed both emulator sizes. The final physical and whole-app Material 3 matrix remains open. [Native run](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/46115631940)
 
 The 64% score recorded earlier sampled the pre-fix chat implementation. The whole-app percentage is pending the complete verified matrix. The [scene ledger](COVERAGE.md) records current coverage and [status](STATUS.md) lists exact revisions and run IDs.
+
+## Owner-directed dark palette
+
+Apple describes black standard background and lighter elevated surfaces on iOS. The owner's requested visual direction uses independent Madrasty color tokens with a comparable depth hierarchy. ChatGPT and Spotify serve as appearance references. [Apple's iOS implementation session](https://developer.apple.com/videos/play/wwdc2019/214/?time=224) · [OpenAI Appearance](https://help.openai.com/en/articles/11958281-updating-your-visual-experience-on-chatgpt) · [Spotify Design & Branding](https://developer.spotify.com/documentation/design)
+
+| Dark color pair | Contrast | WCAG 2.2 target |
+| --- | ---: | ---: |
+| White `#FFFFFF` on black `#000000` | 21.00:1 | 4.5:1 |
+| White on charcoal card `#1C1C1C` | 17.04:1 | 4.5:1 |
+| White on inset `#262626` | 15.13:1 | 4.5:1 |
+| Secondary text `#B8B8B8` on charcoal card | 8.59:1 | 4.5:1 |
+| Secondary text and placeholders on inset | 7.63:1 | 4.5:1 |
+| Field boundary `#8E8E8E` on inset | 4.62:1 | 3:1 |
+
+Ratios use the WCAG sRGB relative luminance calculation on the values in [Web tokens](../../apps/web/src/app/school-tokens.css), [Compose theme](../../apps/android/app/src/main/java/de/madrasty/app/ui/SchoolTheme.kt) and [offline attendance](../../apps/web/public/offline/attendance.css). These solid-surface pairs do not cover composited materials, disabled content, every state or physical device perception. [WCAG text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) · [WCAG non-text contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)

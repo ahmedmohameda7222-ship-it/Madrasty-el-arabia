@@ -1,5 +1,5 @@
 :root{color-scheme:light dark;font:100% system-ui,-apple-system,sans-serif;--card:#fff;--canvas:#f5f6f2;--ink:#17221e;--rule:#dce4dd;--green:#155544;--field:#77887e}
-@media(prefers-color-scheme:dark){:root{--card:#1c2925;--canvas:#111a18;--ink:#f2f6f2;--rule:#3a4c43;--green:#a1e0c6;--field:#869b90}}
+@media(prefers-color-scheme:dark){:root{--card:#1c1c1c;--canvas:#000000;--ink:#ffffff;--rule:#3b3b3b;--green:#a1e0c6;--field:#8e8e8e}}
 *{box-sizing:border-box}
 body{margin:0;color:var(--ink);background:var(--canvas);font-size:1.0625rem;line-height:1.5}
 header{display:flex;gap:12px;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-block-end:1px solid var(--rule);background:var(--card)}

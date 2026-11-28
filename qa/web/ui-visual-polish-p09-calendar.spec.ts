@@ -88,6 +88,11 @@ for (const scene of [
       const overflow = await page.locator(".school-content").evaluate(el => el.scrollWidth - el.clientWidth);
       // A page-width check alone misses clipped text inside the three summary cards.
       const summary=page.getByRole("region",{name:scene.year,exact:true});
+      if (scene.theme === "dark") {
+        await expect(page.locator("body")).toHaveCSS("background-color", "rgb(0, 0, 0)");
+        await expect(summary).toHaveCSS("background-color", "rgb(28, 28, 28)");
+        await expect(page.getByRole("heading",{name:scene.title,exact:true})).toHaveCSS("color", "rgb(255, 255, 255)");
+      }
       const stats=summary.locator('div[class*="statCard"] > span:last-child');
       await expect(stats).toHaveCount(3);
       const statOverflow=await stats.evaluateAll(nodes=>nodes.map(el=>{

@@ -29,13 +29,12 @@ test("admin calendar uses the approved visual workflow and can reset a school-wi
     expect(eyebrowBounds).not.toBeNull();
     expect(eyebrowBounds!.y - (backBounds!.y + backBounds!.height)).toBeGreaterThanOrEqual(12);
 
-    // Dark panels should be blue/navy, not the old green-tinted surfaces.
+    // The approved dark palette uses a neutral card on a black canvas.
     await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
     const yearCardBackground = await page.getByText("Ausgewähltes Schuljahr").locator("..")
       .evaluate((element) => getComputedStyle(element).backgroundColor);
-    const channels = yearCardBackground.match(/\d+/g)?.slice(0, 3).map(Number);
-    expect(channels).toHaveLength(3);
-    expect(channels![2] - channels![1]).toBeGreaterThanOrEqual(10);
+    expect(yearCardBackground).toBe("rgb(28, 28, 28)");
+    expect(await page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("rgb(0, 0, 0)");
 
     await expect(page.getByText("Reguläre Unterrichtstage", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Schuleinstellungen")).toHaveCount(0);

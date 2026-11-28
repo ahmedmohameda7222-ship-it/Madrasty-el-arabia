@@ -7,6 +7,7 @@ on:
       - "qa/visual-polish-production-tls.sh"
       - "qa/visual-polish-production.config.ts"
       - "qa/web/ui-visual-polish-not-found.spec.ts"
+      - "qa/web/ui-visual-polish-entry.spec.ts"
       - "qa/web/ui-visual-polish-p10-bank.spec.ts"
       - "qa/web/ui-visual-polish-p09-timetable.spec.ts"
       - "qa/web/ui-visual-polish-p09-calendar.spec.ts"
@@ -51,7 +52,16 @@ jobs:
         run: |
           export LOCALAPPDATA="$RUNNER_TEMP"
           echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
-          pwsh -NoProfile -File qa/start-stack.ps1
+          if ! pwsh -NoProfile -File qa/start-stack.ps1; then
+            log="$RUNNER_TEMP/MadrastyBuild/qa-supabase/start.log"
+            if [ -f "$log" ]; then
+              for category in 'no space left' 'address already in use' 'port is already allocated' 'out of memory'; do
+                if grep -Fqi "$category" "$log"; then printf 'QA startup matched: %s\n' "$category"; fi
+              done
+            fi
+            df -h / /var/lib/docker
+            exit 1
+          fi
           bash -n qa/visual-polish-production-tls.sh
           node --check qa/support/visual-production-proxy.mjs
           bash qa/visual-polish-production-tls.sh

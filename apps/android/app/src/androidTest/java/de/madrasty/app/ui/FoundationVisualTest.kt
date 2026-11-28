@@ -73,6 +73,8 @@ class FoundationVisualTest {
         val destination = if (arabic) "عرض تجريبي" else "Testansicht"
         val prefix = "${persona.name.lowercase()}-$language-${if (dark) "dark" else "light"}"
         var observedCanvas = Color.Unspecified
+        var observedCard = Color.Unspecified
+        var observedText = Color.Unspecified
         var observedTab = SchoolTab.Home
 
         compose.setContent {
@@ -88,9 +90,14 @@ class FoundationVisualTest {
                 LocalLayoutDirection provides if (arabic) LayoutDirection.Rtl else LayoutDirection.Ltr,
             ) {
                 SchoolTheme(darkMode = dark) {
-                    val canvas = MaterialTheme.colorScheme.background
+                    val colors = MaterialTheme.colorScheme
                     var selected by remember { mutableStateOf(SchoolTab.Home) }
-                    SideEffect { observedCanvas = canvas; observedTab = selected }
+                    SideEffect {
+                        observedCanvas = colors.background
+                        observedCard = colors.surface
+                        observedText = colors.onSurface
+                        observedTab = selected
+                    }
                     val choices = listOf(ScopeOption("one", if (arabic) "الفصل الأول" else "Erste Klasse"), ScopeOption("two", alternate))
                     var scope by remember { mutableStateOf(choices.first()) }
                     SchoolShell(
@@ -171,7 +178,9 @@ class FoundationVisualTest {
             compose.onNode(hasText(resources.getString(R.string.nav_home)) and hasClickAction()).performClick()
             compose.onNodeWithText(title).assertIsDisplayed()
             compose.runOnIdle {
-                assertEquals(if (dark) Color(0xFF111A18) else Color(0xFFF5F6F2), observedCanvas)
+                assertEquals(if (dark) Color.Black else Color(0xFFF5F6F2), observedCanvas)
+                assertEquals(if (dark) Color(0xFF1C1C1C) else Color.White, observedCard)
+                assertEquals(if (dark) Color.White else Color(0xFF17221E), observedText)
             }
         }
     }

@@ -74,3 +74,27 @@ for (const scene of scenarios) {
     } finally { await context.close(); }
   });
 }
+
+test("public and offline surfaces follow the neutral dark appearance", async ({ page, browser }) => {
+  test.skip(before, "The pinned baseline precedes the current appearance direction");
+  const folder = `qa-artifacts/visual-polish/P03/dark-appearance/${browser.browserType().name()}`;
+  mkdirSync(folder, { recursive: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  for (const locale of ["ar", "de"]) {
+    expect((await page.goto("/" + locale))?.status()).toBe(200);
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(page.locator(".entry-landing")).toHaveCSS("background-color", "rgb(28, 28, 28)");
+    await expect(page.locator(".entry-landing h1")).toHaveCSS("color", "rgb(255, 255, 255)");
+    await expect(page.locator('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]')).toHaveAttribute("content", "#000000");
+    await page.screenshot({ path: folder + "/welcome-" + locale + ".png" });
+    expect((await page.goto("/" + locale + "/account/sign-in"))?.status()).toBe(200);
+    await expect(page.locator(".auth-card")).toHaveCSS("background-color", "rgb(28, 28, 28)");
+    await page.screenshot({ path: folder + "/sign-in-" + locale + ".png" });
+  }
+  expect((await page.goto("/offline/attendance.html"))?.status()).toBe(200);
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(0, 0, 0)");
+  await expect(page.locator("body")).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(page.locator("header")).toHaveCSS("background-color", "rgb(28, 28, 28)");
+  await page.screenshot({ path: folder + "/attendance-offline.png" });
+});

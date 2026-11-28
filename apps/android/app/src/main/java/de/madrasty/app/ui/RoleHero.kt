@@ -38,11 +38,12 @@ fun AdminRoleHero(title:String,detail:String,action:String,highlights:List<Strin
 @Composable
 private fun RoleHeroContent(persona: Persona, title: String, detail: String, action: String,
     highlights:List<String>, emphasizeDetail:Boolean,onAction: () -> Unit) {
-    val (background, artwork) = when (persona) {
+    val (roleColor, artwork) = when (persona) {
         Persona.Admin -> Color(0xFF173F39) to R.drawable.notebook_admin
         Persona.Teacher -> Color(0xFF195345) to R.drawable.notebook_teacher
         Persona.Guardian -> Color(0xFF733F46) to R.drawable.notebook_guardian
     }
+    val background = if (LocalSchoolDarkTheme.current) MaterialTheme.colorScheme.surface else roleColor
     Row(
         Modifier.fillMaxWidth().background(background, RoundedCornerShape(30.dp)).padding(18.dp),
         verticalAlignment = Alignment.CenterVertically,

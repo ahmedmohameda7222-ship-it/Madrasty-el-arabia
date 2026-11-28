@@ -13,11 +13,11 @@
   margin: 20px auto 0; font-size: .875rem;
 }
 :global(:root[data-theme="dark"]) .root {
-  --c-text: #f2f7fb; --c-muted: #b0c1d1; --c-border: #2d4257; --c-card: #0f1f30;
-  --c-accent: #35d9a4; --c-accent-soft: #163b40; --c-plain: #172a3d;
+  --c-text: var(--text-primary); --c-muted: var(--text-secondary); --c-border: var(--separator); --c-card: var(--surface-card);
+  --c-accent: #35d9a4; --c-accent-soft: #163b40; --c-plain: var(--surface-inset);
   --c-danger: #ff9e9b; --c-danger-soft: #402a39;
   --c-primary: #23c995; --c-primary-hover: #33d9a4; --c-on-primary: #09281f;
-  --c-day: #132638; --c-input: #0b1929; --c-regular-dot: #9eb3c8;
+  --c-day: var(--surface-card); --c-input: var(--surface-inset); --c-regular-dot: #b8b8b8;
   --c-warning: #ffca80; --c-warning-soft: #3a302c;
   --c-draft: #ffca80; --c-draft-soft: #3a302c;
   --c-danger-border: #76505b; --c-danger-button-border: #76505b; --c-danger-active-border: #d67b78;
@@ -25,11 +25,11 @@
 }
 @media (prefers-color-scheme: dark) {
   :global(:root:not([data-theme="light"])) .root {
-    --c-text: #f2f7fb; --c-muted: #b0c1d1; --c-border: #2d4257; --c-card: #0f1f30;
-    --c-accent: #35d9a4; --c-accent-soft: #163b40; --c-plain: #172a3d;
+    --c-text: var(--text-primary); --c-muted: var(--text-secondary); --c-border: var(--separator); --c-card: var(--surface-card);
+    --c-accent: #35d9a4; --c-accent-soft: #163b40; --c-plain: var(--surface-inset);
     --c-danger: #ff9e9b; --c-danger-soft: #402a39;
     --c-primary: #23c995; --c-primary-hover: #33d9a4; --c-on-primary: #09281f;
-    --c-day: #132638; --c-input: #0b1929; --c-regular-dot: #9eb3c8;
+    --c-day: var(--surface-card); --c-input: var(--surface-inset); --c-regular-dot: #b8b8b8;
     --c-warning: #ffca80; --c-warning-soft: #3a302c;
     --c-draft: #ffca80; --c-draft-soft: #3a302c;
     --c-danger-border: #76505b; --c-danger-button-border: #76505b; --c-danger-active-border: #d67b78;

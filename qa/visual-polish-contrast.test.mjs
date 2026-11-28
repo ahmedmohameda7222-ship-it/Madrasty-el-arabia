@@ -8,11 +8,15 @@ const calendar = readFileSync("apps/web/src/features/school/Calendar.module.css"
 const classMonitor = readFileSync("apps/web/src/features/school/AdminClassMonitor.module.css", "utf8");
 const timetable = readFileSync("apps/web/src/features/school/timetable/Timetable.module.css", "utf8");
 const finance = readFileSync("apps/web/src/features/finance/FinanceWorkspace.module.css", "utf8");
-function palette(source, selector) {
+const offline = readFileSync("apps/web/public/offline/attendance.css", "utf8");
+const compose = readFileSync("apps/android/app/src/main/java/de/madrasty/app/ui/SchoolTheme.kt", "utf8");
+function palette(source, selector, inherited = {}) {
   const start = source.indexOf(selector);
   assert.notEqual(start, -1, "Missing " + selector);
   const body = source.slice(start + selector.length, source.indexOf("}", start));
-  return Object.fromEntries([...body.matchAll(/(--[a-z-]+):\s*(#[0-9a-f]{6}|#[0-9a-f]{3})(?![0-9a-f])/gi)].map(match => [match[1], match[2].length === 4 ? "#" + [...match[2].slice(1)].map(ch => ch + ch).join("") : match[2]]));
+  return Object.fromEntries([...body.matchAll(/(--[a-z-]+):\s*(#(?:[0-9a-f]{6}|[0-9a-f]{3})(?![0-9a-f])|var\((--[a-z-]+)\))/gi)].map(([,token,value,alias]) =>
+    [token, alias ? inherited[alias] : value.length === 4 ? "#" + [...value.slice(1)].map(ch => ch + ch).join("") : value]
+  ));
 }
 function luminance(color) {
   assert.match(color ?? "", /^#[0-9a-f]{6}$/i);
@@ -24,15 +28,40 @@ function ratio(a,b) {
   const x = luminance(a), y = luminance(b);
   return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
 }
+const darkBase = palette(shared, ':root[data-theme="dark"] {');
 const themes = [
   ["light", palette(shared, ":root {"), palette(calendar, ".root {")],
-  ["dark", palette(shared, ':root[data-theme="dark"] {'), palette(calendar, ':global(:root[data-theme="dark"]) .root {')],
+  ["dark", darkBase, palette(calendar, ':global(:root[data-theme="dark"]) .root {', darkBase)],
 ];
+test("the dark canvas, cards and text stay neutral on Web, offline and Android", () => {
+  const system = palette(shared.slice(shared.indexOf("@media (prefers-color-scheme: dark)")), ':root:not([data-theme="light"]) {');
+  const colors = {
+    "--surface-canvas": "#000000", "--surface-card": "#1c1c1c",
+    "--surface-inset": "#262626", "--text-primary": "#ffffff", "--text-secondary": "#b8b8b8",
+  };
+  for (const [token, value] of Object.entries(colors)) {
+    assert.equal(darkBase[token], value, "Explicit dark " + token);
+    assert.equal(system[token], value, "System dark " + token);
+  }
+  const offlineDark = palette(offline.slice(offline.indexOf("@media(prefers-color-scheme:dark)")), ":root{");
+  assert.equal(offlineDark["--canvas"], colors["--surface-canvas"]);
+  assert.equal(offlineDark["--card"], colors["--surface-card"]);
+  assert.equal(offlineDark["--ink"], colors["--text-primary"]);
+  const nativeDark = compose.slice(compose.indexOf("private val dark"));
+  for (const [role, value] of [
+    ["background", colors["--surface-canvas"]], ["surface", colors["--surface-card"]],
+    ["surfaceVariant", colors["--surface-inset"]], ["onBackground", colors["--text-primary"]],
+    ["onSurface", colors["--text-primary"]], ["onSurfaceVariant", colors["--text-secondary"]],
+  ]) assert.match(nativeDark, new RegExp("\\b" + role + " = Color\\(0xFF" + value.slice(1) + "\\)", "i"));
+});
 for (const [mode, base, cal] of themes) {
   const checks = [
     ["shared body text on canvas", base["--text-primary"], base["--surface-canvas"], 4.5],
+    ["shared body text on card", base["--text-primary"], base["--surface-card"], 4.5],
+    ["shared body text on inset", base["--text-primary"], base["--surface-inset"], 4.5],
     ["shared secondary on canvas", base["--text-secondary"], base["--surface-canvas"], 4.5],
     ["shared secondary on inset", base["--text-secondary"], base["--surface-inset"], 4.5],
+    ["shared field boundary on inset", base["--field-border"], base["--surface-inset"], 3],
     ["shared selection", base["--selection-ink"], base["--selection"], 4.5],
     ["shared action", base["--on-action"], base["--action"], 4.5],
     ["chat placeholder on composer inset", base["--text-secondary"], base["--surface-inset"], 4.5],
