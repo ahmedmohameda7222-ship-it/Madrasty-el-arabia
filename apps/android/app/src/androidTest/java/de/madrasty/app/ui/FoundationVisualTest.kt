@@ -14,6 +14,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -67,6 +73,7 @@ class FoundationVisualTest {
         val destination = if (arabic) "عرض تجريبي" else "Testansicht"
         val prefix = "${persona.name.lowercase()}-$language-${if (dark) "dark" else "light"}"
         var observedCanvas = Color.Unspecified
+        var observedTab = SchoolTab.Home
 
         compose.setContent {
             val current = LocalContext.current
@@ -82,8 +89,8 @@ class FoundationVisualTest {
             ) {
                 SchoolTheme(darkMode = dark) {
                     val canvas = MaterialTheme.colorScheme.background
-                    SideEffect { observedCanvas = canvas }
                     var selected by remember { mutableStateOf(SchoolTab.Home) }
+                    SideEffect { observedCanvas = canvas; observedTab = selected }
                     val choices = listOf(ScopeOption("one", if (arabic) "الفصل الأول" else "Erste Klasse"), ScopeOption("two", alternate))
                     var scope by remember { mutableStateOf(choices.first()) }
                     SchoolShell(
@@ -92,6 +99,7 @@ class FoundationVisualTest {
                         changeTab = { selected = it },
                         selectedScope = scope,
                         choices = choices,
+                        unreadMessages = 105,
                         selectScope = { id -> scope = choices.single { it.id == id } },
                     ) { tab ->
                         if (tab == SchoolTab.Home) {
@@ -136,8 +144,24 @@ class FoundationVisualTest {
                 Persona.Guardian -> SchoolTab.Children
             }
             assertWholeWords(resources.getString(R.string.app_name))
-            listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.Calendar, SchoolTab.More)
-                .forEach { assertWholeWords(resources.getString(it.label)) }
+            val tabs = listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.Calendar, SchoolTab.More)
+            tabs.forEach { assertWholeWords(resources.getString(it.label)) }
+            compose.onNodeWithContentDescription(resources.getString(R.string.comms_unread_badge, 105), useUnmergedTree = true)
+                .assertIsDisplayed()
+            assertWholeWords("99+")
+            // Reflow must not remove destinations, reduce touch targets or change selection.
+            tabs.forEach { tab ->
+                val item = compose.onNode(hasText(resources.getString(tab.label)) and hasClickAction())
+                item.assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+                item.performClick()
+                item.assertIsSelected()
+                tabs.filter { it != tab }.forEach { other ->
+                    compose.onNode(hasText(resources.getString(other.label)) and hasClickAction()).assertIsNotSelected()
+                }
+                compose.runOnIdle { assertEquals(tab, observedTab) }
+            }
+            compose.onNode(hasText(resources.getString(R.string.nav_home)) and hasClickAction()).performClick()
+            compose.onNodeWithText(title).assertIsDisplayed()
             compose.runOnIdle {
                 assertEquals(if (dark) Color(0xFF111A18) else Color(0xFFF5F6F2), observedCanvas)
             }

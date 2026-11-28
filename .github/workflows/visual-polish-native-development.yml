@@ -4,6 +4,7 @@ on:
     branches: ["visual-polish/premium"]
     paths:
       - "apps/android/**"
+      - "qa/native-visual-polish-hosted.sh"
       - ".github/workflows/visual-polish-native-development.yml"
 permissions:
   contents: read
