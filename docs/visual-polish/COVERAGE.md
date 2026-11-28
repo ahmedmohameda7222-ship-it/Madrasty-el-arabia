@@ -1,6 +1,6 @@
 # Scene evidence ledger — incomplete
 
-Source registry fingerprint: `a7771eebe5f9c6e1b971752352bae6686426da1bab8ca6af2afaa267b90afd1a`. Source discovery includes 129 scenes. This document maps exact scene IDs to specifically observed runtime evidence; the registry itself remains discovery-only. A row is **PARTIAL** if a narrow test case ran or an attempted test reached the scene, not if its entire required matrix is audited. **OPEN** means no specific evidence is recorded here, not that the feature is missing. No scene is marked complete. For each scene, the full `requiredVariants`, query parameters, source predicates and element variants in SCENES/ELEMENTS and the master plan still apply. Hosted screenshots/traces are kept within disposable runners and have not been independently reviewed; neither screenshots nor test counts close a scene. Existing local evidence from earlier checkpoints stays in STATUS.md. Physical device and owner visual approval are open.
+Source registry fingerprint: `15c070319105408d38cb60b55a8009e7e19842125dc98c921957f55c26ef0982`. Source discovery includes 129 scenes. This document maps exact scene IDs to specifically observed runtime evidence; the registry itself remains discovery-only. A row is **PARTIAL** if a narrow test case ran or an attempted test reached the scene, not if its entire required matrix is audited. **OPEN** means no specific evidence is recorded here, not that the feature is missing. No scene is marked complete. For each scene, the full `requiredVariants`, query parameters, source predicates and element variants in SCENES/ELEMENTS and the master plan still apply. Hosted screenshots/traces are kept within disposable runners and have not been independently reviewed; neither screenshots nor test counts close a scene. Existing local evidence from earlier checkpoints stays in STATUS.md. Physical device and owner visual approval are open.
 
 | Scene ID | Phase | Route / screen | State | Narrow evidence / remaining work |
 | --- | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Source registry fingerprint: `a7771eebe5f9c6e1b971752352bae6686426da1bab8ca6af2a
 | WR-020 | P06 | /[locale]/school/more/attendance | OPEN | No specifically verified state recorded in this ledger. |
 | WR-021 | P10 | /[locale]/school/more/bank | OPEN | No specifically verified state recorded in this ledger. |
 | WR-022 | P08 | /[locale]/school/more/broadcasts | OPEN | No specifically verified state recorded in this ledger. |
-| WR-023 | P09 | /[locale]/school/more/calendar | PARTIAL | Original calendar UI regression 4/4 Chromium 46083875529; P09 baseline RED geometry both browsers 46084728002; scoped candidate 02c5dfa pending browser verification. |
+| WR-023 | P09 | /[locale]/school/more/calendar | PARTIAL | P09 calendar both locales/browsers candidate green (46085891935 and 46086031725), 8 images reviewed, contrast RED/GREEN 31/31 (46089905164). Further large-text nav and month/day variants open. |
 | WR-024 | P05 | /[locale]/school/more/classes | OPEN | No specifically verified state recorded in this ledger. |
 | WR-025 | P07 | /[locale]/school/more/curriculum | OPEN | No specifically verified state recorded in this ledger. |
 | WR-026 | P10 | /[locale]/school/more/enrollment-stops | OPEN | No specifically verified state recorded in this ledger. |
@@ -38,15 +38,15 @@ Source registry fingerprint: `a7771eebe5f9c6e1b971752352bae6686426da1bab8ca6af2a
 | WR-028 | P09 | /[locale]/school/more/events | OPEN | No specifically verified state recorded in this ledger. |
 | WR-029 | P07 | /[locale]/school/more/exams | OPEN | No specifically verified state recorded in this ledger. |
 | WR-030 | P10 | /[locale]/school/more/fee-settings | OPEN | No specifically verified state recorded in this ledger. |
-| WR-031 | P10 | /[locale]/school/more/finance-reports | PARTIAL | Admin/guardian iPhone WebKit finance visual regression 5/5 46083875529; fresh finance domain test green 46085891983. New balance hierarchy tests pending. |
+| WR-031 | P10 | /[locale]/school/more/finance-reports | PARTIAL | Finance UI iPhone WebKit 5/5, fresh domain 1/1; new P10 RED actual cash/invoice amount/state verified all four locale/browser cases 46086031725, source candidate 961ee5e pending runtime verification. |
 | WR-032 | P07 | /[locale]/school/more/grading | OPEN | No specifically verified state recorded in this ledger. |
 | WR-033 | P07 | /[locale]/school/more/homework | OPEN | No specifically verified state recorded in this ledger. |
-| WR-034 | P10 | /[locale]/school/more/invoices | PARTIAL | Actual paid/partial/unpaid invoices, protected PDF links and payer scope passed iPhone WebKit 46083875529; new geometry tests pending, full review open. |
+| WR-034 | P10 | /[locale]/school/more/invoices | PARTIAL | Actual paid/partial/unpaid, PDF/payer scope iPhone WebKit green; new P10 actual invoice detail and payer permissions verified both engines prior to visual RED (46086031725). Source candidate 961ee5e pending runtime checks; all states open. |
 | WR-035 | P10 | /[locale]/school/more/issue-invoices | OPEN | No specifically verified state recorded in this ledger. |
 | WR-036 | P08 | /[locale]/school/more/message-reports | OPEN | No specifically verified state recorded in this ledger. |
 | WR-037 | P08 | /[locale]/school/more/news | OPEN | No specifically verified state recorded in this ledger. |
 | WR-038 | P08 | /[locale]/school/more/notifications | OPEN | No specifically verified state recorded in this ledger. |
-| WR-039 | P07 | /[locale]/school/more/oversight | PARTIAL | New P07 read-only class/pupil/announced-only exam, 22px card, 24px/740 KPI and 200% reflow green both browsers 46084728002. Full academic visual and device matrix open. |
+| WR-039 | P07 | /[locale]/school/more/oversight | PARTIAL | Read-only Class Monitor P07 both languages and browsers candidate green, 12 actual images reviewed, 200% section layout correction pending verification. Full academic/device matrix open. |
 | WR-040 | P10 | /[locale]/school/more/receipts | PARTIAL | Actual receipts and protected PDFs passed iPhone WebKit 46083875529; fresh finance domain green 46085891983. Full state matrix open. |
 | WR-041 | P10 | /[locale]/school/more/record-payment | OPEN | No specifically verified state recorded in this ledger. |
 | WR-042 | P07 | /[locale]/school/more/reports | OPEN | No specifically verified state recorded in this ledger. |
@@ -60,9 +60,9 @@ Source registry fingerprint: `a7771eebe5f9c6e1b971752352bae6686426da1bab8ca6af2a
 | WEB-install-route | P03 | /install | OPEN | No specifically verified state recorded in this ledger. |
 | TAB-1 | P04 | /[locale]/school/home | PARTIAL | Admin DE 390, guardian AR 320, teacher DE 390 light/AR 320 dark, teacher-other DE 320 dark/substitute AR 390 light. Real API assignment/lesson comparison and navigation in 46081553330 both browsers; full role/theme/device/fixture and native coverage open. |
 | TAB-2 | P05 | /[locale]/school/students | PARTIAL | Family wizard/import and guardian-related UI regression suite 22/22 (46083875529 Chromium); entire element/state matrix and matched visual review open. |
-| TAB-3 | P06 | /[locale]/school/attendance | PARTIAL | Configured attendance tally and selectors at DE 390/AR 320 including 200% reflow both browsers (46083680556); original ready/offline-conflict UI passed (46083875529 Chromium). Full variants open. |
+| TAB-3 | P06 | /[locale]/school/attendance | PARTIAL | P06 actual configured attendance tally/row geometry and 200% reflow both browsers; 8 candidate normal/large images reviewed from 46086031725 across Chromium/WebKit, spacing issues identified and candidate fix pending verification. Full variants open. |
 | TAB-4 | P05 | /[locale]/school/children | PARTIAL | Guardian children and family workflows tested in 22-case family suite (46083875529 Chromium); full state matrix open. |
-| TAB-5 | P08 | /[locale]/school/messages | OPEN | No specifically verified state recorded in this ledger. |
+| TAB-5 | P08 | /[locale]/school/messages | PARTIAL | P08 direct chat in both locales across both engines passed on separate runs 46085891935/46086031725; 3 actual chat images reviewed. Intermittent Arabic geometry/timeout still open; message media, keyboard, role and state matrix open. |
 | TAB-6 | P09 | /[locale]/school/calendar | OPEN | No specifically verified state recorded in this ledger. |
 | TAB-7 | P04 | /[locale]/school/more | PARTIAL | Admin/admin-two/office/finance/supervisor/teacher/substitute/guardian-ar/guardian-de in DE 390 light and AR 320 dark; keyboard disclosures, visible rows, focus, reflow, checked route subsets (46081553330 both browsers); full expected capability inventory, destination clicks, dual-role and guardian-other open. |
 | WEB-school-home-queues-guardian_links | P04 | /[locale]/school/home/queues/guardian_links | PARTIAL | Admin DE 390 and AR 320 dark actual API rows/date/back links (46081553330 both browsers). Pagination only if returned cursor; not independently confirmed. Missing explicit zero/many/unavailable/role restrictions and matched visual review. |

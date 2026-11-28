@@ -75,7 +75,7 @@ jobs:
             ss -ltn | awk 'NR==1 || $4 ~ /:(4300|55420|55421|55422|55424)$/'
             exit 1
           fi
-      - name: Run existing and added visual checks against disposable fixtures (including P04–P11 visual and reflow candidates)
+      - name: Run existing and added visual checks against disposable fixtures (including P04–P11 visual, reflow and contrast candidates)
         shell: bash
         run: |
           set -euo pipefail

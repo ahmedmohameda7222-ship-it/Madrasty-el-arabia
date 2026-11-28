@@ -23,6 +23,8 @@ for (const scenario of [
     mkdirSync(folder, { recursive: true });
     const samples: Record<string, unknown>[] = [];
     const errors: string[] = [];
+    const failures: Record<string, unknown>[] = [];
+    const requests: { path: string; status: number; durationMs: number | null }[] = [];
     const root = "/" + scenario.locale + "/school/";
     try {
       await school.seed();
@@ -47,6 +49,14 @@ for (const scenario of [
         await context.tracing.start({ screenshots: true, snapshots: true });
         const page = await context.newPage();
         page.on("pageerror", error => errors.push(error.name));
+        page.on("requestfinished", async request => {
+          const url = new URL(request.url());
+          if (url.origin !== localOrigin || !url.pathname.startsWith("/api/v1/")) return;
+          const path = url.pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi, ":id");
+          const response = await request.response();
+          const timing = request.timing();
+          requests.push({ path, status: response?.status() ?? 0, durationMs: timing.responseEnd >= 0 ? Math.round(timing.responseEnd * 100) / 100 : null });
+        });
         page.setDefaultTimeout(10_000);
         page.setDefaultNavigationTimeout(30_000);
         return { context, page };
@@ -65,7 +75,18 @@ for (const scenario of [
           return { timeOrigin: performance.timeOrigin, now: performance.now() };
         });
         const begin = performance.now();
-        await operation();
+        const requestStart = requests.length;
+        try { await operation(); }
+        catch (error) {
+          const observed = await page.evaluate(() => ({
+            pointerdownObserved: !!(window as ProbeWindow).__qaMotion?.press,
+            rafMs: (window as ProbeWindow).__qaMotion?.press?.rafMs ?? null,
+            route: location.pathname,
+          })).catch(() => null);
+          failures.push({ mode, iteration, action, durationMs: Math.round(performance.now()-begin),
+            errorType: error instanceof Error ? error.name : "unknown", observed, requests: requests.slice(requestStart) });
+          throw error;
+        }
         const duration = performance.now() - begin;
         const observed = await page.evaluate(({timeOrigin,now}) => {
           const state = (window as ProbeWindow).__qaMotion;
@@ -73,7 +94,7 @@ for (const scenario of [
           const tasks = sameDocument && state.supported ? state.longTasks.filter(entry => entry.startTime >= now).map(entry => Math.round(entry.duration * 100) / 100) : null;
           return { sameDocument, firstRafProxyMs: sameDocument ? state.press?.rafMs ?? null : null, longTasks: tasks };
         }, start);
-        samples.push({ mode, iteration, action, durationMs: Math.round(duration * 100) / 100, ...observed });
+        samples.push({ mode, iteration, action, durationMs: Math.round(duration * 100) / 100, requests: requests.slice(requestStart), ...observed });
       }
       async function exercise(page: Page, mode: string, iteration: number) {
         for (const tab of [scenario.tab, "messages", "calendar", "more", "home"]) {
@@ -123,7 +144,7 @@ for (const scenario of [
       writeFileSync(folder + "/samples.json", JSON.stringify({ stage, sourceSha, scenario, browser: browser.version(),
         viewport: { width: 390, height: 844, dpr: 1 }, runtime: "isolated Next development, same hosted runner and fixture database",
         caveats: ["Fresh browser context is not a cold server reboot.", "First rAF after pointerdown is a scheduling proxy, not verified first visual paint.", "Missing cross-document or unsupported measurements are null.", "Traces remain in the disposable runner."],
-        samples, errors }, null, 2));
+        samples, errors, failures }, null, 2));
       await school.close();
     }
   });

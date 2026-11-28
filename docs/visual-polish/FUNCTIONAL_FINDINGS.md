@@ -35,3 +35,5 @@ Run 46082187416 Chromium reproduced the existing cold German install navigation 
 - QA-07 fresh seeded isolated domain run 46085891983 passed all original finance assertions. The reused-fixture ordering is confirmed as the discriminating factor in this diagnostic. No financial rules changed. QA-03 signed-out production build original public suite passed 4/4 per browser (46085892025); dev first-click/interrupted direct navigations and authenticated production test setup remain open.
 
 - QA-08: P08 Arabic attachment geometry snapshot intermittent on reused dev runner (46086031725 Chromium: boundingBox null after visible check; WebKit previous timeout). Both engines have also passed the full Arabic interaction case on same source. Diagnose transient DOM replacement around composer polling, do not waive or silently retry assertions.
+
+- QA-09: matched P12 baseline Admin reused-context Students→Messages click stayed on Students; candidate completed all three roles. Timing differences mixed. Repeat counterbalanced stage order and record pointer/API boundary evidence; do not remove baseline failure or infer product speed from incomplete/dev-only data.

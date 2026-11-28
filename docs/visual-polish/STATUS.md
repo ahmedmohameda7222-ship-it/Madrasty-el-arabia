@@ -181,3 +181,9 @@ Reconcile P00 matrix and fixture follow-ups. Verify remaining P03 variants. Resu
 
 - 46089646545 native both runners failed before Gradle: emulator-runner executes individual script lines through sh, so multiline Bash function definition was rejected. Moved exact script into qa/native-visual-polish-hosted.sh and call with one bash command. No instrumentation assertions or runtime app code changed.
 - 46089826144 contrast job reproduced intended light token failures. After CSS correction the intended contrast cases passed but parser rejected CSS shorthand #fff in four other assertions. Fixed palette parser to normalize three-digit hex to six-digit, re-run RED/GREEN required. No partial source commit was pushed from failed sync.
+
+## P11 contrast green and initial measured P12 result
+
+- 46089905164: targeted contrast RED 24/31, GREEN 31/31, registry sync green; source candidate `145ec3bb7171f16df4de5faae1fc1e8215125742`. Calendar light secondary on canvas 3.64→5.37, accent status 4.17→5.38, danger status 4.36→5.67. Dark navy unchanged. Temporary write workflow removed. Fresh browser candidate verification still needed.
+- 46089470947 initial matched performance: baseline 2/3 (190/210 measurements), candidate 3/3 (210/210); overall job red. Baseline Admin reused-context click Students→Messages did not navigate. Downloaded actual timing artifact, 35 complete matched groups, mixed results including Guardian fresh Home +220.9ms and Admin fresh Messages +162.8ms. See P12_TIMING_46089470947.md. Added counterbalanced stage-order diagnostic with sanitized per-action API timings and failure evidence; no original assertions relaxed. No universal performance claim.
+- COVERAGE.md source fingerprint reconciled and narrow per-scene image/geometry evidence updated, still no full signoff. Remaining P10/P11 final candidate browser and native checks continue independently. All phase exit gates remain open where full scene coverage is missing.

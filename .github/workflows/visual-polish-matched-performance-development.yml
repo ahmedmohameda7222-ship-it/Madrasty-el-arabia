@@ -51,20 +51,20 @@ jobs:
             done
             echo "Loopback server did not stop"; exit 1
           }
-          trap 'kill -- "-${web_pid:-0}" 2>/dev/null || true' EXIT
-          start_web "$RUNNER_TEMP/baseline" baseline
-          pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; import {setUpCalendar} from "./qa/fixtures/calendar"; (async()=>{const school=schoolFixtures();try{await school.seed();await setUpCalendar(school,await school.bearer("admin","admin"));}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
-          baseline_rc=0
-          VISUAL_POLISH_STAGE=baseline VISUAL_POLISH_SOURCE_SHA="$BASELINE_SHA" pnpm exec playwright test --config qa/visual-polish-performance.config.ts || baseline_rc=$?
-          stop_web
+          trap 'if [[ -n "${web_pid:-}" ]]; then kill -- "-$web_pid" 2>/dev/null || true; fi' EXIT
           start_web "$GITHUB_WORKSPACE" candidate
+          pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; import {setUpCalendar} from "./qa/fixtures/calendar"; (async()=>{const school=schoolFixtures();try{await school.seed();await setUpCalendar(school,await school.bearer("admin","admin"));}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
           candidate_rc=0
           VISUAL_POLISH_STAGE=candidate VISUAL_POLISH_SOURCE_SHA="$GITHUB_SHA" pnpm exec playwright test --config qa/visual-polish-performance.config.ts || candidate_rc=$?
           stop_web
+          start_web "$RUNNER_TEMP/baseline" baseline
+          baseline_rc=0
+          VISUAL_POLISH_STAGE=baseline VISUAL_POLISH_SOURCE_SHA="$BASELINE_SHA" pnpm exec playwright test --config qa/visual-polish-performance.config.ts || baseline_rc=$?
+          stop_web
           trap - EXIT
+          node qa/visual-polish-performance/report.mjs
           test "$baseline_rc" = 0
           test "$candidate_rc" = 0
-          node qa/visual-polish-performance/report.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
