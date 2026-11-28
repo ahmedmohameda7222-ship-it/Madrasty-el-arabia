@@ -14,7 +14,7 @@ async function signInCalendarFixture(school:ReturnType<typeof schoolFixtures>, p
     await page.goto("/de/account/security");
     await page.locator('input[name="code"]').fill((await school.localMfa("admin")).code());
     await page.getByRole("button",{name:"Bestätigen",exact:true}).click();
-    await expect(page).toHaveURL(/\\/de\\/school\\/home(?:\\?.*)?$/);
+    await expect(page).toHaveURL(/\/de\/school\/home(?:\?.*)?$/);
   }
   expect((await context.cookies(origin)).some(c=>c.name==="__Host-madrasty-session"&&c.secure&&c.httpOnly)).toBe(true);
 }
