@@ -1,7 +1,6 @@
 package de.madrasty.app.ui
 
 import android.content.res.Configuration
-import android.graphics.Bitmap
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,10 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import de.madrasty.app.R
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.io.File
 import java.util.Locale
 
 /** Exercises the actual school shell and hero against local Compose state. */
@@ -64,7 +61,6 @@ class FoundationVisualTest {
         val alternate = if (arabic) "الفصل الثاني" else "Zweite Klasse"
         val detail = if (arabic) "٣ مهام مفتوحة" else "3 offene Aufgaben"
         val destination = if (arabic) "عرض تجريبي" else "Testansicht"
-        val folder = File(requireNotNull(context.getExternalFilesDir("visual-polish")), if (baseline) "before" else "after")
         val prefix = "${persona.name.lowercase()}-$language-${if (dark) "dark" else "light"}"
         var observedCanvas = Color.Unspecified
 
@@ -110,10 +106,7 @@ class FoundationVisualTest {
             instrumentation.waitForIdleSync()
             val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
             try {
-                folder.mkdirs()
-                File(folder, "$prefix-$scene.png").outputStream().use {
-                    assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
-                }
+                saveVisualEvidence(context, bitmap, "$prefix-$scene.png", if (baseline) "before" else "after")
             } finally { bitmap.recycle() }
         }
 

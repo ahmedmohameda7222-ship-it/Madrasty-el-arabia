@@ -1,10 +1,7 @@
 package de.madrasty.app.identity
 
-import android.graphics.Bitmap
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import java.io.File
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -15,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import de.madrasty.app.MainActivity
 import de.madrasty.app.R
+import de.madrasty.app.ui.saveVisualEvidence
 import org.junit.Rule
 import org.junit.Test
 
@@ -37,13 +35,9 @@ class SignInVisualTest {
         signIn.assertIsDisplayed().assertIsNotEnabled().assertHeightIsAtLeast(48.dp)
         compose.waitForIdle()
         instrumentation.waitForIdleSync()
-        val folder = File(requireNotNull(activity.getExternalFilesDir("visual-polish")), "after")
-        folder.mkdirs()
         val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
         try {
-            File(folder, "signed-out-${activity.resources.configuration.locales[0].language}.png").outputStream().use {
-                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
-            }
+            saveVisualEvidence(activity, bitmap, "signed-out-${activity.resources.configuration.locales[0].language}.png", "after")
         } finally { bitmap.recycle() }
     }
 }
