@@ -1,0 +1,66 @@
+name: P03 production-mode isolated HTTPS and TLS visual diagnostic
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths:
+      - ".github/workflows/visual-polish-production-local.yml"
+      - "qa/visual-polish-production-tls.sh"
+      - "qa/visual-polish-production.config.ts"
+      - "qa/support/visual-production-proxy.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  production-p03:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - name: Install pinned dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps ${{ matrix.browser }}
+          sudo apt-get install -y libnss3-tools
+      - name: Start disposable fixture and enable verified transport
+        shell: bash
+        run: |
+          export LOCALAPPDATA="$RUNNER_TEMP"
+          echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          pwsh -NoProfile -File qa/start-stack.ps1
+          bash -n qa/visual-polish-production-tls.sh
+          node --check qa/support/visual-production-proxy.mjs
+          bash qa/visual-polish-production-tls.sh
+      - name: Build and verify the original P03 journeys against real HTTPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm build:web
+          pwsh -NoProfile -File qa/local.ps1 -Serve -Production -ProductionFixtureTls > "$RUNNER_TEMP/madrasty-production-fixture.log" 2>&1 &
+          web_pid=$!
+          node qa/support/visual-production-proxy.mjs > "$RUNNER_TEMP/madrasty-production-proxy.log" 2>&1 &
+          proxy_pid=$!
+          trap 'kill "$web_pid" "$proxy_pid" 2>/dev/null || true' EXIT
+          curl --cacert "$NODE_EXTRA_CA_CERTS" -fsS --retry 30 --retry-connrefused --retry-all-errors --retry-delay 2 --max-time 10 https://127.0.0.1:4443/api/v1/health
+          pnpm exec playwright test --config qa/visual-polish-production.config.ts --browser ${{ matrix.browser }}
+      - name: Retain selected synthetic P03 evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-production-p03-${{ matrix.browser }}-${{ github.sha }}
+          path: qa-artifacts/visual-polish/P03/**/*.png
+          retention-days: 7
+          if-no-files-found: warn

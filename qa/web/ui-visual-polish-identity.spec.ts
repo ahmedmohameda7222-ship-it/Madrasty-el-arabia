@@ -44,15 +44,29 @@ for (const locale of ["ar", "de"] as const) {
 
 test("guardian settings and profile retain controls and staff access stays restricted", async ({ page, context, baseURL }) => {
   const { schoolFixtures } = await import("../fixtures/school");
-  const { localOrigin } = await import("../support/target");
+  const { localOrigin, fixtureEmail } = await import("../support/target");
   const school = schoolFixtures();
   const probe = await visualNavigationProbe(page, "guardian-de-identity");
   const folder = `qa-artifacts/visual-polish/P03/guardian-de-settings/${before ? "before" : "after"}`;
   mkdirSync(folder, { recursive: true });
   try {
     await school.seed();
-    const token = await school.bearer("guardian-de", "guardian");
-    await context.addCookies([{ name: "madrasty-session", value: token, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
+    if (baseURL === "https://127.0.0.1:4443") {
+      // Production-mode evidence must use the existing sign-in and its real
+      // host-only secure cookies. No disabling TLS verification or cookie policy.
+      const login = await context.request.post(baseURL + "/api/v1/auth/sign-in", {
+        headers: { Origin: baseURL },
+        data: { email: fixtureEmail(school.run, "guardian-de"), password: school.password },
+      });
+      expect(login.status(), "production fixture web sign-in").toBe(200);
+      const cookies = await context.cookies(baseURL);
+      expect(cookies.some(cookie => cookie.name === "__Host-madrasty-session" && cookie.secure && cookie.httpOnly && cookie.path === "/")).toBe(true);
+      expect(cookies.some(cookie => cookie.name === "__Host-madrasty-csrf" && cookie.secure && !cookie.httpOnly && cookie.path === "/")).toBe(true);
+    } else {
+      expect(baseURL).toBe(localOrigin);
+      const token = await school.bearer("guardian-de", "guardian");
+      await context.addCookies([{ name: "madrasty-session", value: token, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
+    }
     await page.setViewportSize({ width: 320, height: 844 });
     probe.mark("preferences-goto");
     await page.goto("/de/account/preferences");

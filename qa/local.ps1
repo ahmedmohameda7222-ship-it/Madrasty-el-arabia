@@ -1,7 +1,11 @@
 [CmdletBinding()]
-param([switch]$Serve, [switch]$PreviousRelease, [switch]$Production)
+param([switch]$Serve, [switch]$PreviousRelease, [switch]$Production, [switch]$ProductionFixtureTls)
 
 if ($Production -and (-not $Serve -or $PreviousRelease)) { throw 'Production QA requires -Serve on the current isolated checkout.' }
+if ($ProductionFixtureTls -and (-not $Production -or -not $Serve -or $env:GITHUB_ACTIONS -ne 'true' -or
+    $env:GITHUB_REF -ne 'refs/heads/visual-polish/premium')) {
+  throw 'Production fixture TLS is restricted to the disposable visual-polish CI branch.'
+}
 
 $ErrorActionPreference = 'Stop'
 $qaProject = 'madrasty_final_qa'
@@ -36,6 +40,17 @@ if ($Serve) {
   foreach ($name in @('DATABASE_TLS_CA_PEM','BREVO_API_KEY','RESEND_API_KEY','FCM_SERVICE_ACCOUNT_B64',
     'WEB_PUSH_PRIVATE_KEY','WEB_PUSH_PUBLIC_KEY','SCHOOL_EMAIL_PROVIDER')) {
     [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+  }
+  if ($ProductionFixtureTls) {
+    $containerProject = docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' $qaContainer
+    $containerPath = docker inspect --format '{{ index .Config.Labels "com.supabase.cli.workdir" }}' $qaContainer
+    if ($LASTEXITCODE -ne 0 -or $containerProject -ne $qaProject -or $containerPath -ne $qaTarget) {
+      throw 'Refusing TLS fixture launch against a non-disposable database.'
+    }
+    $ca = Join-Path $qaTarget 'visual-tls/ca.crt'
+    if (-not (Test-Path -LiteralPath $ca -PathType Leaf)) { throw 'Missing generated fixture CA.' }
+    $env:DATABASE_TLS_CA_PEM = Get-Content -Raw -LiteralPath $ca
+    $env:APP_ORIGIN = 'https://127.0.0.1:4443'
   }
   $webRoot = $repo
   $port = 4300
