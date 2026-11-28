@@ -108,6 +108,8 @@ for (const scene of [
       await expect(profile).toBeVisible();
       await expect(profile).toHaveAccessibleName(contactName + " — " + scene.profileAction);
       const profileSize = await profile.locator("span").evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+      const conversation = scene.locale === "ar" ? "المحادثة" : "Unterhaltung";
+      await expect(page.getByRole("region", { name: conversation, exact: true })).toBeVisible();
       const composer = page.locator(".comms-composer");
       const input = composer.locator("textarea");
       const mic = composer.getByRole("button", { name: scene.mic, exact: true });
@@ -200,6 +202,31 @@ for (const scene of [
       await expect(mic).toBeVisible();
       expect(new URL(page.url()).searchParams.get("thread")).toBe(thread);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      await attach.click();
+      const attachmentMenu = composer.locator(".comms-attachment-menu");
+      await expect(attachmentMenu).toBeVisible();
+      await page.screenshot({ path: folder + "/attachment-menu.png" });
+      await attach.click();
+      const photo = await page.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 180;
+        const paint = canvas.getContext("2d")!;
+        paint.fillStyle = "#155544";
+        paint.fillRect(0, 0, 320, 180);
+        paint.fillStyle = "#fff";
+        paint.fillRect(60, 45, 200, 90);
+        return canvas.toDataURL("image/png").split(",")[1]!;
+      });
+      await composer.locator("input[type=file]").first().setInputFiles({
+        name: "synthetic-photo.png", mimeType: "image/png", buffer: Buffer.from(photo, "base64"),
+      });
+      await expect(composer.locator(".comms-media img")).toBeVisible();
+      await page.screenshot({ path: folder + "/attachment-preview.png" });
+      const discard = scene.locale === "ar" ? "حذف المرفق من المسودة" : "Anhang aus Entwurf entfernen";
+      await composer.getByRole("button", { name: discard, exact: true }).click();
+      await expect(composer.locator(".comms-media img")).toHaveCount(0);
+      await expect(mic).toBeVisible();
       const geometry = { locale: scene.locale, ownShape, otherShape, profileSize, micBox, attachBox };
       writeFileSync(folder + "/geometry.json", JSON.stringify(geometry, null, 2));
       console.log("P08 chat geometry", JSON.stringify(geometry));

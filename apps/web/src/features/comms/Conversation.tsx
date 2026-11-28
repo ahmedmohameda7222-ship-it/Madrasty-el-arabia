@@ -142,7 +142,7 @@ export function Conversation({locale,thread,changed}:{locale:Locale;thread:Threa
     finally{setPreferenceBusy(false);}
   }
   if(lost)return <AsyncSurface locale={locale} state={{kind:"forbidden"}}/>;
-  return <section className="comms-conversation auth-form" aria-label={text.search}>
+  return <section className="comms-conversation auth-form" aria-label={locale==="ar"?"المحادثة":"Unterhaltung"}>
     <details className="comms-chat-options"><summary>{locale==="ar"?"خيارات المحادثة":"Chat-Optionen"}</summary>
     <div className="header-actions">
       <button type="button" className="plain-button" onClick={changed}><Icon name="retry"/>{locale==="ar"?"تحديث":"Aktualisieren"}</button>

@@ -57,7 +57,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
   showVoiceAction?:boolean;inputField?:ReactNode;primaryAction?:ReactNode;
 }){
   const labels=copy[locale],root=`/threads/${thread}/uploads` as const;
-  const [draft,setDraft]=useState<Draft>(),[percent,setPercent]=useState(0),[working,setWorking]=useState(false);
+  const [draft,setDraft]=useState<Draft>(),[percent,setPercent]=useState<number>(),[working,setWorking]=useState(false);
   const [mic,setMic]=useState<"idle"|"starting"|"recording"|"finishing">("idle"),[elapsed,setElapsed]=useState(0);
   const [error,setError]=useState<ErrorKey>();
   const [expanded,setExpanded]=useState(initialExpanded);
@@ -86,7 +86,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
   useEffect(()=>{
     if(!consumed||current.current?.readyId!==consumed)return;
     URL.revokeObjectURL(current.current.preview);
-    current.current=undefined;token.current=undefined;setDraft(undefined);setPercent(0);setError(undefined);
+    current.current=undefined;token.current=undefined;setDraft(undefined);setPercent(undefined);setError(undefined);
   },[consumed]);
   useEffect(()=>{
     if(mic!=="recording")return;
@@ -97,7 +97,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
   function preview(kind:Draft["kind"],file:Blob){
     token.current=undefined;
     updateDraft({kind,file,preview:URL.createObjectURL(file),key:crypto.randomUUID(),sentBytes:false});
-    setPercent(0);
+    setPercent(undefined);
   }
   async function pick(file?:File){
     if(!file||working||current.current||capture.current)return;
@@ -161,7 +161,7 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
     const entry=current.current;
     if(!entry||working||entry.readyId)return;
     const version=++generation.current,abort=new AbortController();
-    upload.current=abort;setWorking(true);onBusy(true);setError(undefined);
+    upload.current=abort;setPercent(undefined);setWorking(true);onBusy(true);setError(undefined);
     const finalize=(id:string)=>requestApi(`${root}/${id}`,mediaUploadState,{
       method:"POST",signal:abort.signal,headers:{...headers(),"Idempotency-Key":id},body:JSON.stringify({action:"finalize"}),
     });
@@ -198,8 +198,11 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
       }
       if(!entry.sentBytes){
         let delivered=false;
-        try{await uploadFile(authority.url,entry.file,abort.signal,setPercent);delivered=true;}
-        catch{if(abort.signal.aborted)return;}
+        try{
+          await uploadFile(authority.url,entry.file,abort.signal,(value)=>setPercent(value<100?value:undefined));
+          delivered=true;
+        }catch{if(abort.signal.aborted)return;}
+        finally{if(stillCurrent())setPercent(undefined);}
         // A lost Storage response can still mean the immutable object arrived.
         entry.sentBytes=true;
         const result=await finalize(entry.uploadId);

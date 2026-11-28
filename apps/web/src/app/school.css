@@ -548,6 +548,7 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .comms-hub .inbox-filter-strip .plain-button{border-radius:999px}
 .comms-hub .comms-message-actions .plain-button{border-radius:22px}
 @media(prefers-reduced-motion:no-preference){.comms-icon-button{transition:transform 120ms var(--ease-out),opacity 120ms}.comms-icon-button:not(:disabled):active{transform:scale(.94)}.comms-attachment-menu{animation:comms-send-in 140ms ease-out both}}
+@media(prefers-reduced-motion:reduce){.comms-icon-button:not(:disabled):active{box-shadow:inset 0 0 0 2px currentColor}}
 
 /* Existing reactions remain visible when message actions are collapsed. */
 .comms-reaction-strip{display:flex;flex-wrap:wrap;gap:4px;min-inline-size:0}
@@ -588,7 +589,7 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .comms-message-footer>.comms-message-time{flex:1;min-inline-size:0;text-align:start;overflow-wrap:anywhere}
 .comms-message-footer>.comms-message-actions{flex:0 0 44px;min-inline-size:44px}
 .comms-message-footer>.comms-message-actions[open]{flex:1 0 100%}
-.comms-message-footer>.comms-message-actions>summary{inline-size:44px;min-inline-size:44px;justify-content:center;margin-inline-start:auto}
+.comms-message-footer>.comms-message-actions>summary{inline-size:44px;min-inline-size:44px;justify-content:center;margin-inline-start:auto;border-radius:var(--radius-control)}
 .comms-message-footer>.comms-message-actions[open]>summary{margin-inline-start:auto}
 .comms-hub .inbox-search{align-items:center;grid-template-columns:minmax(0,1fr) auto;gap:6px}
 .comms-hub .inbox-search input{min-inline-size:0;min-block-size:44px;max-inline-size:100%;font-size:16px}
@@ -886,7 +887,9 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 
 .comms-contact-title{min-inline-size:0}
 .comms-thread-toolbar .comms-contact-title h2{display:block;overflow:visible}
-.comms-contact-trigger{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:start;border:0;background:transparent;color:inherit;padding:0;min-block-size:44px;max-inline-size:100%;font:inherit;cursor:pointer}.comms-contact-trigger bdi{overflow-wrap:anywhere;max-inline-size:100%}.comms-contact-trigger span{font-size:.8125rem;color:var(--primary);font-weight:500}.comms-contact-sheet{max-inline-size:min(100%,480px)}.comms-contact-sheet .comms-contact-identity{display:grid;justify-items:center;gap:8px;text-align:center;padding:16px}.comms-contact-sheet .comms-avatar{inline-size:72px;block-size:72px;font-size:1.75rem}.comms-contact-sheet p{overflow-wrap:anywhere}.comms-contact-sheet h2{display:block}
+.comms-contact-trigger{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:start;border:0;background:transparent;color:inherit;padding:0;min-block-size:44px;max-inline-size:100%;font:inherit;cursor:pointer}.comms-contact-trigger bdi{overflow-wrap:anywhere;max-inline-size:100%}
+.comms-contact-trigger bdi:lang(ar){line-height:1.5}
+.comms-contact-trigger span{font-size:.8125rem;color:var(--primary);font-weight:500}.comms-contact-sheet{max-inline-size:min(100%,480px)}.comms-contact-sheet .comms-contact-identity{display:grid;justify-items:center;gap:8px;text-align:center;padding:16px}.comms-contact-sheet .comms-avatar{inline-size:72px;block-size:72px;font-size:1.75rem}.comms-contact-sheet p{overflow-wrap:anywhere}.comms-contact-sheet h2{display:block}
 
 /* First-message compose shares the conversation viewport without opening an empty thread. */
 .school-content:has(> .comms-directory[data-compose="true"]) {display:flex;flex-direction:column;min-block-size:0;overflow:hidden;padding:0}

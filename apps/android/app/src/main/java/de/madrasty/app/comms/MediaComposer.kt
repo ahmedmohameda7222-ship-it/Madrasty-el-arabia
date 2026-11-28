@@ -236,7 +236,10 @@ internal fun MediaComposer(
         }
     }
     if(capturing)Text(stringResource(R.string.chat_media_preparing))
-    if(uploading)LinearProgressIndicator(progress={progress/100f},modifier=Modifier.fillMaxWidth())
+    if(uploading){
+        if(progress in 1..99)LinearProgressIndicator(progress={progress/100f},modifier=Modifier.fillMaxWidth())
+        else LinearProgressIndicator(modifier=Modifier.fillMaxWidth())
+    }
     error?.let{Text(stringResource(it))}
 }
 
