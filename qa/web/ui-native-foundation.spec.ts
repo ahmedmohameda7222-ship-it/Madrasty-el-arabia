@@ -21,7 +21,10 @@ test("web iOS viewport and Android Compose shell retain existing native safe-are
   expect(css).toMatch(/env\(safe-area-inset-left\)/);
   expect(css).toMatch(/env\(safe-area-inset-right\)/);
   expect(css).toMatch(/min-inline-size:\s*44px;\s*min-block-size:\s*44px/);
-  for(const contract of ["Scaffold(","WindowInsets.safeDrawing","NavigationBar(","NavigationBarItem(","ModalBottomSheet(","imePadding()","BackHandler("]){
+  // The adaptive Compose bar replaces fixed-height Material navigation items.
+  // Preserve the actual insets, tab selection semantics and callback contract;
+  // FoundationVisualTest additionally exercises every tab at normal/200% font.
+  for(const contract of ["Scaffold(","WindowInsets.safeDrawing","SchoolShellNavigation(tabs, active, changeTab, unreadMessages)","windowInsetsPadding(NavigationBarDefaults.windowInsets)","windowInsetsPadding(TopAppBarDefaults.windowInsets)",".selectableGroup()",".selectable(selected = selected, onClick = { changeTab(tab) }, role = Role.Tab)","heightIn(min = 64.dp)","ModalBottomSheet(","imePadding()","BackHandler("]){
     expect(android,"Android Compose contract: "+contract).toContain(contract);
   }
 });
