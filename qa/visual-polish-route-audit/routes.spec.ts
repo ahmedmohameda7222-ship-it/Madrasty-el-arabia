@@ -5,6 +5,10 @@ import { setUpCalendar } from "../fixtures/calendar";
 import { fixtureEmail, requireFixtureTarget } from "../support/target";
 
 const origin="https://127.0.0.1:4443";
+const stage=process.env.VISUAL_POLISH_SURVEY_STAGE;
+if(stage!==undefined&&!["baseline","candidate"].includes(stage))throw Error("Invalid matched survey stage");
+const sourceSha=stage?process.env.VISUAL_POLISH_SOURCE_SHA:process.env.GITHUB_SHA;
+if(!sourceSha||!/^[a-f0-9]{40}$/.test(sourceSha))throw Error("Missing exact survey source SHA");
 requireFixtureTarget(process.env);
 if(process.env.GITHUB_ACTIONS!=="true"||process.env.GITHUB_REF!=="refs/heads/visual-polish/premium"||!process.env.NODE_EXTRA_CA_CERTS)throw Error("Route survey requires disposable trusted HTTPS");
 const actors=[
@@ -24,7 +28,7 @@ const safeRoutes=new Set([
 for(const scene of actors)for(const locale of ["de","ar"] as const){
   test("visual route survey "+scene.persona+" "+locale,async({browser,context,page})=>{
     const school=schoolFixtures();
-    const folder=`qa-artifacts/visual-polish/route-survey/${browser.browserType().name()}/${scene.persona}-${locale}`;
+    const folder=`qa-artifacts/visual-polish/${stage?"route-survey-matched/"+stage:"route-survey"}/${browser.browserType().name()}/${scene.persona}-${locale}`;
     mkdirSync(folder,{recursive:true});
     const rows:Record<string,unknown>[]=[];
     const failures:{route:string;category:string}[]=[];
@@ -89,7 +93,7 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
           const large=await measure();
           await screen.screenshot({path:folder+"/"+key+"-text-200.png"});
           const destination=new URL(screen.url()).pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi,":id").slice(3);
-          const denied=await screen.locator("[data-generic-not-found]").count()>0;
+          const denied=await screen.locator("[data-generic-not-found]").count()>0 || await root.getByRole("heading",{name:"404",exact:true}).count()>0;
           const state={route,destination,status:reply?.status(),denied,normal,large};
           rows.push(state);
           console.log("Visual route survey",JSON.stringify(state));
@@ -105,7 +109,7 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
       expect(rows.length).toBe(routes.size);
       expect(failures).toEqual([]);
     }finally{
-      writeFileSync(folder+"/survey.json",JSON.stringify({sha:process.env.GITHUB_SHA,role:scene.persona,locale,width,rows,failures},null,2));
+      writeFileSync(folder+"/survey.json",JSON.stringify({sha:sourceSha,stage:stage??"single",role:scene.persona,locale,width,fixtureId:school.run,rows,failures},null,2));
       await school.close();
     }
   });
