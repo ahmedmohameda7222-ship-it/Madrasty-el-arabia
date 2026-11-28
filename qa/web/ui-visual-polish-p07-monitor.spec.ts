@@ -55,7 +55,7 @@ for (const scene of [
       await expect(page.getByRole("heading", { name: scene.dashboard, exact: true })).toBeVisible();
       await expect(page.getByText(scene.readonly, { exact: true })).toBeVisible();
       expect(new URL(page.url()).searchParams.get("class")).toBe(classroom.classId);
-      const metrics = page.locator('[class*="AdminClassMonitor_metric__"]');
+      const metrics = page.getByTestId("class-monitor-metrics").locator(":scope > div");
       await expect(metrics).toHaveCount(4);
       const count = metrics.first().locator("strong");
       await expect(count).toHaveText(new Intl.NumberFormat(scene.locale === "ar" ? "ar-EG" : "de-DE").format(classroom.studentCount));
@@ -99,7 +99,8 @@ for (const scene of [
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.screenshot({ path: folder + "/dashboard-text-200.png" });
       const largeNav = await navGeometry();
-      const columns = await page.locator('[class*="AdminClassMonitor_sections__"]').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+      const sections = page.getByRole("navigation", { name: scene.dashboard, exact: true });
+      const columns = await sections.evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
       console.log("P11 large-text layout", JSON.stringify({ locale: scene.locale, normalNav, largeNav, columns }));
       expect(largeNav.count).toBe(normalNav.count);
       expect(largeNav.rows).toBeGreaterThan(1);

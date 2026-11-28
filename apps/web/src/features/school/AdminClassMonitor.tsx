@@ -117,7 +117,7 @@ function ClassDetails({locale,report,section,setSection,openStudent,goBack}:{
    <p className={styles.classIdentity}><strong>{report.classroom.code} · <bdi>{locale==="ar"?report.classroom.nameAr:report.classroom.nameDe}</bdi></strong></p>
    <p>{t.teacher}: {report.classroom.teacherName??t.notAssigned}</p>
   </header>
-  <div className={styles.metrics}>
+  <div className={styles.metrics} data-testid="class-monitor-metrics">
    <Count label={t.students} value={number(report.students.length,locale)}/>
    <Count label={t.recentAttendance} value={report.lastAttendance?dateLabel(report.lastAttendance.date,locale):"—"}/>
    <Count label={t.upcoming} value={number(report.exams.length,locale)}/>

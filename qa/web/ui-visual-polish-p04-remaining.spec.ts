@@ -125,7 +125,8 @@ for (const actor of moreActors) for (const locale of ["de", "ar"] as const) {
         expect(routes).toEqual(["/school/more/timetable", "/school/more/enrollment-stops", "/school/more/finance-reports", "/school/more/invoices", "/account/profile", "/account/preferences", "/account/security"].map(s => base + s));
       }
       if (actor.persona === "teacher") {
-        expect(routes).toEqual(["grading", "reports", "exams", "evaluations", "homework", "academics", "curriculum", "timetable", "attendance"].map(s => base + "/school/more/" + s).concat(["/account/profile", "/account/preferences", "/account/security"].map(s => base + s)));
+        expect(routes).toEqual(["grading", "reports", "exams", "evaluations", "homework", "academics", "curriculum", "timetable"].map(s => base + "/school/more/" + s).concat(["/account/profile", "/account/preferences", "/account/security"].map(s => base + s)));
+        await expect(page.locator(`.school-nav > a[href="${base}/school/attendance"]`)).toHaveCount(1);
       }
       if (actor.actor === "finance") {
         for (const suffix of ["finance-reports", "invoices", "receipts?view=cashbook", "fee-settings"]) expect(routes).toContain(base + "/school/more/" + suffix);

@@ -43,8 +43,8 @@ async function financeNavigation(nav: Locator) {
 }
 
 for (const scene of [
-  { locale: "de", width: 390, theme: "light", actor: "guardian-de", payer: "Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk", child: "ahmed", cash: "Aktueller Kassenbestand", open: "Offene Rechnungen" },
-  { locale: "ar", width: 320, theme: "dark", actor: "guardian-ar", payer: "سلمى عبد الرحمن محمد", child: "omar", cash: "رصيد الخزنة الحالي", open: "الفواتير غير المدفوعة" },
+  { locale: "de", width: 390, theme: "light", actor: "guardian-de", payer: "Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk", child: "ahmed", cash: "Aktueller Kassenbestand", open: "Offene Rechnungen", invoiceBalance: "Offener Betrag" },
+  { locale: "ar", width: 320, theme: "dark", actor: "guardian-ar", payer: "سلمى عبد الرحمن محمد", child: "omar", cash: "رصيد الخزنة الحالي", open: "الفواتير غير المدفوعة", invoiceBalance: "المبلغ المتبقي" },
 ] as const) {
   test(`P10 actual balance and invoice hierarchy ${scene.locale}`, async ({ page, context, browser }) => {
     const school = schoolFixtures();
@@ -105,7 +105,7 @@ for (const scene of [
       await expect(invoiceRow).toBeVisible();
       await invoiceRow.click();
       await expect.poll(() => new URL(page.url()).searchParams.get("invoice")).toBe(id);
-      const detail = page.locator('[class*="FinanceWorkspace_invoiceBalance__"]');
+      const detail = page.getByText(scene.invoiceBalance, { exact: true }).locator("..");
       await expect(detail.locator("strong bdi")).toHaveText(money(invoice.balanceMinor, invoice.currency));
       await expect(detail.locator("[data-state=unpaid]")).toBeVisible();
       await expect(page.locator('a[href*="/record-payment?invoice=' + id + '"]')).toBeVisible();
@@ -127,7 +127,7 @@ for (const scene of [
         await payerContext.addCookies([{ name: "madrasty-session", value: guardian, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
         const payerPage = await payerContext.newPage();
         expect((await payerPage.goto(localOrigin + root + "/invoices?invoice=" + id))?.status()).toBe(200);
-        const payerDetail = payerPage.locator('[class*="FinanceWorkspace_invoiceBalance__"]');
+        const payerDetail = payerPage.getByText(scene.invoiceBalance, { exact: true }).locator("..");
         await expect(payerDetail.locator("strong bdi")).toHaveText(money(invoice.balanceMinor, invoice.currency));
         await expect(payerPage.locator('a[href*="/record-payment?invoice="]')).toHaveCount(0);
         await expect(payerPage.locator('a[href="/api/v1/finance/invoices/' + id + '/pdf?locale=' + scene.locale + '"]')).toBeVisible();
