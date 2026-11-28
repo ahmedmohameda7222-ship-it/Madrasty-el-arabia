@@ -15,6 +15,32 @@ for (const scene of [
     const mark = (stage: string) => console.log("P08 stage", JSON.stringify({ locale: scene.locale, engine: browser.browserType().name(), stage, elapsedMs: Date.now() - started }));
     const folder = `qa-artifacts/visual-polish/P08/chat-${scene.locale}-${scene.width}/${browser.browserType().name()}`;
     mkdirSync(folder, { recursive: true });
+    // Record bounded, non-identifying navigation/API evidence to distinguish
+    // a lost thread selection from a message/composer rendering failure.
+    let expectedThread: string | undefined;
+    const boundaries: Record<string, unknown>[] = [];
+    const record = (event: Record<string, unknown>) => {
+      if (boundaries.length === 60) boundaries.shift();
+      boundaries.push({ elapsedMs: Date.now() - started, ...event });
+    };
+    const routeState = (rawUrl: string) => {
+      const url = new URL(rawUrl);
+      const selection = url.searchParams.get("thread");
+      return {
+        messagesRoute: url.pathname === `/${scene.locale}/school/messages`,
+        threadState: !selection ? "absent" : selection === expectedThread ? "expected" : "other",
+      };
+    };
+    page.on("framenavigated", frame => {
+      if (frame === page.mainFrame()) record({ event: "navigation", ...routeState(frame.url()) });
+    });
+    page.on("response", response => {
+      const url = new URL(response.url());
+      if (url.origin !== localOrigin || !url.pathname.startsWith("/api/")) return;
+      const endpoint = url.pathname.includes("/messages") ? "messages"
+        : url.pathname.includes("/threads") ? "threads" : null;
+      if (endpoint) record({ event: "api", endpoint, status: response.status(), method: response.request().method() });
+    });
     await context.tracing.start({ screenshots: true, snapshots: true });
     try {
       await school.seed();
@@ -26,6 +52,7 @@ for (const scene of [
       const target = contacts.find((c: { displayName: string }) => c.displayName === "يوسف عبد الرحمن محمود")?.target;
       expect(target).toBeTruthy();
       const thread = (await fixtureApi(school, "/threads", { token: guardian, persona: "guardian", method: "POST", key: randomUUID(), body: { target } })).payload.data.threadId;
+      expectedThread = thread;
       const outgoing = "QA outgoing " + randomUUID().slice(0, 8);
       const incoming = "QA incoming " + randomUUID().slice(0, 8);
       for (const [token, persona, body] of [[guardian, "guardian", outgoing], [teacher, "teacher", incoming]] as const) {
@@ -41,7 +68,9 @@ for (const scene of [
       await expect(row).toBeVisible({ timeout: 20000 });
       mark("thread-row-visible");
       await row.click();
+      mark("thread-clicked");
       await expect.poll(() => new URL(page.url()).searchParams.get("thread")).toBe(thread);
+      mark("thread-url-matched");
       const own = page.locator(".comms-message[data-own=true]").filter({ hasText: outgoing });
       const other = page.locator(".comms-message[data-own=false]").filter({ hasText: incoming });
       await expect(own).toBeVisible();
@@ -95,7 +124,9 @@ for (const scene of [
       await page.screenshot({ path: folder + "/contact.png" });
       await dialog.getByRole("button", { name: scene.close, exact: true }).click();
       await expect(dialog).toBeHidden();
+      mark("contact-dialog-closed");
       await expect(profile).toBeFocused();
+      mark("contact-focus-restored");
       await expect(input).toHaveValue("QA retained draft");
       mark("draft-retained-and-focus-restored");
       await input.fill("");
@@ -112,6 +143,26 @@ for (const scene of [
       expect(profileSize).toBeGreaterThanOrEqual(13);
       expect(scene.locale === "de" ? ownShape.bottomRight < ownShape.bottomLeft : ownShape.bottomLeft < ownShape.bottomRight).toBe(true);
       expect(scene.locale === "de" ? otherShape.bottomLeft < otherShape.bottomRight : otherShape.bottomRight < otherShape.bottomLeft).toBe(true);
+    } catch (error) {
+      // Preserve the original failure and assertions; diagnostics are best effort.
+      let dom: unknown = null;
+      try {
+        dom = await page.evaluate(() => ({
+          threadRows: document.querySelectorAll(".comms-thread-row").length,
+          messages: document.querySelectorAll(".comms-message").length,
+          ownMessages: document.querySelectorAll(".comms-message[data-own=true]").length,
+          composerInputs: document.querySelectorAll(".comms-composer textarea").length,
+          contactTriggers: document.querySelectorAll(".comms-contact-trigger").length,
+          dialogs: document.querySelectorAll('[role="dialog"]').length,
+        }));
+      } catch {
+        // Navigation can destroy the execution context during the failing assertion.
+      }
+      console.log("P08 failure boundaries", JSON.stringify({
+        locale: scene.locale, engine: browser.browserType().name(),
+        ...routeState(page.url()), dom, boundaries,
+      }));
+      throw error;
     } finally {
       mark("trace-stop-start");
       try {
