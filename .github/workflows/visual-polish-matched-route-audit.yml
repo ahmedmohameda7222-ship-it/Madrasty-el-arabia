@@ -92,3 +92,5 @@ jobs:
             qa-artifacts/visual-polish/route-survey-matched/matched-*.json
           retention-days: 7
           if-no-files-found: warn
+
+# Revalidate the integrated P07 touch-target source repair and existing P08/P10 gates.

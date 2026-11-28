@@ -273,7 +273,7 @@ test("mobile chat composer keeps media actions collapsed until requested",async(
       await expect(send).toHaveCount(0);
       // Exercise the real record entry point without accessing a physical microphone.
       await page.evaluate(()=>{
-        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>{
+        Object.defineProperty(Object.getPrototypeOf(navigator.mediaDevices),"getUserMedia",{configurable:true,writable:true,value:async()=>{
           document.documentElement.dataset.qaMicrophone="requested";
           throw new DOMException("QA permission denied","NotAllowedError");
         }});

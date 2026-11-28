@@ -49,12 +49,14 @@ for(const scene of [
         }});
       }
       if(!navigator.mediaDevices){log("mediaDevices-missing");return;}
-      Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>{
+      // A native MediaDevices instance wrapper can be recreated by the engine.
+      // Intercept the hardware boundary on its interface prototype instead.
+      Object.defineProperty(Object.getPrototypeOf(navigator.mediaDevices),"getUserMedia",{configurable:true,writable:true,value:async()=>{
         document.documentElement.dataset.qaMicrophone="requested";
         log("permission-requested");
         throw new DOMException("QA permission denied","NotAllowedError");
       }});
-      log("permission-probe-installed");
+      log("permission-probe-installed-on-prototype");
     });
     try{
       await school.seed();
