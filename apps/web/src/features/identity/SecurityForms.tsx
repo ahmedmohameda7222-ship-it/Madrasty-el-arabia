@@ -157,7 +157,8 @@ export function AccountSecurity({ locale, persona, assured }: { locale: Locale; 
 
   return (
     <section className="auth-card">
-      <h1>{text.security}</h1>
+      {/* Optional German line-break points are presentation only; keep the exact accessible name. */}
+      <h1 aria-label={text.security}>{locale === "de" ? text.security.replace("Kontosicherheit", "Konto\u00adsicher\u00adheit") : text.security}</h1>
       {persona === "admin" && (
         <section className="auth-form">
           <h2>{text.verify}</h2>

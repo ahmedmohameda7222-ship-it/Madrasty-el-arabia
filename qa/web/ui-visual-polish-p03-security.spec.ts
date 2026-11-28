@@ -88,6 +88,43 @@ for (const scene of cases) {
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       const large = await measure();
       await page.screenshot({ path: folder + "/security-text-200.png" });
+      if (scene.locale === "de") {
+        const heading = card.getByRole("heading", { level: 1, name: "Kontosicherheit", exact: true });
+        const wrapping = await heading.evaluate(el => {
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          const breaks: number[] = [];
+          let letters = 0, prior: number | undefined;
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            const text = node.textContent ?? "";
+            for (let i = 0; i < text.length; i++) {
+              if (text[i] === "\u00ad") continue;
+              const range = document.createRange();
+              range.setStart(node, i);
+              range.setEnd(node, i + 1);
+              // Chromium can include the preceding discretionary hyphen as
+              // a separate rectangle for the first letter of the next line.
+              const rect = Array.from(range.getClientRects()).filter(rect => rect.width > 0).at(-1);
+              if (!rect) throw new Error("Missing heading glyph geometry");
+              const top = Math.round(rect.top);
+              if (prior !== undefined && prior !== top) breaks.push(letters);
+              prior = top;
+              letters++;
+            }
+          }
+          return { text: el.textContent?.replaceAll("\u00ad", ""), breaks };
+        });
+        expect(wrapping.text).toBe("Kontosicherheit");
+        console.log("P03 security heading breaks", JSON.stringify({ width: scene.width, ...wrapping }));
+        if (!baseline) expect(wrapping.breaks.filter(index => ![3, 5, 7, 11].includes(index))).toEqual([]);
+      }
+      // A vertically scrolling card is valid at 200%; every existing control
+      // must still be reachable without submitting any security change.
+      for (const control of await card.locator("input, button").all()) {
+        if (await control.isVisible()) {
+          await control.scrollIntoViewIfNeeded();
+          await expect(control).toBeInViewport();
+        }
+      }
       console.log("P03 security geometry", JSON.stringify({ ...scene, normal, large }));
       writeFileSync(folder + "/geometry.json", JSON.stringify({ ...scene, normal, large }, null, 2));
       for (const result of [normal, large]) {
