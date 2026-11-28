@@ -149,6 +149,9 @@ class FoundationVisualTest {
             compose.onNodeWithContentDescription(resources.getString(R.string.comms_unread_badge, 105), useUnmergedTree = true)
                 .assertIsDisplayed()
             assertWholeWords("99+")
+            val badgeText = compose.onNodeWithText("99+", useUnmergedTree = true).fetchSemanticsNode()
+            assertTrue("Unread badge is horizontally clipped", badgeText.boundsInRoot.width + 1 >= badgeText.size.width)
+            assertTrue("Unread badge is vertically clipped", badgeText.boundsInRoot.height + 1 >= badgeText.size.height)
             // Reflow must not remove destinations, reduce touch targets or change selection.
             tabs.forEach { tab ->
                 val item = compose.onNode(hasText(resources.getString(tab.label)) and hasClickAction())
@@ -175,7 +178,8 @@ class FoundationVisualTest {
             }
         assertTrue("No text layout for $label", layouts.isNotEmpty())
         layouts.forEach { layout ->
-            assertTrue("Clipped text: $label", !layout.hasVisualOverflow)
+            val details = "size=${layout.size}, paragraph=${layout.multiParagraph.width}x${layout.multiParagraph.height}, widthOverflow=${layout.didOverflowWidth}, heightOverflow=${layout.didOverflowHeight}, lines=${layout.lineCount}"
+            assertTrue("Clipped text: $label ($details)", !layout.hasVisualOverflow)
             val text = layout.layoutInput.text.text
             Regex("\\S+").findAll(text).forEach { word ->
                 assertEquals(

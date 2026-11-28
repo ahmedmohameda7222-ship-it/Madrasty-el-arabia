@@ -6,10 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
@@ -35,7 +33,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -154,7 +153,7 @@ fun SchoolShell(
 
 
 /** Grow with system type instead of forcing the title into a fixed-height app bar. */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun SchoolShellHeader(
     active: SchoolTab,
@@ -177,7 +176,7 @@ private fun SchoolShellHeader(
     } + 32.dp else 0.dp
     Surface(color = MaterialTheme.colorScheme.surface) {
         BoxWithConstraints(Modifier.fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+            .windowInsetsPadding(TopAppBarDefaults.windowInsets)
             .padding(horizontal = 12.dp, vertical = 4.dp)) {
             // Reserve both native icon touch targets; an absent optional action
             // merely leaves room rather than compressing the school name.
@@ -220,15 +219,27 @@ private fun SchoolShellNavigation(
     val style = MaterialTheme.typography.labelMedium
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val minimums = labels.map { label ->
+    val labelLayouts = labels.map { label ->
+        measurer.measure(AnnotatedString(label), style = style, softWrap = false, maxLines = 1)
+    }
+    val badgeText = if (unreadMessages > 99) "99+" else unreadMessages.toString()
+    val badgeStyle = MaterialTheme.typography.labelSmall
+    val badgeLayout = measurer.measure(AnnotatedString(badgeText), style = badgeStyle, softWrap = false, maxLines = 1)
+    val badgeWidth = with(density) { badgeLayout.size.width.toDp() }
+    val badgeHeight = with(density) { badgeLayout.size.height.toDp() } + 1.dp
+    val minimums = labelLayouts.mapIndexed { index, layout ->
         with(density) {
-            (measurer.measure(AnnotatedString(label), style = style, softWrap = false, maxLines = 1).size.width.toDp() + 16.dp)
-                .coerceAtLeast(48.dp).value
+            // The unread chip is a real sibling, not an overlapping glyph
+            // inside a fixed 40x32 clipped icon. Reserve its intrinsic width.
+            val iconWidth = if (tabs[index] == SchoolTab.Messages && unreadMessages > 0)
+                24.dp + 4.dp + badgeWidth + 12.dp + 16.dp + 12.dp
+            else 48.dp
+            (layout.size.width.toDp() + 16.dp).coerceAtLeast(iconWidth).coerceAtLeast(48.dp).value
         }
     }
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
         BoxWithConstraints(Modifier.fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+            .windowInsetsPadding(NavigationBarDefaults.windowInsets)
             .padding(horizontal = 4.dp, vertical = 4.dp)) {
             val rows = mutableListOf<MutableList<Int>>()
             for (index in tabs.indices) {
@@ -260,22 +271,33 @@ private fun SchoolShellNavigation(
                                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                             ) {
                                 val colors = MaterialTheme.colorScheme
-                                Box(Modifier.size(width = 40.dp, height = 32.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(if (selected) colors.secondaryContainer else colors.surfaceContainerLow),
-                                    contentAlignment = Alignment.Center) {
-                                    val tint = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant
-                                    if (tab == SchoolTab.Messages && unreadMessages > 0) {
-                                        val unreadLabel = stringResource(R.string.comms_unread_badge, unreadMessages)
-                                        BadgedBox(badge = {
-                                            Badge(Modifier.semantics { contentDescription = unreadLabel }) {
-                                                Text(if (unreadMessages > 99) "99+" else unreadMessages.toString())
-                                            }
-                                        }) { SchoolIcon(tab.icon, tint) }
-                                    } else SchoolIcon(tab.icon, tint)
+                                val tint = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant
+                                val indicator = if (selected) colors.secondaryContainer else colors.surfaceContainerLow
+                                if (tab == SchoolTab.Messages && unreadMessages > 0) {
+                                    val unreadLabel = stringResource(R.string.comms_unread_badge, unreadMessages)
+                                    Row(Modifier.heightIn(min = 32.dp)
+                                        .background(indicator, RoundedCornerShape(50))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically) {
+                                        SchoolIcon(tab.icon, tint)
+                                        Badge(Modifier.semantics { contentDescription = unreadLabel }) {
+                                            Text(badgeText, Modifier.heightIn(min = badgeHeight), style = badgeStyle,
+                                                softWrap = false, maxLines = 1)
+                                        }
+                                    }
+                                } else {
+                                    Box(Modifier.size(width = 40.dp, height = 32.dp)
+                                        .background(indicator, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                                        SchoolIcon(tab.icon, tint)
+                                    }
                                 }
-                                Text(labels[index], style = style, color = MaterialTheme.colorScheme.onSurface,
-                                    textAlign = TextAlign.Center)
+                                // Allocate the full measured line, including pixel-rounding headroom.
+                                // Keep the system's actual type size and a centered, single readable label.
+                                val lineHeight = with(density) { labelLayouts[index].size.height.toDp() } + 1.dp
+                                Text(labels[index], Modifier.fillMaxWidth().heightIn(min = lineHeight),
+                                    style = style, color = colors.onSurface, textAlign = TextAlign.Center,
+                                    softWrap = false, maxLines = 1)
                             }
                         }
                     }
