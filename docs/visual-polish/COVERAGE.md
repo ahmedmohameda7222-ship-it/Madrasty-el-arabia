@@ -1,6 +1,6 @@
 # Scene evidence ledger — incomplete
 
-Source registry fingerprint: `24e255241f40de1efd19ac0073382ef4f44ae319100cd9d9d35933139c8d7373`. Source discovery includes 129 scenes. This document maps exact scene IDs to specifically observed runtime evidence; the registry itself remains discovery-only. A row is **PARTIAL** if a narrow test case ran or an attempted test reached the scene, not if its entire required matrix is audited. **OPEN** means no specific evidence is recorded here, not that the feature is missing. No scene is marked complete. For each scene, the full `requiredVariants`, query parameters, source predicates and element variants in SCENES/ELEMENTS and the master plan still apply. Hosted screenshots/traces are kept within disposable runners and have not been independently reviewed; neither screenshots nor test counts close a scene. Existing local evidence from earlier checkpoints stays in STATUS.md. Physical device and owner visual approval are open.
+Source registry fingerprint: `a7771eebe5f9c6e1b971752352bae6686426da1bab8ca6af2afaa267b90afd1a`. Source discovery includes 129 scenes. This document maps exact scene IDs to specifically observed runtime evidence; the registry itself remains discovery-only. A row is **PARTIAL** if a narrow test case ran or an attempted test reached the scene, not if its entire required matrix is audited. **OPEN** means no specific evidence is recorded here, not that the feature is missing. No scene is marked complete. For each scene, the full `requiredVariants`, query parameters, source predicates and element variants in SCENES/ELEMENTS and the master plan still apply. Hosted screenshots/traces are kept within disposable runners and have not been independently reviewed; neither screenshots nor test counts close a scene. Existing local evidence from earlier checkpoints stays in STATUS.md. Physical device and owner visual approval are open.
 
 | Scene ID | Phase | Route / screen | State | Narrow evidence / remaining work |
 | --- | --- | --- | --- | --- |
@@ -9,14 +9,14 @@ Source registry fingerprint: `24e255241f40de1efd19ac0073382ef4f44ae319100cd9d9d3
 | WR-002 | P03 | /[locale]/account/profile | PARTIAL | Guardian DE 320 profile fields, warmed P03 diagnostic passed (46082187416 Chromium). Edit/save/error/long-name/device matrix open. |
 | WR-003 | P03 | /[locale]/account/security/[action] | PARTIAL | AR/DE recover form and missing-token email/activation; warmed P03 diagnostic passed (46082187416 Chromium); valid/expired/replayed/submitting/success open. |
 | WR-004 | P03 | /[locale]/account/security | OPEN | No specifically verified state recorded in this ledger. |
-| WR-005 | P03 | /[locale]/account/sign-in | PARTIAL | Public DE 390 light and AR 320 dark sign-in fields, reveal/remask/autofill in warmed P03 diagnostic (46082187416 Chromium); other states open. |
+| WR-005 | P03 | /[locale]/account/sign-in | PARTIAL | Signed-out entry and identity tests 4/4 each browser on production build 46085892025; invalid credentials, MFA and authenticated production fixture remain open. |
 | WR-006 | P08 | /[locale]/directory | PARTIAL | Guardian contact picker and full searchable directory original regression passed (46083875529 WebKit); all roles, terminal states and visual matrix open. |
-| WR-007 | P03 | /[locale]/install | PARTIAL | DE 390 and AR 320 iPhone/Android instructions in warm P03 diagnostic (46082187416 Chromium); cold DE failure open; APK ready/download and desktop open. |
-| WR-008 | P03 | /[locale]/invite | PARTIAL | AR/DE missing-token invitation terminal state (warm 46082187416 Chromium); valid/expired/activation open. |
+| WR-007 | P03 | /[locale]/install | PARTIAL | Original signed-out entry passed 4/4 suite on production Chromium and WebKit 46085892025; intermittent dev first click and ready APK variants still open. |
+| WR-008 | P03 | /[locale]/invite | PARTIAL | Missing-token terminal state passed production signed-out suite both browsers 46085892025; valid/expired/activation open. |
 | WEB-[locale]-layout | P11 | /[locale] | OPEN | No specifically verified state recorded in this ledger. |
 | WR-009 | P08 | /[locale]/open-notice/[id] | OPEN | No specifically verified state recorded in this ledger. |
 | WR-010 | P03 | /[locale]/open/[kind]/[id] | OPEN | No specifically verified state recorded in this ledger. |
-| WR-011 | P03 | /[locale] | PARTIAL | DE 390 light/AR 320 dark welcome, link destinations and branding (warm 46082187416 Chromium); cold install navigation and other states open. |
+| WR-011 | P03 | /[locale] | PARTIAL | Original public entry journey passed production both browsers 46085892025; no dev flake waiver, repeated cold and device variants open. |
 | WR-012 | P04 | /[locale]/school/[tab] | OPEN | No specifically verified state recorded in this ledger. |
 | WR-013 | P06 | /[locale]/school/children/[childId]/attendance | OPEN | No specifically verified state recorded in this ledger. |
 | WR-014 | P06 | /[locale]/school/children/[childId]/excuse | OPEN | No specifically verified state recorded in this ledger. |
@@ -30,7 +30,7 @@ Source registry fingerprint: `24e255241f40de1efd19ac0073382ef4f44ae319100cd9d9d3
 | WR-020 | P06 | /[locale]/school/more/attendance | OPEN | No specifically verified state recorded in this ledger. |
 | WR-021 | P10 | /[locale]/school/more/bank | OPEN | No specifically verified state recorded in this ledger. |
 | WR-022 | P08 | /[locale]/school/more/broadcasts | OPEN | No specifically verified state recorded in this ledger. |
-| WR-023 | P09 | /[locale]/school/more/calendar | OPEN | No specifically verified state recorded in this ledger. |
+| WR-023 | P09 | /[locale]/school/more/calendar | PARTIAL | Original calendar UI regression 4/4 Chromium 46083875529; P09 baseline RED geometry both browsers 46084728002; scoped candidate 02c5dfa pending browser verification. |
 | WR-024 | P05 | /[locale]/school/more/classes | OPEN | No specifically verified state recorded in this ledger. |
 | WR-025 | P07 | /[locale]/school/more/curriculum | OPEN | No specifically verified state recorded in this ledger. |
 | WR-026 | P10 | /[locale]/school/more/enrollment-stops | OPEN | No specifically verified state recorded in this ledger. |
@@ -38,16 +38,16 @@ Source registry fingerprint: `24e255241f40de1efd19ac0073382ef4f44ae319100cd9d9d3
 | WR-028 | P09 | /[locale]/school/more/events | OPEN | No specifically verified state recorded in this ledger. |
 | WR-029 | P07 | /[locale]/school/more/exams | OPEN | No specifically verified state recorded in this ledger. |
 | WR-030 | P10 | /[locale]/school/more/fee-settings | OPEN | No specifically verified state recorded in this ledger. |
-| WR-031 | P10 | /[locale]/school/more/finance-reports | OPEN | No specifically verified state recorded in this ledger. |
+| WR-031 | P10 | /[locale]/school/more/finance-reports | PARTIAL | Admin/guardian iPhone WebKit finance visual regression 5/5 46083875529; fresh finance domain test green 46085891983. New balance hierarchy tests pending. |
 | WR-032 | P07 | /[locale]/school/more/grading | OPEN | No specifically verified state recorded in this ledger. |
 | WR-033 | P07 | /[locale]/school/more/homework | OPEN | No specifically verified state recorded in this ledger. |
-| WR-034 | P10 | /[locale]/school/more/invoices | OPEN | No specifically verified state recorded in this ledger. |
+| WR-034 | P10 | /[locale]/school/more/invoices | PARTIAL | Actual paid/partial/unpaid invoices, protected PDF links and payer scope passed iPhone WebKit 46083875529; new geometry tests pending, full review open. |
 | WR-035 | P10 | /[locale]/school/more/issue-invoices | OPEN | No specifically verified state recorded in this ledger. |
 | WR-036 | P08 | /[locale]/school/more/message-reports | OPEN | No specifically verified state recorded in this ledger. |
 | WR-037 | P08 | /[locale]/school/more/news | OPEN | No specifically verified state recorded in this ledger. |
 | WR-038 | P08 | /[locale]/school/more/notifications | OPEN | No specifically verified state recorded in this ledger. |
-| WR-039 | P07 | /[locale]/school/more/oversight | PARTIAL | Read-only class/pupil/announced-only exam and return navigation executed in both browsers (46083680556); DE 200% overflow and AR hierarchy RED. Candidate 8df95bd pending rerun; full visual/device matrix open. |
-| WR-040 | P10 | /[locale]/school/more/receipts | OPEN | No specifically verified state recorded in this ledger. |
+| WR-039 | P07 | /[locale]/school/more/oversight | PARTIAL | New P07 read-only class/pupil/announced-only exam, 22px card, 24px/740 KPI and 200% reflow green both browsers 46084728002. Full academic visual and device matrix open. |
+| WR-040 | P10 | /[locale]/school/more/receipts | PARTIAL | Actual receipts and protected PDFs passed iPhone WebKit 46083875529; fresh finance domain green 46085891983. Full state matrix open. |
 | WR-041 | P10 | /[locale]/school/more/record-payment | OPEN | No specifically verified state recorded in this ledger. |
 | WR-042 | P07 | /[locale]/school/more/reports | OPEN | No specifically verified state recorded in this ledger. |
 | WR-043 | P10 | /[locale]/school/more/stop-reviews | OPEN | No specifically verified state recorded in this ledger. |
@@ -88,54 +88,58 @@ Source registry fingerprint: `24e255241f40de1efd19ac0073382ef4f44ae319100cd9d9d3
 | WEB-open-receipt | P03 | /[locale]/open/receipt/[id] | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-open-fee_stop | P03 | /[locale]/open/fee_stop/[id] | OPEN | No specifically verified state recorded in this ledger. |
 | WEB-offline-attendance | P06 | /offline/attendance.html | OPEN | No specifically verified state recorded in this ledger. |
-| AN-001 | Native / see plan | Tabs | OPEN | No specifically verified state recorded in this ledger. |
-| AN-002 | Native / see plan | Account | OPEN | No specifically verified state recorded in this ledger. |
-| AN-003 | Native / see plan | Profile | OPEN | No specifically verified state recorded in this ledger. |
-| AN-004 | Native / see plan | Security | OPEN | No specifically verified state recorded in this ledger. |
-| AN-005 | Native / see plan | Directory | OPEN | No specifically verified state recorded in this ledger. |
-| AN-006 | Native / see plan | Thread | OPEN | No specifically verified state recorded in this ledger. |
-| AN-007 | Native / see plan | MessageReports | OPEN | No specifically verified state recorded in this ledger. |
-| AN-008 | Native / see plan | Bank | OPEN | No specifically verified state recorded in this ledger. |
-| AN-009 | Native / see plan | FeeSettings | OPEN | No specifically verified state recorded in this ledger. |
-| AN-010 | Native / see plan | IssueInvoices | OPEN | No specifically verified state recorded in this ledger. |
-| AN-011 | Native / see plan | Invoices | OPEN | No specifically verified state recorded in this ledger. |
-| AN-012 | Native / see plan | Payment | OPEN | No specifically verified state recorded in this ledger. |
-| AN-013 | Native / see plan | Receipts | OPEN | No specifically verified state recorded in this ledger. |
-| AN-014 | Native / see plan | FinanceReport | OPEN | No specifically verified state recorded in this ledger. |
-| AN-015 | Native / see plan | Stops | OPEN | No specifically verified state recorded in this ledger. |
-| AN-016 | Native / see plan | StopReviews | OPEN | No specifically verified state recorded in this ledger. |
-| AN-017 | Native / see plan | Broadcasts | OPEN | No specifically verified state recorded in this ledger. |
-| AN-018 | Native / see plan | Notifications | OPEN | No specifically verified state recorded in this ledger. |
-| AN-019 | Native / see plan | ResourceUnavailable | OPEN | No specifically verified state recorded in this ledger. |
-| AN-020 | Native / see plan | Publication | OPEN | No specifically verified state recorded in this ledger. |
-| AN-021 | Native / see plan | Access | OPEN | No specifically verified state recorded in this ledger. |
-| AN-022 | Native / see plan | Calendar | OPEN | No specifically verified state recorded in this ledger. |
-| AN-023 | Native / see plan | Enrollment | OPEN | No specifically verified state recorded in this ledger. |
-| AN-024 | Native / see plan | AttendanceReview | OPEN | No specifically verified state recorded in this ledger. |
-| AN-025 | Native / see plan | AttendanceHistory | OPEN | No specifically verified state recorded in this ledger. |
-| AN-026 | Native / see plan | OfflineAttendance | OPEN | No specifically verified state recorded in this ledger. |
-| AN-027 | Native / see plan | Excuse | OPEN | No specifically verified state recorded in this ledger. |
-| AN-028 | Native / see plan | Curriculum | OPEN | No specifically verified state recorded in this ledger. |
-| AN-029 | Native / see plan | Homework | OPEN | No specifically verified state recorded in this ledger. |
-| AN-030 | Native / see plan | Gradebook | OPEN | No specifically verified state recorded in this ledger. |
-| AN-031 | Native / see plan | AcademicWork | OPEN | No specifically verified state recorded in this ledger. |
-| AN-032 | Native / see plan | Report | OPEN | No specifically verified state recorded in this ledger. |
-| AN-033 | Native / see plan | Evaluations | OPEN | No specifically verified state recorded in this ledger. |
-| AN-034 | Native / see plan | Exams | OPEN | No specifically verified state recorded in this ledger. |
-| AN-035 | Native / see plan | Timetable | OPEN | No specifically verified state recorded in this ledger. |
-| AN-036 | Native / see plan | Invitations | OPEN | No specifically verified state recorded in this ledger. |
-| AN-037 | Native / see plan | Import | OPEN | No specifically verified state recorded in this ledger. |
-| AN-038 | Native / see plan | Assignments | OPEN | No specifically verified state recorded in this ledger. |
-| AN-039 | Native / see plan | Family | OPEN | No specifically verified state recorded in this ledger. |
-| AN-040 | Native / see plan | AdminTasks | OPEN | No specifically verified state recorded in this ledger. |
-| AN-041 | Native / see plan | Queue | OPEN | No specifically verified state recorded in this ledger. |
-| AN-root | Native / see plan | App entry and platform intents | OPEN | No specifically verified state recorded in this ledger. |
-| AN-sign-in | Native / see plan | Sign-in, MFA and errors | PARTIAL | API35 emulator 320dp and 393dp: signed-out primary control visibility/disabled/height verified in 46081000121. MFA, failure/loading, locale/fontScale/device variants open. |
-| AN-invitation | Native / see plan | Invitation and activation | OPEN | No specifically verified state recorded in this ledger. |
-| AN-release-gate | Native / see plan | Unsupported or outdated app | OPEN | No specifically verified state recorded in this ledger. |
+| AN-001 | P04/P05/P06/P08/P09 | Tabs | PARTIAL | Hosted API35 320dp/393dp FoundationVisualTest and CommunicationVisualTest component harnesses passed 46081000121. Actual signed-in SchoolTabs destinations, real API content and full fontScale/theme/capability matrix remain open. |
+| AN-002 | P03 | Account | OPEN | No specifically verified state recorded in this ledger. |
+| AN-003 | P03 | Profile | OPEN | No specifically verified state recorded in this ledger. |
+| AN-004 | P03 | Security | OPEN | No specifically verified state recorded in this ledger. |
+| AN-005 | P08 | Directory | OPEN | No specifically verified state recorded in this ledger. |
+| AN-006 | P08 | Thread | PARTIAL | Native communication component tests on synthetic messages/drafts passed 46081000121; not a full live native thread/API audit. |
+| AN-007 | P08 | MessageReports | OPEN | No specifically verified state recorded in this ledger. |
+| AN-008 | P10 | Bank | OPEN | No specifically verified state recorded in this ledger. |
+| AN-009 | P10 | FeeSettings | OPEN | No specifically verified state recorded in this ledger. |
+| AN-010 | P10 | IssueInvoices | OPEN | No specifically verified state recorded in this ledger. |
+| AN-011 | P10 | Invoices | PARTIAL | Native FinanceVisualTest component cases passed 46081000121; actual invoice lists/detail/API states and permissions still open. |
+| AN-012 | P10 | Payment | OPEN | No specifically verified state recorded in this ledger. |
+| AN-013 | P10 | Receipts | OPEN | No specifically verified state recorded in this ledger. |
+| AN-014 | P10 | FinanceReport | PARTIAL | Native FinanceVisualTest component cases passed 46081000121; full live report/API and payer scope audit open. |
+| AN-015 | P10 | Stops | OPEN | No specifically verified state recorded in this ledger. |
+| AN-016 | P10 | StopReviews | OPEN | No specifically verified state recorded in this ledger. |
+| AN-017 | P08 | Broadcasts | OPEN | No specifically verified state recorded in this ledger. |
+| AN-018 | P08 | Notifications | OPEN | No specifically verified state recorded in this ledger. |
+| AN-019 | P03/P11 | ResourceUnavailable | OPEN | No specifically verified state recorded in this ledger. |
+| AN-020 | P08/P09 | Publication | OPEN | No specifically verified state recorded in this ledger. |
+| AN-021 | P03 | Access | OPEN | No specifically verified state recorded in this ledger. |
+| AN-022 | P09 | Calendar | OPEN | No specifically verified state recorded in this ledger. |
+| AN-023 | P05 | Enrollment | OPEN | No specifically verified state recorded in this ledger. |
+| AN-024 | P06 | AttendanceReview | OPEN | No specifically verified state recorded in this ledger. |
+| AN-025 | P06 | AttendanceHistory | OPEN | No specifically verified state recorded in this ledger. |
+| AN-026 | P06 | OfflineAttendance | OPEN | No specifically verified state recorded in this ledger. |
+| AN-027 | P06 | Excuse | OPEN | No specifically verified state recorded in this ledger. |
+| AN-028 | P07 | Curriculum | OPEN | No specifically verified state recorded in this ledger. |
+| AN-029 | P07 | Homework | OPEN | No specifically verified state recorded in this ledger. |
+| AN-030 | P07 | Gradebook | OPEN | No specifically verified state recorded in this ledger. |
+| AN-031 | P07 | AcademicWork | OPEN | No specifically verified state recorded in this ledger. |
+| AN-032 | P07 | Report | OPEN | No specifically verified state recorded in this ledger. |
+| AN-033 | P07 | Evaluations | OPEN | No specifically verified state recorded in this ledger. |
+| AN-034 | P07 | Exams | OPEN | No specifically verified state recorded in this ledger. |
+| AN-035 | P09 | Timetable | OPEN | No specifically verified state recorded in this ledger. |
+| AN-036 | P05 | Invitations | OPEN | No specifically verified state recorded in this ledger. |
+| AN-037 | P05 | Import | OPEN | No specifically verified state recorded in this ledger. |
+| AN-038 | P05 | Assignments | OPEN | No specifically verified state recorded in this ledger. |
+| AN-039 | P05 | Family | PARTIAL | Native FamilyVisualTest five-step component wizard cases passed 46081000121; real native family flow, import and data states open. |
+| AN-040 | P04 | AdminTasks | OPEN | No specifically verified state recorded in this ledger. |
+| AN-041 | P04 | Queue | OPEN | No specifically verified state recorded in this ledger. |
+| AN-root | P03/P11 | App entry and platform intents | OPEN | No specifically verified state recorded in this ledger. |
+| AN-sign-in | P03 | Sign-in, MFA and errors | PARTIAL | API35 emulator 320dp and 393dp: signed-out primary control visibility/disabled/height verified in 46081000121. MFA, failure/loading, locale/fontScale/device variants open. |
+| AN-invitation | P03 | Invitation and activation | OPEN | No specifically verified state recorded in this ledger. |
+| AN-release-gate | P03 | Unsupported or outdated app | OPEN | No specifically verified state recorded in this ledger. |
 
 ## Evidence bookkeeping
 
 - 46081553330 (P04 candidate): both browser hierarchy assertions passed; full suites failed elsewhere. 46082187416 (P05 candidate): Chromium 43/46, warm P03 diagnostic 5/5, WebKit infrastructure failure. 46081000121 native suite passed 22 instrumentation cases per emulator size, not 22 audited scenes.
 - 46083680556 and 46083875529 are development-only test runs; results must be reconciled before making additional completion claims.
 - The full source element registry remains `DISCOVERED_PENDING_MANUAL_AND_RUNTIME_REVIEW`. Record per-element state, keyboard/accessibility checks, observed viewport/locale/role and before/after evidence during actual review, not by mechanically marking JSX or Compose candidates as covered.
+
+## Native tab expansion (manual discovery, not execution)
+
+AN-001 is a container route, not one screen. Reviewed SchoolWorkspace.kt's SchoolTabs and SchoolSettings dispatch: expand into Admin/Teacher/Guardian Home (P04), Students (P05 capability-gated), Children (P05 with attendance/academic/finance destinations), Attendance (P06), Messages chat/feed (P08), independent Calendar (P09), and More with account/school/finance/access groups (P04). Each requires actual runtime role/state checks; the component harness is not enough. For each native workspace route above, retain every declaration parameter from SCENES.json and all source predicates; verify authorized/denied/empty/ready/editing/error/offline variants when applicable. Manual review remains open.
