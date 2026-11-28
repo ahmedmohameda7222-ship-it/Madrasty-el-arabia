@@ -128,11 +128,15 @@ fun SchoolShell(
             }
         }
 
+        // Resolve labels in the selected interface language before the modal
+        // window installs its own Android resource configuration.
+        val chooseLabel = stringResource(R.string.choose)
+        val closeLabel = stringResource(R.string.close)
         if (pickerVisible) {
             ModalBottomSheet(onDismissRequest = { pickerVisible = false }) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
-                    Text(stringResource(R.string.choose), Modifier.semantics { heading() })
-                    TextButton(onClick = { pickerVisible = false }) { Text(stringResource(R.string.close)) }
+                    Text(chooseLabel, Modifier.semantics { heading() })
+                    TextButton(onClick = { pickerVisible = false }) { Text(closeLabel) }
                     choices.forEach { option ->
                         androidx.compose.material3.FilterChip(
                             selected = option.id == selectedScope?.id,
