@@ -9,7 +9,11 @@ for (const scene of [
   { locale: "de", width: 390, theme: "light", mic: "Sprachnachricht aufnehmen", attach: "Anhang hinzufügen", contact: "Kontaktinformationen", profileAction: "Kontakt ansehen", close: "Schließen" },
   { locale: "ar", width: 320, theme: "dark", mic: "تسجيل رسالة صوتية", attach: "إضافة مرفق", contact: "بيانات جهة الاتصال", profileAction: "عرض البيانات", close: "إغلاق" },
 ] as const) {
-  test(`P08 direct chat material and retained draft ${scene.locale}`, async ({ page, context, browser }) => {
+  test(`P08 direct chat material and retained draft ${scene.locale}`, async ({ page, context, browser, baseURL }) => {
+    const origin = baseURL ?? localOrigin;
+    expect([localOrigin, "https://127.0.0.1:4443"]).toContain(origin);
+    const sessionCookie = origin === localOrigin ? "madrasty-session" : "__Host-madrasty-session";
+    const csrfCookie = origin === localOrigin ? "madrasty-csrf" : "__Host-madrasty-csrf";
     const school = schoolFixtures();
     const started = Date.now();
     const mark = (stage: string) => console.log("P08 stage", JSON.stringify({ locale: scene.locale, engine: browser.browserType().name(), stage, elapsedMs: Date.now() - started }));
@@ -36,7 +40,7 @@ for (const scene of [
     });
     page.on("response", response => {
       const url = new URL(response.url());
-      if (url.origin !== localOrigin || !url.pathname.startsWith("/api/")) return;
+      if (url.origin !== origin || !url.pathname.startsWith("/api/")) return;
       const endpoint = url.pathname.includes("/messages") ? "messages"
         : url.pathname.includes("/threads") ? "threads" : null;
       if (endpoint) record({ event: "api", endpoint, status: response.status(), method: response.request().method() });
@@ -65,14 +69,14 @@ for (const scene of [
       // fixture. Use the existing real web sign-in endpoint on the guarded
       // synthetic origin; it issues the session AND matching CSRF cookie.
       // Do not seed an access cookie alone or bypass the mutation guard.
-      const login = await context.request.post(localOrigin + "/api/v1/auth/sign-in", {
-        headers: { Origin: localOrigin },
+      const login = await context.request.post(origin + "/api/v1/auth/sign-in", {
+        headers: { Origin: origin },
         data: { email: fixtureEmail(school.run, "guardian-de"), password: school.password },
       });
       expect(login.status(), "synthetic web sign-in must succeed").toBe(200);
-      const cookies = await context.cookies(localOrigin);
-      expect(cookies.some(cookie => cookie.name === "madrasty-session" && cookie.httpOnly), "web session cookie issued").toBe(true);
-      expect(cookies.some(cookie => cookie.name === "madrasty-csrf" && !cookie.httpOnly && /^[a-f0-9]{64}$/.test(cookie.value)), "web CSRF cookie issued").toBe(true);
+      const cookies = await context.cookies(origin);
+      expect(cookies.some(cookie => cookie.name === sessionCookie && cookie.httpOnly && cookie.secure === (origin !== localOrigin)), "web session cookie issued").toBe(true);
+      expect(cookies.some(cookie => cookie.name === csrfCookie && !cookie.httpOnly && cookie.secure === (origin !== localOrigin) && /^[a-f0-9]{64}$/.test(cookie.value)), "web CSRF cookie issued").toBe(true);
       mark("web-session-and-csrf-issued");
       await context.tracing.start({ screenshots: true, snapshots: true });
       tracing = true;

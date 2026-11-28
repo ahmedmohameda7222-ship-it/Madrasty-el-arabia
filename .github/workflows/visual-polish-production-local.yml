@@ -12,6 +12,7 @@ on:
       - "qa/web/ui-visual-polish-p09-calendar.spec.ts"
       - "qa/web/ui-visual-polish-p11-headings.spec.ts"
       - "qa/web/ui-visual-polish-p08-mic.spec.ts"
+      - "qa/web/ui-visual-polish-p08-chat.spec.ts"
       - "qa/web/ui-visual-polish-p07-editors.spec.ts"
       - "qa/web/ui-visual-polish-p05-child-actions.spec.ts"
       - "apps/web/src/app/[locale]/not-found.tsx"
@@ -28,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
-        slice: [core, compact-layout]
+        slice: [core, compact-layout, chat]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,9 +76,12 @@ jobs:
             compact-layout)
               pnpm exec playwright test --config qa/visual-polish-production.config.ts --browser ${{ matrix.browser }} ui-visual-polish-p09-calendar.spec.ts ui-visual-polish-p05-child-actions.spec.ts
               ;;
+            chat)
+              pnpm exec playwright test --config qa/visual-polish-production.config.ts --browser ${{ matrix.browser }} ui-visual-polish-p08-chat.spec.ts
+              ;;
             *) exit 2 ;;
           esac
-      - name: Retain selected synthetic P03 evidence only
+      - name: Retain selected synthetic visual evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -89,6 +93,8 @@ jobs:
             qa-artifacts/visual-polish/P09/**/calendar*.png
             qa-artifacts/visual-polish/P11/headings-*/**/*-200.png
             qa-artifacts/visual-polish/P08/microphone-*/**/*.png
+            qa-artifacts/visual-polish/P08/chat-*/**/*.png
+            qa-artifacts/visual-polish/P08/chat-*/**/geometry.json
             qa-artifacts/visual-polish/P07/editors-*/**/*.png
             qa-artifacts/visual-polish/P07/editors-*/**/geometry.json
             qa-artifacts/visual-polish/P05/child-actions-*/**/*.png
