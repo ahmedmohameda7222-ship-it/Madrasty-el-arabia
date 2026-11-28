@@ -16,6 +16,32 @@ async function geometry(surface: Locator) {
     weight: Number(getComputedStyle(el.querySelector("strong")!).fontWeight),
   }));
 }
+async function financeNavigation(nav: Locator) {
+  return nav.evaluate(el => {
+    const links = Array.from(el.querySelectorAll("a"));
+    return {
+      count: links.length,
+      active: links.filter(link => link.getAttribute("aria-current") === "page").length,
+      overflow: el.scrollWidth - el.clientWidth,
+      minimumTarget: Math.min(...links.map(link => Math.min(link.getBoundingClientRect().width, link.getBoundingClientRect().height))),
+      brokenWords: links.flatMap(link => {
+        const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
+        const broken: string[] = [];
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          for (const word of (node.textContent ?? "").matchAll(/\S+/gu)) {
+            const range = document.createRange();
+            range.setStart(node, word.index!);
+            range.setEnd(node, word.index! + word[0].length);
+            const rows = new Set(Array.from(range.getClientRects()).filter(rect => rect.width > 0).map(rect => Math.round(rect.top)));
+            if (rows.size > 1) broken.push(word[0]);
+          }
+        }
+        return broken;
+      }),
+    };
+  });
+}
+
 for (const scene of [
   { locale: "de", width: 390, theme: "light", actor: "guardian-de", payer: "Johanna Marie Sophie von Hohenlohe-Langenburg-Wiśniewska-Kowalczyk", child: "ahmed", cash: "Aktueller Kassenbestand", open: "Offene Rechnungen" },
   { locale: "ar", width: 320, theme: "dark", actor: "guardian-ar", payer: "سلمى عبد الرحمن محمد", child: "omar", cash: "رصيد الخزنة الحالي", open: "الفواتير غير المدفوعة" },
@@ -86,9 +112,14 @@ for (const scene of [
       const pdf = page.locator('a[href="/api/v1/finance/invoices/' + id + '/pdf?locale=' + scene.locale + '"]');
       await expect(pdf).toBeVisible();
       const adminGeometry = await geometry(detail);
+      const nav = page.getByRole("navigation", { name: scene.locale === "ar" ? "الحسابات" : "Buchhaltung", exact: true });
+      await expect(nav.getByRole("link")).toHaveCount(4);
+      const navigationNormal = await financeNavigation(nav);
       await page.screenshot({ path: folder + "/invoice.png" });
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.screenshot({ path: folder + "/invoice-text-200.png" });
+      const navigationLarge = await financeNavigation(nav);
+      console.log("P10 finance navigation", JSON.stringify({ locale: scene.locale, normal: navigationNormal, large: navigationLarge }));
       const overflow = await page.locator(".school-content").evaluate(el => el.scrollWidth - el.clientWidth);
       const payerContext = await browser.newContext({ viewport: { width: scene.width, height: 844 }, colorScheme: scene.theme, reducedMotion: "reduce" });
       let payerGeometry;
@@ -112,6 +143,13 @@ for (const scene of [
         expect(card.weight).toBeGreaterThanOrEqual(700);
       }
       expect(overflow).toBeLessThanOrEqual(1);
+      for (const navigation of [navigationNormal, navigationLarge]) {
+        expect(navigation.count).toBe(4);
+        expect(navigation.active).toBe(1);
+        expect(navigation.minimumTarget).toBeGreaterThanOrEqual(44);
+        expect(navigation.overflow).toBeLessThanOrEqual(1);
+        expect(navigation.brokenWords).toEqual([]);
+      }
       const unchanged = invoiceDetail.parse((await fixtureApi(school, "/finance/invoices/" + id, { token: finance })).payload.data);
       expect(unchanged.balanceMinor).toBe(invoice.balanceMinor);
       expect(unchanged.revision).toBe(invoice.revision);
