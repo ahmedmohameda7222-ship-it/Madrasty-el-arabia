@@ -12,6 +12,7 @@ on:
       - "qa/web/ui-visual-polish-p09-calendar.spec.ts"
       - "qa/web/ui-visual-polish-p11-headings.spec.ts"
       - "qa/web/ui-visual-polish-p08-mic.spec.ts"
+      - "qa/web/ui-visual-polish-p07-editors.spec.ts"
       - "apps/web/src/app/[locale]/not-found.tsx"
       - "qa/support/visual-production-proxy.mjs"
   workflow_dispatch:
@@ -75,6 +76,8 @@ jobs:
             qa-artifacts/visual-polish/P09/**/calendar*.png
             qa-artifacts/visual-polish/P11/headings-*/**/*-200.png
             qa-artifacts/visual-polish/P08/microphone-*/**/*.png
+            qa-artifacts/visual-polish/P07/editors-*/**/*.png
+            qa-artifacts/visual-polish/P07/editors-*/**/geometry.json
           retention-days: 7
           if-no-files-found: warn
 
