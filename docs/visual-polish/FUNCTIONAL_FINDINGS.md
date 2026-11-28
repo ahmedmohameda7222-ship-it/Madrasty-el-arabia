@@ -29,3 +29,5 @@ Run 46082187416 Chromium reproduced the existing cold German install navigation 
 ### QA-07 — finance domain follows a mutating UI fixture
 
 46083875529 iPhone WebKit UI 5/5 passed, then the domain test hit 409 stale_revision at ledger.test.ts:73. Both suites reuse QA_RUN_ID; populated UI explicitly sets a payer designation, while the domain test writes revision 0. Fresh isolated domain run without preceding UI writes is the next discriminating test. No production code, assertion, or ledger rules changed. Keep failure open until fresh run result.
+
+- QA-07 follow-up: first clean-domain diagnostic 46085666230 failed at initial bearer login because the actor fixture had not been seeded. Corrected the workflow to seed actors first. The stale-revision hypothesis still needs verification.

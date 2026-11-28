@@ -74,7 +74,7 @@ jobs:
             ss -ltn | awk 'NR==1 || $4 ~ /:(4300|55420|55421|55422|55424)$/'
             exit 1
           fi
-      - name: Run existing and added visual checks against disposable fixtures (including P04–P07 visual candidates)
+      - name: Run existing and added visual checks against disposable fixtures (including P04–P09 visual candidates)
         shell: bash
         run: |
           set -euo pipefail
@@ -88,3 +88,19 @@ jobs:
             pnpm exec playwright test --config qa/visual-polish.config.ts --browser ${{ matrix.browser }} --grep 'public entry|public identity form|guardian settings and profile' || true
             exit 1
           fi
+      - name: Retain selected synthetic visual evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-polish-synthetic-geometry-${{ matrix.browser }}-${{ github.sha }}
+          path: |
+            qa-artifacts/visual-polish/P06/**/ready.png
+            qa-artifacts/visual-polish/P06/**/ready-text-200.png
+            qa-artifacts/visual-polish/P07/**/class-list.png
+            qa-artifacts/visual-polish/P07/**/dashboard.png
+            qa-artifacts/visual-polish/P07/**/dashboard-text-200.png
+            qa-artifacts/visual-polish/P08/**/chat.png
+            qa-artifacts/visual-polish/P09/**/calendar.png
+            qa-artifacts/visual-polish/P09/**/calendar-text-200.png
+          if-no-files-found: warn
+          retention-days: 7

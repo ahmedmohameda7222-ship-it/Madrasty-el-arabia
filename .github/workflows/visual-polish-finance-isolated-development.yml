@@ -33,4 +33,5 @@ jobs:
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; (async()=>{const school=schoolFixtures();try{await school.seed();}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
           pnpm qa:finance
