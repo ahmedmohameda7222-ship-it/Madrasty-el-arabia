@@ -24,7 +24,10 @@ async function geometry(page: Page) {
   });
 }
 for (const scene of cases) {
-  test(`P10 bank proposal and protected review ${scene.locale}`, async ({ browser, context, page }) => {
+  test(`P10 bank proposal and protected review ${scene.locale}`, async ({ browser, context, page, baseURL }) => {
+    const production = baseURL === "https://127.0.0.1:4443";
+    const origin = production ? baseURL : localOrigin;
+    expect(baseURL).toBe(origin);
     const school = schoolFixtures();
     const folder = `qa-artifacts/visual-polish/P10/bank-${scene.locale}-${scene.width}/${browser.browserType().name()}/${before ? "before" : "after"}`;
     mkdirSync(folder, { recursive: true });
@@ -41,9 +44,9 @@ for (const scene of cases) {
       await page.locator('input[name="code"]').fill((await school.localMfa("admin")).code());
       await page.getByRole("button", { name: "Bestätigen", exact: true }).click();
       await expect(page).toHaveURL(/\/de\/school\/home(?:\?.*)?$/);
-      const cookies = await context.cookies(localOrigin);
-      expect(cookies.some(cookie => cookie.name === "madrasty-session" && cookie.httpOnly)).toBe(true);
-      expect(cookies.some(cookie => cookie.name === "madrasty-csrf" && !cookie.httpOnly)).toBe(true);
+      const cookies = await context.cookies(origin);
+      expect(cookies.some(cookie => cookie.name === (production ? "__Host-madrasty-session" : "madrasty-session") && cookie.httpOnly && (!production || cookie.secure))).toBe(true);
+      expect(cookies.some(cookie => cookie.name === (production ? "__Host-madrasty-csrf" : "madrasty-csrf") && !cookie.httpOnly && (!production || cookie.secure))).toBe(true);
 
       // Use a separate document for the bank route, preserving actual in-page
       // interactions and avoiding a preceding dev Fast Refresh redirect.
@@ -51,8 +54,8 @@ for (const scene of cases) {
       await bank.setViewportSize({ width: scene.width, height: 844 });
       await bank.emulateMedia({ colorScheme: scene.theme, reducedMotion: "reduce" });
       const route = `/${scene.locale}/school/more/bank`;
-      expect((await bank.goto(localOrigin + route))?.status()).toBe(200);
-      await expect(bank).toHaveURL(localOrigin + route);
+      expect((await bank.goto(origin + route))?.status()).toBe(200);
+      await expect(bank).toHaveURL(origin + route);
       await expect(bank.getByRole("heading", { name: scene.title, exact: true, level: 1 })).toBeVisible();
       await expect(bank.getByRole("heading", { name: scene.current, exact: true, level: 2 })).toBeVisible();
       const editor = bank.locator(".school-content form").filter({ has: bank.getByLabel(scene.iban, { exact: true }) });
@@ -82,10 +85,38 @@ for (const scene of cases) {
       await expect(panel.getByText(scene.name, { exact: true })).toBeVisible();
       await expect(panel.locator('bdi[dir="ltr"]')).toHaveText("DE89 3704 0044 0532 0130 00");
       await expect(panel.getByRole("button", { name: scene.confirm, exact: true })).toBeEnabled();
+      const confirm = panel.getByRole("button", { name: scene.confirm, exact: true });
+      const contrast = await confirm.evaluate(el => {
+        const color = getComputedStyle(el);
+        function luminance(value: string) {
+          const channels = value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+          if (!channels || channels.length !== 3) throw Error("Expected opaque RGB");
+          const linear = channels.map(v => { const x=v/255; return x<=.04045 ? x/12.92 : ((x+.055)/1.055)**2.4; });
+          return .2126*linear[0]+.7152*linear[1]+.0722*linear[2];
+        }
+        const fg=luminance(color.color),bg=luminance(color.backgroundColor);
+        return { foreground: color.color, background: color.backgroundColor, ratio:(Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05) };
+      });
+      console.log("P10 bank confirm contrast", JSON.stringify({ locale: scene.locale, ...contrast }));
       const ready = await geometry(bank);
       await bank.screenshot({ path: folder + "/bank-review.png" });
       await bank.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       const large = await geometry(bank);
+      await bank.getByRole("heading", { name: scene.title, exact: true, level: 1 }).scrollIntoViewIfNeeded();
+      const headingBreaks = await bank.getByRole("heading", { name: scene.title, exact: true, level: 1 }).evaluate(el => {
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let offset=0, prior: number|undefined; const breaks: number[]=[];
+        for (let node=walker.nextNode(); node; node=walker.nextNode()) for(let i=0;i<(node.textContent??"").length;i++) {
+          if(node.textContent?.[i]==="\u00ad") continue;
+          const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);
+          const rect=Array.from(range.getClientRects()).filter(r=>r.width>0).at(-1);
+          if(!rect) { if(node.textContent?.[i]===" ") {offset++;continue;} throw Error("Missing heading glyph"); }
+          if(prior!==undefined&&Math.round(rect.top)!==prior)breaks.push(offset);
+          if(node.textContent?.[i]!==" ")prior=Math.round(rect.top);offset++;
+        }
+        return breaks;
+      });
+      console.log("P10 bank heading breaks", JSON.stringify({locale:scene.locale,headingBreaks}));
       await bank.screenshot({ path: folder + "/bank-review-text-200.png" });
       for (const action of await panel.getByRole("button").all()) {
         await action.scrollIntoViewIfNeeded();
@@ -102,14 +133,23 @@ for (const scene of cases) {
       expect(deniedApi.payload.error.code).toBe("forbidden");
       const denied = await browser.newContext({ viewport: { width: scene.width, height: 844 }, colorScheme: scene.theme });
       try {
-        await denied.addCookies([{ name: "madrasty-session", value: guardian, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
+        if (production) {
+          const login = await denied.request.post(origin + "/api/v1/auth/sign-in", {
+            headers: { Origin: origin },
+            data: { email: fixtureEmail(school.run, "guardian-de"), password: school.password },
+          });
+          expect(login.status()).toBe(200);
+          expect((await denied.cookies(origin)).some(c => c.name === "__Host-madrasty-session" && c.secure && c.httpOnly)).toBe(true);
+        } else {
+          await denied.addCookies([{ name: "madrasty-session", value: guardian, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
+        }
         const restricted = await denied.newPage();
         // The pre-existing school/loading.tsx may stream before notFound(),
         // so the document status can be 200. Assert the real terminal denial,
         // noindex, no protected controls, unchanged URL and API 403 separately.
-        const deniedDocument = await restricted.goto(localOrigin + route);
+        const deniedDocument = await restricted.goto(origin + route);
         expect([200, 404]).toContain(deniedDocument?.status());
-        await expect(restricted).toHaveURL(localOrigin + route);
+        await expect(restricted).toHaveURL(origin + route);
         const unavailable = restricted.locator("[data-generic-not-found]");
         await expect(unavailable).toBeVisible();
         await expect(unavailable.getByRole("heading", { name: scene.locale === "de" ? "Seite nicht gefunden" : "الصفحة غير موجودة", exact: true })).toBeVisible();
@@ -121,6 +161,9 @@ for (const scene of cases) {
       } finally { await denied.close(); }
       console.log("P10 bank geometry", JSON.stringify({ locale: scene.locale, initial, ready, large }));
       writeFileSync(folder + "/geometry.json", JSON.stringify({ initial, ready, large }, null, 2));
+      // Soft assertions report both confirmed visual issues without hiding the independent access/retention checks.
+      expect.soft(contrast.ratio, "Enabled confirmation text contrast").toBeGreaterThanOrEqual(4.5);
+      if(scene.locale==="de") expect.soft(headingBreaks.filter(i=>![3,8,11].includes(i)), "German Zahlungskonto syllable breaks").toEqual([]);
       for (const state of [initial, ready, large]) {
         expect(state.count).toBeGreaterThan(0);
         expect(state.overflow).toBeLessThanOrEqual(1);
