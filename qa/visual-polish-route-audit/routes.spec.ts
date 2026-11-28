@@ -70,10 +70,29 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
         try{
           await screen.setViewportSize({width,height:844});
           await screen.emulateMedia({colorScheme:locale==="ar"?"dark":"light",reducedMotion:"reduce"});
+          // Start observation before navigation. The survey is evidence, not
+          // a performance benchmark: wait for actual initial client fetches.
+          // Never count a transient empty staff list or hidden skeleton as ready.
+          const reads=new Map<string,number>();
+          screen.on("response",response=>{
+            const url=new URL(response.url());
+            if(url.origin===origin&&url.pathname.startsWith("/api/v1/")&&response.request().method()==="GET"){
+              const safe=url.pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi,":id");
+              reads.set(safe,response.status());
+            }
+          });
           const reply=await screen.goto(origin+path,{waitUntil:"domcontentloaded"});
+          await screen.waitForLoadState("networkidle",{timeout:30000});
           const root=screen.locator(".school-content, main.public-page").first();
           await expect(root).toBeVisible();
           await expect(root.locator('[data-async-state="loading"], .school-route-loading')).toHaveCount(0,{timeout:30000});
+          if(route==="/school/more/assignments"&&scene.persona==="admin"){
+            await expect(root.locator('button[aria-pressed]').first()).toBeVisible();
+            expect(reads.get("/api/v1/school/staff")).toBe(200);
+          }
+          if(route==="/school/calendar"){
+            await expect(root.locator('.school-month-grid[data-calendar-ready="true"]')).toBeVisible();
+          }
           await screen.evaluate(()=>document.fonts.ready.then(()=>undefined));
           const measure=()=>root.evaluate(el=>{
             const bounds=el.getBoundingClientRect();
@@ -94,7 +113,7 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
           await screen.screenshot({path:folder+"/"+key+"-text-200.png"});
           const destination=new URL(screen.url()).pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi,":id").slice(3);
           const denied=await screen.locator("[data-generic-not-found]").count()>0 || await root.getByRole("heading",{name:"404",exact:true}).count()>0;
-          const state={route,destination,status:reply?.status(),denied,normal,large};
+          const state={route,destination,status:reply?.status(),denied,normal,large,reads:[...reads.entries()].sort((a,b)=>a[0].localeCompare(b[0]))};
           rows.push(state);
           console.log("Visual route survey",JSON.stringify(state));
           if(reply?.status()!==200||denied)failures.push({route,category:"advertised-route-unavailable"});
