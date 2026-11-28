@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { schoolFixtures } from "../fixtures/school";
+import { setUpCalendar } from "../fixtures/calendar";
 import { fixtureApi } from "../support/api";
 import { fixtureEmail, localOrigin } from "../support/target";
 
@@ -49,7 +50,8 @@ for (const scene of [
     let tracing = false;
     try {
       await school.seed();
-      mark("seeded");
+      await setUpCalendar(school, await school.bearer("admin", "admin"));
+      mark("seeded-and-calendar-configured");
       const guardian = await school.bearer("guardian-de", "guardian");
       const teacher = await school.bearer("teacher", "teacher");
       mark("sessions-bound");
