@@ -2,6 +2,26 @@ package de.madrasty.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,12 +39,9 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -94,40 +111,10 @@ fun SchoolShell(
             containerColor = MaterialTheme.colorScheme.background,
             floatingActionButton = floatingAction,
             topBar = {
-                TopAppBar(
-                    title = {
-                        if(active==SchoolTab.Messages||active==SchoolTab.Calendar){
-                            Text(stringResource(active.label),Modifier.semantics{heading()})
-                        }else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Image(painterResource(R.drawable.school_seal), null, Modifier.size(36.dp))
-                            Text(stringResource(R.string.app_name), Modifier.semantics { heading() })
-                        }
-                    },
-                    actions = {
-                        notificationAction()
-                        InterfaceSettingsAction()
-                        if (choices.isNotEmpty()) {
-                            TextButton(onClick = { pickerVisible = true }) { Text(stringResource(R.string.choose_scope)) }
-                        }
-                    },
-                )
+                SchoolShellHeader(active, choices.isNotEmpty(), { pickerVisible = true }, notificationAction)
             },
             bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = active == tab,
-                            onClick = { changeTab(tab) },
-                            icon = {
-                                if(tab==SchoolTab.Messages&&unreadMessages>0){
-                                    val unreadLabel=stringResource(R.string.comms_unread_badge,unreadMessages)
-                                    BadgedBox(badge={Badge(Modifier.semantics{contentDescription=unreadLabel}){Text(if(unreadMessages>99)"99+" else unreadMessages.toString())}}){SchoolIcon(tab.icon)}
-                                }else SchoolIcon(tab.icon)
-                            },
-                            label = { Text(stringResource(tab.label), softWrap = true) },
-                        )
-                    }
-                }
+                SchoolShellNavigation(tabs, active, changeTab, unreadMessages)
             },
         ) { insets ->
             Box(Modifier.fillMaxSize().padding(insets).imePadding()) {
@@ -165,7 +152,139 @@ fun SchoolShell(
     }
 }
 
+
+/** Grow with system type instead of forcing the title into a fixed-height app bar. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SchoolIcon(icon: Int) {
-    androidx.compose.material3.Icon(painterResource(icon), null, Modifier.size(24.dp))
+private fun SchoolShellHeader(
+    active: SchoolTab,
+    hasChoices: Boolean,
+    openScope: () -> Unit,
+    notificationAction: @Composable () -> Unit,
+) {
+    val branded = active != SchoolTab.Messages && active != SchoolTab.Calendar
+    val title = stringResource(if (branded) R.string.app_name else active.label)
+    val scopeLabel = stringResource(R.string.choose_scope)
+    val titleStyle = MaterialTheme.typography.titleLarge
+    val actionStyle = MaterialTheme.typography.labelLarge
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val titleNatural = with(density) {
+        measurer.measure(AnnotatedString(title), style = titleStyle, softWrap = false, maxLines = 1).size.width.toDp()
+    } + if (branded) 44.dp else 0.dp
+    val scopeNatural = if (hasChoices) with(density) {
+        measurer.measure(AnnotatedString(scopeLabel), style = actionStyle, softWrap = false, maxLines = 1).size.width.toDp()
+    } + 32.dp else 0.dp
+    Surface(color = MaterialTheme.colorScheme.surface) {
+        BoxWithConstraints(Modifier.fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+            .padding(horizontal = 12.dp, vertical = 4.dp)) {
+            // Reserve both native icon touch targets; an absent optional action
+            // merely leaves room rather than compressing the school name.
+            val actionNatural = 96.dp + scopeNatural
+            val inline = titleNatural + actionNatural + 8.dp <= maxWidth
+            val titleWidth = if (inline) maxWidth - actionNatural - 8.dp else maxWidth
+            val actionsWidth = if (inline) actionNatural else maxWidth
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                Row(Modifier.width(titleWidth).heightIn(min = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (branded) Image(painterResource(R.drawable.school_seal), null, Modifier.size(36.dp))
+                    Text(title, Modifier.weight(1f).semantics { heading() }, style = titleStyle)
+                }
+                FlowRow(Modifier.width(actionsWidth), horizontalArrangement = Arrangement.End,
+                    verticalArrangement = Arrangement.Center) {
+                    notificationAction()
+                    InterfaceSettingsAction()
+                    if (hasChoices) TextButton(onClick = openScope, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(scopeLabel, style = actionStyle)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Intrinsic label widths determine row breaks. All tabs remain visible and selectable. */
+@Composable
+private fun SchoolShellNavigation(
+    tabs: List<SchoolTab>,
+    active: SchoolTab,
+    changeTab: (SchoolTab) -> Unit,
+    unreadMessages: Int,
+) {
+    val labels = tabs.map { stringResource(it.label) }
+    val style = MaterialTheme.typography.labelMedium
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val minimums = labels.map { label ->
+        with(density) {
+            (measurer.measure(AnnotatedString(label), style = style, softWrap = false, maxLines = 1).size.width.toDp() + 16.dp)
+                .coerceAtLeast(48.dp).value
+        }
+    }
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        BoxWithConstraints(Modifier.fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+            .padding(horizontal = 4.dp, vertical = 4.dp)) {
+            val rows = mutableListOf<MutableList<Int>>()
+            for (index in tabs.indices) {
+                val last = rows.lastOrNull()
+                if (last == null || last.sumOf { minimums[it].toDouble() } + minimums[index] > maxWidth.value) {
+                    rows.add(mutableListOf(index))
+                } else last.add(index)
+            }
+            // Avoid an isolated final tab when the preceding row can spare one.
+            if (rows.size > 1 && rows.last().size == 1) {
+                val previous = rows[rows.lastIndex - 1]
+                val last = rows.last()
+                if (previous.size >= 3 && minimums[previous.last()] + minimums[last.first()] <= maxWidth.value) {
+                    last.add(0, previous.removeAt(previous.lastIndex))
+                }
+            }
+            Column(Modifier.fillMaxWidth().selectableGroup()) {
+                rows.forEach { indices ->
+                    Row(Modifier.fillMaxWidth()) {
+                        indices.forEach { index ->
+                            val tab = tabs[index]
+                            val selected = active == tab
+                            Column(
+                                Modifier.weight(minimums[index]).heightIn(min = 64.dp)
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .selectable(selected = selected, onClick = { changeTab(tab) }, role = Role.Tab)
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+                            ) {
+                                val colors = MaterialTheme.colorScheme
+                                Box(Modifier.size(width = 40.dp, height = 32.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(if (selected) colors.secondaryContainer else colors.surfaceContainerLow),
+                                    contentAlignment = Alignment.Center) {
+                                    val tint = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant
+                                    if (tab == SchoolTab.Messages && unreadMessages > 0) {
+                                        val unreadLabel = stringResource(R.string.comms_unread_badge, unreadMessages)
+                                        BadgedBox(badge = {
+                                            Badge(Modifier.semantics { contentDescription = unreadLabel }) {
+                                                Text(if (unreadMessages > 99) "99+" else unreadMessages.toString())
+                                            }
+                                        }) { SchoolIcon(tab.icon, tint) }
+                                    } else SchoolIcon(tab.icon, tint)
+                                }
+                                Text(labels[index], style = style, color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
+private fun SchoolIcon(icon: Int, tint: androidx.compose.ui.graphics.Color) {
+    androidx.compose.material3.Icon(painterResource(icon), null, Modifier.size(24.dp), tint = tint)
 }
