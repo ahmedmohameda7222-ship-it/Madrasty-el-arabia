@@ -122,6 +122,22 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
           if(reply?.status()!==200||denied)failures.push({route,category:"advertised-route-unavailable"});
           if([...normal.states,...large.states].some(s=>s==="error"||s==="forbidden"))failures.push({route,category:"async-terminal"});
           if(normal.overflow>1||large.overflow>1)failures.push({route,category:"horizontal-overflow"});
+          // P07: actual teacher scope pickers are full-width interactive controls,
+          // not compact inline dates. Require the existing control to be present
+          // and at least 44 CSS px at normal and enlarged text.
+          if(stage!=="baseline"&&scene.persona==="teacher"&&["grading","exams","evaluations","homework","academics"].some(key=>route==="/school/more/"+key)){
+            const picker=root.locator("label.auth-card > select").first();
+            await expect(picker).toBeVisible();
+            await expect(picker).toBeEnabled();
+            const sizes=await picker.evaluate(el=>{
+              const large=el.getBoundingClientRect();
+              document.documentElement.style.fontSize="100%";
+              const normal=el.getBoundingClientRect();
+              return {normal:{width:normal.width,height:normal.height},large:{width:large.width,height:large.height}};
+            });
+            console.log("P07 scope picker geometry",JSON.stringify({route,locale,...sizes}));
+            if([sizes.normal,sizes.large].some(size=>size.width<44||size.height<44))failures.push({route,category:"academic-scope-touch-target"});
+          }
           // Small controls and descendant clipping are diagnostic findings, not
           // automatically defects (e.g. intentional inline date controls).
         }catch(error){
