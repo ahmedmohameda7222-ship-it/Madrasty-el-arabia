@@ -1,5 +1,6 @@
 import { devices, expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { visualNavigationProbe } from "../support/visual-navigation-probe";
 
 const before = process.env.VISUAL_POLISH_BASELINE === "1";
 const scenarios = [
@@ -19,6 +20,8 @@ for (const scene of scenarios) {
     const folder = `qa-artifacts/visual-polish/P03/${scene.locale}-${scene.width}-${browser.browserType().name()}/${before ? "before" : "after"}`;
     mkdirSync(folder, { recursive: true });
     const page = await context.newPage();
+    const probe = await visualNavigationProbe(page, `entry-${scene.locale}`);
+    let installProbe: Awaited<ReturnType<typeof visualNavigationProbe>> | undefined;
     try {
       const capture = async (state: string, target = page) => {
         await target.evaluate(() => document.fonts.ready.then(() => undefined));
@@ -37,6 +40,7 @@ for (const scene of scenarios) {
       expect(panel.target).toBe(`/${scene.locale}/account/sign-in`);
       const install = page.getByRole("link", { name: scene.install, exact: true });
       await expect(install).toHaveAttribute("href", `/${scene.locale}/install`);
+      probe.mark("sign-in-click");
       await signIn.click();
       await expect(page).toHaveURL(new RegExp(`/${scene.locale}/account/sign-in$`));
       const form = page.locator("form.auth-form");
@@ -53,13 +57,20 @@ for (const scene of scenarios) {
       await form.getByRole("button", { name: scene.hide }).click();
       await expect(password).toHaveAttribute("type", "password");
       const installPage = await context.newPage();
+      installProbe = await visualNavigationProbe(installPage, `install-${scene.locale}`);
+      installProbe.mark("landing-goto");
       await installPage.goto("/" + scene.locale);
+      installProbe.mark("install-click");
       await installPage.getByRole("link", { name: scene.install, exact: true }).click();
       await expect(installPage).toHaveURL(new RegExp(`/${scene.locale}/install$`));
       await expect(installPage.getByRole("heading", { name: "iPhone", exact: true })).toBeVisible();
       await expect(installPage.getByRole("heading", { name: "Android", exact: true })).toBeVisible();
       await capture("install", installPage);
       if (!before) expect(panel.borderRadius).toBeGreaterThanOrEqual(28);
+    } catch (error) {
+      probe.dump();
+      installProbe?.dump();
+      throw error;
     } finally { await context.close(); }
   });
 }
