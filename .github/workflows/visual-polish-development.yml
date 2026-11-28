@@ -28,6 +28,7 @@ jobs:
           pnpm install --frozen-lockfile
       - run: node --test qa/screenshot-audit-policy.test.mjs qa/qa-overlay-policy.test.mjs qa/finance-mobile-ux.test.mjs
       - run: node --test qa/fixtures/visual-polish-fingerprint.test.mjs
+      - run: node --test qa/visual-polish-contrast.test.mjs
       - run: node qa/fixtures/visual-polish-registry.mjs --check
       - run: pnpm check:types
       - run: pnpm build:web
