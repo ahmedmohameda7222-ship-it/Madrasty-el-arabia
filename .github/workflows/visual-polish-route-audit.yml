@@ -66,3 +66,5 @@ jobs:
             qa-artifacts/visual-polish/route-survey/**/*-text-200.png
           retention-days: 7
           if-no-files-found: warn
+
+# Verify shared intrinsic reflow corrections against the existing original checks.

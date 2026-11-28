@@ -118,3 +118,5 @@ jobs:
             qa-artifacts/visual-polish/P10/**/payer-invoice.png
           if-no-files-found: warn
           retention-days: 7
+
+# Verify shared intrinsic reflow corrections against the existing original checks.
