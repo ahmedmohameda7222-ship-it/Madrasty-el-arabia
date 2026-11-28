@@ -13,6 +13,7 @@
 .toolbar input,.toolbar select,.fields input,.fields select {width:100%;min-inline-size:0;max-inline-size:100%;box-sizing:border-box;min-height:44px;border-radius:11px;
   border:1px solid var(--rule);background:var(--card);color:inherit;padding:.55rem .7rem}
 .toolbar input[type="date"] {display:block;appearance:none;-webkit-appearance:none}
+.fields input::placeholder{color:var(--muted);opacity:1}
 .toolbarActions,.editorActions {display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .pickerPanel {border:1px solid var(--rule);border-radius:20px;padding:clamp(1rem,2.5vw,1.75rem);
   background:var(--card)}

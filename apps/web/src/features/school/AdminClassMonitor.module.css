@@ -8,6 +8,7 @@
 .readonly{display:inline-flex;align-items:center;border:1px solid var(--rule);background:var(--inset);border-radius:99px;padding:6px 11px;color:var(--muted);font-size:.8rem}
 .field{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;font-size:.9rem;font-weight:600;max-width:min(460px,100%);min-width:0}
 .field input,.field select{border:1px solid var(--field-border);border-radius:var(--radius-control);background:var(--card);color:var(--ink);padding:10px 12px;min-height:48px;font:inherit;min-width:0;width:100%;max-width:100%;text-overflow:ellipsis}
+.field input::placeholder{color:var(--muted);opacity:1}
 .classList{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
 .classCard{display:grid;gap:11px;width:100%;background:var(--card);border:1px solid var(--rule);border-radius:var(--radius-card);padding:17px;text-align:start;cursor:pointer;color:var(--ink);font:inherit;min-height:112px;min-width:0;overflow-wrap:anywhere}
 .classCard:hover{background:var(--inset)}.classCard>span:not(.classHeadline){font-size:.86rem;color:var(--muted)}

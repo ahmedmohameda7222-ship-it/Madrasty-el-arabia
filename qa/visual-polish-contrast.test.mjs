@@ -5,6 +5,9 @@ import { test } from "node:test";
 const school = readFileSync("apps/web/src/app/school.css", "utf8");
 const shared = readFileSync("apps/web/src/app/school-tokens.css", "utf8");
 const calendar = readFileSync("apps/web/src/features/school/Calendar.module.css", "utf8");
+const classMonitor = readFileSync("apps/web/src/features/school/AdminClassMonitor.module.css", "utf8");
+const timetable = readFileSync("apps/web/src/features/school/timetable/Timetable.module.css", "utf8");
+const finance = readFileSync("apps/web/src/features/finance/FinanceWorkspace.module.css", "utf8");
 function palette(source, selector) {
   const start = source.indexOf(selector);
   assert.notEqual(start, -1, "Missing " + selector);
@@ -33,6 +36,7 @@ for (const [mode, base, cal] of themes) {
     ["shared selection", base["--selection-ink"], base["--selection"], 4.5],
     ["shared action", base["--on-action"], base["--action"], 4.5],
     ["chat placeholder on composer inset", base["--text-secondary"], base["--surface-inset"], 4.5],
+    ["input placeholder on card", base["--text-secondary"], base["--surface-card"], 4.5],
     ["chat sent-message focus ring", base["--on-action"], base["--action"], 3],
     ["calendar secondary on canvas", cal["--c-muted"], base["--surface-canvas"], 4.5],
     ["calendar secondary on card", cal["--c-muted"], cal["--c-card"], 4.5],
@@ -44,6 +48,7 @@ for (const [mode, base, cal] of themes) {
     ["calendar draft status", cal["--c-draft"], cal["--c-draft-soft"], 4.5],
     ["calendar primary action", cal["--c-on-primary"], cal["--c-primary"], 4.5],
     ["calendar input outline", base["--field-border"], cal["--c-input"], 3],
+    ["calendar input placeholder", cal["--c-muted"], cal["--c-input"], 4.5],
   ];
   for (const [label, foreground, background, minimum] of checks) test(mode + " " + label, () => {
     const value = ratio(foreground, background);
@@ -59,3 +64,22 @@ test("chat applies accessible tokens to the placeholder and the sent-message foc
   assert.match(school, /\.comms-input-field textarea::placeholder\s*\{[^}]*color:\s*var\(--muted\)[^}]*opacity:\s*1/);
   assert.match(school, /\.comms-message\[data-own=true\] \.comms-message-actions>summary:focus-visible\s*\{[^}]*outline-color:\s*var\(--on-primary\)/);
 });
+
+const placeholderRules = [
+  ["conversation search", school, ".comms-hub .inbox-search input::placeholder", "--muted"],
+  ["contact search", school, ".comms-search::placeholder", "--muted"],
+  ["family search", school, ".family-search input::placeholder", "--muted"],
+  ["class fields", classMonitor, ".field input::placeholder", "--muted"],
+  ["calendar reason", calendar, ".field::placeholder", "--c-muted"],
+  ["timetable time fields", timetable, ".fields input::placeholder", "--muted"],
+  ["finance ISO text fallback", finance, ".dateFallback>input::placeholder", "--muted"],
+];
+for (const [label, stylesheet, selector, token] of placeholderRules) {
+  test(label + " uses a full-opacity placeholder token", () => {
+    const rule = stylesheet.match(/[^{}]+\{[^{}]*\}/g)?.find(block =>
+      block.slice(0, block.indexOf("{")).split(",").some(part => part.trim() === selector)
+    );
+    assert.ok(rule, "Missing " + selector);
+    assert.ok(rule.includes("color:var(" + token + ")") && rule.includes("opacity:1"), rule);
+  });
+}

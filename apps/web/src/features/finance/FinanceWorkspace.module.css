@@ -110,6 +110,7 @@
 .dateControl>input,.workspace .dateControl>input,.panel .dateControl>input{display:block;box-sizing:border-box;min-inline-size:0;max-inline-size:100%;inline-size:100%;min-block-size:48px;opacity:1}
 .dateFallback{display:grid;gap:.3rem;min-inline-size:0}
 .dateFallback>input{min-inline-size:0;max-inline-size:100%;width:100%;box-sizing:border-box}
+.dateFallback>input::placeholder{color:var(--muted);opacity:1}
 .workspace :global(.header-actions)>label{flex:1 1 11rem;max-inline-size:100%}
 .workspace :global(.header-actions)>button[type=submit]{flex:1 1 auto}
 .workspace :is(input,select,textarea),.panel :is(input,select,textarea){margin-inline:0}

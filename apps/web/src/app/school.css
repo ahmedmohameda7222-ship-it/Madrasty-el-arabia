@@ -529,6 +529,9 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .comms-input-field{grid-column:2;grid-row:1;min-inline-size:0;margin:0}
 .comms-input-field textarea{display:block;inline-size:100%;min-inline-size:0;min-block-size:44px;max-block-size:140px;resize:none;border-radius:24px;padding:10px 14px;line-height:1.4;background:var(--inset);border:1px solid var(--rule);color:var(--ink)}
 .comms-input-field textarea::placeholder{color:var(--muted);opacity:1}
+.comms-hub .inbox-search input::placeholder,
+.comms-search::placeholder,
+.family-search input::placeholder{color:var(--muted);opacity:1}
 .comms-icon-button{display:inline-grid;place-items:center;inline-size:44px;block-size:44px;min-inline-size:44px;min-block-size:44px;border:0;padding:0;border-radius:50%;background:transparent;color:var(--primary);flex:none}
 .comms-icon-button:disabled{opacity:.42}
 .comms-attach-button{background:var(--inset)}
