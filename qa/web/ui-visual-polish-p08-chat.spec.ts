@@ -56,8 +56,21 @@ for (const scene of [
       const attach = composer.getByRole("button", { name: scene.attach, exact: true });
       await expect(mic).toBeVisible();
       await expect(attach).toBeVisible();
-      const micBox = (await mic.boundingBox())!;
-      const attachBox = (await attach.boundingBox())!;
+      // Read both boxes in the same rendering snapshot; separate locator calls can
+      // straddle a polling rerender. Still fail if either control is absent.
+      const boxes = await composer.evaluate((el, labels) => {
+        function box(label: string) {
+          const button = [...el.querySelectorAll("button")].find(node => node.getAttribute("aria-label") === label);
+          if (!button) return null;
+          const {x,y,width,height} = button.getBoundingClientRect();
+          return {x,y,width,height};
+        }
+        return { mic: box(labels.mic), attach: box(labels.attach) };
+      }, {mic: scene.mic, attach: scene.attach});
+      expect(boxes.mic, "voice control missing in composer snapshot").not.toBeNull();
+      expect(boxes.attach, "attachment control missing in composer snapshot").not.toBeNull();
+      const micBox = boxes.mic!;
+      const attachBox = boxes.attach!;
       expect(Math.min(micBox.width, micBox.height, attachBox.width, attachBox.height)).toBeGreaterThanOrEqual(44);
       expect(scene.locale === "de" ? micBox.x > attachBox.x : micBox.x < attachBox.x).toBe(true);
       await page.screenshot({ path: folder + "/chat.png" });

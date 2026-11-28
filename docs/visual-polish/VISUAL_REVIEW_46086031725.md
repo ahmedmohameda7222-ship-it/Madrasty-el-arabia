@@ -1,0 +1,13 @@
+# Manual screenshot review — 7e4d800 candidate
+
+Evidence: [run 46086031725](https://github.com/ahmedmohameda7222-ship-it/Madrasty-el-arabia/actions/runs/46086031725), artifact 15239577502 (WebKit, 16 synthetic PNG files, retained and downloaded). Reviewed all 16 images in the artifact at 320px Arabic dark / 390px German light with normal and 200% text where supplied. This is **partial candidate-only visual review**, not matched baseline or whole-app signoff.
+
+| Scene | Observed visual result | Follow-up |
+| --- | --- | --- |
+| P06 attendance (4) | Normal size: date input and fields are visible; action links touch each other and history sits inline with class label, especially German. At 200%, no overflow but cramped action rhythm and German heading breaks inside a word. | Explicit filter grid, 12px between direct children, labels independently stacked. Preserve date input format guidance. Check heading wrapping separately. |
+| P07 class monitor (6) | Normal dashboards: clear values and surface grouping, cards consistent; two back controls remain intentionally unchanged. Large text: section pills squeeze German compounds into several fragments, Arabic labels wrap over multiple lines. | Responsive intrinsic columns that collapse at large text; do not remove or reorder actions. Capture from top as well as restored scroll position next pass. |
+| P08 direct chat (2) | Both locale images show directional 22px bubbles and composer attachment/voice on opposite sides, clean message contrast and visible metadata. German short thread has ample unused space; Arabic header truncates contact name with existing ellipsis, profile is still accessible. | Keep chat behavior and existing contact affordance. Investigate intermittent geometry sampling/timeout; long-name and keyboard cases still open. |
+| P09 calendar (4) | Normal German light and Arabic dark navy design has clear year/card hierarchy, 48px primary and consistent month actions. At 200% header and labels remain within width; more vertical space required. | Preserve approved navy palette; actual calendar-day grid at large text below fold not reviewed here. |
+| P11 shared bottom navigation | At 200%, five fixed equal-width slots split words (e.g. Kalender, Schüler and Arabic labels) inside words. Normal five-tab layout is legible. | Responsive auto-fit tracks at narrow width; retain all five labels, source order and navigation behavior, one row at normal text. Verify target sizes, overlap, available content and large-text snapshots. |
+
+No screenshot was fabricated. Not a physical iPhone, no Android imagery here; this is hosted WebKit. All observed visual deficiencies and remaining variants stay open until candidate checks and image review.

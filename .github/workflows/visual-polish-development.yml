@@ -74,7 +74,7 @@ jobs:
             ss -ltn | awk 'NR==1 || $4 ~ /:(4300|55420|55421|55422|55424)$/'
             exit 1
           fi
-      - name: Run existing and added visual checks against disposable fixtures (including P04–P09 visual candidates)
+      - name: Run existing and added visual checks against disposable fixtures (including P04–P11 visual candidates)
         shell: bash
         run: |
           set -euo pipefail
@@ -102,5 +102,9 @@ jobs:
             qa-artifacts/visual-polish/P08/**/chat.png
             qa-artifacts/visual-polish/P09/**/calendar.png
             qa-artifacts/visual-polish/P09/**/calendar-text-200.png
+            qa-artifacts/visual-polish/P10/**/overview.png
+            qa-artifacts/visual-polish/P10/**/invoice.png
+            qa-artifacts/visual-polish/P10/**/invoice-text-200.png
+            qa-artifacts/visual-polish/P10/**/payer-invoice.png
           if-no-files-found: warn
           retention-days: 7

@@ -68,11 +68,22 @@ for (const scene of [
         if (geometry.overflow > 1) console.log("P06 overflow", JSON.stringify({ locale: scene.locale, state, ...geometry }));
         expect(geometry.overflow).toBeLessThanOrEqual(1);
       };
+      const checkFilterSpacing = async (state: string) => {
+        const layout = await page.locator(".attendance-filters").evaluate(el => {
+          const parts = Array.from(el.children).map(child => child.getBoundingClientRect()).filter(rect => rect.height > 0);
+          return { gaps: parts.slice(1).map((rect, index) => rect.top - parts[index]!.bottom), count: parts.length };
+        });
+        console.log("P11 attendance filter spacing", JSON.stringify({ locale: scene.locale, state, ...layout }));
+        expect(layout.count).toBeGreaterThanOrEqual(4);
+        for (const gap of layout.gaps) expect(gap).toBeGreaterThanOrEqual(8);
+      };
+      await checkFilterSpacing("normal");
       await page.screenshot({ path: folder + "/ready.png" });
       await measureReflow("normal");
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.screenshot({ path: folder + "/ready-text-200.png" });
       await measureReflow("text-200");
+      await checkFilterSpacing("text-200");
       writeFileSync(folder + "/geometry.json", JSON.stringify({ tallyGeometry, rowGeometry }, null, 2));
       console.log("P06 attendance geometry", JSON.stringify({ locale: scene.locale, tallyGeometry, rowGeometry }));
       expect(tallyGeometry.size).toBeGreaterThanOrEqual(20);

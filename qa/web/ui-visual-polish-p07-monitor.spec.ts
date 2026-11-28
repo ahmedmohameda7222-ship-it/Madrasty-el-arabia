@@ -64,6 +64,24 @@ for (const scene of [
         weight: Number(getComputedStyle(el).fontWeight),
         cardRadius: parseFloat(getComputedStyle(el.parentElement!).borderTopLeftRadius),
       }));
+      const navGeometry = () => page.locator(".school-nav").evaluate(nav => {
+        const links = Array.from(nav.querySelectorAll(":scope > a"));
+        const rects = links.map(link => link.getBoundingClientRect());
+        const content = document.querySelector(".school-content")!.getBoundingClientRect();
+        return {
+          count: rects.length,
+          rows: new Set(rects.map(rect => Math.round(rect.top))).size,
+          minTarget: Math.min(...rects.map(rect => Math.min(rect.width, rect.height))),
+          overlap: rects.some((rect, i) => rects.slice(i + 1).some(other =>
+            rect.left < other.right - 1 && rect.right > other.left + 1 && rect.top < other.bottom - 1 && rect.bottom > other.top + 1)),
+          availableContent: content.height,
+        };
+      });
+      const normalNav = await navGeometry();
+      expect(normalNav.count).toBe(5);
+      expect(normalNav.rows).toBe(1);
+      expect(normalNav.minTarget).toBeGreaterThanOrEqual(44);
+      expect(normalNav.overlap).toBe(false);
       await page.screenshot({ path: folder + "/dashboard.png" });
       await page.getByRole("button", { name: scene.exams, exact: true }).click();
       await expect(page.getByText(publicTitle, { exact: true })).toBeVisible();
@@ -80,6 +98,16 @@ for (const scene of [
       expect(new URL(page.url()).searchParams.get("student")).toBeNull();
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.screenshot({ path: folder + "/dashboard-text-200.png" });
+      const largeNav = await navGeometry();
+      const columns = await page.locator('[class*="AdminClassMonitor_sections__"]').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+      console.log("P11 large-text layout", JSON.stringify({ locale: scene.locale, normalNav, largeNav, columns }));
+      expect(largeNav.count).toBe(normalNav.count);
+      expect(largeNav.rows).toBeGreaterThan(1);
+      expect(largeNav.minTarget).toBeGreaterThanOrEqual(44);
+      expect(largeNav.overlap).toBe(false);
+      expect(largeNav.availableContent).toBeGreaterThanOrEqual(240);
+      expect(columns).toBe(1);
+
       expect(await page.locator(".school-content").evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
       await page.getByRole("button", { name: scene.backList, exact: true }).click();
       await expect(page.getByRole("heading", { name: scene.list, exact: true })).toBeVisible();
