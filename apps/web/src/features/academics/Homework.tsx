@@ -96,7 +96,7 @@ function WorkList({locale,revision,initial,child,offering,canPlan}:{
       <TimetableRead locale={locale} result={detail}>{(value)=><HomeworkDetails key={value.id} locale={locale} value={value} child={child}
         saved={saved} refresh={()=>setChanges((n)=>n+1)}/>}</TimetableRead>
     </>:<>
-      {offering&&canPlan&&<button className="plain-button" onClick={()=>setCreate(true)}>{text.newWork}</button>}
+      {offering&&canPlan&&<button className={create?"plain-button":"primary-button"} onClick={()=>setCreate(true)}>{text.newWork}</button>}
       {offering&&canPlan&&create&&<HomeworkForm locale={locale} offering={offering}
         saved={saved} cancel={()=>setCreate(false)}/>}
       <AcademicPageItems locale={locale} page={page} emptyMessage={child

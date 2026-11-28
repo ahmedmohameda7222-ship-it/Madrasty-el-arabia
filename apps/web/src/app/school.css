@@ -233,7 +233,8 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .auth-form label { display: grid; grid-template-columns: minmax(0, 1fr); min-inline-size: 0; gap: 4px; overflow-wrap: anywhere; }
 .date-format-hint { display: block; color: var(--muted); font-size: .8rem; line-height: 1.35; overflow-wrap: anywhere; }
 
-.auth-form select { min-block-size: 44px; min-inline-size: 0; max-inline-size: 100%; inline-size: 100%; box-sizing: border-box; text-overflow: ellipsis; background: var(--canvas); color: var(--ink); }
+.auth-form :is(select,textarea) { min-block-size: 48px; min-inline-size: 0; max-inline-size: 100%; inline-size: 100%; box-sizing: border-box; border-radius: var(--radius-control); padding: 8px 12px; background: var(--canvas); color: var(--ink); border: 1px solid var(--field-border); }
+.auth-form select { text-overflow: ellipsis; }
 .auth-form fieldset { min-inline-size: 0; border: 1px solid var(--rule); border-radius: 12px; }
 .auth-form label.access-check { display: flex; min-block-size: 44px; align-items: center; gap: 8px; }
 .auth-form input[type=checkbox] { min-block-size: auto; inline-size: 20px; block-size: 20px; accent-color: var(--primary); }

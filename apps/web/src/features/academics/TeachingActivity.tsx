@@ -92,7 +92,7 @@ function TeachingPanel({locale,offering,refresh}:{locale:Locale;offering:string;
   const list=useAcademicPage(`/academics/teaching-log?offeringId=${offering}&limit=25`,logs,refresh+changed);
   return <section className="auth-card auth-form">
     <h2>{text.teaching}</h2>
-    <button className="plain-button" onClick={()=>setEditing("new")}>{text.newLog}</button>
+    <button className={editing?"plain-button":"primary-button"} onClick={()=>setEditing("new")}>{text.newLog}</button>
     {editing&&<TeachingForm key={editing==="new"?"new":editing.id} locale={locale} offering={offering}
       item={editing==="new"?undefined:editing} cancel={()=>setEditing(undefined)} saved={()=>{setEditing(undefined);setChanged((n)=>n+1);}}/>}
     <AcademicPageItems locale={locale} page={list}>{(rows)=><ul className="group-list">{rows.map((entry)=><li key={entry.id} className="timetable-day">
@@ -173,7 +173,7 @@ function ActivitiesPanel({locale,offering,child,refresh,initial}:{locale:Locale;
     </>}</TimetableRead>
   </section>;
   return <section className="auth-card auth-form">
-    {offering&&!child&&<button className="plain-button" onClick={()=>setCreating(true)}>{text.addActivity}</button>}
+    {offering&&!child&&<button className={creating?"plain-button":"primary-button"} onClick={()=>setCreating(true)}>{text.addActivity}</button>}
     {offering&&!child&&creating&&<NewActivity locale={locale} offering={offering} cancel={()=>setCreating(false)}
       saved={(key)=>{setId(key);setCreating(false);setUpdated((n)=>n+1);}}/>}
     <AcademicPageItems locale={locale} page={page}>{(items)=><ul className="group-list">{items.map((item)=><li key={item.id}>

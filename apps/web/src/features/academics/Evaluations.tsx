@@ -59,7 +59,7 @@ function EvaluationList({locale,scope}:{locale:Locale;scope:AssessmentContext}){
       <TimetableRead locale={locale} result={detail}>{(value)=><EvaluationDetails key={value.id} locale={locale} value={value}
         changed={(notice)=>{if(notice)setMessage(notice);refresh();}}/>}</TimetableRead>
     </>:<>
-      {offering?.canGrade&&<button type="button" className="plain-button" onClick={()=>setNewDraft(true)}>{text.newEvaluation}</button>}
+      {offering?.canGrade&&<button type="button" className={newDraft?"plain-button":"primary-button"} onClick={()=>setNewDraft(true)}>{text.newEvaluation}</button>}
       {offering?.canGrade&&newDraft&&<DraftForm locale={locale} offering={offering.id} cancel={()=>setNewDraft(false)} saved={(id)=>{
         setNewDraft(false);setSelected(id);setMessage(text.done);refresh();
       }}/>}

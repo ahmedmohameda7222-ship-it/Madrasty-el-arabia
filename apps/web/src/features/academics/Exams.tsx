@@ -46,7 +46,7 @@ function ExamList({locale,scope,classId}:{locale:Locale;scope:AssessmentContext;
       <TimetableRead locale={locale} result={detail}>{(item)=><ExamDetails key={item.id} locale={locale} item={item}
         guardian={Boolean(child)} version={version+updated} changed={(message)=>{if(message)setNotice(message);setUpdated((n)=>n+1);}}/>}</TimetableRead>
     </>:<>
-      {offering?.canPlan&&<button type="button" className="plain-button" onClick={()=>setCreate(true)}>{text.newExam}</button>}
+      {offering?.canPlan&&<button type="button" className={create?"plain-button":"primary-button"} onClick={()=>setCreate(true)}>{text.newExam}</button>}
       {offering?.canPlan&&create&&<ExamForm locale={locale} offering={offering.id} cancel={()=>setCreate(false)}
         saved={(key)=>{setCreate(false);setId(key);setNotice(text.saved);setUpdated((n)=>n+1);}}/>}
       <AcademicPageItems locale={locale} page={page} emptyMessage={child

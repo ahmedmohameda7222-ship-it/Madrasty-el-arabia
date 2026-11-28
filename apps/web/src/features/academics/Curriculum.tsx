@@ -143,7 +143,7 @@ function CurriculumCatalog({locale,child,revision,initialLesson}:{locale:Locale;
           {program.visible.cursor&&<button className="plain-button" disabled={program.busy} onClick={()=>void program.more()}>{text.more}</button>}
           {program.notice!==undefined&&<p role="alert">{timetableError(locale,program.notice)}</p>}
         </>)}
-      {chosen?.canPlan&&<button className="plain-button" onClick={()=>setCreateLesson(true)}>{text.newLesson}</button>}
+      {chosen?.canPlan&&<button className={createLesson?"plain-button":"primary-button"} onClick={()=>setCreateLesson(true)}>{text.newLesson}</button>}
       {chosen?.canPlan&&createLesson&&<LessonEditor key={chosen.id} locale={locale} offering={chosen.id}
         units={program.visible?.items??[]} cancel={()=>setCreateLesson(false)} saved={(id)=>{setCreateLesson(false);setLesson(id);inc();}}/>}
     </section>}
