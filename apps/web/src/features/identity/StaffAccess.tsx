@@ -194,7 +194,7 @@ export function StaffAccess({ locale, ownAccount }: { locale: Locale; ownAccount
   const accessName = label("access.manage");
   return (
     <section className="auth-card" aria-busy={busy}>
-      <h1>{text.title}</h1>
+      <h1 aria-label={text.title}>{locale === "de" ? "Be\u00adrech\u00adti\u00adgun\u00adgen ver\u00adwal\u00adten" : text.title}</h1>
       <div className="auth-form">
         <label>{text.person}
           <select value={target} onChange={(event) => select(event.target.value)} disabled={busy}>

@@ -78,7 +78,7 @@ export function AttendanceHistory({locale,childId,classId,rowId}:{
   const current=guardian?childOptions.value?.data?.find(({id})=>id===child)?.id:undefined;
 
   return <>
-    <h1>{text.title}</h1>
+    <h1 aria-label={text.title}>{locale === "de" ? "An\u00adwe\u00adsen\u00adheits\u00adver\u00adlauf" : text.title}</h1>
     {row&&!guardian?<><button className="plain-button" onClick={()=>setRow(undefined)}>{text.back}</button>
       <RecordHistory key={row} locale={locale} id={row} revision={refresh} />
     </>:<>

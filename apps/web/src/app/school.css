@@ -788,7 +788,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .app-settings-sheet .sheet-header button{flex:none;min-block-size:44px}
 .app-language-settings{display:grid;gap:8px;margin-block:8px 16px}
 .app-language-settings h3{margin:0;font-size:1rem}
-.app-language-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.app-language-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,7rem),1fr));gap:8px}
 .app-language-options button{min-block-size:44px;inline-size:100%;margin:0}
 .app-language-options button[aria-pressed=true]{color:var(--selection-ink);background:var(--selection);border:1px solid currentColor;font-weight:700}
 
@@ -916,7 +916,7 @@ html[lang="de"] .route-loading-ar, html[lang="ar"] .route-loading-de { display: 
 .auth-form :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-inline-size:0;max-inline-size:100%;box-sizing:border-box}
 .auth-card :is(h1,h2,h3,p,label),.auth-form :is(h1,h2,h3,p){overflow-wrap:anywhere;hyphens:auto;min-inline-size:0}
 .auth-card :is(.plain-button,.primary-button),.auth-form :is(.plain-button,.primary-button),.school-content .header-actions>:is(.plain-button,.primary-button){max-inline-size:100%;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
-.app-language-options>button{padding-inline:6px;min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
+.app-language-options>button{padding-inline:6px;min-inline-size:0;white-space:normal;overflow-wrap:normal;hyphens:none}
 .comms-notice-controls>button{overflow-wrap:anywhere;hyphens:auto}
 
 /* Calendar text-size adaptation: the full accessible weekday name remains on the existing header. */

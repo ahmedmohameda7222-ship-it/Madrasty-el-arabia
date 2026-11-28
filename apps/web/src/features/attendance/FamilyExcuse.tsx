@@ -84,7 +84,7 @@ export function FamilyExcuse({locale,child,initialDate}:{locale:Locale;child:str
   }
 
   return <>
-    <h1>{text.title}</h1>
+    <h1 aria-label={text.title}>{locale === "de" ? "Ab\u00adwe\u00adsen\u00adheit ent\u00adschul\u00addi\u00adgen" : text.title}</h1>
     <form className="auth-form auth-card" onSubmit={(event)=>{
       event.preventDefault();setDay(dateInput||knownDay||"");setWithdraw(undefined);setFeedback(undefined);
     }}>

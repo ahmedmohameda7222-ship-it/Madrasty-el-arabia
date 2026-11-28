@@ -61,7 +61,7 @@ export function AccountPreferences({ locale, initial }: { locale: Locale; initia
   }
 
   return <>
-    <h1>{labels.title}</h1>
+    <h1 aria-label={labels.title}>{locale === "de" ? "App-Ein\u00adstel\u00adlun\u00adgen" : labels.title}</h1>
     <div className="calendar-layout">
       <section className="auth-card identity-card">
         <LanguageSettings locale={locale}/>
