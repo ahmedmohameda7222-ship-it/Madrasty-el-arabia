@@ -71,3 +71,5 @@ jobs:
             qa-artifacts/visual-polish/P09/timetable-*/**/timetable-*.png
           retention-days: 7
           if-no-files-found: warn
+
+# Reverify bank definition-list and timetable reflow after registry synchronization.
