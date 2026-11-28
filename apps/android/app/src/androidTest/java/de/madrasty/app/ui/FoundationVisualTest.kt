@@ -19,11 +19,15 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import de.madrasty.app.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.util.Locale
@@ -124,8 +128,37 @@ class FoundationVisualTest {
         compose.onNodeWithText(resources.getString(R.string.nav_home)).performClick()
         compose.onNodeWithText(title).assertIsDisplayed()
         if (!baseline) {
+            // Accessibility typography must keep complete words readable, not merely
+            // expose the correct semantics on a fragmented/clipped visual label.
+            val second = when (persona) {
+                Persona.Admin -> SchoolTab.Students
+                Persona.Teacher -> SchoolTab.Attendance
+                Persona.Guardian -> SchoolTab.Children
+            }
+            assertWholeWords(resources.getString(R.string.app_name))
+            listOf(SchoolTab.Home, second, SchoolTab.Messages, SchoolTab.Calendar, SchoolTab.More)
+                .forEach { assertWholeWords(resources.getString(it.label)) }
             compose.runOnIdle {
                 assertEquals(if (dark) Color(0xFF111A18) else Color(0xFFF5F6F2), observedCanvas)
+            }
+        }
+    }
+    private fun assertWholeWords(label: String) {
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(label, useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                assertTrue("No text layout for $label", action(layouts))
+            }
+        assertTrue("No text layout for $label", layouts.isNotEmpty())
+        layouts.forEach { layout ->
+            assertTrue("Clipped text: $label", !layout.hasVisualOverflow)
+            val text = layout.layoutInput.text.text
+            Regex("\\S+").findAll(text).forEach { word ->
+                assertEquals(
+                    "Word split across lines in $label: ${word.value}",
+                    layout.getLineForOffset(word.range.first),
+                    layout.getLineForOffset(word.range.last),
+                )
             }
         }
     }
