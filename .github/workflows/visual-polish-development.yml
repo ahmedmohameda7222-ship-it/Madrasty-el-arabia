@@ -1,5 +1,6 @@
 name: Visual polish - isolated development QA
 on:
+  workflow_dispatch:
   push:
     branches: ["visual-polish/premium"]
     paths:
@@ -14,6 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   static:
+    if: github.ref == 'refs/heads/visual-polish/premium'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -34,6 +36,7 @@ jobs:
       - run: pnpm check:types
       - run: pnpm build:web
   visual-fixture:
+    if: github.ref == 'refs/heads/visual-polish/premium'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     strategy:
