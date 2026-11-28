@@ -261,3 +261,14 @@
 }
 :global([dir="rtl"]) .root .head h1,
 :global([dir="rtl"]) .root .eyebrow { letter-spacing: normal; }
+
+/* Calendar summary cells adapt to actual text size rather than a fixed three-column minimum. */
+.statCard,.statCard>span:last-child{min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
+.yearCard h2{flex-wrap:wrap;min-inline-size:0;overflow-wrap:anywhere}
+@media(max-width:540px){
+ .summary{grid-template-columns:repeat(auto-fit,minmax(min(100%,6rem),1fr))}
+ .statCard{min-block-size:120px;block-size:auto}
+ .day{padding-inline:2px}
+ .day .number,.day .todayNumber{align-self:center}
+ .todayNumber{min-inline-size:min(21px,100%);max-inline-size:100%;inline-size:auto;min-block-size:21px;block-size:auto;padding:0;line-height:1.2}
+}

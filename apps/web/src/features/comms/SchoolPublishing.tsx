@@ -151,6 +151,8 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
   const offset=(first.getUTCDay()+6)%7,days=last.getUTCDate();
   const weekday=new Intl.DateTimeFormat(intl(locale),{weekday:"long",timeZone:"UTC"});
   const compactWeekdays=locale==="ar"?["اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت","أحد"]:["Mo","Di","Mi","Do","Fr","Sa","So"];
+  // Reuse the school-calendar compact Arabic abbreviations when the grid cannot fit the full labels.
+  const narrowArabicWeekdays=["إث","ثل","أر","خم","جم","سب","أح"];
   const number=new Intl.NumberFormat(locale);
   return <div className="auth-form comms-month-picker">
     <div className="comms-month-heading">
@@ -159,7 +161,7 @@ function MonthPicker({locale,month,go,day,choose,today,entries,summary}:{
       <button className="plain-button" type="button" aria-label={text.next} onClick={()=>go(shiftMonth(month,1))}><span aria-hidden="true">{locale==="ar"?"‹":"›"}</span></button>
     </div>
     <div className="school-month-grid" data-calendar-ready={summary!==undefined} data-month={month} role="group" aria-label={text.event}>
-      {compactWeekdays.map((name,index)=><small key={index} className="comms-weekday" aria-label={weekday.format(new Date(Date.UTC(2024,0,index+1,12)))}>{name}</small>)}
+      {compactWeekdays.map((name,index)=><small key={index} className="comms-weekday" aria-label={weekday.format(new Date(Date.UTC(2024,0,index+1,12)))}>{locale==="ar"?<><span className="comms-weekday-full">{name}</span><span className="comms-weekday-short">{narrowArabicWeekdays[index]}</span></>:name}</small>)}
       {Array.from({length:offset},(_,index)=><span key={`blank-${index}`}/>)}
       {Array.from({length:days},(_,index)=>{
         const dayId=`${month}-${String(index+1).padStart(2,"0")}`;

@@ -918,3 +918,17 @@ html[lang="de"] .route-loading-ar, html[lang="ar"] .route-loading-de { display: 
 .auth-card :is(.plain-button,.primary-button),.auth-form :is(.plain-button,.primary-button),.school-content .header-actions>:is(.plain-button,.primary-button){max-inline-size:100%;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
 .app-language-options>button{padding-inline:6px;min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
 .comms-notice-controls>button{overflow-wrap:anywhere;hyphens:auto}
+
+/* Calendar text-size adaptation: the full accessible weekday name remains on the existing header. */
+.comms-calendar .comms-month-picker{container-type:inline-size;container-name:comms-month}
+.comms-weekday-short{display:none}
+@container comms-month (max-width:16rem){
+ .comms-weekday-full{display:none}
+ .comms-weekday-short{display:inline}
+}
+@supports not (container-type:inline-size){
+ @media(max-width:430px){.comms-weekday-full{display:none}.comms-weekday-short{display:inline}}
+}
+.comms-calendar-actions{flex-wrap:wrap}
+.comms-calendar-actions>.comms-segments{flex:1 1 12rem}
+.comms-calendar-actions .comms-segments button{min-inline-size:0;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
