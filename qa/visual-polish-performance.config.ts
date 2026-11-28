@@ -3,6 +3,7 @@ import { loadEnvFile } from "node:process";
 import { localOrigin } from "./support/target";
 
 loadEnvFile("qa/.env.local");
+const production = process.env.VISUAL_POLISH_RUNTIME === "production";
 
 export default defineConfig({
   testDir: "./visual-polish-performance",
@@ -10,6 +11,6 @@ export default defineConfig({
   workers: 1,
   timeout: 600_000,
   expect: { timeout: 30_000 },
-  outputDir: "../qa-artifacts/visual-polish/P12/test-results",
-  use: { baseURL: localOrigin, browserName: "chromium" },
+  outputDir: production ? "../qa-artifacts/visual-polish/P12-production/test-results" : "../qa-artifacts/visual-polish/P12/test-results",
+  use: { baseURL: production ? "https://127.0.0.1:4443" : localOrigin, browserName: "chromium", ignoreHTTPSErrors: false },
 });

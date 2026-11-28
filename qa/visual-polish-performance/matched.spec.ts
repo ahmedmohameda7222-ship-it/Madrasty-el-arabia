@@ -1,11 +1,19 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { schoolFixtures } from "../fixtures/school";
-import { localOrigin } from "../support/target";
+import { fixtureEmail, localOrigin, requireFixtureTarget } from "../support/target";
 
 type Probe = { pressedAt: number; rafMs: number | null };
 type BrowserEvidence = { press: Probe | null; longTasks: { startTime: number; duration: number }[]; supported: boolean };
 type ProbeWindow = Window & { __qaMotion: BrowserEvidence };
+const production = process.env.VISUAL_POLISH_RUNTIME === "production";
+const origin = production ? "https://127.0.0.1:4443" : localOrigin;
+const artifactRoot = production ? "P12-production" : "P12";
+if (production) {
+  requireFixtureTarget(process.env);
+  if (process.env.GITHUB_ACTIONS !== "true" || process.env.GITHUB_REF !== "refs/heads/visual-polish/premium" ||
+      !process.env.NODE_EXTRA_CA_CERTS) throw new Error("Matched production QA requires isolated TLS.");
+}
 const stage = process.env.VISUAL_POLISH_STAGE;
 const sourceSha = process.env.VISUAL_POLISH_SOURCE_SHA;
 if (!stage || !["baseline", "candidate"].includes(stage) || !sourceSha || !/^[a-f0-9]{40}$/.test(sourceSha)) {
@@ -19,7 +27,7 @@ for (const scenario of [
 ] as const) {
   test("matched hosted mobile navigation " + scenario.persona, async ({ browser }) => {
     const school = schoolFixtures();
-    const folder = `qa-artifacts/visual-polish/P12/${stage}/${scenario.persona}`;
+    const folder = `qa-artifacts/visual-polish/${artifactRoot}/${stage}/${scenario.persona}`;
     mkdirSync(folder, { recursive: true });
     const samples: Record<string, unknown>[] = [];
     const errors: string[] = [];
@@ -29,10 +37,35 @@ for (const scenario of [
     try {
       await school.seed();
       const token = await school.bearer(scenario.actor, scenario.persona);
+      // Obtain normal web cookies once before timing. Admin verification uses the
+      // existing enrolled synthetic factor; no auth bypass or TLS relaxation.
+      let authenticatedState: Awaited<ReturnType<BrowserContext["storageState"]>> | undefined;
+      if (production) {
+        const auth = await browser.newContext({ baseURL: origin, ignoreHTTPSErrors: false });
+        try {
+          const login = await auth.request.post(origin + "/api/v1/auth/sign-in", {
+            headers: { Origin: origin },
+            data: { email: fixtureEmail(school.run, scenario.actor), password: school.password },
+          });
+          expect(login.status()).toBe(200);
+          if (scenario.persona === "admin") {
+            const verification = await auth.newPage();
+            await verification.goto("/de/account/security");
+            await verification.locator('input[name="code"]').fill((await school.localMfa("admin")).code());
+            await verification.getByRole("button", { name: "Bestätigen", exact: true }).click();
+            await expect(verification).toHaveURL(/\/de\/school\/home(?:\?.*)?$/);
+          }
+          authenticatedState = await auth.storageState();
+          expect(authenticatedState.cookies.some(c => c.name === "__Host-madrasty-session" && c.secure && c.httpOnly && c.path === "/")).toBe(true);
+          expect(authenticatedState.cookies.some(c => c.name === "__Host-madrasty-csrf" && c.secure && !c.httpOnly && c.path === "/")).toBe(true);
+          // Keep the captured cookies in memory only, never write auth state to artifacts.
+          authenticatedState.origins = [];
+        } finally { await auth.close(); }
+      }
       const open = async () => {
         const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1,
-          colorScheme: scenario.scheme, reducedMotion: "no-preference", baseURL: localOrigin });
-        await context.addCookies([{ name: "madrasty-session", value: token, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
+          colorScheme: scenario.scheme, reducedMotion: "no-preference", baseURL: origin, ignoreHTTPSErrors: false, storageState: authenticatedState });
+        if (!production) await context.addCookies([{ name: "madrasty-session", value: token, url: localOrigin, httpOnly: true, sameSite: "Lax" }]);
         await context.addInitScript(() => {
           const state: BrowserEvidence = { press: null, longTasks: [], supported: PerformanceObserver.supportedEntryTypes.includes("longtask") };
           (window as ProbeWindow).__qaMotion = state;
@@ -51,7 +84,7 @@ for (const scenario of [
         page.on("pageerror", error => errors.push(error.name));
         page.on("requestfinished", async request => {
           const url = new URL(request.url());
-          if (url.origin !== localOrigin || !url.pathname.startsWith("/api/v1/")) return;
+          if (url.origin !== origin || !url.pathname.startsWith("/api/v1/")) return;
           const path = url.pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi, ":id");
           const response = await request.response();
           const timing = request.timing();
@@ -142,7 +175,7 @@ for (const scenario of [
       expect(errors).toEqual([]);
     } finally {
       writeFileSync(folder + "/samples.json", JSON.stringify({ stage, sourceSha, scenario, browser: browser.version(),
-        viewport: { width: 390, height: 844, dpr: 1 }, runtime: "isolated Next development, same hosted runner and fixture database",
+        viewport: { width: 390, height: 844, dpr: 1 }, runtime: production ? "isolated Next production with verified TLS, same hosted runner and fixture database" : "isolated Next development, same hosted runner and fixture database",
         caveats: ["Fresh browser context is not a cold server reboot.", "First rAF after pointerdown is a scheduling proxy, not verified first visual paint.", "Missing cross-document or unsupported measurements are null.", "Traces remain in the disposable runner."],
         samples, errors, failures }, null, 2));
       await school.close();

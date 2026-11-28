@@ -1,0 +1,87 @@
+name: Visual polish - matched production navigation performance
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-matched-performance-development.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  matched:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      QA_SCREENSHOTS_ONLY: "1"
+      VISUAL_POLISH_RUNTIME: production
+      BASELINE_SHA: b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+          sudo apt-get install -y libnss3-tools
+          git worktree add --detach "$RUNNER_TEMP/baseline" "$BASELINE_SHA"
+          test "$(git -C "$RUNNER_TEMP/baseline" rev-parse HEAD)" = "$BASELINE_SHA"
+          pnpm --dir "$RUNNER_TEMP/baseline" install --frozen-lockfile
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - run: bash qa/visual-polish-production-tls.sh
+      - name: Same runner, same browser and production-mode matched journeys
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp qa/.env.local "$RUNNER_TEMP/baseline/qa/.env.local"
+          # Use the same guarded QA-only launcher for both worktrees; leave
+          # baseline app, packages, dependencies and pinned commit unchanged.
+          cp qa/local.ps1 "$RUNNER_TEMP/baseline/qa/local.ps1"
+          git -C "$RUNNER_TEMP/baseline" diff --exit-code -- apps packages package.json pnpm-lock.yaml pnpm-workspace.yaml
+          pnpm --dir "$RUNNER_TEMP/baseline" build:web
+          pnpm build:web
+          node qa/support/visual-production-proxy.mjs > "$RUNNER_TEMP/visual-perf-proxy.log" 2>&1 &
+          proxy_pid=$!
+          start_web() {
+            setsid pwsh -NoProfile -File "$1/qa/local.ps1" -Serve -Production -ProductionFixtureTls > "$RUNNER_TEMP/visual-perf-$2.log" 2>&1 &
+            web_pid=$!
+            curl --cacert "$NODE_EXTRA_CA_CERTS" -fsS --retry 30 --retry-connrefused --retry-all-errors --retry-delay 2 --max-time 10 https://127.0.0.1:4443/api/v1/health
+          }
+          stop_web() {
+            kill -- "-$web_pid" 2>/dev/null || true
+            for i in $(seq 1 30); do
+              if ! curl -fsS --max-time 1 http://127.0.0.1:4300/api/v1/health >/dev/null 2>&1; then return; fi
+              sleep 1
+            done
+            echo "Loopback server did not stop"; exit 1
+          }
+          trap 'if [[ -n "${web_pid:-}" ]]; then kill -- "-$web_pid" 2>/dev/null || true; fi; kill "$proxy_pid" 2>/dev/null || true' EXIT
+          start_web "$RUNNER_TEMP/baseline" baseline
+          pnpm exec tsx --env-file=qa/.env.local -e 'import {schoolFixtures} from "./qa/fixtures/school"; import {setUpCalendar} from "./qa/fixtures/calendar"; (async()=>{const school=schoolFixtures();try{await school.seed();await setUpCalendar(school,await school.bearer("admin","admin"));}finally{await school.close();}})().catch(error=>{console.error(error.message);process.exitCode=1;})'
+          baseline_rc=0
+          VISUAL_POLISH_STAGE=baseline VISUAL_POLISH_SOURCE_SHA="$BASELINE_SHA" pnpm exec playwright test --config qa/visual-polish-performance.config.ts || baseline_rc=$?
+          stop_web
+          start_web "$GITHUB_WORKSPACE" candidate
+          candidate_rc=0
+          VISUAL_POLISH_STAGE=candidate VISUAL_POLISH_SOURCE_SHA="$GITHUB_SHA" pnpm exec playwright test --config qa/visual-polish-performance.config.ts || candidate_rc=$?
+          stop_web
+          node qa/visual-polish-performance/report.mjs
+          test "$baseline_rc" = 0
+          test "$candidate_rc" = 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: matched-production-visual-performance-${{ github.sha }}
+          path: |
+            qa-artifacts/visual-polish/P12-production/**/samples.json
+            qa-artifacts/visual-polish/P12-production/matched-summary.json
+          retention-days: 7
+          if-no-files-found: warn

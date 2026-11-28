@@ -1,11 +1,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
-const root = "qa-artifacts/visual-polish/P12";
+const production = process.env.VISUAL_POLISH_RUNTIME === "production";
+const root = production ? "qa-artifacts/visual-polish/P12-production" : "qa-artifacts/visual-polish/P12";
 const roles = ["admin", "teacher", "guardian"];
 const groups = [];
 for (const role of roles) {
   const before = JSON.parse(readFileSync(root + "/baseline/" + role + "/samples.json", "utf8"));
   const after = JSON.parse(readFileSync(root + "/candidate/" + role + "/samples.json", "utf8"));
   if (before.samples.length !== 70 || after.samples.length !== 70) throw Error("Incomplete matched series for " + role);
+  if (before.runtime !== after.runtime || !before.runtime.includes(production ? "production with verified TLS" : "development")) throw Error("Unmatched runtime");
   if (before.browser !== after.browser || JSON.stringify(before.viewport) !== JSON.stringify(after.viewport)) throw Error("Unmatched browser or viewport");
   for (const mode of ["fresh-browser-context", "reused-browser-context"]) {
     for (const action of [...new Set(before.samples.map(s => s.action))]) {
@@ -25,5 +27,5 @@ for (const role of roles) {
     }
   }
 }
-writeFileSync(root + "/matched-summary.json", JSON.stringify({ notes: ["Five repetitions per journey/context/stage; p95 omitted due to small sample.", "Hosted browser dev measurements, not physical-device or production measurements.", "Differences require investigation; no automatic release approval."], groups }, null, 2));
+writeFileSync(root + "/matched-summary.json", JSON.stringify({ notes: ["Five repetitions per journey/context/stage; p95 omitted due to small sample.", production ? "Hosted browser production-mode loopback measurements, not a live deployment or physical-device measurements." : "Hosted browser dev measurements, not physical-device or production measurements.", "Differences require investigation; no automatic release approval."], groups }, null, 2));
 console.log(JSON.stringify({ groups: groups.length, baselineSha: groups[0]?.baselineSha, candidateSha: groups[0]?.candidateSha }));
