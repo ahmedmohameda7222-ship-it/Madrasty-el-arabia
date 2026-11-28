@@ -46,6 +46,34 @@ for (const scene of [
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.screenshot({ path: folder + "/restricted-text-200.png" });
       const large = await measure();
+      if (scene.locale === "de") {
+        const heading = visual.getByRole("heading", { name: scene.heading, exact: true });
+        const wrapping = await heading.evaluate(el => {
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          const breaks: number[] = [];
+          let letters = 0, prior: number | undefined;
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            const value = node.textContent ?? "";
+            for (let i = 0; i < value.length; i++) {
+              if (value[i] === "\u00ad") continue;
+              const range = document.createRange();
+              range.setStart(node, i);
+              range.setEnd(node, i + 1);
+              const rect = Array.from(range.getClientRects()).filter(r => r.width > 0).at(-1);
+              if (!rect) { if (value[i] === " ") { letters++; continue; } throw Error("Missing heading glyph"); }
+              const top = Math.round(rect.top);
+              if (prior !== undefined && prior !== top) breaks.push(letters);
+              if (value[i] !== " ") prior = top;
+              letters++;
+            }
+          }
+          return { text: el.textContent?.replaceAll("\u00ad", ""), breaks };
+        });
+        expect(wrapping.text).toBe(scene.heading);
+        console.log("P03 generic denial heading breaks", JSON.stringify(wrapping));
+        // Word boundaries plus German ge-fun-den syllable breaks.
+        expect(wrapping.breaks.filter(index => ![5, 6, 11, 12, 14, 17].includes(index))).toEqual([]);
+      }
       for (const result of [normal, large]) {
         expect(result.overflow).toBeLessThanOrEqual(1);
         expect(result.radius).toBeGreaterThanOrEqual(16);
