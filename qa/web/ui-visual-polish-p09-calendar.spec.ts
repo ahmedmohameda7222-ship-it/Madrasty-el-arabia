@@ -67,8 +67,10 @@ for (const scene of [
       await expect(selected).toHaveCount(1);
       const dayButtons = calendar.locator("button[aria-pressed]");
       expect(await dayButtons.count()).toBeGreaterThanOrEqual(28);
+      const daySizes: {width:number;height:number}[]=[];
       for (const day of await dayButtons.all()) {
         const bounds = (await day.boundingBox())!;
+        daySizes.push({width:bounds.width,height:bounds.height});
         expect(bounds.width).toBeGreaterThanOrEqual(24);
         expect(bounds.height).toBeGreaterThanOrEqual(44);
       }
@@ -100,7 +102,8 @@ for (const scene of [
         const range=document.createRange();range.selectNodeContents(text);
         return [...range.getClientRects()].some(r=>r.left<box.left-1||r.right>box.right+1)?[i]:[];
       }));
-      const evidence = { locale: scene.locale, metrics, overflow, closeBox,statOverflow,gridOverflow };
+      const largeDaySizes=await dayButtons.evaluateAll(nodes=>nodes.map(el=>{const b=el.getBoundingClientRect();return {width:b.width,height:b.height};}));
+      const evidence = { locale: scene.locale, metrics, overflow, closeBox,statOverflow,gridOverflow,daySizes,largeDaySizes };
       console.log("P09 calendar geometry", JSON.stringify(evidence));
       writeFileSync(folder + "/geometry.json", JSON.stringify(evidence, null, 2));
       expect(metrics.createHeight).toBeGreaterThanOrEqual(48);
@@ -111,6 +114,7 @@ for (const scene of [
       expect(overflow).toBeLessThanOrEqual(1);
       expect.soft(statOverflow,"All calendar summary labels fit their cards").toEqual([false,false,false]);
       expect.soft(gridOverflow,"Day numbers remain within day controls").toEqual([]);
+      for(const size of [...daySizes,...largeDaySizes])expect.soft(Math.min(size.width,size.height),"School calendar day hit target").toBeGreaterThanOrEqual(44);
     } finally {
       await context.tracing.stop({ path: folder + "/trace.zip" });
       await school.close();
@@ -142,14 +146,18 @@ for(const locale of ["de","ar"] as const){
         const box=el.getBoundingClientRect();
         return {overflow:Math.max(0,el.scrollWidth-el.clientWidth),clipped:[...range.getClientRects()].some(r=>r.left<box.left-1||r.right>box.right+1)};
       }));
+      const daySizes=()=>grid.locator("button[aria-pressed]").evaluateAll(nodes=>nodes.map(el=>{const b=el.getBoundingClientRect();return {width:b.width,height:b.height,left:b.left,right:b.right};}));
       const normal=await measure();
+      const normalDays=await daySizes();
       await grid.scrollIntoViewIfNeeded();
       await page.screenshot({path:folder+"/calendar.png"});
       await page.evaluate(()=>{document.documentElement.style.fontSize="200%";});
       const large=await measure();
+      const largeDays=await daySizes();
       await grid.scrollIntoViewIfNeeded();
       await page.screenshot({path:folder+"/calendar-text-200.png"});
-      console.log("P09 month weekdays",JSON.stringify({locale,normal,large}));
+      console.log("P09 month weekdays",JSON.stringify({locale,normal,large,normalDays,largeDays}));
+      for(const size of [...normalDays,...largeDays]){expect.soft(Math.min(size.width,size.height),"Event calendar day hit target").toBeGreaterThanOrEqual(44);expect.soft(size.left).toBeGreaterThanOrEqual(0);expect.soft(size.right).toBeLessThanOrEqual(320);}
       for(const row of [...normal,...large]){expect.soft(row.overflow).toBeLessThanOrEqual(1);expect.soft(row.clipped).toBe(false);}
       expect(await grid.locator('button[aria-pressed]').count()).toBeGreaterThanOrEqual(28);
     }finally{await school.close();}
