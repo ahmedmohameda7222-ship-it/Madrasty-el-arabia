@@ -8,6 +8,7 @@ on:
       - "qa/visual-polish-production.config.ts"
       - "qa/web/ui-visual-polish-not-found.spec.ts"
       - "qa/web/ui-visual-polish-entry.spec.ts"
+      - "qa/web/ui-visual-polish-identity.spec.ts"
       - "qa/web/ui-visual-polish-p10-bank.spec.ts"
       - "qa/web/ui-visual-polish-p09-timetable.spec.ts"
       - "qa/web/ui-visual-polish-p09-calendar.spec.ts"

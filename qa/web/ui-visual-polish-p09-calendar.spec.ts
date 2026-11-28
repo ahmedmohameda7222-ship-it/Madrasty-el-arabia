@@ -90,8 +90,9 @@ for (const scene of [
       const summary=page.getByRole("region",{name:scene.year,exact:true});
       if (scene.theme === "dark") {
         await expect(page.locator("body")).toHaveCSS("background-color", "rgb(0, 0, 0)");
-        await expect(summary).toHaveCSS("background-color", "rgb(28, 28, 28)");
-        await expect(page.getByRole("heading",{name:scene.title,exact:true})).toHaveCSS("color", "rgb(255, 255, 255)");
+        await expect(year).toHaveCSS("background-color", "rgb(28, 28, 28)");
+        await expect(calendar).toHaveCSS("background-color", "rgb(28, 28, 28)");
+        await expect(heading).toHaveCSS("color", "rgb(255, 255, 255)");
       }
       const stats=summary.locator('div[class*="statCard"] > span:last-child');
       await expect(stats).toHaveCount(3);

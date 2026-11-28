@@ -1,6 +1,7 @@
 import { devices, expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { visualNavigationProbe } from "../support/visual-navigation-probe";
+import { schoolResourceKindValues } from "../../packages/contracts/src/generated";
 
 const before = process.env.VISUAL_POLISH_BASELINE === "1";
 
@@ -39,6 +40,61 @@ for (const locale of ["ar", "de"] as const) {
       if (!before) for (const shadow of cards) expect(shadow).not.toBe("none");
     } catch (error) { probe.dump(); throw error; }
     finally { await context.close(); }
+  });
+}
+
+for (const locale of ["ar", "de"] as const) {
+  test("P03 signed-out school resource links " + locale, async ({ page, context, browser, baseURL }) => {
+    const id = "d69692d7-5aa3-4572-acbf-299f620c3345";
+    const child = "c36b246e-d6cb-4635-a550-5c3fa89d6932";
+    const needsChild = new Set<string>(["attendance", "exam", "evaluation", "activity", "homework"]);
+    const folder = `qa-artifacts/visual-polish/P03/resource-links-${locale}-${browser.browserType().name()}`;
+    mkdirSync(folder, { recursive: true });
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.emulateMedia({ colorScheme: locale === "ar" ? "dark" : "light", reducedMotion: "reduce" });
+
+    const paths = schoolResourceKindValues.map(kind => {
+      const query = needsChild.has(kind) ? "?child=" + child : "";
+      return `/${locale}/open/${kind}/${id}` + query + (kind === "attendance" ? "&date=2026-11-28" : "");
+    });
+    expect(paths).toHaveLength(12);
+    for (const path of paths) {
+      const response = await context.request.get(path, { maxRedirects: 0 });
+      expect(response.status(), path).toBe(307);
+      const location = new URL(response.headers().location, baseURL);
+      expect(location.pathname).toBe(`/${locale}/account/sign-in`);
+      expect(location.searchParams.get("next")).toBe(path);
+    }
+    const legacyNotice = `/${locale}/open-notice/${id}`;
+    const notice = await context.request.get(legacyNotice, { maxRedirects: 0 });
+    expect(notice.status()).toBe(307);
+    expect(new URL(notice.headers().location, baseURL).pathname).toBe(`/${locale}/open/notice/${id}`);
+    for (const [name, path] of [
+      ["notice", legacyNotice],
+      ["attendance", paths.find(value => value.includes("/open/attendance/"))!],
+    ] as const) {
+      expect((await page.goto(path))?.status()).toBe(200);
+      await expect(page.getByRole("heading", { name: locale === "ar" ? "تسجيل الدخول" : "Anmelden", exact: true })).toBeVisible();
+      await expect(page.locator("form.auth-form")).toBeVisible();
+      expect(await page.locator("body").innerText()).not.toContain(id);
+      await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: folder + "/" + name + "-signed-out.png" });
+    }
+
+    for (const [name, path] of [
+      ["invalid-id", `/${locale}/open-notice/invalid-id`],
+      ["invalid-relationship", `/${locale}/open/attendance/${id}`],
+      ["invalid-kind", `/${locale}/open/unknown/${id}`],
+    ] as const) {
+      expect((await page.goto(path))?.status(), name).toBe(404);
+      const terminal = page.locator("[data-generic-not-found]");
+      await expect(terminal.getByRole("heading", { name: locale === "ar" ? "الصفحة غير موجودة" : "Seite nicht gefunden", exact: true })).toBeVisible();
+      await expect(page.locator("form")).toHaveCount(0);
+      await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: folder + "/" + name + ".png" });
+    }
   });
 }
 
