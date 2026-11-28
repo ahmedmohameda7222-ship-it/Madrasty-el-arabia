@@ -140,6 +140,12 @@ button, a, [role="button"], .more-group summary { touch-action: manipulation; }
       box-shadow: none;
     }
   }
+  /* When text is enlarged, keep every destination and allow whole labels more room.
+     At ordinary mobile text size all five destinations remain on one row. */
+  .school-nav[data-columns="3"], .school-nav[data-columns="5"], .school-nav {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 3.5rem), 1fr));
+  }
+  .school-nav a { overflow-wrap: normal; hyphens: auto; min-inline-size: 0; }
   .school-content { scrollbar-width: thin; }
 }
 @media (forced-colors: active) {
@@ -252,6 +258,10 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 
 /* Attendance: preserve exact counts, row order and existing controls. */
 .attendance-filters, .attendance-sheet { min-inline-size: 0; overflow-wrap: anywhere; padding: clamp(12px, 4vw, 24px); }
+.attendance-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.attendance-filters > .auth-form { margin-block-start: 0; gap: 8px; }
+.attendance-filters > .plain-button { inline-size: 100%; justify-content: center; }
+.attendance-filters > label { display: grid; gap: 6px; }
 .attendance-filters .auth-form, .attendance-sheet, .attendance-sheet .auth-form,
 .attendance-filters label, .attendance-sheet label { grid-template-columns: minmax(0, 1fr); min-inline-size: 0; }
 .attendance-filters :is(input, select), .attendance-sheet :is(input, select, textarea) {
