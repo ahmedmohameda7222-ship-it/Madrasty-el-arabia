@@ -1,4 +1,5 @@
 name: Visual polish - isolated native development QA
+# Includes scope sheet UI-language regression and previous typography assertions.
 on:
   workflow_dispatch:
   push:

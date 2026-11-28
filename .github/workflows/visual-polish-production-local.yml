@@ -1,4 +1,4 @@
-name: P03 production-mode isolated HTTPS and TLS visual diagnostic
+name: Visual polish - isolated production identity and finance QA
 on:
   push:
     branches: ["visual-polish/premium"]
