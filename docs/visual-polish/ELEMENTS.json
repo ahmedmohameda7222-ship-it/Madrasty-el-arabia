@@ -1,6 +1,6 @@
 {
   "sourceSha": "b90fab0bec705b4bf25eb8e43f4f6f8eaa6de77a",
-  "sourceFingerprint": "aa0bcafd01f8a51dedef60ffa75c8041f30d5a0a0091a5c23affe5c28ae99ac5",
+  "sourceFingerprint": "b570a4b97b5f1079add3a60fa993c276c8c207d03bf4bb7b0e3935699b863ceb",
   "status": "DISCOVERED_PENDING_MANUAL_AND_RUNTIME_REVIEW",
   "files": [
     {"path":"apps/android/app/src/main/AndroidManifest.xml","phase":null,"classification":"markup-or-resource"},

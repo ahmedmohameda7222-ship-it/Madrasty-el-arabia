@@ -104,3 +104,7 @@
 .hero,.pickerPanel,.editor,.summary,.weekGrid,.day,.dayHead,.dayBody,.lesson,.editorGroup,.fields>label{min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
 .toolbarActions>button,.editorActions>button,.lesson>button,.classCard{min-inline-size:0;max-inline-size:100%;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
 @media(max-width:630px){.dayHead{flex-wrap:wrap}.weekGrid{grid-template-columns:minmax(0,1fr)}}
+
+/* The guardian child picker is a native select with potentially long pupil names. */
+.pickerPanel>label{display:grid;grid-template-columns:minmax(0,1fr);gap:.35rem;min-inline-size:0;max-inline-size:100%}
+.pickerPanel>label>select{inline-size:100%;min-inline-size:0;max-inline-size:100%;min-block-size:44px;box-sizing:border-box;border:1px solid var(--rule);border-radius:11px;background:var(--card);color:var(--ink);padding:.55rem .7rem;text-overflow:ellipsis}

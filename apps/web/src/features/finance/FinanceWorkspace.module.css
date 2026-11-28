@@ -184,3 +184,12 @@
 .bankReview dl{grid-template-columns:minmax(0,1fr);margin:0;min-inline-size:0}
 .bankReview dl>div,.bankReview dt,.bankReview dd{min-inline-size:0;max-inline-size:100%;margin:0;overflow-wrap:anywhere;hyphens:auto}
 .bankReview dd{font-weight:600;margin-block-start:.25rem}
+
+/* Financial labels, totals and tabs must reflow without changing their order or actions. */
+.workspace,.panel,.summaryGroup,.metrics>div,.disclosure,.sectionHeading{min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
+.workspace,.panel,.summaryGroup,.metrics>div{grid-template-columns:minmax(0,1fr)}
+.metrics small,.metrics strong,.amountLabel>span,.sectionHeading>h2{min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
+.amountLabel{flex-wrap:wrap;min-inline-size:0}
+.tabs:not(.feeTabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,7.5rem),1fr));min-inline-size:0}
+.tabs>:is(a,button){min-inline-size:0;max-inline-size:100%;overflow-wrap:anywhere;hyphens:auto}
+.workspace :is(details)>summary,.panel :is(details)>summary{min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}

@@ -215,13 +215,13 @@ button, a, [role="button"], .more-group summary { touch-action: manipulation; }
   @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
 }
 
-.auth-card { padding: 24px; margin-block: 24px; border-radius: var(--radius-card); background: var(--card); border: 1px solid var(--rule); }
+.auth-card { padding: 24px; margin-block: 24px; border-radius: var(--radius-card); background: var(--card); border: 1px solid var(--rule); min-inline-size: 0; overflow-wrap: anywhere; hyphens: auto; }
 /* UIX-06: keep legitimate long child names inside intrinsic mobile form width. */
 .school-content > h1 { overflow-wrap: anywhere; }
 html[lang="de"] .school-content > h1 { hyphens: auto; }
 label.auth-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-inline-size: 0; max-inline-size: 100%; }
 label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-size: 100%; text-overflow: ellipsis; }
-.auth-form { display: grid; gap: 8px; margin-block-start: 16px; }
+.auth-form { display: grid; grid-template-columns: minmax(0, 1fr); min-inline-size: 0; gap: 8px; margin-block-start: 16px; }
 .auth-qr { display: block; inline-size: min(100%, 240px); block-size: auto; padding: 16px; margin-block: 12px; background: #fff; }
 .auth-form input, .session-controls select { min-block-size: 48px; min-inline-size: 0; border-radius: var(--radius-control); padding: 8px 12px; background: var(--canvas); color: var(--ink); border: 1px solid var(--field-border); }
 .auth-form [role=alert], .session-controls [role=alert] { color: var(--ink); border-inline-start: 3px solid var(--coral); padding-inline-start: 8px; }
@@ -230,10 +230,10 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .auth-form :disabled { opacity: .65; }
 .session-controls { display: grid; gap: 16px; justify-items: start; }
 .session-controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.auth-form label { display: grid; gap: 4px; }
+.auth-form label { display: grid; grid-template-columns: minmax(0, 1fr); min-inline-size: 0; gap: 4px; overflow-wrap: anywhere; }
 .date-format-hint { display: block; color: var(--muted); font-size: .8rem; line-height: 1.35; overflow-wrap: anywhere; }
 
-.auth-form select { min-block-size: 44px; background: var(--canvas); color: var(--ink); }
+.auth-form select { min-block-size: 44px; min-inline-size: 0; max-inline-size: 100%; inline-size: 100%; box-sizing: border-box; text-overflow: ellipsis; background: var(--canvas); color: var(--ink); }
 .auth-form fieldset { min-inline-size: 0; border: 1px solid var(--rule); border-radius: 12px; }
 .auth-form label.access-check { display: flex; min-block-size: 44px; align-items: center; gap: 8px; }
 .auth-form input[type=checkbox] { min-block-size: auto; inline-size: 20px; block-size: 20px; accent-color: var(--primary); }
@@ -241,7 +241,7 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 .access-dates { display: flex; flex-wrap: wrap; gap: 8px; padding-block-end: 8px; }
 .access-dates input { inline-size: 100%; }
 
-.calendar-layout { display: grid; gap: 16px; }
+.calendar-layout { display: grid; grid-template-columns: minmax(0, 1fr); min-inline-size: 0; gap: 16px; }
 .calendar-layout .auth-card { margin: 0; }
 /* UIX-11: constrain short desktop forms, not data-heavy pages or side-by-side editors. */
 @media (min-width: 1100px) {
@@ -911,3 +911,10 @@ label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-siz
 
 /* Static route fallbacks follow the presentation language, including device-local overrides. */
 html[lang="de"] .route-loading-ar, html[lang="ar"] .route-loading-de { display: none; }
+
+/* Shared form reflow: preserve all labels and native controls; never use clipping to hide overflow. */
+.auth-form :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-inline-size:0;max-inline-size:100%;box-sizing:border-box}
+.auth-card :is(h1,h2,h3,p,label),.auth-form :is(h1,h2,h3,p){overflow-wrap:anywhere;hyphens:auto;min-inline-size:0}
+.auth-card :is(.plain-button,.primary-button),.auth-form :is(.plain-button,.primary-button),.school-content .header-actions>:is(.plain-button,.primary-button){max-inline-size:100%;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
+.app-language-options>button{padding-inline:6px;min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
+.comms-notice-controls>button{overflow-wrap:anywhere;hyphens:auto}
