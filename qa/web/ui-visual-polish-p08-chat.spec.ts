@@ -222,8 +222,23 @@ for (const scene of [
         name: "synthetic-photo.png", mimeType: "image/png", buffer: Buffer.from(photo, "base64"),
       });
       await expect(composer.locator(".comms-media img")).toBeVisible();
-      await page.screenshot({ path: folder + "/attachment-preview.png" });
       const discard = scene.locale === "ar" ? "حذف المرفق من المسودة" : "Anhang aus Entwurf entfernen";
+      const prepare = scene.locale === "ar" ? "تجهيز المرفق" : "Anhang vorbereiten";
+      for (const height of [844, 480]) {
+        await page.setViewportSize({ width: scene.width, height });
+        await expect.poll(() => composer.locator(".comms-media").evaluate((panel, labels) => {
+          const clip = panel.getBoundingClientRect();
+          return labels.every(label => {
+            const button = [...panel.querySelectorAll("button")].find(el => el.textContent?.trim() === label);
+            if (!button) return false;
+            const box = button.getBoundingClientRect();
+            return box.height >= 44 && box.top >= Math.max(0, clip.top) - 1 &&
+              box.bottom <= Math.min(innerHeight, clip.bottom) + 1;
+          });
+        }, [prepare, discard]), { message: "both attachment actions fit without scrolling at height " + height }).toBe(true);
+        await page.screenshot({ path: folder + (height === 844 ? "/attachment-preview.png" : "/attachment-preview-compact.png") });
+      }
+      await page.setViewportSize({ width: scene.width, height: 844 });
       await composer.getByRole("button", { name: discard, exact: true }).click();
       await expect(composer.locator(".comms-media img")).toHaveCount(0);
       await expect(mic).toBeVisible();

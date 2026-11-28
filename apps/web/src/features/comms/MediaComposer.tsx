@@ -255,9 +255,9 @@ export function MediaComposer({locale,persona,thread,locked,consumed,onReady,onB
       <button className="plain-button" type="button" onClick={cancelRecording}>{labels.cancel}</button>
     </div>}
     {draft&&<div className="auth-form">
-      {draft.kind==="photo"?<img src={draft.preview} alt={labels.photo} width={240} style={{maxWidth:"100%",objectFit:"contain"}}/>:
+      {draft.kind==="photo"?<img className="comms-media-photo" src={draft.preview} alt={labels.photo} width={240}/>:
         <VoiceDraftPreview file={draft.file} src={draft.preview} label={labels.audio}/>}
-      <div className="header-actions">
+      <div className="header-actions comms-media-actions">
         {!draft.readyId&&<button className="plain-button" type="button" disabled={working||locked} onClick={()=>void submit()}>
           {error==="failed"?labels.retry:labels.upload}
         </button>}

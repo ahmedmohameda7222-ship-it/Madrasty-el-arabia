@@ -827,6 +827,10 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .comms-thread-screen .comms-composer { flex:none; position:relative; bottom:auto; margin:0; padding:8px 12px; padding-block-end:max(8px,env(safe-area-inset-bottom)); }
 .comms-thread-screen .comms-composer > .notice { max-block-size:min(18dvh,100px); overflow:auto; }
 .comms-thread-screen .comms-media[data-idle="false"] { max-block-size:min(28dvh,210px); overflow:auto; }
+.comms-thread-screen .comms-media:has(.comms-media-photo) { max-block-size:min(360px,calc(var(--chat-viewport-height,100dvh) * .42)); }
+.comms-media-photo { display:block; inline-size:auto; block-size:auto; max-inline-size:100%; max-block-size:min(7rem,calc(var(--chat-viewport-height,100dvh) * .15)); object-fit:contain; }
+.comms-media .comms-media-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,8.25rem),1fr)); gap:8px; }
+.comms-media-actions > .plain-button { min-inline-size:0; min-block-size:44px; white-space:normal; overflow-wrap:anywhere; }
 @media(max-width:959px) {
   .school-shell[data-view="thread"] > .school-header { position:absolute; inset-block-start:env(safe-area-inset-top); inset-inline-end:0; z-index:4; border:0; padding:6px 8px; }
   .school-shell[data-view="thread"] > .school-header .brand,
