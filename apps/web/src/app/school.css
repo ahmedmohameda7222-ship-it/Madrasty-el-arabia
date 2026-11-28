@@ -220,7 +220,7 @@ button, a, [role="button"], .more-group summary { touch-action: manipulation; }
 .school-content > h1 { overflow-wrap: anywhere; }
 html[lang="de"] .school-content > h1 { hyphens: auto; }
 label.auth-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-inline-size: 0; max-inline-size: 100%; }
-label.auth-card > select { min-inline-size: 0; inline-size: 100%; max-inline-size: 100%; text-overflow: ellipsis; }
+label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size: 100%; max-inline-size: 100%; text-overflow: ellipsis; border: 1px solid var(--field-border); border-radius: var(--radius-control); padding: 8px 12px; background: var(--canvas); color: var(--ink); }
 .auth-form { display: grid; grid-template-columns: minmax(0, 1fr); min-inline-size: 0; gap: 8px; margin-block-start: 16px; }
 .auth-qr { display: block; inline-size: min(100%, 240px); block-size: auto; padding: 16px; margin-block: 12px; background: #fff; }
 .auth-form input, .session-controls select { min-block-size: 48px; min-inline-size: 0; border-radius: var(--radius-control); padding: 8px 12px; background: var(--canvas); color: var(--ink); border: 1px solid var(--field-border); }
