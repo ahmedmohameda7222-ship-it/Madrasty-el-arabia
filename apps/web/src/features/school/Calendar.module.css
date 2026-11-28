@@ -231,3 +231,33 @@
 @media (prefers-reduced-motion: no-preference) {
   .day,.primary,.secondary,.saveButton { transition: background-color 130ms ease,border-color 130ms ease; }
 }
+
+
+/* Visual polish: retain the approved calendar palette and day grid. */
+.yearCard,.statCard,.card,.calendarCard,.dayPanel,.upcomingPanel {
+  border-radius: var(--radius-card);
+}
+.modal { border-radius: var(--radius-sheet); }
+.secondary,.smallButton,.arrowButton,.iconButton,.dangerButton,.removeButton,.textAction {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}
+.secondary,.smallButton,.dangerButton,.removeButton,.field {
+  border-radius: var(--radius-control);
+}
+.arrowButton,.iconButton {
+  inline-size: 44px;
+  block-size: 44px;
+  border-radius: var(--radius-pill);
+}
+.primary,.saveButton {
+  min-block-size: 48px;
+  border-radius: var(--radius-pill);
+}
+.field { min-block-size: 48px; }
+.headActions,.monthActions,.modalActions { min-inline-size: 0; flex-wrap: wrap; }
+.headActions button,.modalActions button {
+  max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere;
+}
+:global([dir="rtl"]) .root .head h1,
+:global([dir="rtl"]) .root .eyebrow { letter-spacing: normal; }
