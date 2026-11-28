@@ -79,3 +79,5 @@ jobs:
 # Reverify bank definition-list and timetable reflow after registry synchronization.
 
 # Verify shared intrinsic reflow corrections against the existing original checks.
+
+# Revalidate all original assertions on the integrated visual candidate.

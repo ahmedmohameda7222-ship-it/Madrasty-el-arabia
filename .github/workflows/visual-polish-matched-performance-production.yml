@@ -86,3 +86,5 @@ jobs:
             qa-artifacts/visual-polish/P12-production/matched-summary.json
           retention-days: 7
           if-no-files-found: warn
+
+# Revalidate all original assertions on the integrated visual candidate.

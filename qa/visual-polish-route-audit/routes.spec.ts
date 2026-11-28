@@ -83,7 +83,10 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
           });
           const reply=await screen.goto(origin+path,{waitUntil:"domcontentloaded"});
           await screen.waitForLoadState("networkidle",{timeout:30000});
-          const root=screen.locator(".school-content, main.public-page").first();
+          // Stock Next not-found has no school/public shell. Capture only the
+          // positively identified terminal 404, never an arbitrary missing root.
+          const stockNotFound=await screen.getByRole("heading",{name:"404",exact:true}).isVisible();
+          const root=stockNotFound?screen.locator("body"):screen.locator(".school-content, main.public-page").first();
           await expect(root).toBeVisible();
           await expect(root.locator('[data-async-state="loading"], .school-route-loading')).toHaveCount(0,{timeout:30000});
           if(route==="/school/more/assignments"&&scene.persona==="admin"){
@@ -112,7 +115,7 @@ for(const scene of actors)for(const locale of ["de","ar"] as const){
           const large=await measure();
           await screen.screenshot({path:folder+"/"+key+"-text-200.png"});
           const destination=new URL(screen.url()).pathname.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi,":id").slice(3);
-          const denied=await screen.locator("[data-generic-not-found]").count()>0 || await root.getByRole("heading",{name:"404",exact:true}).count()>0;
+          const denied=await screen.locator("[data-generic-not-found]").count()>0 || stockNotFound;
           const state={route,destination,status:reply?.status(),denied,normal,large,reads:[...reads.entries()].sort((a,b)=>a[0].localeCompare(b[0]))};
           rows.push(state);
           console.log("Visual route survey",JSON.stringify(state));
