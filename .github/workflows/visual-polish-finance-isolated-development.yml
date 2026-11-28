@@ -1,0 +1,36 @@
+name: Visual polish - fresh finance domain diagnosis
+on:
+  push:
+    branches: ["visual-polish/premium"]
+    paths: [".github/workflows/visual-polish-finance-isolated-development.yml"]
+permissions:
+  contents: read
+jobs:
+  fresh-finance:
+    if: github.ref == 'refs/heads/visual-polish/premium'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - run: echo "LOCALAPPDATA=$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: "2.121.0"
+      - run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - run: pwsh -NoProfile -File qa/start-stack.ps1
+      - name: Existing finance domain test before any browser fixture mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoProfile -File qa/local.ps1 -Serve > "$RUNNER_TEMP/madrasty-finance-domain.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          curl -fsS --retry 25 --retry-connrefused --retry-delay 2 --max-time 20 http://127.0.0.1:4300/api/v1/health
+          pnpm qa:finance

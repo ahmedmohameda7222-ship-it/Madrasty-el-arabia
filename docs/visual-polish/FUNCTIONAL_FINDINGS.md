@@ -24,3 +24,8 @@ Run 46080077890, both emulator sizes: 21/22 passed; sign-in visibility assertion
 ### QA-06 — hosted development runner cold navigation and resource failure
 
 Run 46082187416 Chromium reproduced the existing cold German install navigation failure; all five original P03 cases passed when re-run on the warmed server. WebKit stopped before browser tests with sanitized startup category resource or port conflict. Neither is waived: exact cold startup/navigation investigation and a fresh WebKit run remain required. No authentication or navigation product changes made.
+
+
+### QA-07 — finance domain follows a mutating UI fixture
+
+46083875529 iPhone WebKit UI 5/5 passed, then the domain test hit 409 stale_revision at ledger.test.ts:73. Both suites reuse QA_RUN_ID; populated UI explicitly sets a payer designation, while the domain test writes revision 0. Fresh isolated domain run without preceding UI writes is the next discriminating test. No production code, assertion, or ledger rules changed. Keep failure open until fresh run result.
