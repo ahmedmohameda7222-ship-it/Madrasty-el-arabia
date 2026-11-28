@@ -181,6 +181,13 @@ class FoundationVisualTest {
             val details = "size=${layout.size}, paragraph=${layout.multiParagraph.width}x${layout.multiParagraph.height}, widthOverflow=${layout.didOverflowWidth}, heightOverflow=${layout.didOverflowHeight}, lines=${layout.lineCount}"
             assertTrue("Clipped text: $label ($details)", !layout.hasVisualOverflow)
             val text = layout.layoutInput.text.text
+            assertEquals("Layout must describe the requested visible label", label, text)
+            if (label == "99+") {
+                text.indices.forEach { index ->
+                    val glyph = layout.getBoundingBox(index)
+                    assertTrue("Unread glyph outside its text box: $index ($glyph)", glyph.left >= -1f && glyph.right <= layout.size.width + 1f)
+                }
+            }
             Regex("\\S+").findAll(text).forEach { word ->
                 assertEquals(
                     "Word split across lines in $label: ${word.value}",
