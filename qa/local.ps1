@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch]$Serve, [switch]$PreviousRelease, [switch]$Production, [switch]$ProductionFixtureTls)
+param([switch]$Serve, [switch]$PreviousRelease, [switch]$Production, [switch]$ProductionFixtureTls, [switch]$Turbopack)
 
 if ($Production -and (-not $Serve -or $PreviousRelease)) { throw 'Production QA requires -Serve on the current isolated checkout.' }
 if ($ProductionFixtureTls -and (-not $Production -or -not $Serve -or $env:GITHUB_ACTIONS -ne 'true' -or
@@ -71,7 +71,11 @@ if ($Serve) {
   Push-Location $webRoot
   try {
     if ($Production) { pnpm --filter @madrasty/web exec next start --hostname 127.0.0.1 --port $port }
-    else { pnpm --filter @madrasty/web exec next dev --webpack --hostname 127.0.0.1 --port $port }
+    else {
+      $nextDevArgs = @('dev', '--hostname', '127.0.0.1', '--port', $port)
+      if (-not $Turbopack) { $nextDevArgs += '--webpack' }
+      pnpm --filter @madrasty/web exec next @nextDevArgs
+    }
   }
   finally { Pop-Location }
   exit $LASTEXITCODE
