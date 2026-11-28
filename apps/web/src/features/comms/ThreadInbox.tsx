@@ -134,8 +134,9 @@ function ThreadRow({locale,item,current,href,changed}:{locale:Locale;item:Thread
 function ContactProfile({locale,name,contact}:{locale:Locale;name:string;contact?:ThreadContact|null}){
   const ar=locale==="ar",dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null);
   const label=ar?"بيانات جهة الاتصال":"Kontaktinformationen";
+  const actionLabel=ar?"عرض البيانات":"Kontakt ansehen";
   return <div className="comms-contact-title">
-    <h2><button ref={trigger} type="button" className="comms-contact-trigger" aria-label={label} aria-haspopup="dialog" onClick={()=>dialog.current?.showModal()}><bdi>{name}</bdi><span>{ar?"عرض البيانات":"Kontakt ansehen"}</span></button></h2>
+    <h2><button ref={trigger} type="button" className="comms-contact-trigger" aria-label={name+" — "+actionLabel} aria-haspopup="dialog" onClick={()=>dialog.current?.showModal()}><bdi>{name}</bdi><span>{actionLabel}</span></button></h2>
     <dialog ref={dialog} className="scope-sheet comms-contact-sheet" aria-label={label} onClose={()=>trigger.current?.focus({preventScroll:true})}>
       <div className="sheet-header"><h2>{label}</h2><button type="button" className="plain-button" onClick={()=>dialog.current?.close()}>{ar?"إغلاق":"Schließen"}</button></div>
       <div className="comms-contact-identity"><span className="comms-avatar" aria-hidden="true">{name.trim().slice(0,1).toUpperCase()}</span><strong><bdi>{name}</bdi></strong>{contact&&<small>{ar?contact.titleAr:contact.titleDe}</small>}</div>

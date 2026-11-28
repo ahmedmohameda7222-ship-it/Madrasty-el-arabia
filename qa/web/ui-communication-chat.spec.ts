@@ -61,7 +61,7 @@ test("direct chat presents sent and received bubbles and compact actions", async
     }
     await page.setViewportSize({width:390,height:844});
     await composer.locator("textarea").fill("QA gallery retains draft");
-    await page.getByRole("button",{name:"Kontaktinformationen",exact:true}).click();
+    await page.getByRole("button",{name:/ — Kontakt ansehen$/}).click();
     const profile=page.getByRole("dialog",{name:"Kontaktinformationen"});
     await expect(profile.getByText("يوسف عبد الرحمن محمود",{exact:true})).toBeVisible();
     await profile.getByRole("button",{name:"Schließen",exact:true}).click();

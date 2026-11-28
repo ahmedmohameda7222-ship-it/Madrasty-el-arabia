@@ -495,6 +495,7 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .comms-timeline{list-style:none;display:flex;flex-direction:column;gap:12px;padding:0;margin:0;min-inline-size:0}
 .comms-message{align-self:flex-start;max-inline-size:min(88%,35rem);min-inline-size:0;background:var(--inset);border:1px solid var(--rule);padding:10px 12px;border-radius:var(--radius-card) var(--radius-card) var(--radius-card) 4px;overflow-wrap:anywhere;display:grid;gap:6px}
 .comms-message[data-own=true]{align-self:flex-end;background:var(--primary);color:var(--on-primary);border-color:transparent;border-radius:var(--radius-card) var(--radius-card) 4px var(--radius-card)}
+.comms-message[data-own=true] .comms-message-actions>summary:focus-visible{outline-color:var(--on-primary)}
 [dir=rtl] .comms-message{border-radius:var(--radius-card) var(--radius-card) 4px var(--radius-card)}
 [dir=rtl] .comms-message[data-own=true]{border-radius:var(--radius-card) var(--radius-card) var(--radius-card) 4px}
 .comms-message[data-highlight=true]{outline:2px solid var(--primary);outline-offset:3px}
@@ -527,6 +528,7 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 .comms-input-bar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:end;gap:6px;min-inline-size:0}
 .comms-input-field{grid-column:2;grid-row:1;min-inline-size:0;margin:0}
 .comms-input-field textarea{display:block;inline-size:100%;min-inline-size:0;min-block-size:44px;max-block-size:140px;resize:none;border-radius:24px;padding:10px 14px;line-height:1.4;background:var(--inset);border:1px solid var(--rule);color:var(--ink)}
+.comms-input-field textarea::placeholder{color:var(--muted);opacity:1}
 .comms-icon-button{display:inline-grid;place-items:center;inline-size:44px;block-size:44px;min-inline-size:44px;min-block-size:44px;border:0;padding:0;border-radius:50%;background:transparent;color:var(--primary);flex:none}
 .comms-icon-button:disabled{opacity:.42}
 .comms-attach-button{background:var(--inset)}
@@ -882,7 +884,9 @@ label.auth-card > select { min-block-size: 48px; min-inline-size: 0; inline-size
 
 .comms-message>p{touch-action:pan-y}
 
-.comms-contact-title{min-inline-size:0}.comms-contact-trigger{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:start;border:0;background:transparent;color:inherit;padding:0;min-block-size:44px;max-inline-size:100%;font:inherit;cursor:pointer}.comms-contact-trigger bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-inline-size:100%}.comms-contact-trigger span{font-size:.8125rem;color:var(--primary);font-weight:500}.comms-contact-sheet{max-inline-size:min(100%,480px)}.comms-contact-sheet .comms-contact-identity{display:grid;justify-items:center;gap:8px;text-align:center;padding:16px}.comms-contact-sheet .comms-avatar{inline-size:72px;block-size:72px;font-size:1.75rem}.comms-contact-sheet p{overflow-wrap:anywhere}.comms-contact-sheet h2{display:block}
+.comms-contact-title{min-inline-size:0}
+.comms-thread-toolbar .comms-contact-title h2{display:block;overflow:visible}
+.comms-contact-trigger{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:start;border:0;background:transparent;color:inherit;padding:0;min-block-size:44px;max-inline-size:100%;font:inherit;cursor:pointer}.comms-contact-trigger bdi{overflow-wrap:anywhere;max-inline-size:100%}.comms-contact-trigger span{font-size:.8125rem;color:var(--primary);font-weight:500}.comms-contact-sheet{max-inline-size:min(100%,480px)}.comms-contact-sheet .comms-contact-identity{display:grid;justify-items:center;gap:8px;text-align:center;padding:16px}.comms-contact-sheet .comms-avatar{inline-size:72px;block-size:72px;font-size:1.75rem}.comms-contact-sheet p{overflow-wrap:anywhere}.comms-contact-sheet h2{display:block}
 
 /* First-message compose shares the conversation viewport without opening an empty thread. */
 .school-content:has(> .comms-directory[data-compose="true"]) {display:flex;flex-direction:column;min-block-size:0;overflow:hidden;padding:0}

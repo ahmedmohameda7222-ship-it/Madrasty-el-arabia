@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
+const school = readFileSync("apps/web/src/app/school.css", "utf8");
 const shared = readFileSync("apps/web/src/app/school-tokens.css", "utf8");
 const calendar = readFileSync("apps/web/src/features/school/Calendar.module.css", "utf8");
 function palette(source, selector) {
@@ -31,6 +32,8 @@ for (const [mode, base, cal] of themes) {
     ["shared secondary on inset", base["--text-secondary"], base["--surface-inset"], 4.5],
     ["shared selection", base["--selection-ink"], base["--selection"], 4.5],
     ["shared action", base["--on-action"], base["--action"], 4.5],
+    ["chat placeholder on composer inset", base["--text-secondary"], base["--surface-inset"], 4.5],
+    ["chat sent-message focus ring", base["--on-action"], base["--action"], 3],
     ["calendar secondary on canvas", cal["--c-muted"], base["--surface-canvas"], 4.5],
     ["calendar secondary on card", cal["--c-muted"], cal["--c-card"], 4.5],
     ["calendar secondary on plain", cal["--c-muted"], cal["--c-plain"], 4.5],
@@ -50,4 +53,9 @@ for (const [mode, base, cal] of themes) {
 }
 test("calendar fields use the measured control boundary token", () => {
   assert.match(calendar, /\.field\s*\{[^}]*border:\s*1px solid var\(--field-border\)/);
+});
+
+test("chat applies accessible tokens to the placeholder and the sent-message focus ring", () => {
+  assert.match(school, /\.comms-input-field textarea::placeholder\s*\{[^}]*color:\s*var\(--muted\)[^}]*opacity:\s*1/);
+  assert.match(school, /\.comms-message\[data-own=true\] \.comms-message-actions>summary:focus-visible\s*\{[^}]*outline-color:\s*var\(--on-primary\)/);
 });

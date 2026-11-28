@@ -6,8 +6,8 @@ import { fixtureApi } from "../support/api";
 import { fixtureEmail, localOrigin } from "../support/target";
 
 for (const scene of [
-  { locale: "de", width: 390, theme: "light", mic: "Sprachnachricht aufnehmen", attach: "Anhang hinzufügen", contact: "Kontaktinformationen", close: "Schließen" },
-  { locale: "ar", width: 320, theme: "dark", mic: "تسجيل رسالة صوتية", attach: "إضافة مرفق", contact: "بيانات جهة الاتصال", close: "إغلاق" },
+  { locale: "de", width: 390, theme: "light", mic: "Sprachnachricht aufnehmen", attach: "Anhang hinzufügen", contact: "Kontaktinformationen", profileAction: "Kontakt ansehen", close: "Schließen" },
+  { locale: "ar", width: 320, theme: "dark", mic: "تسجيل رسالة صوتية", attach: "إضافة مرفق", contact: "بيانات جهة الاتصال", profileAction: "عرض البيانات", close: "إغلاق" },
 ] as const) {
   test(`P08 direct chat material and retained draft ${scene.locale}`, async ({ page, context, browser }) => {
     const school = schoolFixtures();
@@ -41,6 +41,7 @@ for (const scene of [
         : url.pathname.includes("/threads") ? "threads" : null;
       if (endpoint) record({ event: "api", endpoint, status: response.status(), method: response.request().method() });
     });
+    const contactName = "يوسف عبد الرحمن محمود";
     let tracing = false;
     try {
       await school.seed();
@@ -49,7 +50,7 @@ for (const scene of [
       const teacher = await school.bearer("teacher", "teacher");
       mark("sessions-bound");
       const contacts = (await fixtureApi(school, "/directory", { token: guardian })).payload.data;
-      const target = contacts.find((c: { displayName: string }) => c.displayName === "يوسف عبد الرحمن محمود")?.target;
+      const target = contacts.find((c: { displayName: string }) => c.displayName === contactName)?.target;
       expect(target).toBeTruthy();
       const thread = (await fixtureApi(school, "/threads", { token: guardian, persona: "guardian", method: "POST", key: randomUUID(), body: { target } })).payload.data.threadId;
       expectedThread = thread;
@@ -99,6 +100,7 @@ for (const scene of [
       const otherShape = await shape(other);
       const profile = page.locator(".comms-contact-trigger");
       await expect(profile).toBeVisible();
+      await expect(profile).toHaveAccessibleName(contactName + " — " + scene.profileAction);
       const profileSize = await profile.locator("span").evaluate(el => parseFloat(getComputedStyle(el).fontSize));
       const composer = page.locator(".comms-composer");
       const input = composer.locator("textarea");
@@ -107,6 +109,51 @@ for (const scene of [
       await expect(mic).toBeVisible();
       await expect(attach).toBeVisible();
       mark("composer-controls-visible");
+      const contrast = (foreground: string, background: string) => {
+        const luminance = (color: string) => {
+          const channels = color.match(/\d+(?:\.\d+)?/g)!.slice(0, 3)
+            .map(channel => Number(channel) / 255)
+            .map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+          return .2126 * channels[0]! + .7152 * channels[1]! + .0722 * channels[2]!;
+        };
+        const a = luminance(foreground), b = luminance(background);
+        return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+      };
+      const placeholder = await input.evaluate(element => ({
+        foreground: getComputedStyle(element, "::placeholder").color,
+        opacity: Number(getComputedStyle(element, "::placeholder").opacity),
+        background: getComputedStyle(element).backgroundColor,
+      }));
+      expect(placeholder.opacity).toBe(1);
+      expect(contrast(placeholder.foreground, placeholder.background)).toBeGreaterThanOrEqual(4.5);
+      await page.keyboard.press("Tab");
+      const options = own.locator(".comms-message-actions > summary");
+      await options.focus();
+      const ring = await options.evaluate(element => ({
+        shown: element.matches(":focus-visible") && getComputedStyle(element).outlineStyle !== "none",
+        foreground: getComputedStyle(element).outlineColor,
+        background: getComputedStyle(element.closest(".comms-message")!).backgroundColor,
+      }));
+      expect(ring.shown).toBe(true);
+      expect(contrast(ring.foreground, ring.background)).toBeGreaterThanOrEqual(3);
+      await options.blur();
+      const unscaledRootFont = await page.evaluate(() => {
+        const root = document.documentElement;
+        const font = { value: root.style.getPropertyValue("font-size"), priority: root.style.getPropertyPriority("font-size") };
+        root.style.setProperty("font-size", "200%", "important");
+        return font;
+      });
+      try {
+        const title = profile.locator("bdi");
+        const overflow = await title.evaluate(element => Math.max(
+          element.scrollWidth - element.clientWidth,
+          element.scrollHeight - element.clientHeight,
+        ));
+        expect(overflow, "contact name should wrap at 200% instead of clipping").toBeLessThanOrEqual(1);
+        await page.screenshot({ path: folder + "/chat-200.png" });
+      } finally {
+        await page.evaluate(font => document.documentElement.style.setProperty("font-size", font.value, font.priority), unscaledRootFont);
+      }
       // Read both boxes in the same rendering snapshot; separate locator calls can
       // straddle a polling rerender. Still fail if either control is absent.
       const boxes = await composer.evaluate((el, labels) => {
