@@ -97,3 +97,10 @@
  .editor,.pickerPanel {border-radius:16px}
 }
 @media (prefers-reduced-motion:reduce) {.classCard {transition:none}.classCard:hover {transform:none}}
+
+/* Preserve the entire week and every action at enlarged text sizes. */
+.page{grid-template-columns:minmax(0,1fr);min-inline-size:0;max-inline-size:100%}
+.hero>div,.summary>div,.pickerTop>div,.editorHead>div,.toolbarActions,.editorActions{min-inline-size:0;max-inline-size:100%}
+.hero,.pickerPanel,.editor,.summary,.weekGrid,.day,.dayHead,.dayBody,.lesson,.editorGroup,.fields>label{min-inline-size:0;overflow-wrap:anywhere;hyphens:auto}
+.toolbarActions>button,.editorActions>button,.lesson>button,.classCard{min-inline-size:0;max-inline-size:100%;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
+@media(max-width:630px){.dayHead{flex-wrap:wrap}.weekGrid{grid-template-columns:minmax(0,1fr)}}

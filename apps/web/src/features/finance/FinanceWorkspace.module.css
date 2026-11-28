@@ -179,3 +179,8 @@
    semantic primary/disabled tokens instead of the generic notice background. */
 .bankReview :global(.primary-button):not(:disabled){background:var(--primary);color:var(--on-primary)}
 .bankReview :global(.primary-button):disabled{background:var(--inset);color:var(--muted)}
+
+/* A definition list must not expand the review grid to its intrinsic label width. */
+.bankReview dl{grid-template-columns:minmax(0,1fr);margin:0;min-inline-size:0}
+.bankReview dl>div,.bankReview dt,.bankReview dd{min-inline-size:0;max-inline-size:100%;margin:0;overflow-wrap:anywhere;hyphens:auto}
+.bankReview dd{font-weight:600;margin-block-start:.25rem}

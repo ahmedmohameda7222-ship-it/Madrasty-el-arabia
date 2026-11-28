@@ -112,7 +112,7 @@ export function Timetable({locale,child,initialClass,initialYear}:{
 
     {persona==="guardian"&&<TimetableRead locale={locale} result={own}>{records=>
       records.length>0?<section className={css.pickerPanel}><label>
-        {text.selectChild}<select value={chosen??""} onChange={e=>setSelection(e.target.value)}>
+        {text.selectChild}<select aria-label={text.selectChild} value={chosen??""} onChange={e=>setSelection(e.target.value)}>
           {records.map(record=><option value={record.id} key={record.id}>{record.displayName}</option>)}
         </select></label></section>:<AsyncSurface locale={locale} state={{kind:"empty"}}/>
     }</TimetableRead>}
