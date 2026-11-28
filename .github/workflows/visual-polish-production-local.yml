@@ -10,6 +10,7 @@ on:
       - "qa/web/ui-visual-polish-p10-bank.spec.ts"
       - "qa/web/ui-visual-polish-p09-timetable.spec.ts"
       - "qa/web/ui-visual-polish-p09-calendar.spec.ts"
+      - "qa/web/ui-visual-polish-p11-headings.spec.ts"
       - "apps/web/src/app/[locale]/not-found.tsx"
       - "qa/support/visual-production-proxy.mjs"
   workflow_dispatch:
@@ -71,6 +72,7 @@ jobs:
             qa-artifacts/visual-polish/P10/bank-*/**/bank-*.png
             qa-artifacts/visual-polish/P09/timetable-*/**/timetable-*.png
             qa-artifacts/visual-polish/P09/**/calendar*.png
+            qa-artifacts/visual-polish/P11/headings-*/**/*-200.png
           retention-days: 7
           if-no-files-found: warn
 
