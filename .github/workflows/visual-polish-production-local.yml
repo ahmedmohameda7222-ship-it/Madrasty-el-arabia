@@ -28,6 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
+        slice: [core, compact-layout]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,7 +54,9 @@ jobs:
           bash -n qa/visual-polish-production-tls.sh
           node --check qa/support/visual-production-proxy.mjs
           bash qa/visual-polish-production-tls.sh
-      - name: Build and verify P03, P09 and P10 journeys against real HTTPS
+      - name: Build and verify isolated scene journeys against real HTTPS
+        env:
+          AUDIT_SLICE: ${{ matrix.slice }}
         shell: bash
         run: |
           set -euo pipefail
@@ -64,12 +67,21 @@ jobs:
           proxy_pid=$!
           trap 'kill "$web_pid" "$proxy_pid" 2>/dev/null || true' EXIT
           curl --cacert "$NODE_EXTRA_CA_CERTS" -fsS --retry 30 --retry-connrefused --retry-all-errors --retry-delay 2 --max-time 10 https://127.0.0.1:4443/api/v1/health
-          pnpm exec playwright test --config qa/visual-polish-production.config.ts --browser ${{ matrix.browser }}
+          # Separate fresh fixture stacks preserve the original login-rate limits.
+          case "$AUDIT_SLICE" in
+            core)
+              pnpm exec playwright test --config qa/visual-polish-production.config.ts --browser ${{ matrix.browser }} ui-visual-polish-entry.spec.ts ui-visual-polish-identity.spec.ts ui-visual-polish-not-found.spec.ts ui-visual-polish-p10-bank.spec.ts ui-visual-polish-p09-timetable.spec.ts ui-visual-polish-p11-headings.spec.ts ui-visual-polish-p08-mic.spec.ts ui-visual-polish-p07-editors.spec.ts
+              ;;
+            compact-layout)
+              pnpm exec playwright test --config qa/visual-polish-production.config.ts --browser ${{ matrix.browser }} ui-visual-polish-p09-calendar.spec.ts ui-visual-polish-p05-child-actions.spec.ts
+              ;;
+            *) exit 2 ;;
+          esac
       - name: Retain selected synthetic P03 evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-production-p03-${{ matrix.browser }}-${{ github.sha }}
+          name: visual-production-${{ matrix.slice }}-${{ matrix.browser }}-${{ github.sha }}
           path: |
             qa-artifacts/visual-polish/P03/**/*.png
             qa-artifacts/visual-polish/P10/bank-*/**/bank-*.png
