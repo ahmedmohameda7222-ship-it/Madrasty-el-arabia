@@ -6,6 +6,8 @@ on:
       - ".github/workflows/visual-polish-production-local.yml"
       - "qa/visual-polish-production-tls.sh"
       - "qa/visual-polish-production.config.ts"
+      - "qa/web/ui-visual-polish-not-found.spec.ts"
+      - "apps/web/src/app/[locale]/not-found.tsx"
       - "qa/support/visual-production-proxy.mjs"
   workflow_dispatch:
 permissions:
