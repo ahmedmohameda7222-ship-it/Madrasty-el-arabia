@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assertMatchedVisualAudit } from "./visual-polish-evidence.mjs";
@@ -62,6 +63,10 @@ test("missing and non-PNG evidence cannot pass", t => {
   const { records, options, dir } = fixture(t);
   const missing = records(); missing[1].files = [join(dir, "missing.png")];
   assert.throws(() => assertMatchedVisualAudit(options([target()], missing)), /file|png/i);
+  const truncated = records();
+  const path = truncated[1].files[0];
+  writeFileSync(path, readFileSync(path).subarray(0, 24));
+  assert.throws(() => assertMatchedVisualAudit(options([target()], truncated)), /png/i);
   const invalid = records(); writeFileSync(invalid[1].files[0], "not a PNG");
   assert.throws(() => assertMatchedVisualAudit(options([target()], invalid)), /png/i);
 });
@@ -94,4 +99,61 @@ test("a single screenshot file cannot stand in for both before and after", t => 
   const { records, options } = fixture(t);
   const reused = records(); reused[1].files = reused[0].files;
   assert.throws(() => assertMatchedVisualAudit(options([target()], reused)), /reus|duplicate/i);
+});
+
+test("release CLI binds reviewed targets and captures to the checked-out registry and HEAD", t => {
+  const { options, dir } = fixture(t);
+  const repo = join(dir, "checkout");
+  mkdirSync(join(repo, "qa"), { recursive: true });
+  mkdirSync(join(repo, "docs", "visual-polish"), { recursive: true });
+  const cli = join(repo, "qa", "visual-polish-evidence.mjs");
+  copyFileSync(new URL("./visual-polish-evidence.mjs", import.meta.url), cli);
+  const git = args => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  git(["init"]);
+  git(["-c", "user.name=Visual QA", "-c", "user.email=qa@example.invalid", "commit", "--allow-empty", "-m", "candidate"]);
+  const head = git(["rev-parse", "HEAD"]);
+  const { targets, records } = options();
+  const fingerprint = "f".repeat(64);
+  const matrix = { sourceFingerprint: fingerprint, targets };
+  const captures = { beforeSha, afterSha: head, records: records.map(record => ({
+    ...record, sha: record.stage === "after" ? head : beforeSha,
+    files: [record.stage + ".png"],
+  })) };
+  const write = (path, data) => writeFileSync(path, JSON.stringify(data));
+  const scenesFile = join(repo, "docs", "visual-polish", "SCENES.json");
+  const matrixFile = join(dir, "matrix.json"), capturesFile = join(dir, "captures.json");
+  const scenes = [{ id: "WR-004", path: "apps/web/src/app/account/security/page.tsx" }];
+  write(scenesFile, { sourceSha: beforeSha, sourceFingerprint: fingerprint, scenes });
+  write(join(repo, "docs", "visual-polish", "ELEMENTS.json"), {
+    sourceSha: beforeSha, sourceFingerprint: fingerprint, elements: [{ id: "email" }, { id: "password" }],
+  });
+  write(matrixFile, matrix);
+  write(capturesFile, captures);
+  const run = () => spawnSync(process.execPath, [cli, matrixFile, capturesFile], { cwd: dir, encoding: "utf8" });
+
+  const complete = run();
+  assert.equal(complete.status, 0, complete.stderr);
+  assert.deepEqual(JSON.parse(complete.stdout), { scenes: 1, targets: 1, captures: 2 });
+
+  write(scenesFile, { sourceSha: beforeSha, sourceFingerprint: fingerprint, scenes: [...scenes, { id: "WR-005" }] });
+  const missing = run();
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /Missing scene coverage: WR-005/);
+
+  write(scenesFile, { sourceSha: beforeSha, sourceFingerprint: fingerprint, scenes });
+  write(capturesFile, { ...captures, afterSha });
+  const stale = run();
+  assert.equal(stale.status, 1);
+  assert.match(stale.stderr, /checked-out HEAD/);
+
+  write(capturesFile, captures);
+  write(matrixFile, { ...matrix, sourceFingerprint: "0".repeat(64) });
+  const wrongRegistry = run();
+  assert.equal(wrongRegistry.status, 1);
+  assert.match(wrongRegistry.stderr, /registry fingerprint/i);
+
+  write(matrixFile, { ...matrix, targets: [{ ...targets[0], elements: ["not-from-registry"] }] });
+  const unknownElement = run();
+  assert.equal(unknownElement.status, 1);
+  assert.match(unknownElement.stderr, /Unregistered visual element/);
 });

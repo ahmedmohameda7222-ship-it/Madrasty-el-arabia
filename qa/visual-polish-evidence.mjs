@@ -1,4 +1,7 @@
-import { closeSync, openSync, readSync, realpathSync, statSync } from "node:fs";
+import { readFileSync, realpathSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // A structural evidence gate, not a visual reviewer. The caller must supply
 // the complete, source-reviewed matrix and perform real before/after review.
@@ -29,22 +32,20 @@ function identity(entry) {
 
 function inspectPng(file, used) {
   if (!nonempty(file)) throw new Error("Missing screenshot file path");
-  let fd;
   try {
     const resolved = realpathSync(file);
     if (used.has(resolved)) throw new Error("Duplicate/reused screenshot file");
-    const stat = statSync(resolved);
-    if (!stat.isFile() || stat.size <= pngSignature.length) throw new Error("Empty or invalid PNG screenshot file");
-    fd = openSync(resolved, "r");
-    const header = Buffer.alloc(pngSignature.length);
-    if (readSync(fd, header, 0, header.length, 0) !== header.length || !header.equals(pngSignature)) {
-      throw new Error("Invalid PNG screenshot signature");
+    if (!statSync(resolved).isFile()) throw new Error("Screenshot path is not a file");
+    const image = readFileSync(resolved);
+    if (image.length < 45 || !image.subarray(0, 8).equals(pngSignature) ||
+        image.readUInt32BE(8) !== 13 || image.toString("ascii", 12, 16) !== "IHDR" ||
+        !image.readUInt32BE(16) || !image.readUInt32BE(20) ||
+        image.readUInt32BE(image.length - 12) !== 0 || image.toString("ascii", image.length - 8, image.length - 4) !== "IEND") {
+      throw new Error("Invalid or incomplete PNG screenshot");
     }
     used.add(resolved);
   } catch (error) {
     throw new Error(`Screenshot file invalid: ${file}: ${error.message}`);
-  } finally {
-    if (fd !== undefined) closeSync(fd);
   }
 }
 
@@ -101,4 +102,50 @@ export function assertMatchedVisualAudit({ sceneIds, targets, records, beforeSha
     if (!seen.has(staged)) throw new Error(`Missing matched capture: ${staged}`);
   }
   return { scenes: declared.size, targets: expected.size, captures: seen.size };
+}
+
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  try {
+    const [matrixFile, capturesFile, extra] = process.argv.slice(2);
+    if (!matrixFile || !capturesFile || extra) {
+      throw new Error("Usage: node qa/visual-polish-evidence.mjs <reviewed-matrix.json> <captures.json>");
+    }
+    const repo = fileURLToPath(new URL("..", import.meta.url));
+    const json = path => JSON.parse(readFileSync(path, "utf8"));
+    const scenes = json(resolve(repo, "docs/visual-polish/SCENES.json"));
+    const elements = json(resolve(repo, "docs/visual-polish/ELEMENTS.json"));
+    const matrix = json(matrixFile), captures = json(capturesFile);
+    if (!/^[a-f0-9]{64}$/.test(scenes.sourceFingerprint) ||
+        scenes.sourceFingerprint !== elements.sourceFingerprint ||
+        scenes.sourceFingerprint !== matrix.sourceFingerprint ||
+        scenes.sourceSha !== elements.sourceSha) {
+      throw new Error("Reviewed matrix does not match the checkout's scene/element registry fingerprint");
+    }
+    const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" }).trim();
+    if (captures.beforeSha !== scenes.sourceSha || captures.afterSha !== head) {
+      throw new Error("Captures must pair the registered baseline with the checked-out HEAD");
+    }
+    const registeredElements = new Set(elements.elements.map(element => element.id));
+    for (const target of matrix.targets ?? []) {
+      for (const id of target.elements ?? []) {
+        if (!registeredElements.has(id)) throw new Error("Unregistered visual element: " + id);
+      }
+    }
+    const captureDirectory = dirname(resolve(capturesFile));
+    const records = Array.isArray(captures.records) ? captures.records.map(record => ({
+      ...record,
+      files: Array.isArray(record.files)
+        ? record.files.map(file => nonempty(file) ? resolve(captureDirectory, file) : file)
+        : record.files,
+    })) : captures.records;
+    const result = assertMatchedVisualAudit({
+      sceneIds: scenes.scenes.map(scene => scene.id),
+      targets: matrix.targets, exclusions: matrix.exclusions,
+      beforeSha: scenes.sourceSha, afterSha: head, records,
+    });
+    console.log(JSON.stringify(result));
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
 }
